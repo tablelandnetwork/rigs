@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minter-ingress-nginx
+spec:
+  tls:
+    - secretName: minter-tls-cf-secret
+      hosts:
+        - mint.tableland.xyz
+  rules:
+    - host: mint.tableland.xyz
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api
+                port:
+                  number: 5000
