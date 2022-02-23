@@ -15,31 +15,36 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+// Trait defines a single NFT trait.
 type Trait struct {
 	DisplayType string `json:"display_type,omitempty"`
 	TraitType   string `json:"trait_type"`
 	Value       string `json:"value"`
 }
 
+// Metadata defines NFT metadata.
 type Metadata struct {
 	Attributes []Trait `json:"attributes"`
 }
 
-type TraitSheet struct {
+// Sheet defines a trait sheet imported from google sheets.
+type Sheet struct {
 	Name      string              `json:"name"`
 	Range     string              `json:"range"`
 	DependsOn []string            `json:"depends_on"`
 	Opts      []map[string]string `json:"opts"`
 }
 
+// SheetsGenerator generates NFT metadata from traits defined in google sheets.
 type SheetsGenerator struct {
 	sc *gsheets.Service
 	id string
 
-	sheets []TraitSheet
+	sheets []Sheet
 	cancel context.CancelFunc
 }
 
+// NewSheetsGenerator returns a new SheetsGenerator.
 func NewSheetsGenerator(sheetID string, keyfile string) (*SheetsGenerator, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	sc, err := gsheets.NewService(ctx, option.WithCredentialsJSON([]byte(keyfile)))
@@ -48,7 +53,7 @@ func NewSheetsGenerator(sheetID string, keyfile string) (*SheetsGenerator, error
 		return nil, fmt.Errorf("building sheets client %v", err)
 	}
 
-	sheets := []TraitSheet{
+	sheets := []Sheet{
 		{
 			Name:  "Fleet",
 			Range: "!A1:B5",
@@ -103,11 +108,13 @@ func NewSheetsGenerator(sheetID string, keyfile string) (*SheetsGenerator, error
 	return g, nil
 }
 
+// Close implements io.Closer.
 func (g *SheetsGenerator) Close() error {
 	g.cancel()
 	return nil
 }
 
+// GenerateMetadata returns count metadata items, and optionally reloads trait sheets.
 func (g *SheetsGenerator) GenerateMetadata(ctx context.Context, count int, reloadSheets bool) (interface{}, error) {
 	if reloadSheets {
 		if err := g.getTraitSheets(); err != nil {
@@ -179,7 +186,7 @@ func getTrait(name string, md *Metadata) *Trait {
 	return nil
 }
 
-func selectTrait(md *Metadata, sheet TraitSheet) error {
+func selectTrait(md *Metadata, sheet Sheet) error {
 	var filter []Trait
 	for _, x := range sheet.DependsOn {
 		t := getTrait(x, md)
