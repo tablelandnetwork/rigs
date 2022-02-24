@@ -46,8 +46,8 @@ func main() {
 	router.Use(middlewares.CORS, middlewares.TraceID)
 
 	// Gateway configuration.
-	// basicAuth := middlewares.BasicAuth(config.AdminAPI.Username, config.AdminAPI.Password)
-	router.Get("/mint/staging", stagingController.GetMetadata, middlewares.OtelHTTP("GetMetadata"))
+	// basicAuth := middlewares.BasicAuth(config.Admin.Username, config.Admin.Password)
+	router.Get("/generate", stagingController.GenerateMetadata, middlewares.OtelHTTP("GenerateMetadata"))
 
 	// Health endpoint configuration.
 	router.Get("/healthz", healthHandler)

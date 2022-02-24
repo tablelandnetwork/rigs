@@ -13,7 +13,7 @@ type router struct {
 
 // newRouter is a Mux HTTP router constructor.
 func newRouter() *router {
-	r := mux.NewRouter()
+	r := mux.NewRouter().StrictSlash(true)
 	r.PathPrefix("/").Methods(http.MethodOptions) // accept OPTIONS on all routes and do nothing
 	return &router{r}
 }

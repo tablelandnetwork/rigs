@@ -6,9 +6,9 @@ spec:
   tls:
     - secretName: minter-tls-cf-secret
       hosts:
-        - mint.staging.tableland.xyz
+        - mint-staging.tableland.xyz
   rules:
-    - host: mint.staging.tableland.xyz
+    - host: mint-staging.tableland.xyz
       http:
         paths:
           - path: /

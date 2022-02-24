@@ -27,8 +27,8 @@ func NewStagingController(svc staging.StagingService) *StagingController {
 	return &StagingController{svc}
 }
 
-// GetMetadata handles the GET /mint/staging call.
-func (c *StagingController) GetMetadata(rw http.ResponseWriter, r *http.Request) {
+// GenerateMetadata handles the GET /generate call.
+func (c *StagingController) GenerateMetadata(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rw.Header().Set("Content-type", "application/json")
 
