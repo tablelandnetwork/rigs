@@ -53,3 +53,4 @@ jobs:
           reporter: github-pr-review
           github_token: ${{ secrets.github_token }}
           locale: "US"
+          ignore: "optimise"

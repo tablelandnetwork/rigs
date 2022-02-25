@@ -18,3 +18,7 @@
 # Project
 .env
 *.ignore
+
+#client
+client/node_modules/
+client/.nuxt
