@@ -11,14 +11,14 @@ concurrency:
 
 jobs:
   lint:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
         with:
           go-version: v1.17
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -34,7 +34,7 @@ jobs:
       - name: Run linter
         run: make lint
   spell-check:
-    name: spell-check
+    name: Spell Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

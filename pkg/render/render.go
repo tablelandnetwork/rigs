@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"image"
 	"image/draw"
-	_ "image/gif"
-	_ "image/jpeg"
+	_ "image/gif"  // register format
+	_ "image/jpeg" // register format
 	"image/png"
 	"io"
 	"math"
