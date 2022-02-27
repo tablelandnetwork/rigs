@@ -12,6 +12,7 @@ concurrency:
 
 jobs:
   test:
+    name: Test API
     strategy:
       matrix:
         go-version: [1.16.x, v1.17.x]
@@ -46,6 +47,7 @@ jobs:
         run: |
           npm test
   test-app:
+    name: Test App
     runs-on: ubuntu-latest
     steps:
     - name: Checkout

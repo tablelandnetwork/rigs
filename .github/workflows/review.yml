@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   lint:
-    name: lint
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - name: Install Go
@@ -34,7 +34,7 @@ jobs:
       - name: Run linter
         run: make lint
   spell-check:
-    name: spell-check
+    name: Spell Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
