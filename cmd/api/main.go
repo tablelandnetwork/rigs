@@ -100,7 +100,7 @@ func healthHandler(w http.ResponseWriter, _ *http.Request) {
 
 func handleInterrupt(stop func()) {
 	quit := make(chan os.Signal)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt) // nolint
 	<-quit
 	fmt.Println("Gracefully stopping... (press Ctrl+C again to force)")
 	stop()

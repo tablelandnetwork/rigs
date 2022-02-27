@@ -35,6 +35,17 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+            ~/.cache/go-build
+            ~/Library/Caches/go-build
+            %LocalAppData%\go-build
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
 
       - name: Prepare
         id: prep
@@ -96,3 +107,35 @@ jobs:
           gcloud container clusters get-credentials $GKE_CLUSTER --region $GKE_REGION --project ${{ secrets.GKE_PROJECT }}
           export API_IMAGE=$CONTAINER_REGISTRY/${{ secrets.GKE_PROJECT }}/textile/minter/api:sha-${{ steps.prep.outputs.sha_short }}
           DEPLOYMENT=${{ steps.prep.outputs.deployment }} make deploy
+
+  deploy-app:
+    if: github.ref == 'refs/heads/main'
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJSON(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install and generate
+        working-directory: ./client
+        env:
+          API: https://mint-testnet.tableland.xyz
+        run: |
+          npm install
+          npm run generate
+
+      - name: Test
+        working-directory: ./client
+        run: |
+          npm test
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: client/dist

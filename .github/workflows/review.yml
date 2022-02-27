@@ -18,7 +18,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: v1.17
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:

@@ -22,7 +22,7 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go-version }}
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v2
       - uses: actions/cache@v2
         with:
@@ -36,3 +36,26 @@ jobs:
             ${{ runner.os }}-go-
       - name: Test
         run: make test
+      - name: Install and generate frontend
+        working-directory: ./client
+        run: |
+          npm install
+          npm run generate
+      - name: Test frontend
+        working-directory: ./client
+        run: |
+          npm test
+  test-app:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2
+    - name: Install and generate
+      working-directory: ./client
+      run: |
+        npm install
+        npm run generate
+    - name: Test
+      working-directory: ./client
+      run: |
+        npm test
