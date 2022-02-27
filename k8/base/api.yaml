@@ -34,7 +34,7 @@ metadata:
   labels:
     app: api
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: api-v1
@@ -69,8 +69,8 @@ spec:
                 name: configmap-api
           resources:
             requests:
-              cpu: 250m
-              memory: 512Mi
+              cpu: '2'
+              memory: 1Gi
           readinessProbe:
             httpGet:
               path: /healthz

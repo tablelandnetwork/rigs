@@ -19,7 +19,7 @@ env:
 
 jobs:
   deploy:
-    if: github.event_name == 'release' || github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[shipit]')
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     name: Deploy API
     runs-on: ubuntu-latest
     steps:
@@ -52,8 +52,6 @@ jobs:
         run: |
           if [[ ${{ github.ref }} == refs/heads/main ]]; then
             echo "::set-output name=deployment::production"
-          else
-            echo "::set-output name=deployment::staging"
           fi
           echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
 
@@ -109,7 +107,7 @@ jobs:
           DEPLOYMENT=${{ steps.prep.outputs.deployment }} make deploy
 
   deploy-app:
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     name: Deploy App
     runs-on: ubuntu-latest
     steps:
