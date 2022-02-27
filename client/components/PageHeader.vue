@@ -1,5 +1,4 @@
 <template>
-  <!-- Header -->
   <header class="bg-navbar">
   </header>
 </template>

@@ -1,8 +1,12 @@
-@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap');
 
 body {
     background-color: #000000;
     font-family: 'Inconsolata', monospace;
+}
+
+input[type="number"] {
+    width: 5rem;
 }
 
 input[type="checkbox"] {
@@ -10,10 +14,31 @@ input[type="checkbox"] {
     margin-top: -2px;
 }
 
+button {
+    height: 20px;
+    padding-bottom: 21px;
+    background-color: #b7556b !important;
+}
+
 button:active {
-    background-color: #f0bedf !important;
+    background-color: #825690 !important;
 }
 
 .main {
     max-width: none !important;
+}
+
+svg.spinner {
+    vertical-align: -2px;
+}
+
+.v-lazy-image {
+    filter: blur(5px);
+    transition: filter 1.6s ease-out, opacity 1s ease-out;
+    will-change: filter;
+    opacity: 0;
+}
+.v-lazy-image-loaded {
+    filter: blur(0);
+    opacity: 1;
 }
