@@ -5,7 +5,8 @@ go 1.17
 require (
 	cloud.google.com/go/logging v1.4.2
 	github.com/ethereum/go-ethereum v1.10.16
-	github.com/google/uuid v1.3.0
+	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
+	github.com/google/uuid v1.1.5
 	github.com/gorilla/mux v1.8.0
 	github.com/omeid/uconfig v1.2.0
 	github.com/rs/zerolog v1.26.1
@@ -15,6 +16,7 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.27.0
 	go.opentelemetry.io/otel/metric v0.27.0
 	go.opentelemetry.io/otel/sdk/metric v0.27.0
+	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	google.golang.org/api v0.70.0
 )
 

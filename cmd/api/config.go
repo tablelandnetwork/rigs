@@ -27,6 +27,7 @@ type config struct {
 	}
 	GCP struct {
 		SheetID               string `default:""`
+		DriveFolderID         string `default:""`
 		ServiceAccountKeyFile string `default:""`
 	}
 	Log struct {
@@ -43,7 +44,9 @@ func setupConfig() *config {
 
 	c, err := uconfig.Classic(&conf, confFiles)
 	if err != nil {
-		c.Usage()
+		if c != nil {
+			c.Usage()
+		}
 		os.Exit(1)
 	}
 

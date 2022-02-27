@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
@@ -33,7 +36,11 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	stagingService, err := stagingimpl.NewSheetsGenerator(config.GCP.SheetID, config.GCP.ServiceAccountKeyFile)
+	stagingService, err := stagingimpl.NewSheetsGenerator(
+		config.GCP.SheetID,
+		config.GCP.DriveFolderID,
+		config.GCP.ServiceAccountKeyFile,
+	)
 	if err != nil {
 		log.Fatal().
 			Err(err).
@@ -48,6 +55,7 @@ func main() {
 	// Gateway configuration.
 	// basicAuth := middlewares.BasicAuth(config.Admin.Username, config.Admin.Password)
 	router.Get("/generate", stagingController.GenerateMetadata, middlewares.OtelHTTP("GenerateMetadata"))
+	router.Get("/render", stagingController.RenderImage, middlewares.OtelHTTP("RenderImage"))
 
 	// Health endpoint configuration.
 	router.Get("/healthz", healthHandler)
@@ -67,14 +75,34 @@ func main() {
 			Msg("could not setup instrumentation")
 	}
 
-	if err := router.Serve(":" + config.HTTP.Port); err != nil {
-		log.Fatal().
-			Err(err).
-			Str("port", config.HTTP.Port).
-			Msg("could not start server")
-	}
+	// Start HTTP server.
+	go func() {
+		if err := router.Serve(":" + config.HTTP.Port); err != nil {
+			log.Fatal().
+				Err(err).
+				Str("port", config.HTTP.Port).
+				Msg("could not start server")
+		}
+	}()
+
+	handleInterrupt(func() {
+		if err := stagingService.Close(); err != nil {
+			log.Fatal().
+				Err(err).
+				Msg("error closing staging service")
+		}
+	})
 }
 
-func healthHandler(w http.ResponseWriter, r *http.Request) {
+func healthHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+func handleInterrupt(stop func()) {
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	fmt.Println("Gracefully stopping... (press Ctrl+C again to force)")
+	stop()
+	os.Exit(1)
 }
