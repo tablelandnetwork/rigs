@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;900&display=swap');
+
+body {
+    background-color: #000000;
+    font-family: 'Inconsolata', monospace;
+}
+
+input[type="checkbox"] {
+    vertical-align: middle;
+    margin-top: -2px;
+}
+
+button:active {
+    background-color: #f0bedf !important;
+}
+
+.main {
+    max-width: none !important;
+}

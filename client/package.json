@@ -1,6 +1,5 @@
 {
-  "name": "site-tableland",
-  "description": "Build web3 with SQL",
+  "name": "nft-layer-renderer",
   "version": "1.0.0",
   "private": true,
   "scripts": {

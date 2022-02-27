@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -27,10 +28,11 @@ func init() {
 
 // Sheet defines a trait sheet imported from google sheets.
 type Sheet struct {
-	Name      string              `json:"name"`
-	Range     string              `json:"range"`
-	DependsOn []string            `json:"depends_on"`
-	Opts      []map[string]string `json:"opts"`
+	Name      string
+	Range     string
+	DependsOn []string
+	Opts      []map[string]string
+	Label     bool
 }
 
 // SheetsGenerator generates NFT metadata from traits defined in google sheets.
@@ -41,7 +43,7 @@ type SheetsGenerator struct {
 
 	sheets []Sheet
 	layers Sheet
-	images map[string]staging.Image
+	images map[string]*staging.Image
 	cancel context.CancelFunc
 }
 
@@ -64,11 +66,13 @@ func NewSheetsGenerator(sheetID, driveFolderID, keyfile string) (*SheetsGenerato
 		{
 			Name:  "Fleet",
 			Range: "!A1:B5",
+			Label: true,
 		},
 		{
 			Name:      "Class",
 			Range:     "!A1:C9",
 			DependsOn: []string{"Fleet"},
+			Label:     true,
 		},
 		{
 			Name:      "Background",
@@ -113,7 +117,7 @@ func NewSheetsGenerator(sheetID, driveFolderID, keyfile string) (*SheetsGenerato
 		id:     sheetID,
 		sheets: sheets,
 		layers: layers,
-		images: make(map[string]staging.Image),
+		images: make(map[string]*staging.Image),
 		cancel: cancel,
 	}
 
@@ -202,7 +206,7 @@ func (g *SheetsGenerator) walkFiles(pth string, fileID string) error {
 			}
 		case "image/png":
 			name := f.Name[0 : len(f.Name)-len(path.Ext(f.Name))]
-			g.images[path.Join(pth, name)] = staging.Image{
+			g.images[path.Join(pth, name)] = &staging.Image{
 				ID:    f.Id,
 				Layer: name,
 			}
@@ -219,7 +223,7 @@ func (g *SheetsGenerator) GenerateMetadata(
 	count int,
 	reloadSheets bool,
 ) ([]staging.Metadata, error) {
-	log.Info().
+	log.Debug().
 		Int("count", count).
 		Bool("reload sheets", reloadSheets).
 		Msg("generating metadata")
@@ -331,7 +335,7 @@ func (g *SheetsGenerator) RenderImage(
 	reloadLayers bool,
 	writer io.Writer,
 ) error {
-	log.Info().
+	log.Debug().
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
 
@@ -345,19 +349,46 @@ func (g *SheetsGenerator) RenderImage(
 	if err != nil {
 		return fmt.Errorf("getting layers: %v", err)
 	}
+	label := g.getTraitsLabel(md)
 
-	r := render.NewRenderer(width, height, drawLabels)
+	r, err := render.NewRenderer(width, height, drawLabels, label)
+	if err != nil {
+		return fmt.Errorf("building renderer: %v", err)
+	}
 	for _, l := range layers {
+		if l.Trait == nil {
+			continue // trait was optional
+		}
 		img, err := g.fetchImage(path.Join(l.Name, l.Trait.Value), reloadLayers)
 		if err != nil {
 			return fmt.Errorf("fetching image: %v", err)
 		}
+		if img == nil {
+			continue // layer was optional
+		}
+
+		log.Debug().
+			Str("name", img.Layer).
+			Msg("adding layer")
+
 		if err := r.AddLayer(img.Image, img.Layer); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
 	}
 
 	return r.Write(writer, compression)
+}
+
+func (g *SheetsGenerator) getTraitsLabel(md staging.Metadata) string {
+	var label []string
+	for _, s := range g.sheets {
+		if s.Label {
+			if t := getTrait(s.Name, md); t != nil {
+				label = append(label, t.Value)
+			}
+		}
+	}
+	return strings.Join(label, ", ")
 }
 
 func getLayers(md staging.Metadata, sheet Sheet) ([]staging.Layer, error) {
@@ -379,20 +410,6 @@ outer:
 			}
 		}
 
-		l, err := getSheetRowValue(opt, "Layer")
-		if err != nil {
-			return nil, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
-		}
-
-		t, err := getSheetRowValue(opt, "Trait")
-		if err != nil {
-			return nil, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
-		}
-		trait := getTrait(t, md)
-		if trait == nil {
-			return nil, fmt.Errorf("metadata missing required trait: %s", l)
-		}
-
 		os, err := getSheetRowValue(opt, "Order")
 		if err != nil {
 			return nil, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
@@ -402,9 +419,24 @@ outer:
 			return nil, fmt.Errorf("parsing layer: %v", err)
 		}
 
+		t, err := getSheetRowValue(opt, "Trait")
+		if err != nil {
+			return nil, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
+		}
+		trait := getTrait(t, md)
+		if trait == nil {
+			tmp[o] = staging.Layer{}
+			continue // trait was optional
+		}
+
+		l, err := getSheetRowValue(opt, "Layer")
+		if err != nil {
+			return nil, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
+		}
+
 		tmp[o] = staging.Layer{
 			Name:  prefix + l,
-			Trait: *trait,
+			Trait: trait,
 		}
 	}
 
@@ -415,10 +447,10 @@ outer:
 	return layers, nil
 }
 
-func (g *SheetsGenerator) fetchImage(pth string, force bool) (staging.Image, error) {
+func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, error) {
 	img, ok := g.images[pth]
 	if !ok {
-		return staging.Image{}, fmt.Errorf("image path %s not found", pth)
+		return nil, nil
 	}
 
 	if img.Image != nil && !force {
@@ -431,15 +463,15 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (staging.Image, err
 
 	r, err := g.dc.Files.Get(img.ID).Download()
 	if err != nil {
-		return staging.Image{}, fmt.Errorf("downloading file: %v", err)
+		return nil, fmt.Errorf("downloading file: %v", err)
 	}
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return staging.Image{}, fmt.Errorf("reading file: %v", err)
+		return nil, fmt.Errorf("reading file: %v", err)
 	}
 	i, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		return staging.Image{}, fmt.Errorf("decoding image: %v", err)
+		return nil, fmt.Errorf("decoding image: %v", err)
 	}
 	img.Image = i
 	g.images[pth] = img

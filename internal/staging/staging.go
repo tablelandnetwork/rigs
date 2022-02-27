@@ -17,7 +17,7 @@ type Trait struct {
 // Layer defines a layer associated with a trait.
 type Layer struct {
 	Name  string
-	Trait Trait
+	Trait *Trait
 }
 
 // Image is an image associated with a layer.

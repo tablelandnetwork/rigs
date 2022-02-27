@@ -1,8 +1,6 @@
 export default {
   env: {
-    // http://localhost:8545
-    validatorHost: process.env.VALIDATOR || 'https://testnet.tableland.network',
-    validatorNet: process.env.NETWORK || 'testnet'
+    api: process.env.API || 'http://localhost:5000',
   },
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
   ssr: false,
@@ -12,26 +10,24 @@ export default {
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: 'Tableland',
+    title: 'NFT Layer Renderer',
     htmlAttrs: {
       lang: 'en'
     },
     meta: [
       { charset: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { hid: 'description', name: 'description', content: 'Build web3 with SQL' },
+      { hid: 'description', name: 'description', content: 'Google Sheets and Drive based NFT layer renderer' },
       { name: 'format-detection', content: 'telephone=no' }
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
-    ],
-    script: [
-      { src: 'https://quiet-instinctive.tableland.xyz/script.js', 'data-site': 'QLCGWETC' }
     ]
   },
 
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [
+    '@/assets/css/globals.css',
     '@/assets/css/tailwind.css'
   ],
 

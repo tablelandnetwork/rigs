@@ -22,3 +22,5 @@
 #client
 client/node_modules/
 client/.nuxt
+client/.eslintcache
+client/dist/
