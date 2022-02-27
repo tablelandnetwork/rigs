@@ -34,7 +34,7 @@ metadata:
   labels:
     app: api
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: api-v1
@@ -70,7 +70,7 @@ spec:
           resources:
             requests:
               cpu: '2'
-              memory: 1Gi
+              memory: 2Gi
           readinessProbe:
             httpGet:
               path: /healthz
