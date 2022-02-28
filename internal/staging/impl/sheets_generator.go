@@ -1,10 +1,8 @@
 package impl
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"image"
 	"image/png"
 	"io"
 	"io/ioutil"
@@ -380,12 +378,9 @@ func (g *SheetsGenerator) RenderImage(
 			Str("name", img.Layer).
 			Msg("adding layer")
 
-		if err := r.AddLayer(img.Image, img.Layer); err != nil {
+		if err := r.AddLayer(img.Bytes, img.Layer); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
-		g.lk.Lock()
-		delete(g.images, pth)
-		g.lk.Unlock()
 	}
 
 	return r.Write(writer, compression)
@@ -467,7 +462,7 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 		return nil, nil
 	}
 
-	if img.Image != nil && !force {
+	if img.Bytes != nil && !force {
 		return img, nil // don't load again
 	}
 
@@ -479,15 +474,11 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 	if err != nil {
 		return nil, fmt.Errorf("downloading file: %v", err)
 	}
-	data, err := ioutil.ReadAll(r.Body)
+	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %v", err)
 	}
-	i, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("decoding image: %v", err)
-	}
-	img.Image = i
+	img.Bytes = bytes
 	g.lk.Lock()
 	g.images[pth] = img
 	g.lk.Unlock()

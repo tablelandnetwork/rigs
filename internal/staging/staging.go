@@ -2,7 +2,6 @@ package staging
 
 import (
 	"context"
-	"image"
 	"image/png"
 	"io"
 )
@@ -24,7 +23,7 @@ type Layer struct {
 type Image struct {
 	ID    string
 	Layer string
-	Image image.Image
+	Bytes []byte
 }
 
 // Metadata defines NFT metadata.
