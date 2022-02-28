@@ -1,15 +1,14 @@
 package impl
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"image"
 	"image/png"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -46,8 +45,7 @@ type SheetsGenerator struct {
 	layers Sheet
 	images map[string]*staging.Image
 	cancel context.CancelFunc
-
-	lk sync.Mutex
+	lk     sync.Mutex
 }
 
 // NewSheetsGenerator returns a new SheetsGenerator.
@@ -339,6 +337,8 @@ func (g *SheetsGenerator) RenderImage(
 	darkMode bool,
 	writer io.Writer,
 ) error {
+	logMemUsage()
+
 	log.Debug().
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
@@ -363,6 +363,7 @@ func (g *SheetsGenerator) RenderImage(
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}
+	defer r.Dispose()
 	for _, l := range layers {
 		if l.Trait == nil {
 			continue // trait was optional
@@ -380,7 +381,7 @@ func (g *SheetsGenerator) RenderImage(
 			Str("name", img.Layer).
 			Msg("adding layer")
 
-		if err := r.AddLayer(img.Image, img.Layer); err != nil {
+		if err := r.AddLayer(img.Bytes, img.Layer); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
 	}
@@ -419,11 +420,11 @@ outer:
 			}
 		}
 
-		os, err := getSheetRowValue(opt, "Order")
+		r, err := getSheetRowValue(opt, "Order")
 		if err != nil {
 			return nil, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
 		}
-		o, err := strconv.Atoi(os)
+		o, err := strconv.Atoi(r)
 		if err != nil {
 			return nil, fmt.Errorf("parsing layer: %v", err)
 		}
@@ -458,14 +459,13 @@ outer:
 
 func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, error) {
 	g.lk.Lock()
-	defer g.lk.Unlock()
-
 	img, ok := g.images[pth]
+	g.lk.Unlock()
 	if !ok {
 		return nil, nil
 	}
 
-	if img.Image != nil && !force {
+	if img.Bytes != nil && !force {
 		return img, nil // don't load again
 	}
 
@@ -477,17 +477,15 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 	if err != nil {
 		return nil, fmt.Errorf("downloading file: %v", err)
 	}
-	data, err := ioutil.ReadAll(r.Body)
+	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("reading file: %v", err)
 	}
-	i, _, err := image.Decode(bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("decoding image: %v", err)
-	}
 
-	img.Image = i
+	img.Bytes = bytes
+	g.lk.Lock()
 	g.images[pth] = img
+	g.lk.Unlock()
 	return img, nil
 }
 
@@ -495,4 +493,19 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 func (g *SheetsGenerator) Close() error {
 	g.cancel()
 	return nil
+}
+
+func logMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Debug().
+		Str("alloc", fmt.Sprintf("%v", bToMb(m.Alloc))).
+		Str("total", fmt.Sprintf("%v", bToMb(m.TotalAlloc))).
+		Str("sys", fmt.Sprintf("%v", bToMb(m.Sys))).
+		Str("gc", fmt.Sprintf("%v", m.NumGC)).
+		Msg("memstats")
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }

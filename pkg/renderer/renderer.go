@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/draw"
@@ -80,8 +81,13 @@ func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool
 }
 
 // AddLayer to the Renderer.
-func (r *Renderer) AddLayer(layer image.Image, label string) error {
-	draw.Draw(r.img, r.img.Bounds(), layer, image.Point{}, draw.Over)
+func (r *Renderer) AddLayer(layer []byte, label string) error {
+	i, _, err := image.Decode(bytes.NewReader(layer))
+	if err != nil {
+		return fmt.Errorf("decoding image: %v", err)
+	}
+	draw.Draw(r.img, r.img.Bounds(), i, image.Point{}, draw.Over)
+	i = nil // quicker cleanup
 
 	if r.drawLabels && len(label) > 0 {
 		r.labels = append(r.labels, label)
@@ -104,6 +110,11 @@ func (r *Renderer) Write(writer io.Writer, compression png.CompressionLevel) err
 		CompressionLevel: compression,
 	}
 	return encoder.Encode(writer, r.img)
+}
+
+// Dispose of the Renderer image.
+func (r *Renderer) Dispose() {
+	r.img = nil
 }
 
 func (r *Renderer) drawLabel(label string) error {
