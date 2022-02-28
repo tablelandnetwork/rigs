@@ -17,7 +17,7 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
-	"github.com/tablelandnetwork/nft-minter/pkg/render"
+	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 	gsheets "google.golang.org/api/sheets/v4"
@@ -359,7 +359,7 @@ func (g *SheetsGenerator) RenderImage(
 		label = g.getTraitsLabel(md)
 	}
 
-	r, err := render.NewRenderer(width, height, drawLabels, label, darkMode)
+	r, err := renderer.NewRenderer(width, height, drawLabels, label, darkMode)
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}

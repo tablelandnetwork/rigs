@@ -1,4 +1,4 @@
-package render
+package renderer
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"github.com/tablelandnetwork/nft-minter/pkg/render/fonts"
+	"github.com/tablelandnetwork/nft-minter/pkg/renderer/fonts"
 	"golang.org/x/image/math/fixed"
 )
 
@@ -75,7 +75,6 @@ func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool
 
 	if drawLabels && len(label) > 0 {
 		r.labels = append(r.labels, label)
-
 	}
 	return r, nil
 }
