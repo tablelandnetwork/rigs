@@ -87,7 +87,7 @@ func (r *Renderer) AddLayer(layer []byte, label string) error {
 		return fmt.Errorf("decoding image: %v", err)
 	}
 	draw.Draw(r.img, r.img.Bounds(), i, image.Point{}, draw.Over)
-	i = nil // quicker cleanup
+	i = nil // nolint
 
 	if r.drawLabels && len(label) > 0 {
 		r.labels = append(r.labels, label)
