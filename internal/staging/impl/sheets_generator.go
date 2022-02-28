@@ -367,7 +367,8 @@ func (g *SheetsGenerator) RenderImage(
 		if l.Trait == nil {
 			continue // trait was optional
 		}
-		img, err := g.fetchImage(path.Join(l.Name, l.Trait.Value), reloadLayers)
+		pth := path.Join(l.Name, l.Trait.Value)
+		img, err := g.fetchImage(pth, reloadLayers)
 		if err != nil {
 			return fmt.Errorf("fetching image: %v", err)
 		}
@@ -382,6 +383,9 @@ func (g *SheetsGenerator) RenderImage(
 		if err := r.AddLayer(img.Image, img.Layer); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
+		g.lk.Lock()
+		delete(g.images, pth)
+		g.lk.Unlock()
 	}
 
 	return r.Write(writer, compression)
