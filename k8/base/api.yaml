@@ -71,6 +71,8 @@ spec:
             requests:
               cpu: '2'
               memory: 2Gi
+            limits:
+              memory: 4Gi
           readinessProbe:
             httpGet:
               path: /healthz

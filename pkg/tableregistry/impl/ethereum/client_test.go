@@ -121,7 +121,7 @@ func setup(t *testing.T) (*backends.SimulatedBackend, *ecdsa.PrivateKey, *bind.T
 
 	requireAuthGas(t, backend, auth)
 
-	//Deploy contract
+	// Deploy contract
 	address, _, contract, err := DeployContract(
 		auth,
 		backend,
