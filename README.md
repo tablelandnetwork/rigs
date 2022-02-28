@@ -1,12 +1,8 @@
 # nft-minter
 
-### Generate metadata from Google Sheets
+> Render NFT Layers from Google Sheets
 
-```shell
-curl 'http://localhost:5000/generate?count=1000'
-```
-
-Use `count` to increase the number of outputs. The max is 10000. `reload=true` will reload the trait sheets. This is useful when playing with trait names or distribution in real time.
+<img width="1570" alt="Screen Shot 2022-02-27 at 11 48 43 PM" src="https://user-images.githubusercontent.com/361000/155944700-ac752304-52d9-4c27-8caa-a29918ca1934.png">
 
 ### Running the Client
 
@@ -16,4 +12,4 @@ npm install
 npm run dev
 ````
 
-open a browser window to http://localhost:3000
+Got to http://localhost:3000.
