@@ -40,7 +40,7 @@ type Service interface {
 		m Metadata,
 		width, height int,
 		compression png.CompressionLevel,
-		drawLabels, reloadLayers bool,
+		drawLabels, reloadLayers, darkMode bool,
 		w io.Writer,
 	) error
 }

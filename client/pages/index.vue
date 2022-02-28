@@ -6,14 +6,14 @@
       <div class="w-full grid gap-4 grid-cols-1 md:grid-cols-2">
         <form @submit.prevent="generate">
           <div>
-            <span class="text-white">count:</span>
-            <input v-model="count" type="number" class="px-2 bg-white">
-            <span class="pl-2 text-white">reload traits:</span>
+            <span class="dark:text-white">count:</span>
+            <input v-model="count" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
+            <span class="pl-2 dark:text-white">reload traits:</span>
             <input v-model="reloadSheets" type="checkbox">
-            <button :disabled="loading" class="ml-4 px-8 cursor-pointer text-white">
+            <button :disabled="loading" class="ml-4 px-8 py-1 border-box cursor-pointer text-white">
               Let's go!
             </button>
-            <svg v-if="loading" class="spinner inline animate-spin ml-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <svg v-if="loading" class="spinner inline animate-spin ml-2 h-3 w-3 dark:text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle
                 class="opacity-25"
                 cx="12"
@@ -29,21 +29,29 @@
 
         <div>
           <div class="lg:inline-block lg:float-right">
-            <span class="text-white">size:</span>
-            <input v-model="size" type="number" class="px-2 bg-white">
-            <span class="pl-2 text-white">compression:</span>
+            <span class="dark:text-white">size:</span>
+            <input v-model="size" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
+            <span class="pl-2 dark:text-white">compression:</span>
             <input v-model="compression" type="checkbox">
-            <span class="pl-2 text-white">show labels:</span>
+            <span class="pl-2 dark:text-white">show labels:</span>
             <input v-model="labels" type="checkbox">
-            <span class="pl-2 text-white">reload layers:</span>
+            <span class="pl-2 dark:text-white">reload layers:</span>
             <input v-model="reloadLayers" type="checkbox">
+            <span class="pl-2 dark:text-white">dark:</span>
+            <input v-model="darkMode" type="checkbox" @change="toggleDarkMode">
           </div>
         </div>
       </div>
 
-      <div class="w-full mt-16 grid gap-4 grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+      <div ref="grid" class="w-full mt-16 grid gap-4 grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         <div v-for="(attrs, i) in nfts" :key="i" class="">
-          <v-lazy-image class="m-auto bg-white bg-opacity-10" :src="api + '/render?' + 'size=' + size + '&compression=' + (compression?0:-1) + '&labels=' + labels + '&reload=' + reloadLayers + '&metadata=' + encodeURIComponent(JSON.stringify(attrs))" />
+          <v-lazy-image
+            :style="{ minHeight: imgHeight }"
+            class="m-auto bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10"
+            :src="api + '/render?' + 'size=' + size + '&compression=' + (compression?0:-1) + '&labels=' + labels + '&reload=' + reloadLayers + '&dark=' + darkMode + '&metadata=' + encodeURIComponent(JSON.stringify(attrs))"
+            @intersect="imgIntersect"
+            @load="imgLoad"
+          />
         </div>
       </div>
     </div>
@@ -69,8 +77,18 @@ export default {
       reloadSheets: false,
       reloadLayers: false,
       nfts: [],
-      loading: false
+      loading: false,
+      imgHeight: '0px',
+      darkMode: false
     };
+  },
+  created: function () {
+    this.darkMode = localStorage.theme === 'dark';
+    this.toggleDarkMode();
+    addEventListener('resize', this.resize);
+  },
+  destroyed: function () {
+    removeEventListener('resize', this.resize);
   },
   methods: {
     generate: async function () {
@@ -87,7 +105,28 @@ export default {
 
       const res = await fetch(url);
       this.nfts = await res.json();
+
+      this.resize();
       this.loading = false;
+    },
+    resize: function () {
+      const grid = getComputedStyle(this.$refs.grid);
+      this.imgHeight = grid.getPropertyValue('grid-template-columns').split(' ')[0];
+    },
+    toggleDarkMode: function () {
+      if (this.darkMode) {
+        document.documentElement.classList.add('dark');
+        localStorage.theme = 'dark';
+      } else {
+        document.documentElement.classList.remove('dark');
+        localStorage.theme = 'light';
+      }
+    },
+    imgIntersect: function () {
+      console.log('intersect detected'); // eslint-disable-line no-console
+    },
+    imgLoad: function () {
+      console.log('image loaded'); // eslint-disable-line no-console
     }
   }
 };

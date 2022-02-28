@@ -23,7 +23,6 @@ var (
 	lyoff  = 1.2
 	ldpi   = 300.0
 	lscale = 128
-	lcolor = image.White
 )
 
 func init() {
@@ -41,15 +40,16 @@ func init() {
 type Renderer struct {
 	img *image.RGBA
 
-	labels    bool
-	fctx      *freetype.Context
-	fontSize  float64
-	labelXPos fixed.Int26_6
-	labelYPos fixed.Int26_6
+	drawLabels bool
+	labels     []string
+	fctx       *freetype.Context
+	fontSize   float64
+	labelXPos  fixed.Int26_6
+	labelYPos  fixed.Int26_6
 }
 
 // NewRenderer returns a new Renderer.
-func NewRenderer(width, height int, drawLabels bool, label string) (*Renderer, error) {
+func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool) (*Renderer, error) {
 	i := image.NewRGBA(image.Rect(0, 0, width, height))
 	c := freetype.NewContext()
 	c.SetDPI(ldpi)
@@ -58,22 +58,24 @@ func NewRenderer(width, height int, drawLabels bool, label string) (*Renderer, e
 	c.SetFontSize(fs)
 	c.SetClip(i.Bounds())
 	c.SetDst(i)
-	c.SetSrc(lcolor)
+	if darkMode {
+		c.SetSrc(image.White)
+	} else {
+		c.SetSrc(image.Black)
+	}
 
 	r := &Renderer{
-		img:       i,
-		labels:    drawLabels,
-		fctx:      c,
-		fontSize:  fs,
-		labelXPos: c.PointToFixed(fs / lxoff),
-		labelYPos: 0,
+		img:        i,
+		drawLabels: drawLabels,
+		fctx:       c,
+		fontSize:   fs,
+		labelXPos:  c.PointToFixed(fs / lxoff),
+		labelYPos:  0,
 	}
 
 	if drawLabels && len(label) > 0 {
-		if err := r.drawLabel(label); err != nil {
-			return nil, fmt.Errorf("drawing trait label: %v", err)
-		}
-		r.labelYPos += r.fctx.PointToFixed(r.fontSize * lyoff)
+		r.labels = append(r.labels, label)
+
 	}
 	return r, nil
 }
@@ -82,12 +84,27 @@ func NewRenderer(width, height int, drawLabels bool, label string) (*Renderer, e
 func (r *Renderer) AddLayer(layer image.Image, label string) error {
 	draw.Draw(r.img, r.img.Bounds(), layer, image.Point{}, draw.Over)
 
-	if r.labels && len(label) > 0 {
-		if err := r.drawLabel(label); err != nil {
-			return fmt.Errorf("drawing layer label: %v", err)
-		}
+	if r.drawLabels && len(label) > 0 {
+		r.labels = append(r.labels, label)
 	}
 	return nil
+}
+
+// Write the layers to a PNG.
+func (r *Renderer) Write(writer io.Writer, compression png.CompressionLevel) error {
+	for i, l := range r.labels {
+		if err := r.drawLabel(l); err != nil {
+			return fmt.Errorf("drawing label: %v", err)
+		}
+		if i == 0 {
+			r.labelYPos += r.fctx.PointToFixed(r.fontSize * lyoff)
+		}
+	}
+
+	encoder := png.Encoder{
+		CompressionLevel: compression,
+	}
+	return encoder.Encode(writer, r.img)
 }
 
 func (r *Renderer) drawLabel(label string) error {
@@ -95,12 +112,4 @@ func (r *Renderer) drawLabel(label string) error {
 	pt := freetype.Pt(int(r.labelXPos>>6), int(r.labelYPos>>6))
 	_, err := r.fctx.DrawString(label, pt)
 	return err
-}
-
-// Write the layers to a PNG.
-func (r *Renderer) Write(writer io.Writer, compression png.CompressionLevel) error {
-	encoder := png.Encoder{
-		CompressionLevel: compression,
-	}
-	return encoder.Encode(writer, r.img)
 }

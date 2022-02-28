@@ -123,13 +123,18 @@ func (c *StagingController) RenderImage(rw http.ResponseWriter, r *http.Request)
 		reload = false
 	}
 
+	dark, err := strconv.ParseBool(r.URL.Query().Get("dark"))
+	if err != nil {
+		dark = false
+	}
+
 	rw.WriteHeader(http.StatusOK)
 	if err := c.stagingService.RenderImage(
 		ctx,
 		metadata,
 		size, size,
 		png.CompressionLevel(compression),
-		labels, reload,
+		labels, reload, dark,
 		rw,
 	); err != nil {
 		rw.Header().Set("Content-type", "application/json")

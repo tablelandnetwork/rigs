@@ -1,8 +1,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inconsolata:wght@400;700&display=swap');
 
 body {
-    background-color: #000000;
+    background-color: #ffffff;
     font-family: 'Inconsolata', monospace;
+}
+
+html.dark body {
+    background-color: #000000;
 }
 
 input[type="number"] {
@@ -15,8 +19,6 @@ input[type="checkbox"] {
 }
 
 button {
-    height: 20px;
-    padding-bottom: 21px;
     background-color: #b7556b !important;
 }
 
@@ -29,7 +31,7 @@ button:active {
 }
 
 svg.spinner {
-    vertical-align: -2px;
+    vertical-align: -1px;
 }
 
 .v-lazy-image {

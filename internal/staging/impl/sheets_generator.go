@@ -333,6 +333,7 @@ func (g *SheetsGenerator) RenderImage(
 	compression png.CompressionLevel,
 	drawLabels bool,
 	reloadLayers bool,
+	darkMode bool,
 	writer io.Writer,
 ) error {
 	log.Debug().
@@ -349,9 +350,13 @@ func (g *SheetsGenerator) RenderImage(
 	if err != nil {
 		return fmt.Errorf("getting layers: %v", err)
 	}
-	label := g.getTraitsLabel(md)
 
-	r, err := render.NewRenderer(width, height, drawLabels, label)
+	var label string
+	if drawLabels {
+		label = g.getTraitsLabel(md)
+	}
+
+	r, err := render.NewRenderer(width, height, drawLabels, label, darkMode)
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}
