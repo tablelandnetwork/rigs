@@ -75,31 +75,21 @@ func (c *StagingController) RenderImage(rw http.ResponseWriter, r *http.Request)
 
 	jsn, err := url.QueryUnescape(r.URL.Query().Get("metadata"))
 	if err != nil {
-		rw.Header().Set("Content-type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
 		log.Ctx(ctx).
 			Error().
 			Err(err).
 			Msg("metadata must be url escaped json")
-
-		_ = json.NewEncoder(rw).Encode(errors.ServiceError{
-			Message: fmt.Sprintf("Metadata must be url escaped json: %s", err),
-		})
 		return
 	}
 
 	var metadata staging.Metadata
 	if err := json.Unmarshal([]byte(jsn), &metadata); err != nil {
-		rw.Header().Set("Content-type", "application/json")
 		rw.WriteHeader(http.StatusBadRequest)
 		log.Ctx(ctx).
 			Error().
 			Err(err).
 			Msg("metadata is malformed")
-
-		_ = json.NewEncoder(rw).Encode(errors.ServiceError{
-			Message: fmt.Sprintf("Metadata is malformed: %s", err),
-		})
 		return
 	}
 
@@ -137,15 +127,10 @@ func (c *StagingController) RenderImage(rw http.ResponseWriter, r *http.Request)
 		labels, reload, dark,
 		rw,
 	); err != nil {
-		rw.Header().Set("Content-type", "application/json")
 		rw.WriteHeader(http.StatusInternalServerError)
 		log.Ctx(ctx).
 			Error().
 			Err(err).
 			Msg("failed to render image")
-
-		_ = json.NewEncoder(rw).Encode(errors.ServiceError{
-			Message: fmt.Sprintf("Failed to render image: %s", err),
-		})
 	}
 }

@@ -10,14 +10,13 @@ import (
 // TraceID creates a trace id for tracing. Every log goes with a trace id and it is also returned as a HTTP header.
 func TraceID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		uuid, err := uuid.NewRandom()
+		id, err := uuid.NewRandom()
 		if err != nil {
 			log.Warn().Err(err).Msg("failed to generate a trace id")
 			next.ServeHTTP(w, r)
 			return
 		}
-
-		traceID := uuid.String()
+		traceID := id.String()
 
 		ctx := r.Context()
 		logger := log.With().Str("traceId", traceID).Logger()

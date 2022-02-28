@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -45,6 +46,8 @@ type SheetsGenerator struct {
 	layers Sheet
 	images map[string]*staging.Image
 	cancel context.CancelFunc
+
+	lk sync.Mutex
 }
 
 // NewSheetsGenerator returns a new SheetsGenerator.
@@ -453,7 +456,9 @@ outer:
 }
 
 func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, error) {
+	g.lk.Lock()
 	img, ok := g.images[pth]
+	g.lk.Unlock()
 	if !ok {
 		return nil, nil
 	}
@@ -479,7 +484,9 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 		return nil, fmt.Errorf("decoding image: %v", err)
 	}
 	img.Image = i
+	g.lk.Lock()
 	g.images[pth] = img
+	g.lk.Unlock()
 	return img, nil
 }
 

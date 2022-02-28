@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
@@ -50,11 +52,16 @@ func main() {
 
 	// General router configuration.
 	router := newRouter()
-	router.Use(middlewares.CORS, middlewares.TraceID)
+	router.Use(middlewares.CORS(strings.Split(config.HTTP.Origins, ",")), middlewares.TraceID)
 
 	// Gateway configuration.
-	// basicAuth := middlewares.BasicAuth(config.Admin.Username, config.Admin.Password)
-	router.Get("/generate", stagingController.GenerateMetadata, middlewares.OtelHTTP("GenerateMetadata"))
+	var middleware []mux.MiddlewareFunc
+	if !strings.Contains(config.HTTP.Origins, "localhost") {
+		basicAuth := middlewares.BasicAuth(config.Admin.Username, config.Admin.Password)
+		middleware = append(middleware, basicAuth)
+	}
+	middleware = append(middleware, middlewares.OtelHTTP("GenerateMetadata"))
+	router.Get("/generate", stagingController.GenerateMetadata, middleware...)
 	router.Get("/render", stagingController.RenderImage, middlewares.OtelHTTP("RenderImage"))
 
 	// Health endpoint configuration.

@@ -3,7 +3,10 @@ package middlewares
 import (
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/json"
 	"net/http"
+
+	"github.com/tablelandnetwork/nft-minter/pkg/errors"
 )
 
 // BasicAuth is middleware that checks the expected username and password match the http basic auth values.
@@ -27,7 +30,11 @@ func BasicAuth(expectedUsername, expectedPassword string) func(http.Handler) htt
 				}
 			}
 
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			w.Header().Set("Content-type", "application/json")
+			w.WriteHeader(http.StatusUnauthorized)
+			_ = json.NewEncoder(w).Encode(errors.ServiceError{
+				Message: "Unauthorized",
+			})
 		})
 	}
 }

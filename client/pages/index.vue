@@ -67,6 +67,7 @@ export default {
   components: {
     VLazyImage: VLazyImage
   },
+
   data: function () {
     return {
       api: process.env.api,
@@ -79,17 +80,22 @@ export default {
       nfts: [],
       loading: false,
       imgHeight: '0px',
-      darkMode: false
+      darkMode: false,
+      auth: ''
     };
   },
+
   created: function () {
+    this.auth = localStorage.auth ? localStorage.auth : '';
     this.darkMode = localStorage.theme === 'dark';
     this.toggleDarkMode();
     addEventListener('resize', this.resize);
   },
+
   destroyed: function () {
     removeEventListener('resize', this.resize);
   },
+
   methods: {
     generate: async function () {
       this.loading = true;
@@ -103,16 +109,30 @@ export default {
       const params = [this.reloadSheets ? 'reload=true' : '', count ? `count=${count}` : ''].filter(p => p);
       if (count) url += params.join('&');
 
-      const res = await fetch(url);
-      this.nfts = await res.json();
+      let config = {};
+      if (!this.api.includes('localhost')) {
+        if (this.auth.length === 0) this.setAuth(prompt('Enter password:'));
+        const headers = new Headers();
+        headers.append('Authorization', 'Basic ' + this.auth);
+        config = { method: 'GET', headers: headers, credentials: 'include' };
+      }
+      const res = await fetch(url, config);
+      if (!res.ok) {
+        alert(res.status + ' ' + res.statusText);
+        this.setAuth('');
+      } else {
+        this.nfts = await res.json();
+        this.resize();
+      }
 
-      this.resize();
       this.loading = false;
     },
-    resize: function () {
-      const grid = getComputedStyle(this.$refs.grid);
-      this.imgHeight = grid.getPropertyValue('grid-template-columns').split(' ')[0];
+
+    setAuth: function (pass) {
+      this.auth = pass && pass.length > 0 ? btoa('minter:' + pass) : '';
+      localStorage.auth = this.auth;
     },
+
     toggleDarkMode: function () {
       if (this.darkMode) {
         document.documentElement.classList.add('dark');
@@ -122,9 +142,16 @@ export default {
         localStorage.theme = 'light';
       }
     },
+
+    resize: function () {
+      const grid = getComputedStyle(this.$refs.grid);
+      this.imgHeight = grid.getPropertyValue('grid-template-columns').split(' ')[0];
+    },
+
     imgIntersect: function () {
       console.log('intersect detected'); // eslint-disable-line no-console
     },
+
     imgLoad: function () {
       console.log('image loaded'); // eslint-disable-line no-console
     }

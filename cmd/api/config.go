@@ -12,7 +12,8 @@ var configFilename = "config.json"
 
 type config struct {
 	HTTP struct {
-		Port string `default:"5000"` // HTTP port (e.g. 5000)
+		Port    string `default:"5000"`
+		Origins string `default:"http://localhost:3000"` // comma separated
 	}
 	Registry struct {
 		EthEndpoint     string `default:"eth_endpoint"`
