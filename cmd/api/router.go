@@ -48,8 +48,8 @@ func (r *router) Use(mid ...mux.MiddlewareFunc) {
 func (r *router) Serve(port string) error {
 	srv := &http.Server{
 		Addr:         port,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 20 * time.Second,
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  120 * time.Second,
 		Handler:      r.r,
 	}

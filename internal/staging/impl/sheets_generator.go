@@ -26,6 +26,8 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
+var renderConcurrency = 5
+
 // Sheet defines a trait sheet imported from google sheets.
 type Sheet struct {
 	Name      string
@@ -41,11 +43,12 @@ type SheetsGenerator struct {
 	dc *drive.Service
 	id string
 
-	sheets []Sheet
-	layers Sheet
-	images map[string]*staging.Image
-	cancel context.CancelFunc
-	lk     sync.Mutex
+	sheets  []Sheet
+	layers  Sheet
+	images  map[string]*staging.Image
+	cancel  context.CancelFunc
+	lk      sync.Mutex
+	limiter chan struct{}
 }
 
 // NewSheetsGenerator returns a new SheetsGenerator.
@@ -113,13 +116,14 @@ func NewSheetsGenerator(sheetID, driveFolderID, keyfile string) (*SheetsGenerato
 	}
 
 	g := &SheetsGenerator{
-		sc:     sc,
-		dc:     dc,
-		id:     sheetID,
-		sheets: sheets,
-		layers: layers,
-		images: make(map[string]*staging.Image),
-		cancel: cancel,
+		sc:      sc,
+		dc:      dc,
+		id:      sheetID,
+		sheets:  sheets,
+		layers:  layers,
+		images:  make(map[string]*staging.Image),
+		cancel:  cancel,
+		limiter: make(chan struct{}, renderConcurrency),
 	}
 
 	if err := g.getTraitSheets(); err != nil {
@@ -338,6 +342,9 @@ func (g *SheetsGenerator) RenderImage(
 	writer io.Writer,
 ) error {
 	logMemUsage()
+
+	g.limiter <- struct{}{}
+	defer func() { <-g.limiter }()
 
 	log.Debug().
 		Bool("reload layers", reloadLayers).
