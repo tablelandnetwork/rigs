@@ -381,6 +381,8 @@ func (g *SheetsGenerator) RenderImage(
 		if err := r.AddLayer(img.Bytes, img.Layer); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
+
+		img.Bytes = nil // free memory
 	}
 
 	return r.Write(writer, compression)

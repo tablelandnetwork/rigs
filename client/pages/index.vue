@@ -44,13 +44,13 @@
       </div>
 
       <div ref="grid" class="w-full mt-16 grid gap-4 grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-        <div v-for="(attrs, i) in nfts" :key="i" class="">
+        <div v-for="(attrs, i) in images" :key="i" class="">
           <v-lazy-image
-            :style="{ minHeight: imgHeight }"
+            :style="{ minHeight: imageHeight }"
             class="m-auto bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10"
             :src="api + '/render?' + 'size=' + size + '&compression=' + (compression?0:-1) + '&labels=' + labels + '&reload=' + reloadLayers + '&dark=' + darkMode + '&metadata=' + encodeURIComponent(JSON.stringify(attrs))"
-            @intersect="imgIntersect"
-            @load="imgLoad"
+            @intersect="imageIntersect"
+            @load="imageLoad"
           />
         </div>
       </div>
@@ -77,11 +77,11 @@ export default {
       labels: true,
       reloadSheets: false,
       reloadLayers: false,
-      nfts: [],
-      loading: false,
-      imgHeight: '0px',
+      images: [],
+      imageHeight: '0px',
       darkMode: false,
-      auth: ''
+      auth: '',
+      loading: false
     };
   },
 
@@ -89,17 +89,17 @@ export default {
     this.auth = localStorage.auth ? localStorage.auth : '';
     this.darkMode = localStorage.theme === 'dark';
     this.toggleDarkMode();
-    addEventListener('resize', this.resize);
+    addEventListener('resize', this.resizeImages);
   },
 
   destroyed: function () {
-    removeEventListener('resize', this.resize);
+    removeEventListener('resize', this.resizeImages);
   },
 
   methods: {
     generate: async function () {
       this.loading = true;
-      this.nfts = [];
+      this.images = [];
 
       let url = this.api + '/generate';
       const count = Math.floor(this.count);
@@ -121,8 +121,8 @@ export default {
         alert(res.status + ' ' + res.statusText);
         this.setAuth('');
       } else {
-        this.nfts = await res.json();
-        this.resize();
+        this.images = await res.json();
+        this.resizeImages();
       }
 
       this.loading = false;
@@ -143,16 +143,16 @@ export default {
       }
     },
 
-    resize: function () {
+    resizeImages: function () {
       const grid = getComputedStyle(this.$refs.grid);
-      this.imgHeight = grid.getPropertyValue('grid-template-columns').split(' ')[0];
+      this.imageHeight = grid.getPropertyValue('grid-template-columns').split(' ')[0];
     },
 
-    imgIntersect: function () {
+    imageIntersect: function () {
       console.log('intersect detected'); // eslint-disable-line no-console
     },
 
-    imgLoad: function () {
+    imageLoad: function () {
       console.log('image loaded'); // eslint-disable-line no-console
     }
   }
