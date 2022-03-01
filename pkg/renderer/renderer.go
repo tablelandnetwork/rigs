@@ -1,7 +1,6 @@
 package renderer
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/draw"
@@ -10,6 +9,7 @@ import (
 	"image/png"
 	"io"
 	"math"
+	"os"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -81,18 +81,35 @@ func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool
 }
 
 // AddLayer to the Renderer.
-func (r *Renderer) AddLayer(layer []byte, label string) error {
-	i, _, err := image.Decode(bytes.NewReader(layer))
-	if err != nil {
-		return fmt.Errorf("decoding image: %v", err)
-	}
-	draw.Draw(r.img, r.img.Bounds(), i, image.Point{}, draw.Over)
-	i = nil // nolint
+func (r *Renderer) AddLayer(layer image.Image, label string) error {
+	draw.Draw(r.img, r.img.Bounds(), layer, image.Point{}, draw.Over)
 
 	if r.drawLabels && len(label) > 0 {
 		r.labels = append(r.labels, label)
 	}
 	return nil
+}
+
+// AddLayerByFile add a layer loaded from disk to the Renderer.
+func (r *Renderer) AddLayerByFile(layer string, label string) error {
+	f, err := os.Open(layer)
+	if err != nil {
+		return fmt.Errorf("opening file: %v", err)
+	}
+	defer func() { _ = f.Close() }()
+
+	i, _, err := image.Decode(f)
+	if err != nil {
+		return fmt.Errorf("decoding image %s: %v", f.Name(), err)
+	}
+	return r.AddLayer(i, label)
+}
+
+func (r *Renderer) drawLabel(label string) error {
+	r.labelYPos += r.fctx.PointToFixed(r.fontSize * lyoff)
+	pt := freetype.Pt(int(r.labelXPos>>6), int(r.labelYPos>>6))
+	_, err := r.fctx.DrawString(label, pt)
+	return err
 }
 
 // Write the layers to a PNG.
@@ -115,11 +132,4 @@ func (r *Renderer) Write(writer io.Writer, compression png.CompressionLevel) err
 // Dispose of the Renderer image.
 func (r *Renderer) Dispose() {
 	r.img = nil
-}
-
-func (r *Renderer) drawLabel(label string) error {
-	r.labelYPos += r.fctx.PointToFixed(r.fontSize * lyoff)
-	pt := freetype.Pt(int(r.labelXPos>>6), int(r.labelYPos>>6))
-	_, err := r.fctx.DrawString(label, pt)
-	return err
 }

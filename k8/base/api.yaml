@@ -71,8 +71,10 @@ spec:
             requests:
               cpu: '2'
               memory: 2Gi
-            limits:
-              memory: 4Gi
+              ephemeral-storage: "10Gi"
+          volumeMounts:
+          - name: ephemeral
+            mountPath: "/tmp"
           readinessProbe:
             httpGet:
               path: /healthz
@@ -87,3 +89,6 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 20
             failureThreshold: 3
+      volumes:
+        - name: ephemeral
+          emptyDir: {}

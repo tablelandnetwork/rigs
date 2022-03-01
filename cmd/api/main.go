@@ -39,6 +39,7 @@ func main() {
 	// }
 
 	stagingService, err := stagingimpl.NewSheetsGenerator(
+		config.ImageCache.Dir,
 		config.GCP.SheetID,
 		config.GCP.DriveFolderID,
 		config.GCP.ServiceAccountKeyFile,

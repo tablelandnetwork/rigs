@@ -3,10 +3,12 @@ package impl
 import (
 	"context"
 	"fmt"
+	"image"
 	"image/png"
 	"io"
 	"io/ioutil"
 	"math/rand"
+	"os"
 	"path"
 	"runtime"
 	"strconv"
@@ -26,7 +28,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-var renderConcurrency = 5
+var renderConcurrency = 20
 
 // Sheet defines a trait sheet imported from google sheets.
 type Sheet struct {
@@ -41,18 +43,27 @@ type Sheet struct {
 type SheetsGenerator struct {
 	sc *gsheets.Service
 	dc *drive.Service
-	id string
 
+	cacheDir string
+
+	sheetID string
 	sheets  []Sheet
 	layers  Sheet
 	images  map[string]*staging.Image
+
 	cancel  context.CancelFunc
 	lk      sync.Mutex
 	limiter chan struct{}
 }
 
 // NewSheetsGenerator returns a new SheetsGenerator.
-func NewSheetsGenerator(sheetID, driveFolderID, keyfile string) (*SheetsGenerator, error) {
+func NewSheetsGenerator(cacheDir, sheetID, driveFolderID, keyfile string) (*SheetsGenerator, error) {
+	if len(cacheDir) != 0 {
+		if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil {
+			return nil, fmt.Errorf("creating cache directory %v", err)
+		}
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	sc, err := gsheets.NewService(ctx, option.WithCredentialsJSON([]byte(keyfile)))
 	if err != nil {
@@ -116,14 +127,15 @@ func NewSheetsGenerator(sheetID, driveFolderID, keyfile string) (*SheetsGenerato
 	}
 
 	g := &SheetsGenerator{
-		sc:      sc,
-		dc:      dc,
-		id:      sheetID,
-		sheets:  sheets,
-		layers:  layers,
-		images:  make(map[string]*staging.Image),
-		cancel:  cancel,
-		limiter: make(chan struct{}, renderConcurrency),
+		sc:       sc,
+		dc:       dc,
+		cacheDir: cacheDir,
+		sheetID:  sheetID,
+		sheets:   sheets,
+		layers:   layers,
+		images:   make(map[string]*staging.Image),
+		cancel:   cancel,
+		limiter:  make(chan struct{}, renderConcurrency),
 	}
 
 	if err := g.getTraitSheets(); err != nil {
@@ -164,7 +176,7 @@ func (g *SheetsGenerator) getLayersSheet() error {
 }
 
 func (g *SheetsGenerator) getSheet(name string) ([]map[string]string, error) {
-	res, err := g.sc.Spreadsheets.Values.Get(g.id, name).Do()
+	res, err := g.sc.Spreadsheets.Values.Get(g.sheetID, name).Do()
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve sheet %s: %v", name, err)
 	}
@@ -341,7 +353,9 @@ func (g *SheetsGenerator) RenderImage(
 	darkMode bool,
 	writer io.Writer,
 ) error {
-	logMemUsage()
+	defer func() {
+		logMemUsage()
+	}()
 
 	g.limiter <- struct{}{}
 	defer func() { <-g.limiter }()
@@ -388,8 +402,14 @@ func (g *SheetsGenerator) RenderImage(
 			Str("name", img.Layer).
 			Msg("adding layer")
 
-		if err := r.AddLayer(img.Bytes, img.Layer); err != nil {
-			return fmt.Errorf("adding layer: %v", err)
+		if img.Image != nil {
+			if err := r.AddLayer(img.Image, img.Layer); err != nil {
+				return fmt.Errorf("adding layer by image: %v", err)
+			}
+		} else {
+			if err := r.AddLayerByFile(img.File, img.Layer); err != nil {
+				return fmt.Errorf("adding layer: %v", err)
+			}
 		}
 	}
 
@@ -472,8 +492,14 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 		return nil, nil
 	}
 
-	if img.Bytes != nil && !force {
-		return img, nil // don't load again
+	if img.Image != nil && !force {
+		return img, nil // image is cached in memory
+	}
+
+	if len(img.File) > 0 && !force {
+		if stat, _ := os.Stat(img.File); stat != nil {
+			return img, nil // image is cached on disk
+		}
 	}
 
 	log.Info().
@@ -482,14 +508,27 @@ func (g *SheetsGenerator) fetchImage(pth string, force bool) (*staging.Image, er
 
 	r, err := g.dc.Files.Get(img.ID).Download()
 	if err != nil {
-		return nil, fmt.Errorf("downloading file: %v", err)
-	}
-	bytes, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading file: %v", err)
+		return nil, fmt.Errorf("downloading file %s: %v", img.Layer, err)
 	}
 
-	img.Bytes = bytes
+	if len(g.cacheDir) != 0 { // use on-disk cache
+		f, err := ioutil.TempFile(g.cacheDir, img.ID)
+		if err != nil {
+			return nil, fmt.Errorf("creating temp file: %v", err)
+		}
+		defer func() { _ = f.Close() }()
+		if _, err := io.Copy(f, r.Body); err != nil {
+			return nil, fmt.Errorf("writing file %s: %v", img.Layer, err)
+		}
+		img.File = f.Name()
+	} else { // use in-mem cache
+		i, _, err := image.Decode(r.Body)
+		if err != nil {
+			return nil, fmt.Errorf("decoding image %s: %v", img.Layer, err)
+		}
+		img.Image = i
+	}
+
 	g.lk.Lock()
 	g.images[pth] = img
 	g.lk.Unlock()

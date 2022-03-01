@@ -15,6 +15,9 @@ type config struct {
 		Port    string `default:"5000"`
 		Origins string `default:"http://localhost:3000"` // comma separated
 	}
+	ImageCache struct {
+		Dir string `default:""` // if empty, images are cached in memory
+	}
 	Registry struct {
 		EthEndpoint     string `default:"eth_endpoint"`
 		ContractAddress string `default:"contract_address"`
