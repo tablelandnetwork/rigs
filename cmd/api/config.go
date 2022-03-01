@@ -15,15 +15,9 @@ type config struct {
 		Port    string `default:"5000"`
 		Origins string `default:"http://localhost:3000"` // comma separated
 	}
-	ImageCache struct {
-		Dir string `default:""` // if empty, images are cached in memory
-	}
-	Registry struct {
-		EthEndpoint     string `default:"eth_endpoint"`
-		ContractAddress string `default:"contract_address"`
-	}
-	Metrics struct {
-		Port string `default:"5090"`
+	Render struct {
+		Concurrency int    `default:"20"`
+		CacheDir    string `default:""` // if empty, images are cached in memory
 	}
 	Admin struct {
 		Username string `default:"minter"`
@@ -33,6 +27,13 @@ type config struct {
 		SheetID               string `default:""`
 		DriveFolderID         string `default:""`
 		ServiceAccountKeyFile string `default:""`
+	}
+	Registry struct {
+		EthEndpoint     string `default:"eth_endpoint"`
+		ContractAddress string `default:"contract_address"`
+	}
+	Metrics struct {
+		Port string `default:"5090"`
 	}
 	Log struct {
 		Human bool `default:"false"`

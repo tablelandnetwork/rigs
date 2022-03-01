@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -27,8 +28,6 @@ import (
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
-
-var renderConcurrency = 20
 
 // Sheet defines a trait sheet imported from google sheets.
 type Sheet struct {
@@ -57,7 +56,17 @@ type SheetsGenerator struct {
 }
 
 // NewSheetsGenerator returns a new SheetsGenerator.
-func NewSheetsGenerator(cacheDir, sheetID, driveFolderID, keyfile string) (*SheetsGenerator, error) {
+func NewSheetsGenerator(
+	sheetID,
+	driveFolderID,
+	keyfile string,
+	concurrency int,
+	cacheDir string,
+) (*SheetsGenerator, error) {
+	if concurrency < 1 {
+		return nil, errors.New("concurrency must be greater than 1")
+	}
+
 	if len(cacheDir) != 0 {
 		if err := os.MkdirAll(cacheDir, os.ModePerm); err != nil {
 			return nil, fmt.Errorf("creating cache directory %v", err)
@@ -135,7 +144,7 @@ func NewSheetsGenerator(cacheDir, sheetID, driveFolderID, keyfile string) (*Shee
 		layers:   layers,
 		images:   make(map[string]*staging.Image),
 		cancel:   cancel,
-		limiter:  make(chan struct{}, renderConcurrency),
+		limiter:  make(chan struct{}, concurrency),
 	}
 
 	if err := g.getTraitSheets(); err != nil {

@@ -39,10 +39,11 @@ func main() {
 	// }
 
 	stagingService, err := stagingimpl.NewSheetsGenerator(
-		config.ImageCache.Dir,
 		config.GCP.SheetID,
 		config.GCP.DriveFolderID,
 		config.GCP.ServiceAccountKeyFile,
+		config.Render.Concurrency,
+		config.Render.CacheDir,
 	)
 	if err != nil {
 		log.Fatal().
