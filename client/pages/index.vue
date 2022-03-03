@@ -48,7 +48,7 @@
         <div v-for="(attrs, i) in images" :key="i" class="">
           <v-lazy-image
             :style="{ minHeight: imageHeight }"
-            class="m-auto dark:bg-white bg-opacity-10 dark:bg-opacity-10"
+            class="m-auto bg-black dark:bg-white bg-opacity-20 dark:bg-opacity-20"
             :src="api + '/render?' + 'size=' + size + '&compression=' + (compression?0:-1) + '&labels=' + labels + '&reload=' + reloadLayers + '&metadata=' + encodeURIComponent(JSON.stringify(attrs))"
             @intersect="imageIntersect"
             @load="imageLoad"
