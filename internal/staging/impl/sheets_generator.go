@@ -45,10 +45,11 @@ type SheetsGenerator struct {
 
 	cacheDir string
 
-	sheetID string
-	sheets  []Sheet
-	layers  Sheet
-	images  map[string]*staging.Image
+	sheetID       string
+	driveFolderID string
+	sheets        []Sheet
+	layers        Sheet
+	images        map[string]*staging.Image
 
 	cancel  context.CancelFunc
 	lk      sync.Mutex
@@ -105,55 +106,50 @@ func NewSheetsGenerator(
 		},
 		{
 			Name:      "Body",
-			Range:     "!A1:D75",
+			Range:     "!A1:D69",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
 			Name:      "Locomotion",
-			Range:     "!A1:D85",
+			Range:     "!A1:D79",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
 			Name:      "Cockpit",
-			Range:     "!A1:D77",
+			Range:     "!A1:D71",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
 			Name:      "Back Attachments",
-			Range:     "!A1:D53",
+			Range:     "!A1:D46",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
 			Name:      "Top Attachments",
-			Range:     "!A1:D25",
+			Range:     "!A1:D19",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 	}
 	layers := Sheet{
 		Name:      "Layers",
-		Range:     "!A1:E46",
+		Range:     "!A1:E47",
 		DependsOn: []string{"Fleet", "Class"},
 	}
 
 	g := &SheetsGenerator{
-		sc:       sc,
-		dc:       dc,
-		cacheDir: cacheDir,
-		sheetID:  sheetID,
-		sheets:   sheets,
-		layers:   layers,
-		images:   make(map[string]*staging.Image),
-		cancel:   cancel,
-		limiter:  make(chan struct{}, concurrency),
+		sc:            sc,
+		dc:            dc,
+		cacheDir:      cacheDir,
+		sheetID:       sheetID,
+		driveFolderID: driveFolderID,
+		sheets:        sheets,
+		layers:        layers,
+		images:        make(map[string]*staging.Image),
+		cancel:        cancel,
+		limiter:       make(chan struct{}, concurrency),
 	}
 
-	if err := g.getTraitSheets(); err != nil {
-		return nil, err
-	}
-	if err := g.getLayersSheet(); err != nil {
-		return nil, err
-	}
-	if err := g.getLayerImages(driveFolderID); err != nil {
+	if err := g.getSheets(); err != nil {
 		return nil, err
 	}
 
@@ -214,9 +210,9 @@ func (g *SheetsGenerator) getSheet(name string) ([]map[string]string, error) {
 	return rows, nil
 }
 
-func (g *SheetsGenerator) getLayerImages(folderID string) error {
+func (g *SheetsGenerator) getLayerImages() error {
 	log.Info().Msg("loading layer images")
-	return g.walkFiles("", folderID)
+	return g.walkFiles("", g.driveFolderID)
 }
 
 func (g *SheetsGenerator) walkFiles(pth string, fileID string) error {
@@ -243,6 +239,21 @@ func (g *SheetsGenerator) walkFiles(pth string, fileID string) error {
 	return nil
 }
 
+func (g *SheetsGenerator) getSheets() error {
+	g.lk.Lock()
+	defer g.lk.Unlock()
+	if err := g.getTraitSheets(); err != nil {
+		return err
+	}
+	if err := g.getLayersSheet(); err != nil {
+		return err
+	}
+	if err := g.getLayerImages(); err != nil {
+		return err
+	}
+	return nil
+}
+
 // GenerateMetadata returns count metadata items, and optionally reloads trait sheets.
 func (g *SheetsGenerator) GenerateMetadata(
 	_ context.Context,
@@ -255,7 +266,7 @@ func (g *SheetsGenerator) GenerateMetadata(
 		Msg("generating metadata")
 
 	if reloadSheets {
-		if err := g.getTraitSheets(); err != nil {
+		if err := g.getSheets(); err != nil {
 			return nil, err
 		}
 	}
@@ -373,12 +384,6 @@ func (g *SheetsGenerator) RenderImage(
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
 
-	if reloadLayers {
-		if err := g.getLayersSheet(); err != nil {
-			return err
-		}
-	}
-
 	layers, err := getLayers(md, g.layers)
 	if err != nil {
 		return fmt.Errorf("getting layers: %v", err)
@@ -411,12 +416,13 @@ func (g *SheetsGenerator) RenderImage(
 			Str("name", img.Layer).
 			Msg("adding layer")
 
+		label := fmt.Sprintf("%s: %s", l.Trait.TraitType, img.Layer)
 		if img.Image != nil {
-			if err := r.AddLayer(img.Image, img.Layer); err != nil {
+			if err := r.AddLayer(img.Image, label); err != nil {
 				return fmt.Errorf("adding layer by image: %v", err)
 			}
 		} else {
-			if err := r.AddLayerByFile(img.File, img.Layer); err != nil {
+			if err := r.AddLayerByFile(img.File, label); err != nil {
 				return fmt.Errorf("adding layer: %v", err)
 			}
 		}

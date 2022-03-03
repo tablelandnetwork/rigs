@@ -3,7 +3,6 @@ package renderer
 import (
 	"fmt"
 	"image"
-	"image/draw"
 	_ "image/gif"  // register format
 	_ "image/jpeg" // register format
 	"image/png"
@@ -14,12 +13,12 @@ import (
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer/fonts"
+	"golang.org/x/image/draw"
 	"golang.org/x/image/math/fixed"
 )
 
 var (
-	font *truetype.Font
-
+	lfont  *truetype.Font
 	lxoff  = 1.8
 	lyoff  = 1.2
 	ldpi   = 300.0
@@ -31,7 +30,7 @@ func init() {
 	if err != nil {
 		panic("failed to load font")
 	}
-	font, err = freetype.ParseFont(data)
+	lfont, err = freetype.ParseFont(data)
 	if err != nil {
 		panic("failed to parse font")
 	}
@@ -52,13 +51,15 @@ type Renderer struct {
 // NewRenderer returns a new Renderer.
 func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool) (*Renderer, error) {
 	i := image.NewRGBA(image.Rect(0, 0, width, height))
-	c := freetype.NewContext()
-	c.SetDPI(ldpi)
-	c.SetFont(font)
+
 	fs := math.Max(1, float64(width/lscale))
+	c := freetype.NewContext()
+	c.SetFont(lfont)
+	c.SetDPI(ldpi)
 	c.SetFontSize(fs)
 	c.SetClip(i.Bounds())
 	c.SetDst(i)
+	// c.SetHinting(font.HintingFull)
 	if darkMode {
 		c.SetSrc(image.White)
 	} else {
@@ -82,7 +83,15 @@ func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool
 
 // AddLayer to the Renderer.
 func (r *Renderer) AddLayer(layer image.Image, label string) error {
-	draw.Draw(r.img, r.img.Bounds(), layer, image.Point{}, draw.Over)
+	var scaled image.Image
+	if !layer.Bounds().Eq(r.img.Bounds()) {
+		tmp := image.NewRGBA(r.img.Bounds())
+		draw.ApproxBiLinear.Scale(tmp, tmp.Rect, layer, layer.Bounds(), draw.Over, nil)
+		scaled = tmp
+	} else {
+		scaled = layer
+	}
+	draw.Draw(r.img, r.img.Bounds(), scaled, image.Point{}, draw.Over)
 
 	if r.drawLabels && len(label) > 0 {
 		r.labels = append(r.labels, label)
