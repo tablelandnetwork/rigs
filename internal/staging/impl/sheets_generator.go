@@ -101,7 +101,7 @@ func NewSheetsGenerator(
 		},
 		{
 			Name:      "Background",
-			Range:     "!A1:D93",
+			Range:     "!A1:D87",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
@@ -370,7 +370,6 @@ func (g *SheetsGenerator) RenderImage(
 	compression png.CompressionLevel,
 	drawLabels bool,
 	reloadLayers bool,
-	darkMode bool,
 	writer io.Writer,
 ) error {
 	defer func() {
@@ -394,7 +393,7 @@ func (g *SheetsGenerator) RenderImage(
 		label = g.getTraitsLabel(md)
 	}
 
-	r, err := renderer.NewRenderer(width, height, drawLabels, label, darkMode)
+	r, err := renderer.NewRenderer(width, height, drawLabels, label)
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}

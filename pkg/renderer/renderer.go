@@ -23,6 +23,7 @@ var (
 	lyoff  = 1.2
 	ldpi   = 300.0
 	lscale = 128
+	lcolor = image.Black
 )
 
 func init() {
@@ -49,7 +50,7 @@ type Renderer struct {
 }
 
 // NewRenderer returns a new Renderer.
-func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool) (*Renderer, error) {
+func NewRenderer(width, height int, drawLabels bool, label string) (*Renderer, error) {
 	i := image.NewRGBA(image.Rect(0, 0, width, height))
 
 	fs := math.Max(1, float64(width/lscale))
@@ -59,12 +60,7 @@ func NewRenderer(width, height int, drawLabels bool, label string, darkMode bool
 	c.SetFontSize(fs)
 	c.SetClip(i.Bounds())
 	c.SetDst(i)
-	// c.SetHinting(font.HintingFull)
-	if darkMode {
-		c.SetSrc(image.White)
-	} else {
-		c.SetSrc(image.Black)
-	}
+	c.SetSrc(lcolor)
 
 	r := &Renderer{
 		img:        i,

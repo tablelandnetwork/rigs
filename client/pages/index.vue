@@ -8,8 +8,17 @@
           <div>
             <span class="dark:text-white">count:</span>
             <input v-model="count" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
+            <span class="pl-2 dark:text-white">size:</span>
+            <input v-model="size_" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
             <span class="pl-2 dark:text-white">reload traits:</span>
             <input v-model="reloadSheets" type="checkbox">
+            <span class="pl-2 dark:text-white">reload layers:</span>
+            <input v-model="reloadLayers_" type="checkbox">
+            <span class="pl-2 dark:text-white">compression:</span>
+            <input v-model="compression_" type="checkbox">
+            <span class="pl-2 dark:text-white">show labels:</span>
+            <input v-model="labels_" type="checkbox">
+
             <button :disabled="loading" class="ml-4 px-8 py-1 border-box cursor-pointer text-white">
               Let's go!
             </button>
@@ -29,16 +38,8 @@
 
         <div>
           <div class="lg:inline-block lg:float-right">
-            <span class="dark:text-white">size:</span>
-            <input v-model="size_" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
-            <span class="pl-2 dark:text-white">compression:</span>
-            <input v-model="compression_" type="checkbox">
-            <span class="pl-2 dark:text-white">show labels:</span>
-            <input v-model="labels_" type="checkbox">
-            <span class="pl-2 dark:text-white">reload layers:</span>
-            <input v-model="reloadLayers_" type="checkbox">
             <span class="pl-2 dark:text-white">dark:</span>
-            <input v-model="darkMode_" type="checkbox" @change="toggleDarkMode">
+            <input v-model="darkMode" type="checkbox" @change="toggleDarkMode">
           </div>
         </div>
       </div>
@@ -47,8 +48,8 @@
         <div v-for="(attrs, i) in images" :key="i" class="">
           <v-lazy-image
             :style="{ minHeight: imageHeight }"
-            class="m-auto bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-10"
-            :src="api + '/render?' + 'size=' + size + '&compression=' + (compression?0:-1) + '&labels=' + labels + '&reload=' + reloadLayers + '&dark=' + darkMode + '&metadata=' + encodeURIComponent(JSON.stringify(attrs))"
+            class="m-auto dark:bg-white bg-opacity-10 dark:bg-opacity-10"
+            :src="api + '/render?' + 'size=' + size + '&compression=' + (compression?0:-1) + '&labels=' + labels + '&reload=' + reloadLayers + '&metadata=' + encodeURIComponent(JSON.stringify(attrs))"
             @intersect="imageIntersect"
             @load="imageLoad"
           />
@@ -78,23 +79,22 @@ export default {
       imageHeight: '0px',
       auth: '',
       loading: false,
+      darkMode: false,
 
-      size: 500,
-      size_: 500,
+      size: 1200,
+      size_: 1200,
       compression: true,
       compression_: true,
       labels: true,
       labels_: true,
       reloadLayers: false,
-      reloadLayers_: false,
-      darkMode: false,
-      darkMode_: false
+      reloadLayers_: false
     };
   },
 
   created: function () {
     this.auth = localStorage.auth ? localStorage.auth : '';
-    this.darkMode_ = localStorage.theme === 'dark';
+    this.darkMode = localStorage.theme === 'dark';
     this.toggleDarkMode();
     addEventListener('resize', this.resizeImages);
   },
@@ -136,7 +136,6 @@ export default {
       this.compression = this.compression_;
       this.labels = this.labels_;
       this.reloadLayers = this.reloadLayers_;
-      this.darkMode = this.darkMode_;
 
       this.loading = false;
     },
@@ -147,7 +146,7 @@ export default {
     },
 
     toggleDarkMode: function () {
-      if (this.darkMode_) {
+      if (this.darkMode) {
         document.documentElement.classList.add('dark');
         localStorage.theme = 'dark';
       } else {
