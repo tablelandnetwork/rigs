@@ -30,15 +30,15 @@
         <div>
           <div class="lg:inline-block lg:float-right">
             <span class="dark:text-white">size:</span>
-            <input v-model="size" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
+            <input v-model="size_" type="number" class="px-2 py-1 text-white dark:text-black bg-black dark:bg-white">
             <span class="pl-2 dark:text-white">compression:</span>
-            <input v-model="compression" type="checkbox">
+            <input v-model="compression_" type="checkbox">
             <span class="pl-2 dark:text-white">show labels:</span>
-            <input v-model="labels" type="checkbox">
+            <input v-model="labels_" type="checkbox">
             <span class="pl-2 dark:text-white">reload layers:</span>
-            <input v-model="reloadLayers" type="checkbox">
+            <input v-model="reloadLayers_" type="checkbox">
             <span class="pl-2 dark:text-white">dark:</span>
-            <input v-model="darkMode" type="checkbox" @change="toggleDarkMode">
+            <input v-model="darkMode_" type="checkbox" @change="toggleDarkMode">
           </div>
         </div>
       </div>
@@ -72,22 +72,29 @@ export default {
     return {
       api: process.env.api,
       count: 100,
-      size: 500,
-      compression: true,
-      labels: true,
       reloadSheets: false,
-      reloadLayers: false,
+
       images: [],
       imageHeight: '0px',
-      darkMode: false,
       auth: '',
-      loading: false
+      loading: false,
+
+      size: 500,
+      size_: 500,
+      compression: true,
+      compression_: true,
+      labels: true,
+      labels_: true,
+      reloadLayers: false,
+      reloadLayers_: false,
+      darkMode: false,
+      darkMode_: false
     };
   },
 
   created: function () {
     this.auth = localStorage.auth ? localStorage.auth : '';
-    this.darkMode = localStorage.theme === 'dark';
+    this.darkMode_ = localStorage.theme === 'dark';
     this.toggleDarkMode();
     addEventListener('resize', this.resizeImages);
   },
@@ -125,6 +132,12 @@ export default {
         this.resizeImages();
       }
 
+      this.size = this.size_;
+      this.compression = this.compression_;
+      this.labels = this.labels_;
+      this.reloadLayers = this.reloadLayers_;
+      this.darkMode = this.darkMode_;
+
       this.loading = false;
     },
 
@@ -134,7 +147,7 @@ export default {
     },
 
     toggleDarkMode: function () {
-      if (this.darkMode) {
+      if (this.darkMode_) {
         document.documentElement.classList.add('dark');
         localStorage.theme = 'dark';
       } else {

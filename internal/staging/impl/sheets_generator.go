@@ -120,12 +120,12 @@ func NewSheetsGenerator(
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
-			Name:      "Back Attachments",
+			Name:      "Back Attachment",
 			Range:     "!A1:D46",
 			DependsOn: []string{"Fleet", "Class"},
 		},
 		{
-			Name:      "Top Attachments",
+			Name:      "Top Attachment",
 			Range:     "!A1:D19",
 			DependsOn: []string{"Fleet", "Class"},
 		},
