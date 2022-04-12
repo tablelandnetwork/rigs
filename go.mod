@@ -10,12 +10,12 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/omeid/uconfig v1.2.0
 	github.com/rs/zerolog v1.26.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.29.0
-	go.opentelemetry.io/otel/exporters/prometheus v0.27.0
-	go.opentelemetry.io/otel/metric v0.27.0
-	go.opentelemetry.io/otel/sdk/metric v0.27.0
+	go.opentelemetry.io/otel/exporters/prometheus v0.29.0
+	go.opentelemetry.io/otel/metric v0.29.0
+	go.opentelemetry.io/otel/sdk/metric v0.29.0
 	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	google.golang.org/api v0.70.0
 )
@@ -32,7 +32,7 @@ require (
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/edsrzf/mmap-go v1.0.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/go-logr/logr v1.2.2 // indirect
+	github.com/go-logr/logr v1.2.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.0 // indirect
@@ -61,10 +61,9 @@ require (
 	github.com/tklauser/go-sysconf v0.3.5 // indirect
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	go.opentelemetry.io/otel v1.4.0 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.27.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.4.0 // indirect
-	go.opentelemetry.io/otel/trace v1.4.0 // indirect
+	go.opentelemetry.io/otel v1.6.3 // indirect
+	go.opentelemetry.io/otel/sdk v1.6.3 // indirect
+	go.opentelemetry.io/otel/trace v1.6.3 // indirect
 	golang.org/x/crypto v0.0.0-20211215165025-cf75a172585e // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/oauth2 v0.0.0-20211104180415-d3ed0bb246c8 // indirect
