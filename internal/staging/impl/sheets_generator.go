@@ -12,6 +12,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -259,7 +260,7 @@ func (g *SheetsGenerator) GenerateMetadata(
 	_ context.Context,
 	count int,
 	reloadSheets bool,
-) ([]staging.Metadata, error) {
+) ([]staging.GeneratedMetadata, error) {
 	log.Debug().
 		Int("count", count).
 		Bool("reload sheets", reloadSheets).
@@ -271,54 +272,85 @@ func (g *SheetsGenerator) GenerateMetadata(
 		}
 	}
 
-	var md []staging.Metadata
+	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
 		var m staging.Metadata
+		var dist, mindist, maxdist, rarity float64
 		for _, s := range g.sheets {
-			if err := selectTrait(&m, s); err != nil {
+			d, min, max, err := selectTrait(&m, s)
+			if err != nil {
 				return nil, fmt.Errorf("selecting trait %s: %v", s.Name, err)
 			}
+			dist += d
+			mindist += min
+			maxdist += max
 		}
-		md = append(md, m)
+		if maxdist != 0 {
+			rarity = (dist - mindist) / (maxdist - mindist) // scale to range 0-1
+		}
+		md = append(md, staging.GeneratedMetadata{
+			Metadata: m,
+			Rarity:   staging.Rarity(rarity * 100),
+		})
 	}
 	return md, nil
 }
 
-func selectTrait(md *staging.Metadata, sheet Sheet) error {
+type opt struct {
+	dist float64
+	vals map[string]string
+}
+
+func selectTrait(md *staging.Metadata, sheet Sheet) (float64, float64, float64, error) {
 	filter, err := getFilter(*md, sheet)
 	if err != nil {
-		return fmt.Errorf("getting trait filter: %v", err)
+		return 0, 0, 0, fmt.Errorf("getting trait filter: %v", err)
 	}
 
-	var (
-		upper float64
-		lower float64
-		num   = rand.Float64()
-	)
+	var opts []opt
 outer:
 	for i := len(sheet.Opts) - 1; i >= 0; i-- {
-		opt := sheet.Opts[i]
+		o := sheet.Opts[i]
 
 		for _, f := range filter {
-			if opt[f.TraitType] != f.Value {
+			if o[f.TraitType] != f.Value {
 				continue outer
 			}
 		}
 
-		d, err := getSheetRowValue(opt, "Distribution")
+		d, err := getSheetRowValue(o, "Distribution")
 		if err != nil {
-			return fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
+			return 0, 0, 0, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
 		}
 		df, err := strconv.ParseFloat(d, 64)
 		if err != nil {
-			return fmt.Errorf("parsing distribution in sheet %s: %v", sheet.Name, err)
+			return 0, 0, 0, fmt.Errorf("parsing distribution in sheet %s: %v", sheet.Name, err)
 		}
 
-		upper += df
+		opts = append(opts, opt{dist: df, vals: o})
+	}
+
+	if len(opts) == 0 {
+		return 0, 0, 0, fmt.Errorf("options for trait %s not found", sheet.Name)
+	}
+
+	sort.SliceStable(opts, func(i, j int) bool {
+		return opts[i].dist < opts[j].dist
+	})
+
+	var (
+		upper float64
+		lower float64
+		dist  float64
+		num   = rand.Float64()
+	)
+	for _, o := range opts {
+		upper += o.dist
 		if num < upper && num >= lower {
-			v, err := getSheetRowValue(opt, "Value")
+			dist = o.dist
+			v, err := getSheetRowValue(o.vals, "Value")
 			if err != nil {
-				return fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
+				return 0, 0, 0, fmt.Errorf("getting row value in sheet %s: %v", sheet.Name, err)
 			}
 			if v != "none" {
 				md.Attributes = append(md.Attributes, staging.Trait{
@@ -326,11 +358,15 @@ outer:
 					Value:     v,
 				})
 			}
-			return nil
 		}
 		lower = upper
 	}
-	return nil
+
+	if dist == 0 {
+		return 0, 0, 0, fmt.Errorf("invalid distributions for trait %s", sheet.Name)
+	}
+
+	return dist, opts[0].dist, opts[len(opts)-1].dist, nil
 }
 
 func getFilter(md staging.Metadata, sheet Sheet) ([]staging.Trait, error) {
@@ -366,6 +402,7 @@ func getSheetRowValue(opt map[string]string, name string) (string, error) {
 func (g *SheetsGenerator) RenderImage(
 	_ context.Context,
 	md staging.Metadata,
+	seeds []float64,
 	width, height int,
 	compression png.CompressionLevel,
 	drawLabels bool,

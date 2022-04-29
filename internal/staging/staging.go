@@ -33,12 +33,22 @@ type Metadata struct {
 	Attributes []Trait `json:"attributes"`
 }
 
+// Rarity is a measure of how rare Metadata is.
+type Rarity float64
+
+// GeneratedMetadata includes Metadata and associated Rarity.
+type GeneratedMetadata struct {
+	Metadata Metadata `json:"metadata"`
+	Rarity   Rarity   `json:"rarity"`
+}
+
 // Service is used to generate nft metadata for development.
 type Service interface {
-	GenerateMetadata(ctx context.Context, count int, reload bool) ([]Metadata, error)
+	GenerateMetadata(ctx context.Context, count int, reload bool) ([]GeneratedMetadata, error)
 	RenderImage(
 		ctx context.Context,
 		m Metadata,
+		seeds []float64,
 		width, height int,
 		compression png.CompressionLevel,
 		drawLabels, reloadLayers bool,

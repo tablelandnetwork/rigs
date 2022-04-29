@@ -68,12 +68,14 @@ func (c *StagingController) GenerateMetadata(rw http.ResponseWriter, r *http.Req
 	_ = json.NewEncoder(rw).Encode(metadata)
 }
 
+type seeds []float64
+
 // RenderImage handles the GET /render call.
 func (c *StagingController) RenderImage(rw http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	rw.Header().Set("Content-type", "image/png")
 
-	jsn, err := url.QueryUnescape(r.URL.Query().Get("metadata"))
+	mdjsn, err := url.QueryUnescape(r.URL.Query().Get("metadata"))
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		log.Ctx(ctx).
@@ -82,14 +84,34 @@ func (c *StagingController) RenderImage(rw http.ResponseWriter, r *http.Request)
 			Msg("metadata must be url escaped json")
 		return
 	}
+	sjsn := r.URL.Query().Get("seeds")
 
 	var metadata staging.Metadata
-	if err := json.Unmarshal([]byte(jsn), &metadata); err != nil {
+	var seeds seeds
+	if len(mdjsn) != 0 {
+		if err := json.Unmarshal([]byte(mdjsn), &metadata); err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			log.Ctx(ctx).
+				Error().
+				Err(err).
+				Msg("metadata is malformed")
+			return
+		}
+	} else if len(sjsn) != 0 {
+		if err := json.Unmarshal([]byte(sjsn), &seeds); err != nil {
+			rw.WriteHeader(http.StatusBadRequest)
+			log.Ctx(ctx).
+				Error().
+				Err(err).
+				Msg("seeds is malformed")
+			return
+		}
+	} else {
 		rw.WriteHeader(http.StatusBadRequest)
 		log.Ctx(ctx).
 			Error().
 			Err(err).
-			Msg("metadata is malformed")
+			Msg("metadata or seeds required")
 		return
 	}
 
@@ -117,6 +139,7 @@ func (c *StagingController) RenderImage(rw http.ResponseWriter, r *http.Request)
 	if err := c.stagingService.RenderImage(
 		ctx,
 		metadata,
+		seeds,
 		size, size,
 		png.CompressionLevel(compression),
 		labels, reload,
