@@ -5,9 +5,11 @@ go 1.17
 require (
 	cloud.google.com/go/logging v1.4.2
 	github.com/ethereum/go-ethereum v1.10.16
+	github.com/fatih/camelcase v1.0.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
+	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/omeid/uconfig v1.2.0
 	github.com/rs/zerolog v1.26.1
 	github.com/stretchr/testify v1.7.0

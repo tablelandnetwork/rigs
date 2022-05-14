@@ -12,7 +12,7 @@ import (
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
-	stagingimpl "github.com/tablelandnetwork/nft-minter/internal/staging/impl"
+	"github.com/tablelandnetwork/nft-minter/internal/staging/sheets"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
 )
@@ -38,7 +38,7 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	stagingService, err := stagingimpl.NewSheetsGenerator(
+	stagingService, err := sheets.NewSheetsGenerator(
 		config.GCP.SheetID,
 		config.GCP.DriveFolderID,
 		config.GCP.ServiceAccountKeyFile,
