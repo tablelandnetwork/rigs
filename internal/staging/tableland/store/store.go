@@ -69,35 +69,35 @@ type GetPartsOptions struct {
 
 type GetPartsOption func(*GetPartsOptions) error
 
-func WithFleet(fleet string) GetPartsOption {
+func OfFleet(fleet string) GetPartsOption {
 	return func(opts *GetPartsOptions) error {
 		opts.Fleet = fleet
 		return nil
 	}
 }
 
-func WithOriginal(original string) GetPartsOption {
+func OfOriginal(original string) GetPartsOption {
 	return func(opts *GetPartsOptions) error {
 		opts.Original = original
 		return nil
 	}
 }
 
-func WithType(t string) GetPartsOption {
+func OfType(t string) GetPartsOption {
 	return func(opts *GetPartsOptions) error {
 		opts.Type = t
 		return nil
 	}
 }
 
-func WithName(name string) GetPartsOption {
+func OfName(name string) GetPartsOption {
 	return func(opts *GetPartsOptions) error {
 		opts.Name = name
 		return nil
 	}
 }
 
-func WithColor(color string) GetPartsOption {
+func OfColor(color string) GetPartsOption {
 	return func(opts *GetPartsOptions) error {
 		opts.Color = color
 		return nil
@@ -119,5 +119,6 @@ type Store interface {
 	InsertLayer(context.Context, Layer) error
 	InsertDistributions(context.Context, []Distribution) error
 	InsertDistribution(context.Context, Distribution) error
+	GetPartTypesByFleet(context.Context, string) ([]string, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
 }

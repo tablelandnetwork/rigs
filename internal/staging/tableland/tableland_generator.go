@@ -2,7 +2,6 @@ package tableland
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"image/png"
@@ -10,14 +9,14 @@ import (
 	"os"
 	"sync"
 
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
+	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 )
 
 // TablelandGenerator generates NFT metadata from traits defined in parts.db.
 type TablelandGenerator struct {
-	db       *sql.DB
+	s        store.Store
 	cacheDir string
 	images   map[string]*staging.Image
 	lk       sync.Mutex
@@ -26,7 +25,7 @@ type TablelandGenerator struct {
 
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
-	dbFile string,
+	s store.Store,
 	concurrency int,
 	cacheDir string,
 ) (*TablelandGenerator, error) {
@@ -40,12 +39,8 @@ func NewTablelandGenerator(
 		}
 	}
 
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return nil, fmt.Errorf("opening db: %v", err)
-	}
 	return &TablelandGenerator{
-		db:       db,
+		s:        s,
 		cacheDir: cacheDir,
 		images:   make(map[string]*staging.Image),
 		limiter:  make(chan struct{}, concurrency),
@@ -53,7 +48,7 @@ func NewTablelandGenerator(
 }
 
 func (g *TablelandGenerator) GenerateMetadata(
-	_ context.Context,
+	ctx context.Context,
 	count int,
 	reloadSheets bool,
 ) ([]staging.GeneratedMetadata, error) {
@@ -63,6 +58,23 @@ func (g *TablelandGenerator) GenerateMetadata(
 		Msg("generating metadata")
 
 	var md []staging.GeneratedMetadata
+
+	fleets, err := g.s.GetParts(ctx, store.OfType("Fleet"))
+	if err != nil {
+		return nil, fmt.Errorf("getting parts of fleet type: %v", err)
+	}
+
+	// TODO: Select a fleet
+
+	partTypes, err := g.s.GetPartTypesByFleet(ctx, "Titans")
+	if err != nil {
+		return nil, fmt.Errorf("getting part types by fleet: %v", err)
+	}
+
+	fmt.Printf("%v, %v", fleets, partTypes)
+
+	// TODO: For each part type, select a part
+
 	// for i := 0; i < count; i++ {
 	// 	var m staging.Metadata
 	// 	var dist, mindist, maxdist, rarity float64
@@ -83,6 +95,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 	// 		Rarity:   staging.Rarity(rarity * 100),
 	// 	})
 	// }
+
 	return md, nil
 }
 
@@ -107,5 +120,5 @@ func (g *TablelandGenerator) RenderImage(
 
 // Close implements io.Closer.
 func (g *TablelandGenerator) Close() error {
-	return g.db.Close()
+	return nil
 }

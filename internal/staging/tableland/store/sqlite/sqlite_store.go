@@ -82,6 +82,26 @@ func (s *SQLiteStore) InsertDistribution(ctx context.Context, distribution store
 	return nil
 }
 
+func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, common.SQLForGettingPartTypesByFleet(fleet))
+	if err != nil {
+		return nil, fmt.Errorf("querying for fleet part types: %v", err)
+	}
+
+	var types []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err != nil {
+			return nil, fmt.Errorf("scanning row into type string: %v", err)
+		}
+		types = append(types, t)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("processing part types query results: %v", err)
+	}
+	return types, nil
+}
+
 func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption) ([]store.Part, error) {
 	o := &store.GetPartsOptions{}
 	for _, opt := range opts {

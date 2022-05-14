@@ -121,6 +121,10 @@ func SqlForInsertingDistribution(dist store.Distribution) string {
 	)
 }
 
+func SQLForGettingPartTypesByFleet(fleet string) string {
+	return fmt.Sprintf("select distinct type from parts where fleet = '%s'", fleet)
+}
+
 func SQLForGettingParts(options *store.GetPartsOptions) string {
 	// TODO: Build the reql query.
 	return "select * from parts"
