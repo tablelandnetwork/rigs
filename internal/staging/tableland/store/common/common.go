@@ -125,9 +125,37 @@ func SQLForGettingPartTypesByFleet(fleet string) string {
 	return fmt.Sprintf("select distinct type from parts where fleet = '%s'", fleet)
 }
 
+func SQLForGettingPartTypeDistributionsByFleet(fleet string) string {
+	return fmt.Sprintf("select * from distributions where fleet = '%s'", fleet)
+}
+
 func SQLForGettingParts(options *store.GetPartsOptions) string {
-	// TODO: Build the reql query.
-	return "select * from parts"
+	b := new(strings.Builder)
+	b.WriteString("select * from parts")
+	var wheres []string
+	if len(options.Color) > 0 {
+		wheres = append(wheres, fmt.Sprintf("color = '%s'", options.Color))
+	}
+	if len(options.Fleet) > 0 {
+		wheres = append(wheres, fmt.Sprintf("fleet = '%s'", options.Fleet))
+	}
+	if len(options.Name) > 0 {
+		wheres = append(wheres, fmt.Sprintf("name = '%s'", options.Name))
+	}
+	if len(options.Original) > 0 {
+		wheres = append(wheres, fmt.Sprintf("original = '%s'", options.Original))
+	}
+	if len(options.Type) > 0 {
+		wheres = append(wheres, fmt.Sprintf("type = '%s'", options.Type))
+	}
+	if len(wheres) > 0 {
+		b.WriteString(fmt.Sprintf(" where %s", strings.Join(wheres, " and ")))
+	}
+	if len(options.OrderBy) > 0 {
+		b.WriteString(fmt.Sprintf(" order by %s", options.OrderBy))
+	}
+	b.WriteString(";")
+	return b.String()
 }
 
 func nullableStringValue(s store.NullableString) string {

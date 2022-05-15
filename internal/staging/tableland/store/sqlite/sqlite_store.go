@@ -15,8 +15,10 @@ type SQLiteStore struct {
 	db *sql.DB
 }
 
-func NewSQLiteStore(dbFile string) (*SQLiteStore, error) {
-	_ = os.Remove(dbFile)
+func NewSQLiteStore(dbFile string, reset bool) (*SQLiteStore, error) {
+	if reset {
+		_ = os.Remove(dbFile)
+	}
 	db, err := sql.Open("sqlite3", dbFile)
 	if err != nil {
 		return nil, fmt.Errorf("opening db: %v", err)
@@ -102,13 +104,34 @@ func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]
 	return types, nil
 }
 
+func (s *SQLiteStore) GetPartTypeDistributionsByFleet(ctx context.Context, fleet string) ([]store.Distribution, error) {
+	rows, err := s.db.QueryContext(ctx, common.SQLForGettingPartTypeDistributionsByFleet(fleet))
+	if err != nil {
+		return nil, fmt.Errorf("querying for distributions: %v", err)
+	}
+
+	var dists []store.Distribution
+	for rows.Next() {
+		var d store.Distribution
+		if err := rows.Scan(&d.Fleet, &d.PartType, &d.Distribution); err != nil {
+			return nil, fmt.Errorf("scanning row into Distribution: %v", err)
+		}
+		dists = append(dists, d)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("processing distributions query results: %v", err)
+	}
+	return dists, nil
+}
+
 func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption) ([]store.Part, error) {
 	o := &store.GetPartsOptions{}
 	for _, opt := range opts {
 		opt(o)
 	}
 
-	rows, err := s.db.QueryContext(ctx, common.SQLForGettingParts(o))
+	ss := common.SQLForGettingParts(o)
+	rows, err := s.db.QueryContext(ctx, ss)
 	if err != nil {
 		return nil, fmt.Errorf("querying for parts: %v", err)
 	}

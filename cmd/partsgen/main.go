@@ -153,7 +153,7 @@ func main() {
 	// TODO: Use a config struct that gets set up here.
 	logging.SetupLogger(buildinfo.GitCommit, true, true)
 
-	s, err := sqlite.NewSQLiteStore("./parts.db")
+	s, err := sqlite.NewSQLiteStore("./parts.db", true)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create sqlite store")
 	}

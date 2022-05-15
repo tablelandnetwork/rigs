@@ -6,8 +6,12 @@ import (
 	"encoding/json"
 )
 
-type NullableString sql.NullString
-type NullableInt16 sql.NullInt16
+type NullableString struct {
+	sql.NullString
+}
+type NullableInt16 struct {
+	sql.NullInt16
+}
 
 func (x *NullableString) MarshalJSON() ([]byte, error) {
 	if !x.Valid {
@@ -120,5 +124,7 @@ type Store interface {
 	InsertDistributions(context.Context, []Distribution) error
 	InsertDistribution(context.Context, Distribution) error
 	GetPartTypesByFleet(context.Context, string) ([]string, error)
+	// TODO: Make this take optsions for "by fleet" or "for fleets"
+	GetPartTypeDistributionsByFleet(context.Context, string) ([]Distribution, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
 }
