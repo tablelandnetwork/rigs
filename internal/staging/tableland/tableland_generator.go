@@ -10,6 +10,8 @@ import (
 	"math/rand"
 	"os"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -134,19 +136,35 @@ func selectPart(
 		return store.Part{}, 0, 0, 0, errors.New("no parts provided to select from")
 	}
 
+	var stepWidth int
+	stepsParts := strings.Split(distribution, "st")
+	if len(stepsParts) == 2 {
+		numSteps, err := strconv.Atoi(stepsParts[1])
+		if err != nil {
+			return store.Part{}, 0, 0, 0, fmt.Errorf("parsing num steps: %v", err)
+		}
+		stepWidth = int(math.Ceil(float64(len(parts)) / float64(numSteps)))
+	}
+
 	breaks := make([]float64, len(parts))
 	var sum float64
 	for i := 0; i < len(parts); i++ {
 		var val float64
-		switch distribution {
-		case "lin":
-			val = float64(i + 1)
-		case "exp":
-			val = math.Pow(float64(i+1), 2)
-		case "log":
-			val = math.Log(float64(i + 1))
-		case "const":
-			val = 1
+
+		if stepWidth > 0 {
+			step := i / stepWidth
+			val = float64(step + 1)
+		} else {
+			switch distribution {
+			case "lin":
+				val = float64(i + 1)
+			case "exp":
+				val = math.Pow(float64(i+1), 2)
+			case "log":
+				val = math.Log(float64(i + 1))
+			case "con":
+				val = 1
+			}
 		}
 		breaks[i] = val
 		sum += val
