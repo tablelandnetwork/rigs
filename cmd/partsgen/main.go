@@ -43,13 +43,13 @@ var layerGuide = LayerGuide{
 		"Cockpit":          5,
 	},
 	"Sleds": {
-		"Background": 0,
-		"Shadow":     1,
-		"Chassis":    2,
-		"Spoiler":    3,
-		"Monocoque":  4,
-		"Bonnett":    5,
-		"Mod":        6,
+		"Background":     0,
+		"Chassis_Shadow": 1,
+		"Chassis_Main":   2,
+		"Spoiler":        3,
+		"Monocoque":      4,
+		"Bonnett":        5,
+		"Mod":            6,
 	},
 	"EdgeRiders": {
 		"Background":   0,
@@ -287,12 +287,14 @@ func processFleetDir(fleetName string, rootPath string, basePath string) error {
 
 		part := parts[0]
 
-		// TODO: Figure out how to deal with Sleds shadow part.
-		if part == "Shadow" {
-			continue
-		}
-
-		processedParts, err = processPartDir(fleetName, part, file.Name(), rootPath, filepath.Join(basePath, "Parts", file.Name()), processedParts)
+		processedParts, err = processPartDir(
+			fleetName,
+			part,
+			file.Name(),
+			rootPath,
+			filepath.Join(basePath, "Parts", file.Name()),
+			processedParts,
+		)
 		if err != nil {
 			return err
 		}
