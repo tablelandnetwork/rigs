@@ -104,6 +104,14 @@ func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]
 	return types, nil
 }
 
+func (s *SQLiteStore) GetPartTypeDistributionForFleets(ctx context.Context) (string, error) {
+	var dist string
+	if err := s.db.QueryRowContext(ctx, common.SQLForGettingPartTypeDistributionForFleets()).Scan(&dist); err != nil {
+		return "", fmt.Errorf("querying for fleets distribution: %v", err)
+	}
+	return dist, nil
+}
+
 func (s *SQLiteStore) GetPartTypeDistributionsByFleet(ctx context.Context, fleet string) ([]store.Distribution, error) {
 	rows, err := s.db.QueryContext(ctx, common.SQLForGettingPartTypeDistributionsByFleet(fleet))
 	if err != nil {

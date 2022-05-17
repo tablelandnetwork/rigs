@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"image/png"
 	"io"
+	"math"
 	"math/rand"
 	"os"
 	"sort"
 	"sync"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
@@ -41,6 +43,8 @@ func NewTablelandGenerator(
 		}
 	}
 
+	rand.Seed(time.Now().UnixNano())
+
 	return &TablelandGenerator{
 		s:        s,
 		cacheDir: cacheDir,
@@ -67,11 +71,16 @@ func (g *TablelandGenerator) GenerateMetadata(
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
 		var m staging.Metadata
-		var dist, mindist, maxdist, rarity float64
+		var dist, mindist, maxdist float64
+		// TODO: Make sure rarity = 1 is not rare at all, approaching 0 is very rare.
+		var rarity float64 = 1
 
-		// TODO: Query for fleet type distribution to pass into selectPart
+		fleetsDist, err := g.s.GetPartTypeDistributionForFleets(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("getting distribution for fleets: %v", err)
+		}
 
-		fleetPart, d, min, max, err := selectPart(&m, fleets, "lin")
+		fleetPart, d, min, max, err := selectPart(&m, fleets, fleetsDist)
 		if err != nil {
 			return nil, fmt.Errorf("selecting fleet trait: %v", err)
 		}
@@ -84,21 +93,21 @@ func (g *TablelandGenerator) GenerateMetadata(
 			return nil, fmt.Errorf("getting part type distributions by fleet: %v", err)
 		}
 
-		for _, s := range partTypeDistributions {
-			parts, err := g.s.GetParts(ctx, store.OfFleet(s.Fleet.String), store.OfType(s.PartType))
+		for _, ptd := range partTypeDistributions {
+			parts, err := g.s.GetParts(ctx, store.OfFleet(ptd.Fleet.String), store.OfType(ptd.PartType), store.OrderBy("rank"))
 			if err != nil {
 				return nil, fmt.Errorf("getting parts for fleet: %v", err)
 			}
 
-			_, d, min, max, err := selectPart(&m, parts, s.Distribution)
+			_, d, min, max, err := selectPart(&m, parts, ptd.Distribution)
 			if err != nil {
-				return nil, fmt.Errorf("selecting part %s: %v", s.PartType, err)
+				return nil, fmt.Errorf("selecting part %s: %v", ptd.PartType, err)
 			}
 			dist += d
 			mindist += min
 			maxdist += max
 		}
-		if maxdist != 0 {
+		if maxdist != 0 && maxdist > mindist {
 			rarity = (dist - mindist) / (maxdist - mindist) // scale to range 0-1
 		}
 		md = append(md, staging.GeneratedMetadata{
@@ -114,18 +123,41 @@ type opt struct {
 	part store.Part
 }
 
-func selectPart(md *staging.Metadata, parts []store.Part, distribution string) (store.Part, float64, float64, float64, error) {
+func selectPart(
+	md *staging.Metadata,
+	parts []store.Part,
+	distribution string,
+) (store.Part, float64, float64, float64, error) {
 	var opts []opt
 
 	if len(parts) == 0 {
 		return store.Part{}, 0, 0, 0, errors.New("no parts provided to select from")
 	}
 
-	// TODO: calculate all dists from ranks and dist
-	df := 1 / float64(len(parts))
+	breaks := make([]float64, len(parts))
+	var sum float64
+	for i := 0; i < len(parts); i++ {
+		var val float64
+		switch distribution {
+		case "lin":
+			val = float64(i + 1)
+		case "exp":
+			val = math.Pow(float64(i+1), 2)
+		case "log":
+			val = math.Log(float64(i + 1))
+		case "const":
+			val = 1
+		}
+		breaks[i] = val
+		sum += val
+	}
 
-	for _, part := range parts {
-		opts = append(opts, opt{dist: df, part: part})
+	for i := 0; i < len(breaks); i++ {
+		breaks[i] = breaks[i] / sum
+	}
+
+	for i, part := range parts {
+		opts = append(opts, opt{dist: breaks[i], part: part})
 	}
 
 	sort.SliceStable(opts, func(i, j int) bool {
@@ -148,7 +180,7 @@ func selectPart(md *staging.Metadata, parts []store.Part, distribution string) (
 				TraitType: o.part.Type,
 				Value:     o.part.Name,
 			})
-			// TODO: break?
+			break
 		}
 		lower = upper
 	}
@@ -172,7 +204,6 @@ func (g *TablelandGenerator) RenderImage(
 	writer io.Writer,
 ) error {
 	return nil
-
 }
 
 // Close implements io.Closer.

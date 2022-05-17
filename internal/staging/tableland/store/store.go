@@ -3,39 +3,55 @@ package store
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 )
 
-type NullableString struct {
-	sql.NullString
-}
-type NullableInt16 struct {
-	sql.NullInt16
+type NullableString sql.NullString
+
+func (ns *NullableString) Scan(value interface{}) error {
+	sns := sql.NullString(*ns)
+	return (&sns).Scan(value)
 }
 
-func (x *NullableString) MarshalJSON() ([]byte, error) {
-	if !x.Valid {
+func (ns NullableString) Value() (driver.Value, error) {
+	return sql.NullString(ns).Value()
+}
+
+func (ns *NullableString) MarshalJSON() ([]byte, error) {
+	if !ns.Valid {
 		return []byte("null"), nil
 	}
-	return json.Marshal(x.String)
+	return json.Marshal(ns.String)
 }
 
-func (x *NullableString) UnmarshalJSON(b []byte) error {
-	err := json.Unmarshal(b, &x.String)
-	x.Valid = (err == nil)
+func (ns *NullableString) UnmarshalJSON(b []byte) error {
+	err := json.Unmarshal(b, &ns.String)
+	ns.Valid = (err == nil)
 	return err
 }
 
-func (x *NullableInt16) MarshalJSON() ([]byte, error) {
-	if !x.Valid {
-		return []byte("null"), nil
-	}
-	return json.Marshal(x.Int16)
+type NullableInt16 sql.NullInt16
+
+func (ni *NullableInt16) Scan(value interface{}) error {
+	sni := sql.NullInt16(*ni)
+	return (&sni).Scan(value)
 }
 
-func (x *NullableInt16) UnmarshalJSON(b []byte) error {
-	err := json.Unmarshal(b, &x.Int16)
-	x.Valid = (err == nil)
+func (ni NullableInt16) Value() (driver.Value, error) {
+	return sql.NullInt16(ni).Value()
+}
+
+func (ni *NullableInt16) MarshalJSON() ([]byte, error) {
+	if !ni.Valid {
+		return []byte("null"), nil
+	}
+	return json.Marshal(ni.Int16)
+}
+
+func (ni *NullableInt16) UnmarshalJSON(b []byte) error {
+	err := json.Unmarshal(b, &ni.Int16)
+	ni.Valid = (err == nil)
 	return err
 }
 
@@ -50,16 +66,16 @@ type Part struct {
 
 type Layer struct {
 	Fleet     string `json:"fleet"`
-	PartName  string `json:"partName"`
-	PartColor string `json:"partColor"`
+	PartName  string `json:"part_name"`
+	PartColor string `json:"part_color"`
 	Position  uint   `json:"position"`
 	Path      string `json:"path"`
 }
 
 type Distribution struct {
-	Fleet        NullableString
-	PartType     string
-	Distribution string
+	Fleet        NullableString `json:"fleet"`
+	PartType     string         `json:"part_type"`
+	Distribution string         `json:"distribution"`
 }
 
 type GetPartsOptions struct {
@@ -124,7 +140,7 @@ type Store interface {
 	InsertDistributions(context.Context, []Distribution) error
 	InsertDistribution(context.Context, Distribution) error
 	GetPartTypesByFleet(context.Context, string) ([]string, error)
-	// TODO: Make this take optsions for "by fleet" or "for fleets"
+	GetPartTypeDistributionForFleets(context.Context) (string, error)
 	GetPartTypeDistributionsByFleet(context.Context, string) ([]Distribution, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
 }

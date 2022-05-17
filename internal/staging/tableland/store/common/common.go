@@ -125,6 +125,10 @@ func SQLForGettingPartTypesByFleet(fleet string) string {
 	return fmt.Sprintf("select distinct type from parts where fleet = '%s'", fleet)
 }
 
+func SQLForGettingPartTypeDistributionForFleets() string {
+	return "select distribution from distributions where part_type = 'Fleet'"
+}
+
 func SQLForGettingPartTypeDistributionsByFleet(fleet string) string {
 	return fmt.Sprintf("select * from distributions where fleet = '%s'", fleet)
 }
