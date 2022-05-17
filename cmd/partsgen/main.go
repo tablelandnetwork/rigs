@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"errors"
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -97,53 +97,53 @@ var layerGuide = LayerGuide{
 var distributions = []store.Distribution{
 	{PartType: "Fleet", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Titans", Valid: true}, PartType: "Chassis", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Titans", Valid: true}, PartType: "Mainframe", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Titans", Valid: true}, PartType: "Cab", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Titans", Valid: true}, PartType: "Utility Pack", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Titans", Valid: true}, PartType: "Mod", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Titans", Valid: true}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}}, PartType: "Chassis", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}}, PartType: "Mainframe", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}}, PartType: "Cab", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}}, PartType: "Utility Pack", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}}, PartType: "Mod", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}}, PartType: "Background", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Tumblers", Valid: true}, PartType: "Suspension", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tumblers", Valid: true}, PartType: "Cockpit", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tumblers", Valid: true}, PartType: "Utility Pack", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tumblers", Valid: true}, PartType: "Core", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tumblers", Valid: true}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}}, PartType: "Suspension", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}}, PartType: "Cockpit", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}}, PartType: "Utility Pack", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}}, PartType: "Core", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}}, PartType: "Background", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Sleds", Valid: true}, PartType: "Monocoque", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Sleds", Valid: true}, PartType: "Mod", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Sleds", Valid: true}, PartType: "Bonnet", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Sleds", Valid: true}, PartType: "Chassis", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Sleds", Valid: true}, PartType: "Spoiler", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Sleds", Valid: true}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}}, PartType: "Monocoque", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}}, PartType: "Mod", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}}, PartType: "Bonnet", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}}, PartType: "Chassis", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}}, PartType: "Spoiler", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}}, PartType: "Background", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Edge Riders", Valid: true}, PartType: "Mod", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Edge Riders", Valid: true}, PartType: "Cockpit", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Edge Riders", Valid: true}, PartType: "Frame", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Edge Riders", Valid: true}, PartType: "Rider", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Edge Riders", Valid: true}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}}, PartType: "Mod", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}}, PartType: "Cockpit", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}}, PartType: "Frame", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}}, PartType: "Rider", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}}, PartType: "Background", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Tracers", Valid: true}, PartType: "Background", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tracers", Valid: true}, PartType: "Chassis", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tracers", Valid: true}, PartType: "Cockpit", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tracers", Valid: true}, PartType: "Propulsion", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Tracers", Valid: true}, PartType: "Mod", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}}, PartType: "Chassis", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}}, PartType: "Cockpit", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}}, PartType: "Propulsion", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}}, PartType: "Mod", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Hoppers", Valid: true}, PartType: "Propulsion", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Hoppers", Valid: true}, PartType: "Cockpit", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Hoppers", Valid: true}, PartType: "Mod", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Hoppers", Valid: true}, PartType: "Chassis", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Hoppers", Valid: true}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}}, PartType: "Propulsion", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}}, PartType: "Cockpit", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}}, PartType: "Mod", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}}, PartType: "Chassis", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}}, PartType: "Background", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Airelights", Valid: true}, PartType: "Background", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Airelights", Valid: true}, PartType: "Airframe", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Airelights", Valid: true}, PartType: "Cockpit", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Airelights", Valid: true}, PartType: "Propulsion", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}}, PartType: "Airframe", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}}, PartType: "Cockpit", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}}, PartType: "Propulsion", Distribution: "lin"},
 
-	{Fleet: store.NullableString{String: "Foils", Valid: true}, PartType: "Background", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Foils", Valid: true}, PartType: "Airframe", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Foils", Valid: true}, PartType: "Propulsion", Distribution: "lin"},
-	{Fleet: store.NullableString{String: "Foils", Valid: true}, PartType: "Cockpit", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}}, PartType: "Background", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}}, PartType: "Airframe", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}}, PartType: "Propulsion", Distribution: "lin"},
+	{Fleet: store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}}, PartType: "Cockpit", Distribution: "lin"},
 }
 
 var parts = []store.Part{}
@@ -261,7 +261,7 @@ func processRootDir(rootPath string) error {
 func parseTopLevelDirName(s string) (int, string, error) {
 	vals := strings.Split(s, "_")
 	if len(vals) != 2 {
-		return 0, "", errors.New(fmt.Sprintf("expected two dir name parts but found %d", len(vals)))
+		return 0, "", fmt.Errorf("expected two dir name parts but found %d", len(vals))
 	}
 	index, err := strconv.Atoi(vals[0])
 	if err != nil {
@@ -282,7 +282,7 @@ func processFleetDir(fleetName string, rootPath string, basePath string) error {
 		}
 		parts := strings.Split(file.Name(), "_")
 		if len(parts) != 2 && len(parts) != 1 {
-			return errors.New(fmt.Sprintf("expected one or two folder name parts but found %d", len(parts)))
+			return fmt.Errorf("expected one or two folder name parts but found %d", len(parts))
 		}
 
 		part := parts[0]
@@ -318,11 +318,11 @@ func processPartDir(
 		}
 		filenameParts := strings.Split(file.Name(), ".")
 		if len(filenameParts) != 2 {
-			return nil, errors.New(fmt.Sprintf("expected two file name parts but found %d: %s", len(filenameParts), file.Name()))
+			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), file.Name())
 		}
 		prefixParts := strings.Split(filenameParts[0], "_")
 		if len(prefixParts) != 3 {
-			return nil, errors.New(fmt.Sprintf("expected three file name parts but found %d: %s", len(prefixParts), filenameParts[0]))
+			return nil, fmt.Errorf("expected three file name parts but found %d: %s", len(prefixParts), filenameParts[0])
 		}
 
 		original := prefixParts[0]
@@ -333,11 +333,11 @@ func processPartDir(
 		if _, processedPart := processedParts[partKey]; !processedPart {
 			processedParts[partKey] = true
 			parts = append(parts, store.Part{
-				Fleet:    store.NullableString{String: displayString(fleetName), Valid: true},
-				Original: store.NullableString{String: displayString(original), Valid: len(original) > 0},
+				Fleet:    store.NullableString{NullString: sql.NullString{String: displayString(fleetName), Valid: true}},
+				Original: store.NullableString{NullString: sql.NullString{String: displayString(original), Valid: len(original) > 0}},
 				Type:     displayString(partType),
 				Name:     displayString(name),
-				Color:    store.NullableString{String: displayString(color), Valid: true},
+				Color:    store.NullableString{NullString: sql.NullString{String: displayString(color), Valid: true}},
 			})
 		}
 

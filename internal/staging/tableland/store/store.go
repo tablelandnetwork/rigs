@@ -3,19 +3,11 @@ package store
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
 	"encoding/json"
 )
 
-type NullableString sql.NullString
-
-func (ns *NullableString) Scan(value interface{}) error {
-	sns := sql.NullString(*ns)
-	return (&sns).Scan(value)
-}
-
-func (ns NullableString) Value() (driver.Value, error) {
-	return sql.NullString(ns).Value()
+type NullableString struct {
+	sql.NullString
 }
 
 func (ns *NullableString) MarshalJSON() ([]byte, error) {
@@ -31,15 +23,8 @@ func (ns *NullableString) UnmarshalJSON(b []byte) error {
 	return err
 }
 
-type NullableInt16 sql.NullInt16
-
-func (ni *NullableInt16) Scan(value interface{}) error {
-	sni := sql.NullInt16(*ni)
-	return (&sni).Scan(value)
-}
-
-func (ni NullableInt16) Value() (driver.Value, error) {
-	return sql.NullInt16(ni).Value()
+type NullableInt16 struct {
+	sql.NullInt16
 }
 
 func (ni *NullableInt16) MarshalJSON() ([]byte, error) {

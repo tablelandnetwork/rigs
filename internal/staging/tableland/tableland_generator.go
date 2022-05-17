@@ -178,7 +178,8 @@ func selectPart(
 			part = o.part
 			md.Attributes = append(md.Attributes, staging.Trait{
 				TraitType: o.part.Type,
-				Value:     o.part.Name,
+				// TODO: Decide how to represent original and color in metadata.
+				Value: fmt.Sprintf("%s %s %s", o.part.Color.String, o.part.Original.String, o.part.Name),
 			})
 			break
 		}
