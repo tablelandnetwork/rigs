@@ -43,42 +43,42 @@ func (s *SQLiteStore) CreateTables(ctx context.Context) error {
 }
 
 func (s *SQLiteStore) InsertParts(ctx context.Context, parts []store.Part) error {
-	if _, err := s.db.ExecContext(ctx, common.SqlForInsertingParts(parts)); err != nil {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingParts(parts)); err != nil {
 		return fmt.Errorf("inserting parts: %v", err)
 	}
 	return nil
 }
 
 func (s *SQLiteStore) InsertPart(ctx context.Context, part store.Part) error {
-	if _, err := s.db.ExecContext(ctx, common.SqlForInsertingPart(part)); err != nil {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingPart(part)); err != nil {
 		return fmt.Errorf("inserting part: %v", err)
 	}
 	return nil
 }
 
 func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) error {
-	if _, err := s.db.ExecContext(ctx, common.SqlForInsertingLayers(layers)); err != nil {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayers(layers)); err != nil {
 		return fmt.Errorf("inserting layers: %v", err)
 	}
 	return nil
 }
 
 func (s *SQLiteStore) InsertLayer(ctx context.Context, layer store.Layer) error {
-	if _, err := s.db.ExecContext(ctx, common.SqlForInsertingLayer(layer)); err != nil {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayer(layer)); err != nil {
 		return fmt.Errorf("inserting layer: %v", err)
 	}
 	return nil
 }
 
 func (s *SQLiteStore) InsertDistributions(ctx context.Context, distributions []store.Distribution) error {
-	if _, err := s.db.ExecContext(ctx, common.SqlForInsertingDistributions(distributions)); err != nil {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingDistributions(distributions)); err != nil {
 		return fmt.Errorf("inserting distributions: %v", err)
 	}
 	return nil
 }
 
 func (s *SQLiteStore) InsertDistribution(ctx context.Context, distribution store.Distribution) error {
-	if _, err := s.db.ExecContext(ctx, common.SqlForInsertingDistribution(distribution)); err != nil {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingDistribution(distribution)); err != nil {
 		return fmt.Errorf("inserting distribution: %v", err)
 	}
 	return nil

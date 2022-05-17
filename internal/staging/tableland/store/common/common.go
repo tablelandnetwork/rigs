@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	// CreatePartsTableSQL is the SQL.
 	CreatePartsTableSQL = `create table parts (
 		fleet text,
 		original text,
@@ -19,6 +20,7 @@ const (
 		primary key(fleet,name,color)
 	);`
 
+	// CreateLayersTableSQL is the SQL.
 	CreateLayersTableSQL = `create table layers (
 		fleet text not null,
 		part_name text not null,
@@ -28,6 +30,7 @@ const (
 		primary key(fleet,part_name,part_color,position)
 	);`
 
+	// CreateDistributionsTableSQL is the SQL.
 	CreateDistributionsTableSQL = `create table distributions (
 		fleet text,
 		part_type text not null,
@@ -36,7 +39,8 @@ const (
 	);`
 )
 
-func SqlForInsertingParts(parts []store.Part) string {
+// SQLForInsertingParts returns the SQL statement.
+func SQLForInsertingParts(parts []store.Part) string {
 	b := new(strings.Builder)
 	b.WriteString("insert into parts(fleet, original, type, name, color, rank) values ")
 	vals := []string{}
@@ -55,7 +59,8 @@ func SqlForInsertingParts(parts []store.Part) string {
 	return b.String()
 }
 
-func SqlForInsertingPart(part store.Part) string {
+// SQLForInsertingPart returns the SQL statement.
+func SQLForInsertingPart(part store.Part) string {
 	return fmt.Sprintf(
 		"insert into parts(fleet, original, type, name, color, rank) values (%s,%s,'%s','%s',%s,%s);",
 		nullableStringValue(part.Fleet),
@@ -67,7 +72,8 @@ func SqlForInsertingPart(part store.Part) string {
 	)
 }
 
-func SqlForInsertingLayers(layers []store.Layer) string {
+// SQLForInsertingLayers returns the SQL statement.
+func SQLForInsertingLayers(layers []store.Layer) string {
 	b := new(strings.Builder)
 	b.WriteString("insert into layers(fleet, part_name, part_color, position, path) values ")
 	vals := []string{}
@@ -85,7 +91,8 @@ func SqlForInsertingLayers(layers []store.Layer) string {
 	return b.String()
 }
 
-func SqlForInsertingLayer(layer store.Layer) string {
+// SQLForInsertingLayer returns the SQL statement.
+func SQLForInsertingLayer(layer store.Layer) string {
 	return fmt.Sprintf(
 		"insert into layers(fleet, part_name, part_color, position, path) values ('%s','%s','%s',%d,'%s');",
 		layer.Fleet,
@@ -96,7 +103,8 @@ func SqlForInsertingLayer(layer store.Layer) string {
 	)
 }
 
-func SqlForInsertingDistributions(dists []store.Distribution) string {
+// SQLForInsertingDistributions returns the SQL statement.
+func SQLForInsertingDistributions(dists []store.Distribution) string {
 	b := new(strings.Builder)
 	b.WriteString("insert into distributions(fleet, part_type, distribution) values ")
 	vals := []string{}
@@ -112,7 +120,8 @@ func SqlForInsertingDistributions(dists []store.Distribution) string {
 	return b.String()
 }
 
-func SqlForInsertingDistribution(dist store.Distribution) string {
+// SQLForInsertingDistribution returns the SQL statement.
+func SQLForInsertingDistribution(dist store.Distribution) string {
 	return fmt.Sprintf(
 		"insert into layers(insert into distributions(fleet, part_type, distribution) values (%s,'%s','%s');",
 		nullableStringValue(dist.Fleet),
@@ -121,18 +130,22 @@ func SqlForInsertingDistribution(dist store.Distribution) string {
 	)
 }
 
+// SQLForGettingPartTypesByFleet returns the SQL statement.
 func SQLForGettingPartTypesByFleet(fleet string) string {
 	return fmt.Sprintf("select distinct type from parts where fleet = '%s'", fleet)
 }
 
+// SQLForGettingPartTypeDistributionForFleets returns the SQL statement.
 func SQLForGettingPartTypeDistributionForFleets() string {
 	return "select distribution from distributions where part_type = 'Fleet'"
 }
 
+// SQLForGettingPartTypeDistributionsByFleet returns the SQL statement.
 func SQLForGettingPartTypeDistributionsByFleet(fleet string) string {
 	return fmt.Sprintf("select * from distributions where fleet = '%s'", fleet)
 }
 
+// SQLForGettingParts returns the SQL statement.
 func SQLForGettingParts(options *store.GetPartsOptions) string {
 	b := new(strings.Builder)
 	b.WriteString("select * from parts")
