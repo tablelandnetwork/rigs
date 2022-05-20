@@ -158,6 +158,26 @@ func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption
 	return parts, nil
 }
 
+func (s *SQLiteStore) GetLayers(ctx context.Context, fleet string, parts ...string) ([]store.Layer, error) {
+	rows, err := s.db.QueryContext(ctx, common.SQLForGettingLayers(fleet, parts))
+	if err != nil {
+		return nil, fmt.Errorf("querying for layers: %v", err)
+	}
+
+	var layers []store.Layer
+	for rows.Next() {
+		var layer store.Layer
+		if err := rows.Scan(&layer.Fleet, &layer.Part, &layer.Position, &layer.Path); err != nil {
+			return nil, fmt.Errorf("scanning row into layer: %v", err)
+		}
+		layers = append(layers, layer)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("processing parts query results: %v", err)
+	}
+	return layers, nil
+}
+
 // Close implements io.Closer.
 func (s *SQLiteStore) Close() error {
 	return s.db.Close()

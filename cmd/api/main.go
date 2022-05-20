@@ -12,7 +12,8 @@ import (
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/sheets"
+	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland"
+	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
 )
@@ -38,17 +39,30 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	stagingService, err := sheets.NewSheetsGenerator(
-		config.GCP.SheetID,
-		config.GCP.DriveFolderID,
-		config.GCP.ServiceAccountKeyFile,
-		config.Render.Concurrency,
-		config.Render.CacheDir,
-	)
+	store, err := sqlite.NewSQLiteStore("./parts.db", false)
 	if err != nil {
 		log.Fatal().
 			Err(err).
-			Msg("could not setup sheets generator")
+			Msg("could not create store")
+	}
+
+	stagingService, err := tableland.NewTablelandGenerator(
+		store,
+		config.Render.Concurrency,
+		config.Render.CacheDir,
+	)
+
+	// stagingService, err := sheets.NewSheetsGenerator(
+	// 	config.GCP.SheetID,
+	// 	config.GCP.DriveFolderID,
+	// 	config.GCP.ServiceAccountKeyFile,
+	// 	config.Render.Concurrency,
+	// 	config.Render.CacheDir,
+	// )
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Msg("could not setup generator")
 	}
 	stagingController := controllers.NewStagingController(stagingService)
 

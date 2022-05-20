@@ -85,6 +85,7 @@ var layerGuide = LayerGuide{
 		"Airframe":         2,
 		"Cockpit":          3,
 		"Propulsion_Front": 4,
+		"Propulsion_Top":   5,
 	},
 	"Foils": {
 		"Background": 0,
@@ -334,7 +335,7 @@ func main() {
 		log.Fatal().Err(err).Msg("getting home dir")
 	}
 
-	rootPath := filepath.Join(home, "Dropbox/Tableland/NFT/NFT_Delivery/")
+	rootPath := filepath.Join(home, "tmp")
 
 	if err := processRootDir(rootPath); err != nil {
 		log.Fatal().Err(err).Msg("processing root directory")
@@ -508,11 +509,10 @@ func processPartDir(
 		}
 
 		layers = append(layers, store.Layer{
-			Fleet:     displayString(fleetName),
-			PartName:  displayString(name),
-			PartColor: displayString(color),
-			Position:  uint(layerGuide[FleetName(fleetName)][LayerName(layerName)]),
-			Path:      filepath.Join(basePath, file.Name()),
+			Fleet:    displayString(fleetName),
+			Part:     fmt.Sprintf("%s %s", displayString(color), displayString(name)),
+			Position: uint(layerGuide[FleetName(fleetName)][LayerName(layerName)]),
+			Path:     filepath.Join(basePath, file.Name()),
 		})
 	}
 	return processedParts, nil

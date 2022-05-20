@@ -9,6 +9,8 @@ import (
 	"math"
 	"math/rand"
 	"os"
+	"path"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +20,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
+	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 )
 
 // TablelandGenerator generates NFT metadata from traits defined in parts.db.
@@ -27,6 +30,10 @@ type TablelandGenerator struct {
 	images   map[string]*staging.Image
 	lk       sync.Mutex
 	limiter  chan struct{}
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 // NewTablelandGenerator returns a new SQLiteGenerator.
@@ -44,8 +51,6 @@ func NewTablelandGenerator(
 			return nil, fmt.Errorf("creating cache directory %v", err)
 		}
 	}
-
-	rand.Seed(time.Now().UnixNano())
 
 	return &TablelandGenerator{
 		s:        s,
@@ -95,20 +100,52 @@ func (g *TablelandGenerator) GenerateMetadata(
 			return nil, fmt.Errorf("getting part type distributions by fleet: %v", err)
 		}
 
+		var vehicleParts []store.Part
 		for _, ptd := range partTypeDistributions {
 			parts, err := g.s.GetParts(ctx, store.OfFleet(ptd.Fleet.String), store.OfType(ptd.PartType), store.OrderBy("rank"))
 			if err != nil {
 				return nil, fmt.Errorf("getting parts for fleet: %v", err)
 			}
 
-			_, d, min, max, err := selectPart(&m, parts, ptd.Distribution)
+			part, d, min, max, err := selectPart(&m, parts, ptd.Distribution)
 			if err != nil {
 				return nil, fmt.Errorf("selecting part %s: %v", ptd.PartType, err)
 			}
 			dist += d
 			mindist += min
 			maxdist += max
+			if part.Type != "Background" {
+				vehicleParts = append(vehicleParts, part)
+			}
 		}
+
+		percentOriginal := percentOriginal(vehicleParts)
+		if percentOriginal == 1 {
+			m.Attributes = append(
+				[]staging.Trait{
+					{
+						TraitType: "Name",
+						Value:     vehicleParts[0].Original.String,
+					},
+					{
+						TraitType: "Color",
+						Value:     vehicleParts[0].Color.String,
+					},
+				},
+				m.Attributes...,
+			)
+		}
+
+		m.Attributes = append(
+			[]staging.Trait{{
+				DisplayType: "number",
+				TraitType:   "Original",
+				Value:       percentOriginal * 100,
+			}},
+			m.Attributes...,
+		)
+
+		// TODO: Move this rarity to be a attributes trait.
 		if maxdist != 0 && maxdist > mindist {
 			rarity = (dist - mindist) / (maxdist - mindist) // scale to range 0-1
 		}
@@ -194,10 +231,14 @@ func selectPart(
 		if num < upper && num >= lower {
 			dist = o.dist
 			part = o.part
+			b := new(strings.Builder)
+			if o.part.Color.Valid {
+				b.WriteString(fmt.Sprintf("%s ", o.part.Color.String))
+			}
+			b.WriteString(o.part.Name)
 			md.Attributes = append(md.Attributes, staging.Trait{
 				TraitType: o.part.Type,
-				// TODO: Decide how to represent original and color in metadata.
-				Value: fmt.Sprintf("%s %s %s", o.part.Color.String, o.part.Original.String, o.part.Name),
+				Value:     b.String(),
 			})
 			break
 		}
@@ -211,9 +252,29 @@ func selectPart(
 	return part, dist, opts[0].dist, opts[len(opts)-1].dist, nil
 }
 
+func percentOriginal(parts []store.Part) float64 {
+	counts := make(map[string]int)
+	total := 0
+	for _, part := range parts {
+		key := fmt.Sprintf("%s|%s", part.Color.String, part.Original.String)
+		if _, exists := counts[key]; !exists {
+			counts[key] = 0
+		}
+		counts[key]++
+		total++
+	}
+	max := 0
+	for _, count := range counts {
+		if count > max {
+			max = count
+		}
+	}
+	return float64(max) / float64(total)
+}
+
 // RenderImage returns an image based on the given metadata.
 func (g *TablelandGenerator) RenderImage(
-	_ context.Context,
+	ctx context.Context,
 	md staging.Metadata,
 	seeds []float64,
 	width, height int,
@@ -222,10 +283,106 @@ func (g *TablelandGenerator) RenderImage(
 	reloadLayers bool,
 	writer io.Writer,
 ) error {
-	return nil
+	defer func() {
+		logMemUsage()
+	}()
+
+	g.limiter <- struct{}{}
+	defer func() { <-g.limiter }()
+
+	log.Debug().
+		Bool("reload layers", reloadLayers).
+		Msg("rendering image")
+
+	// layers, err := getLayers(md, g.layers)
+	// if err != nil {
+	// 	return fmt.Errorf("getting layers: %v", err)
+	// }
+	layers, err := g.getLayers(ctx, md)
+	if err != nil {
+		return fmt.Errorf("getting layers: %v", err)
+	}
+
+	var label string
+	if drawLabels {
+		label = getTraitsLabel(md)
+	}
+
+	r, err := renderer.NewRenderer(width, height, drawLabels, label)
+	if err != nil {
+		return fmt.Errorf("building renderer: %v", err)
+	}
+	defer r.Dispose()
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return fmt.Errorf("getting home dir: %v", err)
+	}
+
+	for _, l := range layers {
+		// TODO: Check in memory cache for staging.Image
+
+		log.Debug().
+			Str("name", l.Part).
+			Msg("adding layer")
+
+		label := fmt.Sprintf("%s: %s", l.Part, l.Path)
+		if err := r.AddLayerByFile(path.Join(home, "tmp", l.Path), label); err != nil {
+			return fmt.Errorf("adding layer: %v", err)
+		}
+	}
+
+	return r.Write(writer, compression)
+}
+
+func (g *TablelandGenerator) getLayers(ctx context.Context, md staging.Metadata) ([]store.Layer, error) {
+	fleet, err := getFleet(md)
+	if err != nil {
+		return nil, err
+	}
+
+	var partValues []string
+	for _, att := range md.Attributes {
+		if val, ok := att.Value.(string); ok {
+			partValues = append(partValues, val)
+		}
+	}
+	return g.s.GetLayers(ctx, fleet, partValues...)
+}
+
+func getFleet(md staging.Metadata) (string, error) {
+	for _, trait := range md.Attributes {
+		if trait.TraitType == "Fleet" {
+			return trait.Value.(string), nil
+		}
+	}
+	return "", errors.New("no Fleet attribute found")
+}
+
+func getTraitsLabel(md staging.Metadata) string {
+	var label []string
+	for _, a := range md.Attributes {
+		label = append(label, fmt.Sprintf("%v", a.Value))
+	}
+	return strings.Join(label, ", ")
 }
 
 // Close implements io.Closer.
 func (g *TablelandGenerator) Close() error {
 	return nil
+}
+
+func logMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Debug().
+		Str("alloc", fmt.Sprintf("%v", bToMb(m.Alloc))).
+		Str("total", fmt.Sprintf("%v", bToMb(m.TotalAlloc))).
+		Str("sys", fmt.Sprintf("%v", bToMb(m.Sys))).
+		Str("gc", fmt.Sprintf("%v", m.NumGC)).
+		Msg("memstats")
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }

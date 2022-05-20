@@ -9,9 +9,9 @@ import (
 
 // Trait defines a single NFT trait.
 type Trait struct {
-	DisplayType string `json:"display_type,omitempty"`
-	TraitType   string `json:"trait_type"`
-	Value       string `json:"value"`
+	DisplayType string      `json:"display_type,omitempty"`
+	TraitType   string      `json:"trait_type"`
+	Value       interface{} `json:"value"`
 }
 
 // Layer defines a layer associated with a trait.

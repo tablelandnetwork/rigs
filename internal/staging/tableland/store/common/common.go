@@ -23,11 +23,10 @@ const (
 	// CreateLayersTableSQL is the SQL.
 	CreateLayersTableSQL = `create table layers (
 		fleet text not null,
-		part_name text not null,
-		part_color text not null,
+		part text not null,
 		position integer not null,
 		path text not null,
-		primary key(fleet,part_name,part_color,position)
+		primary key(fleet,part,position)
 	);`
 
 	// CreateDistributionsTableSQL is the SQL.
@@ -75,14 +74,13 @@ func SQLForInsertingPart(part store.Part) string {
 // SQLForInsertingLayers returns the SQL statement.
 func SQLForInsertingLayers(layers []store.Layer) string {
 	b := new(strings.Builder)
-	b.WriteString("insert into layers(fleet, part_name, part_color, position, path) values ")
+	b.WriteString("insert into layers(fleet, part, position, path) values ")
 	vals := []string{}
 	for _, layer := range layers {
 		vals = append(vals, fmt.Sprintf(
-			"('%s','%s','%s',%d,'%s')",
+			"('%s','%s',%d,'%s')",
 			layer.Fleet,
-			layer.PartName,
-			layer.PartColor,
+			layer.Part,
 			layer.Position,
 			layer.Path,
 		))
@@ -94,10 +92,9 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 // SQLForInsertingLayer returns the SQL statement.
 func SQLForInsertingLayer(layer store.Layer) string {
 	return fmt.Sprintf(
-		"insert into layers(fleet, part_name, part_color, position, path) values ('%s','%s','%s',%d,'%s');",
+		"insert into layers(fleet, part, position, path) values ('%s','%s',%d,'%s');",
 		layer.Fleet,
-		layer.PartName,
-		layer.PartColor,
+		layer.Part,
 		layer.Position,
 		layer.Path,
 	)
@@ -172,6 +169,18 @@ func SQLForGettingParts(options *store.GetPartsOptions) string {
 		b.WriteString(fmt.Sprintf(" order by %s", options.OrderBy))
 	}
 	b.WriteString(";")
+	return b.String()
+}
+
+func SQLForGettingLayers(fleet string, parts []string) string {
+	var partsExp []string
+	for _, part := range parts {
+		partsExp = append(partsExp, fmt.Sprintf("part = '%s'", part))
+	}
+	b := new(strings.Builder)
+	b.WriteString(fmt.Sprintf("select * from layers where fleet = '%s' and (", fleet))
+	b.WriteString(strings.Join(partsExp, " or "))
+	b.WriteString(") order by position;")
 	return b.String()
 }
 

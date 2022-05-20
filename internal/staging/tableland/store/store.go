@@ -50,11 +50,10 @@ type Part struct {
 }
 
 type Layer struct {
-	Fleet     string `json:"fleet"`
-	PartName  string `json:"part_name"`
-	PartColor string `json:"part_color"`
-	Position  uint   `json:"position"`
-	Path      string `json:"path"`
+	Fleet    string `json:"fleet"`
+	Part     string `json:"part"`
+	Position uint   `json:"position"`
+	Path     string `json:"path"`
 }
 
 type Distribution struct {
@@ -128,4 +127,5 @@ type Store interface {
 	GetPartTypeDistributionForFleets(context.Context) (string, error)
 	GetPartTypeDistributionsByFleet(context.Context, string) ([]Distribution, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
+	GetLayers(context.Context, string, ...string) ([]Layer, error)
 }

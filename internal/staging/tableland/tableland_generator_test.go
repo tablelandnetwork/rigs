@@ -15,7 +15,7 @@ func TestIt(t *testing.T) {
 	require.NoError(t, err)
 	g, err := NewTablelandGenerator(s, 1, "./cache")
 	require.NoError(t, err)
-	m, err := g.GenerateMetadata(context.Background(), 10, false)
+	m, err := g.GenerateMetadata(context.Background(), 1, false)
 	require.NoError(t, err)
 	b, err := json.MarshalIndent(m, "", "  ")
 	require.NoError(t, err)
