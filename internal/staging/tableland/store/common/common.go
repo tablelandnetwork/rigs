@@ -45,13 +45,13 @@ func SQLForInsertingParts(parts []store.Part) string {
 	vals := []string{}
 	for _, part := range parts {
 		vals = append(vals, fmt.Sprintf(
-			"(%s,%s,'%s','%s',%s,%s)",
+			"(%s,%s,'%s','%s',%s,%d)",
 			nullableStringValue(part.Fleet),
 			nullableStringValue(part.Original),
 			part.Type,
 			part.Name,
 			nullableStringValue(part.Color),
-			nullableInt16Value(part.Rank),
+			part.Rank,
 		))
 	}
 	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
@@ -61,13 +61,13 @@ func SQLForInsertingParts(parts []store.Part) string {
 // SQLForInsertingPart returns the SQL statement.
 func SQLForInsertingPart(part store.Part) string {
 	return fmt.Sprintf(
-		"insert into parts(fleet, original, type, name, color, rank) values (%s,%s,'%s','%s',%s,%s);",
+		"insert into parts(fleet, original, type, name, color, rank) values (%s,%s,'%s','%s',%s,%d);",
 		nullableStringValue(part.Fleet),
 		nullableStringValue(part.Original),
 		part.Type,
 		part.Name,
 		nullableStringValue(part.Color),
-		nullableInt16Value(part.Rank),
+		part.Rank,
 	)
 }
 

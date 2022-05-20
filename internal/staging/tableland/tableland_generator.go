@@ -2,6 +2,7 @@ package tableland
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image/png"
@@ -11,8 +12,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -70,7 +69,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 		Bool("reload sheets", reloadSheets).
 		Msg("generating metadata")
 
-	fleets, err := g.s.GetParts(ctx, store.OfType("Fleet"))
+	fleets, err := g.s.GetParts(ctx, store.OfType("Fleet"), store.OrderBy("rank"))
 	if err != nil {
 		return nil, fmt.Errorf("getting parts of fleet type: %v", err)
 	}
@@ -102,7 +101,13 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 		var vehicleParts []store.Part
 		for _, ptd := range partTypeDistributions {
-			parts, err := g.s.GetParts(ctx, store.OfFleet(ptd.Fleet.String), store.OfType(ptd.PartType), store.OrderBy("rank"))
+			// TODO: Make sure this order by is good
+			parts, err := g.s.GetParts(
+				ctx,
+				store.OfFleet(ptd.Fleet.String),
+				store.OfType(ptd.PartType),
+				store.OrderBy("rank, name, color"),
+			)
 			if err != nil {
 				return nil, fmt.Errorf("getting parts for fleet: %v", err)
 			}
@@ -173,37 +178,22 @@ func selectPart(
 		return store.Part{}, 0, 0, 0, errors.New("no parts provided to select from")
 	}
 
-	var stepWidth int
-	stepsParts := strings.Split(distribution, "st")
-	if len(stepsParts) == 2 {
-		numSteps, err := strconv.Atoi(stepsParts[1])
-		if err != nil {
-			return store.Part{}, 0, 0, 0, fmt.Errorf("parsing num steps: %v", err)
-		}
-		stepWidth = int(math.Ceil(float64(len(parts)) / float64(numSteps)))
-	}
-
-	breaks := make([]float64, len(parts))
+	var breaks []float64
 	var sum float64
-	for i := 0; i < len(parts); i++ {
+	for _, part := range parts {
+		fRank := float64(part.Rank)
 		var val float64
-
-		if stepWidth > 0 {
-			step := i / stepWidth
-			val = float64(step + 1)
-		} else {
-			switch distribution {
-			case "lin":
-				val = float64(i + 1)
-			case "exp":
-				val = math.Pow(float64(i+1), 2)
-			case "log":
-				val = math.Log(float64(i + 1))
-			case "con":
-				val = 1
-			}
+		switch distribution {
+		case "lin":
+			val = fRank
+		case "exp":
+			val = math.Pow(fRank, 2)
+		case "log":
+			val = math.Log(fRank)
+		case "con":
+			val = 1
 		}
-		breaks[i] = val
+		breaks = append(breaks, val)
 		sum += val
 	}
 
@@ -214,10 +204,6 @@ func selectPart(
 	for i, part := range parts {
 		opts = append(opts, opt{dist: breaks[i], part: part})
 	}
-
-	sort.SliceStable(opts, func(i, j int) bool {
-		return opts[i].dist < opts[j].dist
-	})
 
 	var (
 		upper float64
@@ -305,7 +291,10 @@ func (g *TablelandGenerator) RenderImage(
 
 	var label string
 	if drawLabels {
-		label = getTraitsLabel(md)
+		label, err = getTraitsLabel(md)
+		if err != nil {
+			return fmt.Errorf("getting traits label: %v", err)
+		}
 	}
 
 	r, err := renderer.NewRenderer(width, height, drawLabels, label)
@@ -359,12 +348,12 @@ func getFleet(md staging.Metadata) (string, error) {
 	return "", errors.New("no Fleet attribute found")
 }
 
-func getTraitsLabel(md staging.Metadata) string {
-	var label []string
-	for _, a := range md.Attributes {
-		label = append(label, fmt.Sprintf("%v", a.Value))
+func getTraitsLabel(md staging.Metadata) (string, error) {
+	b, err := json.MarshalIndent(md, "", "  ")
+	if err != nil {
+		return "", err
 	}
-	return strings.Join(label, ", ")
+	return string(b), nil
 }
 
 // Close implements io.Closer.

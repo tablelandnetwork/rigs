@@ -46,7 +46,7 @@ type Part struct {
 	Type     string         `json:"type"`
 	Name     string         `json:"name"`
 	Color    NullableString `json:"color"`
-	Rank     NullableInt16  `json:"rank"`
+	Rank     int            `json:"rank"`
 }
 
 type Layer struct {

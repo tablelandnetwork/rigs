@@ -9,6 +9,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
@@ -22,7 +23,7 @@ var (
 	lxoff  = 1.8
 	lyoff  = 1.2
 	ldpi   = 300.0
-	lscale = 128
+	lscale = 240
 	lcolor = image.Black
 )
 
@@ -111,10 +112,14 @@ func (r *Renderer) AddLayerByFile(layer string, label string) error {
 }
 
 func (r *Renderer) drawLabel(label string) error {
-	r.labelYPos += r.fctx.PointToFixed(r.fontSize * lyoff)
-	pt := freetype.Pt(int(r.labelXPos>>6), int(r.labelYPos>>6))
-	_, err := r.fctx.DrawString(label, pt)
-	return err
+	for _, s := range strings.Split(label, "\n") {
+		r.labelYPos += r.fctx.PointToFixed(r.fontSize * lyoff)
+		pt := freetype.Pt(int(r.labelXPos>>6), int(r.labelYPos>>6))
+		if _, err := r.fctx.DrawString(s, pt); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Write the layers to a PNG.

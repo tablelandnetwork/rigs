@@ -389,7 +389,7 @@ func processRootDir(rootPath string) error {
 		if !file.IsDir() {
 			continue
 		}
-		_, name, err := parseTopLevelDirName(file.Name())
+		rank, name, err := parseTopLevelDirName(file.Name())
 		if err != nil {
 			return err
 		}
@@ -399,6 +399,7 @@ func processRootDir(rootPath string) error {
 		parts = append(parts, store.Part{
 			Type: "Fleet",
 			Name: displayString(name),
+			Rank: rank,
 		})
 	}
 
@@ -436,7 +437,7 @@ func parseTopLevelDirName(s string) (int, string, error) {
 }
 
 func processFleetDir(fleetName string, rootPath string, basePath string) error {
-	files, err := ioutil.ReadDir(filepath.Join(rootPath, basePath, "Parts"))
+	files, err := ioutil.ReadDir(filepath.Join(rootPath, basePath))
 	if err != nil {
 		return err
 	}
@@ -457,7 +458,7 @@ func processFleetDir(fleetName string, rootPath string, basePath string) error {
 			part,
 			file.Name(),
 			rootPath,
-			filepath.Join(basePath, "Parts", file.Name()),
+			filepath.Join(basePath, file.Name()),
 			processedParts,
 		)
 		if err != nil {
@@ -488,13 +489,17 @@ func processPartDir(
 			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), file.Name())
 		}
 		prefixParts := strings.Split(filenameParts[0], "_")
-		if len(prefixParts) != 3 {
-			return nil, fmt.Errorf("expected three file name parts but found %d: %s", len(prefixParts), filenameParts[0])
+		if len(prefixParts) != 4 {
+			return nil, fmt.Errorf("expected 4 file name parts but found %d: %s", len(prefixParts), filenameParts[0])
 		}
 
-		original := prefixParts[0]
-		color := prefixParts[1]
-		name := prefixParts[2]
+		rank, err := strconv.Atoi(prefixParts[0])
+		if err != nil {
+			return nil, err
+		}
+		original := prefixParts[1]
+		color := prefixParts[2]
+		name := prefixParts[3]
 
 		partKey := fmt.Sprintf("%s|%s|%s", original, color, name)
 		if _, processedPart := processedParts[partKey]; !processedPart {
@@ -505,6 +510,7 @@ func processPartDir(
 				Type:     displayString(partType),
 				Name:     displayString(name),
 				Color:    store.NullableString{NullString: sql.NullString{String: displayString(color), Valid: true}},
+				Rank:     rank,
 			})
 		}
 
