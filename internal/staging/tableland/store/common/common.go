@@ -16,7 +16,6 @@ const (
 		type text not null,
 		name text not null,
 		color text,
-		rank integer,
 		primary key(fleet,name,color)
 	);`
 
@@ -27,14 +26,6 @@ const (
 		position integer not null,
 		path text not null,
 		primary key(fleet,part,position)
-	);`
-
-	// CreateDistributionsTableSQL is the SQL.
-	CreateDistributionsTableSQL = `create table distributions (
-		fleet text,
-		part_type text not null,
-		distribution text not null,
-		primary key(fleet, part_type)
 	);`
 
 	// CreateRigsTableSQL is the SQL.
@@ -49,24 +40,23 @@ const (
 		display_type text,
 		trait_type text,
 		value integer,
-		primary key(id, trait_type)
+		primary key(rig_id, trait_type)
 	);`
 )
 
 // SQLForInsertingParts returns the SQL statement.
 func SQLForInsertingParts(parts []store.Part) string {
 	b := new(strings.Builder)
-	b.WriteString("insert into parts(fleet, original, type, name, color, rank) values ")
+	b.WriteString("insert into parts(fleet, original, type, name, color) values ")
 	vals := []string{}
 	for _, part := range parts {
 		vals = append(vals, fmt.Sprintf(
-			"(%s,%s,'%s','%s',%s,%d)",
+			"(%s,%s,'%s','%s',%s)",
 			nullableStringValue(part.Fleet),
 			nullableStringValue(part.Original),
 			part.Type,
 			part.Name,
 			nullableStringValue(part.Color),
-			part.Rank,
 		))
 	}
 	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
@@ -91,31 +81,15 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 	return b.String()
 }
 
-// SQLForInsertingDistributions returns the SQL statement.
-func SQLForInsertingDistributions(dists []store.Distribution) string {
-	b := new(strings.Builder)
-	b.WriteString("insert into distributions(fleet, part_type, distribution) values ")
-	vals := []string{}
-	for _, dist := range dists {
-		vals = append(vals, fmt.Sprintf(
-			"(%s,'%s','%s')",
-			nullableStringValue(dist.Fleet),
-			dist.PartType,
-			dist.Distribution,
-		))
-	}
-	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
-	return b.String()
-}
-
 func SQLForInsertingRig(rig store.Rig) string {
 	b := new(strings.Builder)
-	b.WriteString(fmt.Sprintf("insert into rigs(id, imgage) values (%d, '%s');", rig.ID, rig.Image))
+	b.WriteString(fmt.Sprintf("insert into rigs(id, image) values (%d, '%s');", rig.ID, rig.Image))
 	b.WriteString("insert into rig_attributes(rig_id, display_type, trait_type, value) values ")
 	vals := []string{}
 	for _, att := range rig.Attributes {
 		vals = append(vals, fmt.Sprintf(
-			"('%s','%s','%s')",
+			"(%d,'%s','%s','%s')",
+			rig.ID,
 			att.DisplayType,
 			att.TraitType,
 			att.Value,
@@ -128,16 +102,6 @@ func SQLForInsertingRig(rig store.Rig) string {
 // SQLForGettingPartTypesByFleet returns the SQL statement.
 func SQLForGettingPartTypesByFleet(fleet string) string {
 	return fmt.Sprintf("select distinct type from parts where fleet = '%s'", fleet)
-}
-
-// SQLForGettingPartTypeDistributionForFleets returns the SQL statement.
-func SQLForGettingPartTypeDistributionForFleets() string {
-	return "select distribution from distributions where part_type = 'Fleet'"
-}
-
-// SQLForGettingPartTypeDistributionsByFleet returns the SQL statement.
-func SQLForGettingPartTypeDistributionsByFleet(fleet string) string {
-	return fmt.Sprintf("select * from distributions where fleet = '%s'", fleet)
 }
 
 // SQLForGettingParts returns the SQL statement.

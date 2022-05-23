@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/fatih/camelcase"
@@ -15,436 +14,9 @@ import (
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
+	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 )
-
-type FleetName string
-type LayerName string
-type Order int
-type LayerGuide map[FleetName]map[LayerName]Order
-
-var layerGuide = LayerGuide{
-	"Titans": {
-		"Background":     0,
-		"Chassis_Bottom": 1,
-		"Chassis_Back":   2,
-		"UtilityPack":    3,
-		"Mainframe":      4,
-		"Cab":            5,
-		"Chassis_Front":  6,
-		"Mod":            7,
-	},
-	"Tumblers": {
-		"Background":       0,
-		"Suspension_Back":  1,
-		"UtilityPack":      2,
-		"Core":             3,
-		"Suspension_Front": 4,
-		"Cockpit":          5,
-	},
-	"Sleds": {
-		"Background":     0,
-		"Chassis_Shadow": 1,
-		"Chassis_Main":   2,
-		"Spoiler":        3,
-		"Monocoque":      4,
-		"Bonnett":        5,
-		"Mod":            6,
-	},
-	"EdgeRiders": {
-		"Background":   0,
-		"Mod_SideBack": 1,
-		"Frame":        2,
-		"Mod_Back":     3,
-		"Rider":        4,
-		"Cockpit":      5,
-		"Mod_Side":     6,
-	},
-	"Tracers": {
-		"Background":    0,
-		"Mod_Back":      1,
-		"Mod_Front":     2,
-		"Chassis_Back":  3,
-		"Cockpit_Back":  4,
-		"Propulsion":    5,
-		"Chassis_Front": 6,
-		"Cockpit_Front": 7,
-	},
-	"Hoppers": {
-		"Background":       0,
-		"Mod":              1,
-		"Propulsion_Back":  2,
-		"Chassis":          3,
-		"Cockpit":          4,
-		"Propulsion_Front": 5,
-		"Propulsion_Top":   6,
-	},
-	"Airelights": {
-		"Background":       0,
-		"Propulsion_Back":  1,
-		"Airframe":         2,
-		"Cockpit":          3,
-		"Propulsion_Front": 4,
-		"Propulsion_Top":   5,
-	},
-	"Foils": {
-		"Background": 0,
-		"Airframe":   1,
-		"Propulsion": 2,
-		"Cockpit":    3,
-	},
-}
-
-type RankCategory string
-type RankItem string
-type Rank int
-type PartRank map[RankCategory]map[RankItem]Rank
-
-var partRank = PartRank{
-	"Fleets": {
-		// 66 styles, 181 originals
-		"Foils":       18, // 6 styles, 18 originals
-		"Tracers":     19, // 6 styles, 19 originals
-		"Sleds":       19, // 8 styles, 19 originals
-		"Airelights":  21, // 8 styles, 21 originals
-		"Edge Riders": 24, // 10 styles, 24 originals
-		"Hoppers":     25, // 8 styles, 25 originals
-		"Tumblers":    27, // 9 styles, 27 originals
-		"Titans":      28, // 11 styles, 28 originals
-		// "Airelights":  1, // 8 styles, 21 originals
-		// "Foils":       1, // 6 styles, 18 originals
-		// "Tracers":     2, // 6 styles, 19 originals
-		// "Hoppers":     2, // 8 styles, 25 originals
-		// "Sleds":       3, // 8 styles, 19 originals
-		// "Edge Riders": 3, // 10 styles, 24 originals
-		// "Titans":      4, // 11 styles, 28 originals
-		// "Tumblers":    4, // 9 styles, 27 originals
-	},
-	"Foils": {
-		// 3 colors
-		"Solar Scarab":  1,
-		"Hydro Wasp":    2,
-		"Stark Tangler": 3,
-		"The Cricket":   4,
-		"G-Nat":         5,
-		"The Messenger": 6,
-	},
-	"Tracers": {
-		// 2 colors
-		"Vapor Jet": 1,
-		// 3 colors
-		"Sand Splitter":  2,
-		"Hash Grappler":  3,
-		"Herculean Twin": 4,
-		// 4 colors
-		"Skipjack Thunderbolt": 5,
-		"Grohl":                6,
-	},
-	"Sleds": {
-		// 2 colors
-		"The Circuit": 1,
-		"Steamwing":   2,
-		"Skelebit":    3,
-		"Darkmatter":  4,
-		"Speedcube":   5,
-		"Swiftbeak":   6,
-		// 3 colors
-		"Decrypter": 7,
-		// 4 colors
-		"Waveracer": 8,
-	},
-	"Airelights": {
-		// 2 colors
-		"Cloudlifter": 1,
-		"The Monitor": 2,
-		"Sand Cipher": 3,
-		// 3 colors
-		"Dune Swallow":   4,
-		"Skycrane":       5,
-		"Quantum Whiff":  6,
-		"The Alpensquab": 7,
-		"The Orca":       8,
-	},
-	"EdgeRiders": {
-		// 2 colors
-		"DuVallion Loop":  1,
-		"Hex Interceptor": 2,
-		"Radio Fang":      3,
-		"Ledgerette":      4,
-		"Tablelancer":     5,
-		"Hodlbolt M2":     6,
-		"Merk Cracker":    7,
-		// 3 colors
-		"Holofox":    8,
-		"Salt Skiff": 9,
-		// 4 colors
-		"Gwei Jumper": 10,
-	},
-	"Hoppers": {
-		// 2 colors
-		"The Canyonlander": 1,
-		// 3 colors
-		"Block Explorer": 2,
-		"Stealth Node":   3,
-		"Rownum Candle":  4,
-		"Claim Jumper":   5,
-		"Steaming Eagle": 6,
-		// 4 colors
-		"Bit Shifter":    7,
-		"Fusion Scooter": 8,
-	},
-	"Tumblers": {
-		// 3 colors
-		"Ski Piggy":       1,
-		"Steam Surger":    2,
-		"Sonic Scribe":    3,
-		"The Witness":     4,
-		"Drillseeker":     5,
-		"Mercy Mayhem":    6,
-		"Lug Tug":         7,
-		"Cipher Smuggler": 8,
-		"Grid Piercer":    9,
-	},
-	"Titans": {
-		// 0 colors
-		"Circuit Sled": 1,
-		// 2 colors
-		"Sentry Buggy":  2,
-		"The Sniffer":   3,
-		"The Delica":    4,
-		"Cyclic Tooler": 5,
-		// 3 colors
-		"Solar Tank":   6,
-		"Heavy Medler": 7,
-		"Flux Blaster": 8,
-		"Rockbiter":    9,
-		// 4 colors
-		"Cyber Train":      10,
-		"Thriller Driller": 11,
-	},
-	"Backgrounds": {
-		"Dark":      1,
-		"Desat":     2,
-		"Hue Shift": 3,
-		"Main":      4,
-	},
-}
-
-// Distribtion values can be lin, exp, log, con, or stN where N is the number of steps.
-var distributions = []store.Distribution{
-	{
-		PartType:     "Fleet",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}},
-		PartType:     "Chassis",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}},
-		PartType:     "Mainframe",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}},
-		PartType:     "Cab",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}},
-		PartType:     "Utility Pack",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}},
-		PartType:     "Mod",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Titans", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}},
-		PartType:     "Suspension",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}},
-		PartType:     "Cockpit",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}},
-		PartType:     "Utility Pack",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}},
-		PartType:     "Core",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tumblers", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}},
-		PartType:     "Monocoque",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}},
-		PartType:     "Mod",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}},
-		PartType:     "Bonnet",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}},
-		PartType:     "Chassis",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}},
-		PartType:     "Spoiler",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Sleds", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}},
-		PartType:     "Mod",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}},
-		PartType:     "Cockpit",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}},
-		PartType:     "Frame",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}},
-		PartType:     "Rider",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Edge Riders", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}},
-		PartType:     "Chassis",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}},
-		PartType:     "Cockpit",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}},
-		PartType:     "Propulsion",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Tracers", Valid: true}},
-		PartType:     "Mod",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}},
-		PartType:     "Propulsion",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}},
-		PartType:     "Cockpit",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}},
-		PartType:     "Mod",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}},
-		PartType:     "Chassis",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Hoppers", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}},
-		PartType:     "Airframe",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}},
-		PartType:     "Cockpit",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Airelights", Valid: true}},
-		PartType:     "Propulsion",
-		Distribution: "lin",
-	},
-
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}},
-		PartType:     "Background",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}},
-		PartType:     "Airframe",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}},
-		PartType:     "Propulsion",
-		Distribution: "lin",
-	},
-	{
-		Fleet:        store.NullableString{NullString: sql.NullString{String: "Foils", Valid: true}},
-		PartType:     "Cockpit",
-		Distribution: "lin",
-	},
-}
 
 var parts = []store.Part{}
 var layers = []store.Layer{}
@@ -470,7 +42,8 @@ func main() {
 		log.Fatal().Err(err).Msg("getting home dir")
 	}
 
-	rootPath := filepath.Join(home, "tmp")
+	rootPath := filepath.Join(home, "Dropbox/Tableland/NFT/Fleets")
+	// rootPath := filepath.Join(home, "tmp")
 
 	if err := processRootDir(rootPath); err != nil {
 		log.Fatal().Err(err).Msg("processing root directory")
@@ -481,7 +54,7 @@ func main() {
 	}
 
 	// for _, part := range parts {
-	// 	if err := s.InsertPart(ctx, part); err != nil {
+	// 	if err := s.InsertParts(ctx, []store.Part{part}); err != nil {
 	// 		j, _ := json.MarshalIndent(part, "", "  ")
 	// 		fmt.Println(string(j))
 	// 		log.Fatal().Err(err).Msg("inserting part")
@@ -493,22 +66,10 @@ func main() {
 	}
 
 	// for _, layer := range layers {
-	// 	if err := s.InsertLayer(ctx, layer); err != nil {
+	// 	if err := s.InsertLayers(ctx, []store.Layer{layer}); err != nil {
 	// 		j, _ := json.MarshalIndent(layer, "", "  ")
 	// 		fmt.Println(string(j))
 	// 		log.Fatal().Err(err).Msg("inserting layer")
-	// 	}
-	// }
-
-	if err := s.InsertDistributions(ctx, distributions); err != nil {
-		log.Fatal().Err(err).Msg("inserting distributions")
-	}
-
-	// for _, dist := range distributions {
-	// 	if err := s.InsertDistribution(ctx, dist); err != nil {
-	// 		j, _ := json.MarshalIndent(dist, "", "  ")
-	// 		fmt.Println(string(j))
-	// 		log.Fatal().Err(err).Msg("inserting distribution")
 	// 	}
 	// }
 }
@@ -524,17 +85,12 @@ func processRootDir(rootPath string) error {
 		if !file.IsDir() {
 			continue
 		}
-		rank, name, err := parseTopLevelDirName(file.Name())
-		if err != nil {
-			return err
-		}
-		if name == "Backgrounds" {
-			continue
-		}
+
+		name := displayString(file.Name())
+
 		parts = append(parts, store.Part{
 			Type: "Fleet",
-			Name: displayString(name),
-			Rank: rank,
+			Name: name,
 		})
 	}
 
@@ -543,32 +99,11 @@ func processRootDir(rootPath string) error {
 		if !file.IsDir() {
 			continue
 		}
-		_, name, err := parseTopLevelDirName(file.Name())
-		if err != nil {
-			log.Fatal().Err(err).Msg(fmt.Sprintf("failed to parse top level dir name %s", file.Name()))
-		}
-
-		if name == "Backgrounds" {
-			continue
-		}
-
-		if err := processFleetDir(name, rootPath, file.Name()); err != nil {
+		if err := processFleetDir(displayString(file.Name()), rootPath, file.Name()); err != nil {
 			log.Fatal().Err(err).Msg("processing fleet dir")
 		}
 	}
 	return nil
-}
-
-func parseTopLevelDirName(s string) (int, string, error) {
-	vals := strings.Split(s, "_")
-	if len(vals) != 2 {
-		return 0, "", fmt.Errorf("expected two dir name parts but found %d", len(vals))
-	}
-	index, err := strconv.Atoi(vals[0])
-	if err != nil {
-		return 0, "", err
-	}
-	return index, vals[1], nil
 }
 
 func processFleetDir(fleetName string, rootPath string, basePath string) error {
@@ -586,7 +121,7 @@ func processFleetDir(fleetName string, rootPath string, basePath string) error {
 			return fmt.Errorf("expected one or two folder name parts but found %d", len(parts))
 		}
 
-		part := parts[0]
+		part := displayString(parts[0])
 
 		processedParts, err = processPartDir(
 			fleetName,
@@ -624,35 +159,35 @@ func processPartDir(
 			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), file.Name())
 		}
 		prefixParts := strings.Split(filenameParts[0], "_")
-		if len(prefixParts) != 4 {
-			return nil, fmt.Errorf("expected 4 file name parts but found %d: %s", len(prefixParts), filenameParts[0])
+		if len(prefixParts) != 3 {
+			return nil, fmt.Errorf("expected 3 file name parts but found %d: %s", len(prefixParts), filenameParts[0])
 		}
 
-		rank, err := strconv.Atoi(prefixParts[0])
-		if err != nil {
-			return nil, err
-		}
-		original := prefixParts[1]
-		color := prefixParts[2]
-		name := prefixParts[3]
+		original := displayString(prefixParts[0])
+		color := displayString(prefixParts[1])
+		name := displayString(prefixParts[2])
 
 		partKey := fmt.Sprintf("%s|%s|%s", original, color, name)
 		if _, processedPart := processedParts[partKey]; !processedPart {
 			processedParts[partKey] = true
 			parts = append(parts, store.Part{
-				Fleet:    store.NullableString{NullString: sql.NullString{String: displayString(fleetName), Valid: true}},
-				Original: store.NullableString{NullString: sql.NullString{String: displayString(original), Valid: len(original) > 0}},
-				Type:     displayString(partType),
-				Name:     displayString(name),
-				Color:    store.NullableString{NullString: sql.NullString{String: displayString(color), Valid: true}},
-				Rank:     rank,
+				Fleet:    store.NullableString{NullString: sql.NullString{String: fleetName, Valid: true}},
+				Original: store.NullableString{NullString: sql.NullString{String: original, Valid: len(original) > 0}},
+				Type:     partType,
+				Name:     name,
+				Color:    store.NullableString{NullString: sql.NullString{String: color, Valid: true}},
 			})
 		}
 
+		pos, err := minter.GetPosition(fleetName, layerName)
+		if err != nil {
+			return nil, err
+		}
+
 		layers = append(layers, store.Layer{
-			Fleet:    displayString(fleetName),
-			Part:     fmt.Sprintf("%s %s", displayString(color), displayString(name)),
-			Position: uint(layerGuide[FleetName(fleetName)][LayerName(layerName)]),
+			Fleet:    fleetName,
+			Part:     fmt.Sprintf("%s %s", color, name),
+			Position: uint(pos),
 			Path:     filepath.Join(basePath, file.Name()),
 		})
 	}

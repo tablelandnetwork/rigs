@@ -39,9 +39,6 @@ func (s *SQLiteStore) CreateTables(ctx context.Context) error {
 	if _, err := s.db.Exec(common.CreateLayersTableSQL); err != nil {
 		return fmt.Errorf("creating layers table: %v", err)
 	}
-	if _, err := s.db.Exec(common.CreateDistributionsTableSQL); err != nil {
-		return fmt.Errorf("creating distributions table: %v", err)
-	}
 	if _, err := s.db.Exec(common.CreateRigsTableSQL); err != nil {
 		return fmt.Errorf("creating rigs table: %v", err)
 	}
@@ -63,14 +60,6 @@ func (s *SQLiteStore) InsertParts(ctx context.Context, parts []store.Part) error
 func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) error {
 	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayers(layers)); err != nil {
 		return fmt.Errorf("inserting layers: %v", err)
-	}
-	return nil
-}
-
-// InsertDistributions implements InsertDistributions.
-func (s *SQLiteStore) InsertDistributions(ctx context.Context, distributions []store.Distribution) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingDistributions(distributions)); err != nil {
-		return fmt.Errorf("inserting distributions: %v", err)
 	}
 	return nil
 }
@@ -102,34 +91,6 @@ func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]
 	return types, nil
 }
 
-func (s *SQLiteStore) GetPartTypeDistributionForFleets(ctx context.Context) (string, error) {
-	var dist string
-	if err := s.db.QueryRowContext(ctx, common.SQLForGettingPartTypeDistributionForFleets()).Scan(&dist); err != nil {
-		return "", fmt.Errorf("querying for fleets distribution: %v", err)
-	}
-	return dist, nil
-}
-
-func (s *SQLiteStore) GetPartTypeDistributionsByFleet(ctx context.Context, fleet string) ([]store.Distribution, error) {
-	rows, err := s.db.QueryContext(ctx, common.SQLForGettingPartTypeDistributionsByFleet(fleet))
-	if err != nil {
-		return nil, fmt.Errorf("querying for distributions: %v", err)
-	}
-
-	var dists []store.Distribution
-	for rows.Next() {
-		var d store.Distribution
-		if err := rows.Scan(&d.Fleet, &d.PartType, &d.Distribution); err != nil {
-			return nil, fmt.Errorf("scanning row into Distribution: %v", err)
-		}
-		dists = append(dists, d)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("processing distributions query results: %v", err)
-	}
-	return dists, nil
-}
-
 func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption) ([]store.Part, error) {
 	o := &store.GetPartsOptions{}
 	for _, opt := range opts {
@@ -145,7 +106,7 @@ func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption
 	var parts []store.Part
 	for rows.Next() {
 		var part store.Part
-		if err := rows.Scan(&part.Fleet, &part.Original, &part.Type, &part.Name, &part.Color, &part.Rank); err != nil {
+		if err := rows.Scan(&part.Fleet, &part.Original, &part.Type, &part.Name, &part.Color); err != nil {
 			return nil, fmt.Errorf("scanning row into part: %v", err)
 		}
 		parts = append(parts, part)

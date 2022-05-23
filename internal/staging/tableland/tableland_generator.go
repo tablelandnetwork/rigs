@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"image/png"
 	"io"
-	"math"
 	"math/rand"
 	"os"
 	"path"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -19,6 +19,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
+	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 )
 
@@ -59,6 +60,7 @@ func NewTablelandGenerator(
 	}, nil
 }
 
+// GenerateMetadata implements GenerateMetadata.
 func (g *TablelandGenerator) GenerateMetadata(
 	ctx context.Context,
 	count int,
@@ -69,7 +71,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 		Bool("reload sheets", reloadSheets).
 		Msg("generating metadata")
 
-	fleets, err := g.s.GetParts(ctx, store.OfType("Fleet"), store.OrderBy("rank"))
+	fleets, err := g.s.GetParts(ctx, store.OfType("Fleet"))
 	if err != nil {
 		return nil, fmt.Errorf("getting parts of fleet type: %v", err)
 	}
@@ -81,12 +83,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 		// TODO: Make sure rarity = 1 is not rare at all, approaching 0 is very rare.
 		var rarity float64 = 1
 
-		fleetsDist, err := g.s.GetPartTypeDistributionForFleets(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("getting distribution for fleets: %v", err)
-		}
-
-		fleetPart, d, min, max, err := selectPart(&rig, fleets, fleetsDist)
+		fleetPart, d, min, max, err := selectPart(&rig, fleets)
 		if err != nil {
 			return nil, fmt.Errorf("selecting fleet trait: %v", err)
 		}
@@ -94,27 +91,25 @@ func (g *TablelandGenerator) GenerateMetadata(
 		mindist += min
 		maxdist += max
 
-		partTypeDistributions, err := g.s.GetPartTypeDistributionsByFleet(ctx, fleetPart.Name)
+		partTypes, err := g.s.GetPartTypesByFleet(ctx, fleetPart.Name)
 		if err != nil {
-			return nil, fmt.Errorf("getting part type distributions by fleet: %v", err)
+			return nil, fmt.Errorf("getting part types by fleet: %v", err)
 		}
 
 		var vehicleParts []store.Part
-		for _, ptd := range partTypeDistributions {
-			// TODO: Make sure this order by is good
+		for _, partType := range partTypes {
 			parts, err := g.s.GetParts(
 				ctx,
-				store.OfFleet(ptd.Fleet.String),
-				store.OfType(ptd.PartType),
-				store.OrderBy("rank, name, color"),
+				store.OfFleet(fleetPart.Name),
+				store.OfType(partType),
 			)
 			if err != nil {
 				return nil, fmt.Errorf("getting parts for fleet: %v", err)
 			}
 
-			part, d, min, max, err := selectPart(&rig, parts, ptd.Distribution)
+			part, d, min, max, err := selectPart(&rig, parts)
 			if err != nil {
-				return nil, fmt.Errorf("selecting part %s: %v", ptd.PartType, err)
+				return nil, fmt.Errorf("selecting part %s: %v", partType, err)
 			}
 			dist += d
 			mindist += min
@@ -186,11 +181,7 @@ type opt struct {
 	part store.Part
 }
 
-func selectPart(
-	rig *store.Rig,
-	parts []store.Part,
-	distribution string,
-) (store.Part, float64, float64, float64, error) {
+func selectPart(rig *store.Rig, parts []store.Part) (store.Part, float64, float64, float64, error) {
 	var opts []opt
 
 	if len(parts) == 0 {
@@ -200,20 +191,29 @@ func selectPart(
 	var breaks []float64
 	var sum float64
 	for _, part := range parts {
-		fRank := float64(part.Rank)
-		var val float64
-		switch distribution {
-		case "lin":
-			val = fRank
-		case "exp":
-			val = math.Pow(fRank, 2)
-		case "log":
-			val = math.Log(fRank)
-		case "con":
-			val = 1
+		var category, item string
+		if part.Type == "Fleet" {
+			category = "Fleets"
+			item = part.Name
+		} else if part.Type == "Rider" {
+			category = "Riders"
+			item = part.Color.String
+		} else if part.Type == "Background" {
+			category = "Backgrounds"
+			item = part.Color.String
+		} else {
+			category = part.Fleet.String
+			item = part.Original.String
 		}
-		breaks = append(breaks, val)
-		sum += val
+
+		rank, err := minter.GetRank(category, item)
+		if err != nil {
+			return store.Part{}, 0, 0, 0, err
+		}
+
+		fRank := float64(rank)
+		breaks = append(breaks, fRank)
+		sum += fRank
 	}
 
 	for i := 0; i < len(breaks); i++ {
@@ -223,6 +223,21 @@ func selectPart(
 	for i, part := range parts {
 		opts = append(opts, opt{dist: breaks[i], part: part})
 	}
+
+	sort.SliceStable(opts, func(i, j int) bool {
+		if opts[i].dist != opts[j].dist {
+			return opts[i].dist < opts[j].dist
+		}
+		if opts[i].part.Name != opts[j].part.Name {
+			return opts[i].part.Name < opts[j].part.Name
+		}
+		return opts[i].part.Color.String < opts[j].part.Color.String
+	})
+
+	// for _, opt := range opts {
+	// 	fmt.Printf("dist = %f, name = %s, color = %s\n", opt.dist, opt.part.Name, opt.part.Color.String)
+	// }
+	// fmt.Println()
 
 	var (
 		upper float64
@@ -300,10 +315,6 @@ func (g *TablelandGenerator) RenderImage(
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
 
-	// layers, err := getLayers(md, g.layers)
-	// if err != nil {
-	// 	return fmt.Errorf("getting layers: %v", err)
-	// }
 	layers, err := g.getLayers(ctx, md)
 	if err != nil {
 		return fmt.Errorf("getting layers: %v", err)
@@ -336,7 +347,8 @@ func (g *TablelandGenerator) RenderImage(
 			Msg("adding layer")
 
 		label := fmt.Sprintf("%d: %s: %s", l.Position, l.Part, l.Path)
-		if err := r.AddLayerByFile(path.Join(home, "tmp", l.Path), label); err != nil {
+		if err := r.AddLayerByFile(path.Join(home, "Dropbox/Tableland/NFT/Fleets", l.Path), label); err != nil {
+			// if err := r.AddLayerByFile(path.Join(home, "tmp", l.Path), label); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
 	}

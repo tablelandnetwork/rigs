@@ -46,7 +46,6 @@ type Part struct {
 	Type     string         `json:"type"`
 	Name     string         `json:"name"`
 	Color    NullableString `json:"color"`
-	Rank     int            `json:"rank"`
 }
 
 type Layer struct {
@@ -54,12 +53,6 @@ type Layer struct {
 	Part     string `json:"part"`
 	Position uint   `json:"position"`
 	Path     string `json:"path"`
-}
-
-type Distribution struct {
-	Fleet        NullableString `json:"fleet"`
-	PartType     string         `json:"part_type"`
-	Distribution string         `json:"distribution"`
 }
 
 type RigAttribute struct {
@@ -130,11 +123,8 @@ type Store interface {
 	CreateTables(context.Context) error
 	InsertParts(context.Context, []Part) error
 	InsertLayers(context.Context, []Layer) error
-	InsertDistributions(context.Context, []Distribution) error
 	InsertRig(context.Context, Rig) error
 	GetPartTypesByFleet(context.Context, string) ([]string, error)
-	GetPartTypeDistributionForFleets(context.Context) (string, error)
-	GetPartTypeDistributionsByFleet(context.Context, string) ([]Distribution, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
 	GetLayers(context.Context, string, ...string) ([]Layer, error)
 }
