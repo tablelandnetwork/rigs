@@ -115,8 +115,8 @@ func SQLForInsertingRig(rig store.Rig) string {
 	vals := []string{}
 	for _, att := range rig.Attributes {
 		vals = append(vals, fmt.Sprintf(
-			"(%s,'%s','%s')",
-			nullableStringValue(att.DisplayType),
+			"('%s','%s','%s')",
+			att.DisplayType,
 			att.TraitType,
 			att.Value,
 		))

@@ -63,9 +63,9 @@ type Distribution struct {
 }
 
 type RigAttribute struct {
-	DisplayType NullableString `json:"display_type,omitempty"`
-	TraitType   string         `json:"trait_type"`
-	Value       interface{}    `json:"value"`
+	DisplayType string      `json:"display_type,omitempty"`
+	TraitType   string      `json:"trait_type"`
+	Value       interface{} `json:"value"`
 }
 type Rig struct {
 	ID         int            `json:"id"`

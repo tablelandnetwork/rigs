@@ -76,7 +76,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		var m staging.Metadata
+		rig := store.Rig{ID: i, Image: "<some url>"}
 		var dist, mindist, maxdist float64
 		// TODO: Make sure rarity = 1 is not rare at all, approaching 0 is very rare.
 		var rarity float64 = 1
@@ -86,7 +86,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 			return nil, fmt.Errorf("getting distribution for fleets: %v", err)
 		}
 
-		fleetPart, d, min, max, err := selectPart(&m, fleets, fleetsDist)
+		fleetPart, d, min, max, err := selectPart(&rig, fleets, fleetsDist)
 		if err != nil {
 			return nil, fmt.Errorf("selecting fleet trait: %v", err)
 		}
@@ -112,7 +112,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 				return nil, fmt.Errorf("getting parts for fleet: %v", err)
 			}
 
-			part, d, min, max, err := selectPart(&m, parts, ptd.Distribution)
+			part, d, min, max, err := selectPart(&rig, parts, ptd.Distribution)
 			if err != nil {
 				return nil, fmt.Errorf("selecting part %s: %v", ptd.PartType, err)
 			}
@@ -126,29 +126,35 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 		percentOriginal := percentOriginal(vehicleParts)
 		if percentOriginal == 1 {
-			m.Attributes = append(
-				[]staging.Trait{
+			rig.Attributes = append(
+				[]store.RigAttribute{
 					{
-						TraitType: "Name",
-						Value:     vehicleParts[0].Original.String,
+						DisplayType: "string",
+						TraitType:   "Name",
+						Value:       vehicleParts[0].Original.String,
 					},
 					{
-						TraitType: "Color",
-						Value:     vehicleParts[0].Color.String,
+						DisplayType: "string",
+						TraitType:   "Color",
+						Value:       vehicleParts[0].Color.String,
 					},
 				},
-				m.Attributes...,
+				rig.Attributes...,
 			)
 		}
 
-		m.Attributes = append(
-			[]staging.Trait{{
+		rig.Attributes = append(
+			[]store.RigAttribute{{
 				DisplayType: "number",
 				TraitType:   "Original",
 				Value:       percentOriginal * 100,
 			}},
-			m.Attributes...,
+			rig.Attributes...,
 		)
+
+		if err := g.s.InsertRig(ctx, rig); err != nil {
+			return nil, fmt.Errorf("inserting rig: %v", err)
+		}
 
 		// TODO: Move this rarity to be a attributes trait.
 		if maxdist != 0 && maxdist > mindist {
@@ -156,11 +162,23 @@ func (g *TablelandGenerator) GenerateMetadata(
 		}
 
 		md = append(md, staging.GeneratedMetadata{
-			Metadata: m,
+			Metadata: rigToMetadata(rig),
 			Rarity:   staging.Rarity(rarity * 100),
 		})
 	}
 	return md, nil
+}
+
+func rigToMetadata(rig store.Rig) staging.Metadata {
+	m := staging.Metadata{}
+	for _, att := range rig.Attributes {
+		m.Attributes = append(m.Attributes, staging.Trait{
+			DisplayType: att.DisplayType,
+			TraitType:   att.TraitType,
+			Value:       att.Value,
+		})
+	}
+	return m
 }
 
 type opt struct {
@@ -169,7 +187,7 @@ type opt struct {
 }
 
 func selectPart(
-	md *staging.Metadata,
+	rig *store.Rig,
 	parts []store.Part,
 	distribution string,
 ) (store.Part, float64, float64, float64, error) {
@@ -223,9 +241,10 @@ func selectPart(
 				b.WriteString(fmt.Sprintf("%s ", o.part.Color.String))
 			}
 			b.WriteString(o.part.Name)
-			md.Attributes = append(md.Attributes, staging.Trait{
-				TraitType: o.part.Type,
-				Value:     b.String(),
+			rig.Attributes = append(rig.Attributes, store.RigAttribute{
+				DisplayType: "string",
+				TraitType:   o.part.Type,
+				Value:       b.String(),
 			})
 			break
 		}
