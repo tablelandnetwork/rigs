@@ -62,6 +62,17 @@ type Distribution struct {
 	Distribution string         `json:"distribution"`
 }
 
+type RigAttribute struct {
+	DisplayType NullableString `json:"display_type,omitempty"`
+	TraitType   string         `json:"trait_type"`
+	Value       interface{}    `json:"value"`
+}
+type Rig struct {
+	ID         int            `json:"id"`
+	Image      string         `json:"image"`
+	Attributes []RigAttribute `json:"attributes"`
+}
+
 type GetPartsOptions struct {
 	Fleet    string
 	Original string
@@ -118,11 +129,9 @@ func OrderBy(orderBy string) GetPartsOption {
 type Store interface {
 	CreateTables(context.Context) error
 	InsertParts(context.Context, []Part) error
-	InsertPart(context.Context, Part) error
 	InsertLayers(context.Context, []Layer) error
-	InsertLayer(context.Context, Layer) error
 	InsertDistributions(context.Context, []Distribution) error
-	InsertDistribution(context.Context, Distribution) error
+	InsertRig(context.Context, Rig) error
 	GetPartTypesByFleet(context.Context, string) ([]string, error)
 	GetPartTypeDistributionForFleets(context.Context) (string, error)
 	GetPartTypeDistributionsByFleet(context.Context, string) ([]Distribution, error)

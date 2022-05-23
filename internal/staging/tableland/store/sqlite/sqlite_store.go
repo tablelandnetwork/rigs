@@ -11,10 +11,12 @@ import (
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/common"
 )
 
+// SQLiteStore implements Store using SQLite.
 type SQLiteStore struct {
 	db *sql.DB
 }
 
+// NewSQLiteStore creates a new SQLite store.
 func NewSQLiteStore(dbFile string, reset bool) (*SQLiteStore, error) {
 	if reset {
 		_ = os.Remove(dbFile)
@@ -29,6 +31,7 @@ func NewSQLiteStore(dbFile string, reset bool) (*SQLiteStore, error) {
 	}, nil
 }
 
+// CreateTables implements CreateTables.
 func (s *SQLiteStore) CreateTables(ctx context.Context) error {
 	if _, err := s.db.Exec(common.CreatePartsTableSQL); err != nil {
 		return fmt.Errorf("creating parts table: %v", err)
@@ -39,9 +42,16 @@ func (s *SQLiteStore) CreateTables(ctx context.Context) error {
 	if _, err := s.db.Exec(common.CreateDistributionsTableSQL); err != nil {
 		return fmt.Errorf("creating distributions table: %v", err)
 	}
+	if _, err := s.db.Exec(common.CreateRigsTableSQL); err != nil {
+		return fmt.Errorf("creating rigs table: %v", err)
+	}
+	if _, err := s.db.Exec(common.CreateRigAttributesTableSQL); err != nil {
+		return fmt.Errorf("creating rig attributes table: %v", err)
+	}
 	return nil
 }
 
+// InsertParts implements InsertParts.
 func (s *SQLiteStore) InsertParts(ctx context.Context, parts []store.Part) error {
 	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingParts(parts)); err != nil {
 		return fmt.Errorf("inserting parts: %v", err)
@@ -49,13 +59,7 @@ func (s *SQLiteStore) InsertParts(ctx context.Context, parts []store.Part) error
 	return nil
 }
 
-func (s *SQLiteStore) InsertPart(ctx context.Context, part store.Part) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingPart(part)); err != nil {
-		return fmt.Errorf("inserting part: %v", err)
-	}
-	return nil
-}
-
+// InsertLayers implements InsertLayers.
 func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) error {
 	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayers(layers)); err != nil {
 		return fmt.Errorf("inserting layers: %v", err)
@@ -63,13 +67,7 @@ func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) er
 	return nil
 }
 
-func (s *SQLiteStore) InsertLayer(ctx context.Context, layer store.Layer) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayer(layer)); err != nil {
-		return fmt.Errorf("inserting layer: %v", err)
-	}
-	return nil
-}
-
+// InsertDistributions implements InsertDistributions.
 func (s *SQLiteStore) InsertDistributions(ctx context.Context, distributions []store.Distribution) error {
 	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingDistributions(distributions)); err != nil {
 		return fmt.Errorf("inserting distributions: %v", err)
@@ -77,9 +75,9 @@ func (s *SQLiteStore) InsertDistributions(ctx context.Context, distributions []s
 	return nil
 }
 
-func (s *SQLiteStore) InsertDistribution(ctx context.Context, distribution store.Distribution) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingDistribution(distribution)); err != nil {
-		return fmt.Errorf("inserting distribution: %v", err)
+func (s *SQLiteStore) InsertRig(ctx context.Context, rig store.Rig) error {
+	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingRig(rig)); err != nil {
+		return fmt.Errorf("inserting rig: %v", err)
 	}
 	return nil
 }

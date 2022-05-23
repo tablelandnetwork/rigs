@@ -36,6 +36,21 @@ const (
 		distribution text not null,
 		primary key(fleet, part_type)
 	);`
+
+	// CreateRigsTableSQL is the SQL.
+	CreateRigsTableSQL = `create table rigs (
+		id integer primary key,
+		image text
+	);`
+
+	// CreateRigAttributesTableSQL is the SQL.
+	CreateRigAttributesTableSQL = `create table rig_attributes (
+		rig_id,
+		display_type text,
+		trait_type text,
+		value integer,
+		primary key(id, trait_type)
+	);`
 )
 
 // SQLForInsertingParts returns the SQL statement.
@@ -58,19 +73,6 @@ func SQLForInsertingParts(parts []store.Part) string {
 	return b.String()
 }
 
-// SQLForInsertingPart returns the SQL statement.
-func SQLForInsertingPart(part store.Part) string {
-	return fmt.Sprintf(
-		"insert into parts(fleet, original, type, name, color, rank) values (%s,%s,'%s','%s',%s,%d);",
-		nullableStringValue(part.Fleet),
-		nullableStringValue(part.Original),
-		part.Type,
-		part.Name,
-		nullableStringValue(part.Color),
-		part.Rank,
-	)
-}
-
 // SQLForInsertingLayers returns the SQL statement.
 func SQLForInsertingLayers(layers []store.Layer) string {
 	b := new(strings.Builder)
@@ -87,17 +89,6 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 	}
 	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
 	return b.String()
-}
-
-// SQLForInsertingLayer returns the SQL statement.
-func SQLForInsertingLayer(layer store.Layer) string {
-	return fmt.Sprintf(
-		"insert into layers(fleet, part, position, path) values ('%s','%s',%d,'%s');",
-		layer.Fleet,
-		layer.Part,
-		layer.Position,
-		layer.Path,
-	)
 }
 
 // SQLForInsertingDistributions returns the SQL statement.
@@ -117,14 +108,21 @@ func SQLForInsertingDistributions(dists []store.Distribution) string {
 	return b.String()
 }
 
-// SQLForInsertingDistribution returns the SQL statement.
-func SQLForInsertingDistribution(dist store.Distribution) string {
-	return fmt.Sprintf(
-		"insert into layers(insert into distributions(fleet, part_type, distribution) values (%s,'%s','%s');",
-		nullableStringValue(dist.Fleet),
-		dist.PartType,
-		dist.Distribution,
-	)
+func SQLForInsertingRig(rig store.Rig) string {
+	b := new(strings.Builder)
+	b.WriteString(fmt.Sprintf("insert into rigs(id, imgage) values (%d, '%s');", rig.ID, rig.Image))
+	b.WriteString("insert into rig_attributes(rig_id, display_type, trait_type, value) values ")
+	vals := []string{}
+	for _, att := range rig.Attributes {
+		vals = append(vals, fmt.Sprintf(
+			"(%s,'%s','%s')",
+			nullableStringValue(att.DisplayType),
+			att.TraitType,
+			att.Value,
+		))
+	}
+	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
+	return b.String()
 }
 
 // SQLForGettingPartTypesByFleet returns the SQL statement.

@@ -154,6 +154,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 		if maxdist != 0 && maxdist > mindist {
 			rarity = (dist - mindist) / (maxdist - mindist) // scale to range 0-1
 		}
+
 		md = append(md, staging.GeneratedMetadata{
 			Metadata: m,
 			Rarity:   staging.Rarity(rarity * 100),
@@ -315,7 +316,7 @@ func (g *TablelandGenerator) RenderImage(
 			Str("name", l.Part).
 			Msg("adding layer")
 
-		label := fmt.Sprintf("%s: %s", l.Part, l.Path)
+		label := fmt.Sprintf("%d: %s: %s", l.Position, l.Part, l.Path)
 		if err := r.AddLayerByFile(path.Join(home, "tmp", l.Path), label); err != nil {
 			return fmt.Errorf("adding layer: %v", err)
 		}
