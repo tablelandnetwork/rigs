@@ -11,8 +11,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,12 +18,14 @@ import (
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/minter"
+	"github.com/tablelandnetwork/nft-minter/minter/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 )
 
 // TablelandGenerator generates NFT metadata from traits defined in parts.db.
 type TablelandGenerator struct {
 	s        store.Store
+	m        *minter.Minter
 	cacheDir string
 	images   map[string]*staging.Image
 	lk       sync.Mutex
@@ -39,6 +39,7 @@ func init() {
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
 	s store.Store,
+	m *minter.Minter,
 	concurrency int,
 	cacheDir string,
 ) (*TablelandGenerator, error) {
@@ -54,6 +55,7 @@ func NewTablelandGenerator(
 
 	return &TablelandGenerator{
 		s:        s,
+		m:        m,
 		cacheDir: cacheDir,
 		images:   make(map[string]*staging.Image),
 		limiter:  make(chan struct{}, concurrency),
@@ -71,87 +73,14 @@ func (g *TablelandGenerator) GenerateMetadata(
 		Bool("reload sheets", reloadSheets).
 		Msg("generating metadata")
 
-	fleets, err := g.s.GetParts(ctx, store.OfType("Fleet"))
-	if err != nil {
-		return nil, fmt.Errorf("getting parts of fleet type: %v", err)
-	}
-
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		rig := store.Rig{ID: i, Image: "<some url>"}
-		var dist, mindist, maxdist float64
-		// TODO: Make sure rarity = 1 is not rare at all, approaching 0 is very rare.
+		rig, dist, mindist, maxdist, err := g.m.Mint(ctx, i, system.NewSystemRandomnessSource())
+		if err != nil {
+			return nil, fmt.Errorf("minting: %v", err)
+		}
+
 		var rarity float64 = 1
-
-		fleetPart, d, min, max, err := selectPart(&rig, fleets)
-		if err != nil {
-			return nil, fmt.Errorf("selecting fleet trait: %v", err)
-		}
-		dist += d
-		mindist += min
-		maxdist += max
-
-		partTypes, err := g.s.GetPartTypesByFleet(ctx, fleetPart.Name)
-		if err != nil {
-			return nil, fmt.Errorf("getting part types by fleet: %v", err)
-		}
-
-		var vehicleParts []store.Part
-		for _, partType := range partTypes {
-			parts, err := g.s.GetParts(
-				ctx,
-				store.OfFleet(fleetPart.Name),
-				store.OfType(partType),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("getting parts for fleet: %v", err)
-			}
-
-			part, d, min, max, err := selectPart(&rig, parts)
-			if err != nil {
-				return nil, fmt.Errorf("selecting part %s: %v", partType, err)
-			}
-			dist += d
-			mindist += min
-			maxdist += max
-			if part.Type != "Background" {
-				vehicleParts = append(vehicleParts, part)
-			}
-		}
-
-		percentOriginal := percentOriginal(vehicleParts)
-		if percentOriginal == 1 {
-			rig.Attributes = append(
-				[]store.RigAttribute{
-					{
-						DisplayType: "string",
-						TraitType:   "Name",
-						Value:       vehicleParts[0].Original.String,
-					},
-					{
-						DisplayType: "string",
-						TraitType:   "Color",
-						Value:       vehicleParts[0].Color.String,
-					},
-				},
-				rig.Attributes...,
-			)
-		}
-
-		rig.Attributes = append(
-			[]store.RigAttribute{{
-				DisplayType: "number",
-				TraitType:   "Original",
-				Value:       percentOriginal * 100,
-			}},
-			rig.Attributes...,
-		)
-
-		if err := g.s.InsertRig(ctx, rig); err != nil {
-			return nil, fmt.Errorf("inserting rig: %v", err)
-		}
-
-		// TODO: Move this rarity to be a attributes trait.
 		if maxdist != 0 && maxdist > mindist {
 			rarity = (dist - mindist) / (maxdist - mindist) // scale to range 0-1
 		}
@@ -174,123 +103,6 @@ func rigToMetadata(rig store.Rig) staging.Metadata {
 		})
 	}
 	return m
-}
-
-type opt struct {
-	dist float64
-	part store.Part
-}
-
-func selectPart(rig *store.Rig, parts []store.Part) (store.Part, float64, float64, float64, error) {
-	var opts []opt
-
-	if len(parts) == 0 {
-		return store.Part{}, 0, 0, 0, errors.New("no parts provided to select from")
-	}
-
-	var breaks []float64
-	var sum float64
-	for _, part := range parts {
-		var category, item string
-		if part.Type == "Fleet" {
-			category = "Fleets"
-			item = part.Name
-		} else if part.Type == "Rider" {
-			category = "Riders"
-			item = part.Color.String
-		} else if part.Type == "Background" {
-			category = "Backgrounds"
-			item = part.Color.String
-		} else {
-			category = part.Fleet.String
-			item = part.Original.String
-		}
-
-		rank, err := minter.GetRank(category, item)
-		if err != nil {
-			return store.Part{}, 0, 0, 0, err
-		}
-
-		fRank := float64(rank)
-		breaks = append(breaks, fRank)
-		sum += fRank
-	}
-
-	for i := 0; i < len(breaks); i++ {
-		breaks[i] = breaks[i] / sum
-	}
-
-	for i, part := range parts {
-		opts = append(opts, opt{dist: breaks[i], part: part})
-	}
-
-	sort.SliceStable(opts, func(i, j int) bool {
-		if opts[i].dist != opts[j].dist {
-			return opts[i].dist < opts[j].dist
-		}
-		if opts[i].part.Name != opts[j].part.Name {
-			return opts[i].part.Name < opts[j].part.Name
-		}
-		return opts[i].part.Color.String < opts[j].part.Color.String
-	})
-
-	// for _, opt := range opts {
-	// 	fmt.Printf("dist = %f, name = %s, color = %s\n", opt.dist, opt.part.Name, opt.part.Color.String)
-	// }
-	// fmt.Println()
-
-	var (
-		upper float64
-		lower float64
-		dist  float64
-		num   = rand.Float64()
-		part  store.Part
-	)
-	for _, o := range opts {
-		upper += o.dist
-		if num < upper && num >= lower {
-			dist = o.dist
-			part = o.part
-			b := new(strings.Builder)
-			if o.part.Color.Valid {
-				b.WriteString(fmt.Sprintf("%s ", o.part.Color.String))
-			}
-			b.WriteString(o.part.Name)
-			rig.Attributes = append(rig.Attributes, store.RigAttribute{
-				DisplayType: "string",
-				TraitType:   o.part.Type,
-				Value:       b.String(),
-			})
-			break
-		}
-		lower = upper
-	}
-
-	if dist == 0 {
-		return store.Part{}, 0, 0, 0, errors.New("invalid distributions for trait")
-	}
-
-	return part, dist, opts[0].dist, opts[len(opts)-1].dist, nil
-}
-
-func percentOriginal(parts []store.Part) float64 {
-	counts := make(map[string]int)
-	total := 0
-	for _, part := range parts {
-		key := fmt.Sprintf("%s|%s", part.Color.String, part.Original.String)
-		if _, exists := counts[key]; !exists {
-			counts[key] = 0
-		}
-		counts[key]++
-		total++
-	}
-	max := 0
-	for _, count := range counts {
-		if count > max {
-			max = count
-		}
-	}
-	return float64(max) / float64(total)
 }
 
 // RenderImage returns an image based on the given metadata.

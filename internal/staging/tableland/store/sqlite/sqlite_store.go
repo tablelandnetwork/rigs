@@ -65,7 +65,11 @@ func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) er
 }
 
 func (s *SQLiteStore) InsertRig(ctx context.Context, rig store.Rig) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingRig(rig)); err != nil {
+	sql, err := common.SQLForInsertingRig(rig)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting rig: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("inserting rig: %v", err)
 	}
 	return nil

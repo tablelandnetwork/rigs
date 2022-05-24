@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/doug-martin/goqu/v9"
+	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 )
 
@@ -81,22 +83,35 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 	return b.String()
 }
 
-func SQLForInsertingRig(rig store.Rig) string {
-	b := new(strings.Builder)
-	b.WriteString(fmt.Sprintf("insert into rigs(id, image) values (%d, '%s');", rig.ID, rig.Image))
-	b.WriteString("insert into rig_attributes(rig_id, display_type, trait_type, value) values ")
-	vals := []string{}
-	for _, att := range rig.Attributes {
-		vals = append(vals, fmt.Sprintf(
-			"(%d,'%s','%s','%s')",
-			rig.ID,
-			att.DisplayType,
-			att.TraitType,
-			att.Value,
-		))
+func SQLForInsertingRig(rig store.Rig) (string, error) {
+	ds := goqu.Insert("rigs").Rows(
+		goqu.Record{
+			"id":    rig.ID,
+			"image": rig.Image,
+		},
+	)
+
+	sql1, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert rig: %v", err)
 	}
-	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
-	return b.String()
+
+	recs := []goqu.Record{}
+	for _, att := range rig.Attributes {
+		recs = append(recs, goqu.Record{
+			"rig_id":       rig.ID,
+			"display_type": att.DisplayType,
+			"trait_type":   att.TraitType,
+			"value":        att.Value,
+		})
+	}
+	ds = goqu.Insert("rig_attributes").Rows(recs)
+	sql2, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert rig: %v", err)
+	}
+
+	return strings.Join([]string{sql1, sql2}, ";\n"), nil
 }
 
 // SQLForGettingPartTypesByFleet returns the SQL statement.
