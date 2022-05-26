@@ -3,13 +3,18 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"net/http"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/fatih/camelcase"
+	ipfsfiles "github.com/ipfs/go-ipfs-files"
+	httpapi "github.com/ipfs/go-ipfs-http-client"
+	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
+	"github.com/omeid/uconfig"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
@@ -18,34 +23,53 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 )
 
+type config struct {
+	SQLiteDBPath string `default:""`
+	IPFS         struct {
+		APIAddr    string `default:"http://127.0.0.1:5001"`
+		LayersPath string `default:""`
+	}
+	Log struct {
+		Human bool `default:"false"`
+		Debug bool `default:"false"`
+	}
+}
+
 var parts = []store.Part{}
 var layers = []store.Layer{}
 
-func main() {
-	// TODO: Use a config struct that gets set up here.
-	logging.SetupLogger(buildinfo.GitCommit, true, true)
+var configFilename = "config.json"
 
-	s, err := sqlite.NewSQLiteStore("./parts.db", true)
+func main() {
+	ctx := context.Background()
+
+	config := setupConfig()
+	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
+
+	s, err := sqlite.NewSQLiteStore(config.SQLiteDBPath, true)
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create sqlite store")
 	}
 	defer s.Close()
 
-	ctx := context.Background()
-
 	if err := s.CreateTables(ctx); err != nil {
 		log.Fatal().Err(err).Msg("failed to create tables")
 	}
 
-	home, err := os.UserHomeDir()
+	httpClient := &http.Client{}
+	ipfs, err := httpapi.NewURLApiWithClient(config.IPFS.APIAddr, httpClient)
 	if err != nil {
-		log.Fatal().Err(err).Msg("getting home dir")
+		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	rootPath := filepath.Join(home, "Dropbox/Tableland/NFT/Fleets")
-	// rootPath := filepath.Join(home, "tmp")
+	path := ipfspath.New(config.IPFS.LayersPath)
 
-	if err := processRootDir(rootPath); err != nil {
+	rootNode, err := ipfs.Unixfs().Get(ctx, path)
+	if err != nil {
+		log.Fatal().Err(err).Msg("getting node to read")
+	}
+
+	if err := processRootNode(rootNode.(ipfsfiles.Directory), path); err != nil {
 		log.Fatal().Err(err).Msg("processing root directory")
 	}
 
@@ -74,61 +98,51 @@ func main() {
 	// }
 }
 
-func processRootDir(rootPath string) error {
-	files, err := ioutil.ReadDir(rootPath)
-	if err != nil {
-		return err
-	}
-
-	// Add the fleets to our parts list.
-	for _, file := range files {
-		if !file.IsDir() {
+func processRootNode(rootNode ipfsfiles.Directory, rootPath ipfspath.Path) error {
+	entries := rootNode.Entries()
+	// Process each fleet dir.
+	for entries.Next() {
+		dir, ok := entries.Node().(ipfsfiles.Directory)
+		if !ok {
 			continue
 		}
 
-		name := displayString(file.Name())
-
+		fleetName := displayString(entries.Name())
 		parts = append(parts, store.Part{
 			Type: "Fleet",
-			Name: name,
+			Name: fleetName,
 		})
-	}
 
-	// Process each fleet dir.
-	for _, file := range files {
-		if !file.IsDir() {
-			continue
-		}
-		if err := processFleetDir(displayString(file.Name()), rootPath, file.Name()); err != nil {
-			log.Fatal().Err(err).Msg("processing fleet dir")
+		path := ipfspath.Join(rootPath, entries.Name())
+		if err := processFleetNode(dir, path, fleetName); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func processFleetDir(fleetName string, rootPath string, basePath string) error {
-	files, err := ioutil.ReadDir(filepath.Join(rootPath, basePath))
-	if err != nil {
-		return err
-	}
+func processFleetNode(fleetNode ipfsfiles.Directory, fleetPath ipfspath.Path, fleetName string) error {
 	processedParts := make(map[string]bool)
-	for _, file := range files {
-		if !file.IsDir() {
+	entries := fleetNode.Entries()
+	for entries.Next() {
+		dir, ok := entries.Node().(ipfsfiles.Directory)
+		if !ok {
 			continue
 		}
-		parts := strings.Split(file.Name(), "_")
+		parts := strings.Split(entries.Name(), "_")
 		if len(parts) != 2 && len(parts) != 1 {
 			return fmt.Errorf("expected one or two folder name parts but found %d", len(parts))
 		}
 
-		part := displayString(parts[0])
+		partTypeName := displayString(parts[0])
 
-		processedParts, err = processPartDir(
+		var err error
+		processedParts, err = processPartTypeNode(
+			dir,
+			ipfspath.Join(fleetPath, entries.Name()),
 			fleetName,
-			part,
-			file.Name(),
-			rootPath,
-			filepath.Join(basePath, file.Name()),
+			partTypeName,
+			entries.Name(),
 			processedParts,
 		)
 		if err != nil {
@@ -138,25 +152,23 @@ func processFleetDir(fleetName string, rootPath string, basePath string) error {
 	return nil
 }
 
-func processPartDir(
+func processPartTypeNode(
+	partTypeNode ipfsfiles.Directory,
+	partTypePath ipfspath.Path,
 	fleetName string,
-	partType string,
+	partTypeName string,
 	layerName string,
-	rootPath string,
-	basePath string,
 	processedParts map[string]bool,
 ) (map[string]bool, error) {
-	files, err := ioutil.ReadDir(filepath.Join(rootPath, basePath))
-	if err != nil {
-		return nil, err
-	}
-	for _, file := range files {
-		if file.IsDir() || file.Name() == ".DS_Store" {
+	entries := partTypeNode.Entries()
+	for entries.Next() {
+		if _, ok := entries.Node().(ipfsfiles.File); !ok || entries.Name() == ".DS_Store" {
 			continue
 		}
-		filenameParts := strings.Split(file.Name(), ".")
+
+		filenameParts := strings.Split(entries.Name(), ".")
 		if len(filenameParts) != 2 {
-			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), file.Name())
+			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), entries.Name())
 		}
 		prefixParts := strings.Split(filenameParts[0], "_")
 		if len(prefixParts) != 3 {
@@ -173,7 +185,7 @@ func processPartDir(
 			parts = append(parts, store.Part{
 				Fleet:    store.NullableString{NullString: sql.NullString{String: fleetName, Valid: true}},
 				Original: store.NullableString{NullString: sql.NullString{String: original, Valid: len(original) > 0}},
-				Type:     partType,
+				Type:     partTypeName,
 				Name:     name,
 				Color:    store.NullableString{NullString: sql.NullString{String: color, Valid: true}},
 			})
@@ -188,7 +200,7 @@ func processPartDir(
 			Fleet:    fleetName,
 			Part:     fmt.Sprintf("%s %s", color, name),
 			Position: uint(pos),
-			Path:     filepath.Join(basePath, file.Name()),
+			Path:     ipfspath.Join(partTypePath, entries.Name()).String(),
 		})
 	}
 	return processedParts, nil
@@ -206,4 +218,26 @@ func displayString(s string) string {
 	final = strings.ReplaceAll(final, "S Po F", "SPoF")
 	final = strings.ReplaceAll(final, "M 2", "M2")
 	return final
+}
+
+func setupConfig() *config {
+	conf := &config{}
+	confFiles := uconfig.Files{
+		{configFilename, json.Unmarshal},
+	}
+
+	c, err := uconfig.Classic(&conf, confFiles)
+	if err != nil {
+		if c != nil {
+			c.Usage()
+		}
+		os.Exit(1)
+	}
+
+	return conf
+}
+
+func basicAuth(projectID, projectSecret string) string {
+	auth := projectID + ":" + projectSecret
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

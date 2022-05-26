@@ -13,7 +13,7 @@ func init() {
 	rand.Seed(time.Now().UnixNano())
 }
 
-// NewSystemRandomnessSource creates a SystemRandomnessSource
+// NewSystemRandomnessSource creates a SystemRandomnessSource.
 func NewSystemRandomnessSource() *SystemRandomnessSource {
 	return &SystemRandomnessSource{}
 }
