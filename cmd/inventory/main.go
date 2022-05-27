@@ -14,6 +14,8 @@ import (
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
+
+	// _ "github.com/motemen/go-loghttp/global"
 	"github.com/omeid/uconfig"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
@@ -115,13 +117,17 @@ func processRootNode(rootNode ipfsfiles.Directory, rootPath ipfspath.Path) error
 
 		path := ipfspath.Join(rootPath, entries.Name())
 		if err := processFleetNode(dir, path, fleetName); err != nil {
-			return err
+			return fmt.Errorf("processing fleet node: %v", err)
 		}
+	}
+	if entries.Err() != nil {
+		return fmt.Errorf("iterating root node entries: %v", entries.Err())
 	}
 	return nil
 }
 
 func processFleetNode(fleetNode ipfsfiles.Directory, fleetPath ipfspath.Path, fleetName string) error {
+	fmt.Printf("Processing fleet: %s\n", fleetName)
 	processedParts := make(map[string]bool)
 	entries := fleetNode.Entries()
 	for entries.Next() {
@@ -146,8 +152,11 @@ func processFleetNode(fleetNode ipfsfiles.Directory, fleetPath ipfspath.Path, fl
 			processedParts,
 		)
 		if err != nil {
-			return err
+			return fmt.Errorf("processing part type node: %v", err)
 		}
+	}
+	if entries.Err() != nil {
+		return fmt.Errorf("iterating fleet node entries: %v", entries.Err())
 	}
 	return nil
 }
@@ -160,6 +169,7 @@ func processPartTypeNode(
 	layerName string,
 	processedParts map[string]bool,
 ) (map[string]bool, error) {
+	fmt.Printf("	Processing part type layer: %s\n", layerName)
 	entries := partTypeNode.Entries()
 	for entries.Next() {
 		if _, ok := entries.Node().(ipfsfiles.File); !ok || entries.Name() == ".DS_Store" {
@@ -193,7 +203,7 @@ func processPartTypeNode(
 
 		pos, err := minter.GetPosition(fleetName, layerName)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("getting layer position: %v", err)
 		}
 
 		layers = append(layers, store.Layer{
@@ -202,6 +212,10 @@ func processPartTypeNode(
 			Position: uint(pos),
 			Path:     ipfspath.Join(partTypePath, entries.Name()).String(),
 		})
+		fmt.Printf("		Done processing part: %s|%s|%s|%s\n", fleetName, original, color, name)
+	}
+	if entries.Err() != nil {
+		return nil, fmt.Errorf("iterating part type node entries: %v", entries.Err())
 	}
 	return processedParts, nil
 }

@@ -65,6 +65,7 @@ func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) er
 	return nil
 }
 
+// InsertRig implements InsertRig.
 func (s *SQLiteStore) InsertRig(ctx context.Context, rig store.Rig) error {
 	sql, err := common.SQLForInsertingRig(rig)
 	if err != nil {
@@ -76,6 +77,7 @@ func (s *SQLiteStore) InsertRig(ctx context.Context, rig store.Rig) error {
 	return nil
 }
 
+// GetPartTypesByFleet implements GetPartTypesByFleet.
 func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]string, error) {
 	rows, err := s.db.QueryContext(ctx, common.SQLForGettingPartTypesByFleet(fleet))
 	if err != nil {
@@ -96,6 +98,7 @@ func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]
 	return types, nil
 }
 
+// GetParts implements GetParts.
 func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption) ([]store.Part, error) {
 	o := &store.GetPartsOptions{}
 	for _, opt := range opts {
@@ -122,6 +125,7 @@ func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption
 	return parts, nil
 }
 
+// GetLayers implements GetLayers.
 func (s *SQLiteStore) GetLayers(ctx context.Context, fleet string, parts ...string) ([]store.Layer, error) {
 	rows, err := s.db.QueryContext(ctx, common.SQLForGettingLayers(fleet, parts))
 	if err != nil {
