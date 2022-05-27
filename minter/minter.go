@@ -2,13 +2,21 @@ package minter
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"image/png"
+	"io"
 	"sort"
 	"strings"
 	"sync"
 
+	ipfsfiles "github.com/ipfs/go-ipfs-files"
+	iface "github.com/ipfs/interface-go-ipfs-core"
+	"github.com/ipfs/interface-go-ipfs-core/options"
+	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
+	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 )
 
 // RandomnessSource defines the API for a source of random numbers.
@@ -19,7 +27,9 @@ type RandomnessSource interface {
 
 // Minter mints a Rig NFT.
 type Minter struct {
-	s store.Store
+	s      store.Store
+	layers *Layers
+	ipfs   iface.CoreAPI
 
 	fleetsCache     []store.Part
 	fleetsCacheLock sync.Mutex
@@ -34,15 +44,24 @@ type Minter struct {
 }
 
 // NewMinter creates a Minter.
-func NewMinter(s store.Store, concurrency int) *Minter {
+func NewMinter(s store.Store, concurrency int, ipfs iface.CoreAPI) *Minter {
 	return &Minter{
 		s:       s,
+		layers:  NewLayers(ipfs),
+		ipfs:    ipfs,
 		limiter: make(chan struct{}, concurrency),
 	}
 }
 
 // Mint mints the Rig NFT.
-func (m *Minter) Mint(ctx context.Context, ID int, rs RandomnessSource) (store.Rig, float64, float64, float64, error) {
+func (m *Minter) Mint(
+	ctx context.Context,
+	ID int,
+	rs RandomnessSource,
+	width, height int,
+	compression png.CompressionLevel,
+	drawLabels bool,
+) (store.Rig, float64, float64, float64, error) {
 	m.limiter <- struct{}{}
 	defer func() { <-m.limiter }()
 
@@ -132,11 +151,107 @@ func (m *Minter) Mint(ctx context.Context, ID int, rs RandomnessSource) (store.R
 		)
 	}
 
+	layers, err := m.getLayers(ctx, rig)
+	if err != nil {
+		return store.Rig{}, 0, 0, 0, fmt.Errorf("getting layers for rig: %v", err)
+	}
+
+	var label string
+	if drawLabels {
+		label, err = getRigLabel(rig)
+		if err != nil {
+			return store.Rig{}, 0, 0, 0, fmt.Errorf("getting rig label: %v", err)
+		}
+	}
+
+	r, err := renderer.NewRenderer(width, height, drawLabels, label)
+	if err != nil {
+		return store.Rig{}, 0, 0, 0, fmt.Errorf("building renderer: %v", err)
+	}
+	defer r.Dispose()
+
+	for _, l := range layers {
+		log.Debug().
+			Str("name", l.Part).
+			Msg("adding layer")
+
+		i, err := m.layers.GetLayer(ctx, l.Path)
+		if err != nil {
+			return store.Rig{}, 0, 0, 0, fmt.Errorf("getting layer: %v", err)
+		}
+
+		label := fmt.Sprintf("%d: %s: %s", l.Position, l.Part, l.Path)
+
+		if err := r.AddLayer(i, label); err != nil {
+			return store.Rig{}, 0, 0, 0, fmt.Errorf("adding layer to renderer: %v", err)
+		}
+	}
+
+	reader, writer := io.Pipe()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader")
+		}
+	}()
+
+	go func() {
+		if err := r.Write(writer, compression); err != nil {
+			fmt.Printf("got a writer error: %v", err)
+		}
+		writer.Close()
+	}()
+
+	ipfsFile := ipfsfiles.NewReaderFile(reader)
+
+	path, err := m.ipfs.Unixfs().Add(ctx, ipfsFile, options.Unixfs.Pin(true))
+	if err != nil {
+		return store.Rig{}, 0, 0, 0, fmt.Errorf("adding image to ipfs: %v", err)
+	}
+
+	rig.Image = path.String()
+
 	if err := m.s.InsertRig(ctx, rig); err != nil {
+		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
+			log.Error().Err(err).Msg("unpinning from local ipfs after error inserting rig")
+		}
 		return store.Rig{}, 0, 0, 0, fmt.Errorf("inserting rig: %v", err)
 	}
 
+	// TODO: Pin remote.
+
 	return rig, dist, min, max, nil
+}
+
+func (m *Minter) getLayers(ctx context.Context, rig store.Rig) ([]store.Layer, error) {
+	fleet, err := getFleet(rig)
+	if err != nil {
+		return nil, err
+	}
+
+	var partValues []string
+	for _, att := range rig.Attributes {
+		if val, ok := att.Value.(string); ok {
+			partValues = append(partValues, val)
+		}
+	}
+	return m.s.GetLayers(ctx, fleet, partValues...)
+}
+
+func getFleet(rig store.Rig) (string, error) {
+	for _, att := range rig.Attributes {
+		if att.TraitType == "Fleet" {
+			return att.Value.(string), nil
+		}
+	}
+	return "", errors.New("no Fleet attribute found")
+}
+
+func getRigLabel(rig store.Rig) (string, error) {
+	b, err := json.MarshalIndent(rig, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
 }
 
 type opt struct {

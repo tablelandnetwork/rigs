@@ -4,21 +4,37 @@ import (
 	"context"
 	"fmt"
 	"image"
+	"sync"
 
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	iface "github.com/ipfs/interface-go-ipfs-core"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 )
 
+// Layers provides access to the NFT layer images.
 type Layers struct {
-	ipfs iface.CoreAPI
+	ipfs  iface.CoreAPI
+	cache map[string]image.Image
+	lck   sync.Mutex
 }
 
-func NewLayers(ipfs iface.CoreAPI, cacheDir string) (*Layers, error) {
-	return &Layers{}, nil
+// NewLayers creates a new Layers.
+func NewLayers(ipfs iface.CoreAPI) *Layers {
+	return &Layers{
+		ipfs:  ipfs,
+		cache: make(map[string]image.Image),
+	}
 }
 
-func (l *Layers) GetImage(ctx context.Context, path string) (image.Image, error) {
+// GetLayer returns a layer image for the provided path.
+func (l *Layers) GetLayer(ctx context.Context, path string) (image.Image, error) {
+	l.lck.Lock()
+	defer l.lck.Unlock()
+
+	if image, ok := l.cache[path]; ok {
+		return image, nil
+	}
+
 	p := ipfspath.New(path)
 	n, err := l.ipfs.Unixfs().Get(ctx, p)
 	if err != nil {
@@ -32,5 +48,6 @@ func (l *Layers) GetImage(ctx context.Context, path string) (image.Image, error)
 	if err != nil {
 		return nil, fmt.Errorf("decoding image: %v", err)
 	}
+	l.cache[path] = i
 	return i, nil
 }
