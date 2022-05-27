@@ -1,0 +1,16 @@
+node_modules
+.env
+coverage
+coverage.json
+typechain
+typechain-types
+abi.json
+bytecode.bin
+gobuild
+
+#Hardhat files
+cache
+artifacts
+
+#Openzeppelin files
+.openzeppelin/unknown-*1337.json
