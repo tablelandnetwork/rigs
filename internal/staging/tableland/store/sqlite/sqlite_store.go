@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	// Importing the sqlite driver.
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/common"
