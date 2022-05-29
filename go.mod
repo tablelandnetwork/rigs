@@ -10,8 +10,10 @@ require (
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/mux v1.8.0
-	github.com/ipfs/go-ipfs-files v0.0.8
+	github.com/ipfs/go-cid v0.1.0
+	github.com/ipfs/go-ipfs-files v0.0.9
 	github.com/ipfs/go-ipfs-http-client v0.3.1
+	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/ipfs/interface-go-ipfs-core v0.7.0
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/omeid/uconfig v1.2.0
@@ -56,7 +58,6 @@ require (
 	github.com/ipfs/bbloom v0.0.4 // indirect
 	github.com/ipfs/go-block-format v0.0.3 // indirect
 	github.com/ipfs/go-blockservice v0.3.0 // indirect
-	github.com/ipfs/go-cid v0.0.7 // indirect
 	github.com/ipfs/go-datastore v0.5.0 // indirect
 	github.com/ipfs/go-ipfs-blockstore v1.2.0 // indirect
 	github.com/ipfs/go-ipfs-cmds v0.6.0 // indirect
@@ -64,7 +65,6 @@ require (
 	github.com/ipfs/go-ipfs-exchange-interface v0.1.0 // indirect
 	github.com/ipfs/go-ipfs-util v0.0.2 // indirect
 	github.com/ipfs/go-ipld-cbor v0.0.5 // indirect
-	github.com/ipfs/go-ipld-format v0.4.0 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.0 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
 	github.com/ipfs/go-log/v2 v2.3.0 // indirect
