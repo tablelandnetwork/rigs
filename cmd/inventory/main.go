@@ -11,9 +11,12 @@ import (
 	"strings"
 
 	"github.com/fatih/camelcase"
-	ipfsfiles "github.com/ipfs/go-ipfs-files"
+	"github.com/ipfs/go-cid"
 	httpapi "github.com/ipfs/go-ipfs-http-client"
+	ipld "github.com/ipfs/go-ipld-format"
+	core "github.com/ipfs/interface-go-ipfs-core"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
+	"github.com/tablelandnetwork/nft-minter/minter"
 
 	// _ "github.com/motemen/go-loghttp/global"
 	"github.com/omeid/uconfig"
@@ -21,7 +24,6 @@ import (
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
-	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 )
 
@@ -65,13 +67,17 @@ func main() {
 	}
 
 	path := ipfspath.New(config.IPFS.LayersPath)
+	lcid, err := cid.Parse(config.IPFS.LayersPath)
+	if err != nil {
+		log.Fatal().Err(err).Msg("parsing layers path")
+	}
 
-	rootNode, err := ipfs.Unixfs().Get(ctx, path)
+	rootNode, err := ipfs.Dag().Get(ctx, lcid)
 	if err != nil {
 		log.Fatal().Err(err).Msg("getting node to read")
 	}
 
-	if err := processRootNode(rootNode.(ipfsfiles.Directory), path); err != nil {
+	if err := processRootNode(ctx, ipfs, rootNode, path); err != nil {
 		log.Fatal().Err(err).Msg("processing root directory")
 	}
 
@@ -100,85 +106,78 @@ func main() {
 	// }
 }
 
-func processRootNode(rootNode ipfsfiles.Directory, rootPath ipfspath.Path) error {
-	entries := rootNode.Entries()
+func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node, rootPath ipfspath.Path) error {
+	entries := rootNode.Links()
 	// Process each fleet dir.
-	for entries.Next() {
-		dir, ok := entries.Node().(ipfsfiles.Directory)
-		if !ok {
-			continue
+	for _, l := range entries {
+		n, err := l.GetNode(ctx, api.Dag())
+		if err != nil {
+			return fmt.Errorf("getting node: %v", err)
 		}
-
-		fleetName := displayString(entries.Name())
+		fleetName := displayString(l.Name)
 		parts = append(parts, store.Part{
 			Type: "Fleet",
 			Name: fleetName,
 		})
 
-		path := ipfspath.Join(rootPath, entries.Name())
-		if err := processFleetNode(dir, path, fleetName); err != nil {
+		if err := processFleetNode(ctx, api, n, fleetName); err != nil {
 			return fmt.Errorf("processing fleet node: %v", err)
 		}
-	}
-	if entries.Err() != nil {
-		return fmt.Errorf("iterating root node entries: %v", entries.Err())
 	}
 	return nil
 }
 
-func processFleetNode(fleetNode ipfsfiles.Directory, fleetPath ipfspath.Path, fleetName string) error {
+func processFleetNode(ctx context.Context, api core.CoreAPI, fleetNode ipld.Node, fleetName string) error {
 	fmt.Printf("Processing fleet: %s\n", fleetName)
 	processedParts := make(map[string]bool)
-	entries := fleetNode.Entries()
-	for entries.Next() {
-		dir, ok := entries.Node().(ipfsfiles.Directory)
-		if !ok {
-			continue
+	entries := fleetNode.Links()
+	for _, l := range entries {
+		n, err := l.GetNode(ctx, api.Dag())
+		if err != nil {
+			return fmt.Errorf("getting node: %v", err)
 		}
-		parts := strings.Split(entries.Name(), "_")
+
+		parts := strings.Split(l.Name, "_")
 		if len(parts) != 2 && len(parts) != 1 {
 			return fmt.Errorf("expected one or two folder name parts but found %d", len(parts))
 		}
-
 		partTypeName := displayString(parts[0])
 
-		var err error
 		processedParts, err = processPartTypeNode(
-			dir,
-			ipfspath.Join(fleetPath, entries.Name()),
+			ctx,
+			api,
+			n,
 			fleetName,
 			partTypeName,
-			entries.Name(),
+			l.Name,
 			processedParts,
 		)
 		if err != nil {
 			return fmt.Errorf("processing part type node: %v", err)
 		}
 	}
-	if entries.Err() != nil {
-		return fmt.Errorf("iterating fleet node entries: %v", entries.Err())
-	}
 	return nil
 }
 
 func processPartTypeNode(
-	partTypeNode ipfsfiles.Directory,
-	partTypePath ipfspath.Path,
+	ctx context.Context,
+	api core.CoreAPI,
+	partTypeNode ipld.Node,
 	fleetName string,
 	partTypeName string,
 	layerName string,
 	processedParts map[string]bool,
 ) (map[string]bool, error) {
 	fmt.Printf("	Processing part type layer: %s\n", layerName)
-	entries := partTypeNode.Entries()
-	for entries.Next() {
-		if _, ok := entries.Node().(ipfsfiles.File); !ok || entries.Name() == ".DS_Store" {
+	entries := partTypeNode.Links()
+	for _, l := range entries {
+		if l.Name == ".DS_Store" {
 			continue
 		}
 
-		filenameParts := strings.Split(entries.Name(), ".")
+		filenameParts := strings.Split(l.Name, ".")
 		if len(filenameParts) != 2 {
-			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), entries.Name())
+			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), l.Name)
 		}
 		prefixParts := strings.Split(filenameParts[0], "_")
 		if len(prefixParts) != 3 {
@@ -210,12 +209,10 @@ func processPartTypeNode(
 			Fleet:    fleetName,
 			Part:     fmt.Sprintf("%s %s", color, name),
 			Position: uint(pos),
-			Path:     ipfspath.Join(partTypePath, entries.Name()).String(),
+			Path:     l.Cid.String(),
+			// Path:     ipfspath.Join(partTypePath, l.Name).String(),
 		})
 		fmt.Printf("		Done processing part: %s|%s|%s|%s\n", fleetName, original, color, name)
-	}
-	if entries.Err() != nil {
-		return nil, fmt.Errorf("iterating part type node entries: %v", entries.Err())
 	}
 	return processedParts, nil
 }
