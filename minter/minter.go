@@ -15,6 +15,7 @@ import (
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	iface "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/ipfs/interface-go-ipfs-core/options"
+	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
@@ -59,56 +60,75 @@ func NewMinter(s store.Store, concurrency int, ipfs iface.CoreAPI, pinning iface
 // Mint mints the Rig NFT.
 func (m *Minter) Mint(
 	ctx context.Context,
-	ID int,
+	IDs []int,
 	rs RandomnessSource,
 	width, height int,
 	compression png.CompressionLevel,
 	drawLabels bool,
 	pinLocal, pinRemote bool,
-) (store.Rig, error) {
-	m.limiter <- struct{}{}
-	defer func() { <-m.limiter }()
+) ([]store.Rig, error) {
+	var rigs []store.Rig
+	var paths []ipfspath.Path
+	for _, ID := range IDs {
+		rig, _, _, _, err := m.MintRigData(ctx, ID, rs)
+		if err != nil {
+			return nil, fmt.Errorf("minting rig data: %v", err)
+		}
 
-	rig, _, _, _, err := m.MintRigData(ctx, ID, rs)
-	if err != nil {
-		return store.Rig{}, fmt.Errorf("minting rig data: %v", err)
+		reader, writer := io.Pipe()
+		defer func() {
+			if err := reader.Close(); err != nil {
+				log.Error().Err(err).Msg("closing reader")
+			}
+		}()
+
+		go func() {
+			m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
+			writer.Close()
+		}()
+
+		ipfsFile := ipfsfiles.NewReaderFile(reader)
+
+		path, err := m.ipfs.Unixfs().Add(ctx, ipfsFile, options.Unixfs.Pin(pinLocal))
+		if err != nil {
+			return nil, fmt.Errorf("adding image to ipfs: %v", err)
+		}
+
+		rig.Image = path.String()
+
+		rigs = append(rigs, rig)
+		paths = append(paths, path)
 	}
 
-	reader, writer := io.Pipe()
-	defer func() {
-		if err := reader.Close(); err != nil {
-			log.Error().Err(err).Msg("closing reader")
-		}
-	}()
-
-	go func() {
-		m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
-		writer.Close()
-	}()
-
-	ipfsFile := ipfsfiles.NewReaderFile(reader)
-
-	path, err := m.ipfs.Unixfs().Add(ctx, ipfsFile, options.Unixfs.Pin(pinLocal))
-	if err != nil {
-		return store.Rig{}, fmt.Errorf("adding image to ipfs: %v", err)
-	}
-
-	rig.Image = path.String()
-
-	if err := m.s.InsertRig(ctx, rig); err != nil {
-		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
-			log.Error().Err(err).Msg("unpinning from local ipfs after error inserting rig")
-		}
-		return store.Rig{}, fmt.Errorf("inserting rig: %v", err)
+	if err := m.s.InsertRigs(ctx, rigs); err != nil {
+		m.unpinPaths(ctx, paths)
+		return nil, fmt.Errorf("inserting rigs: %v", err)
 	}
 
 	if pinRemote {
-		if err := m.pinning.Add(ctx, path); err != nil {
-			return store.Rig{}, fmt.Errorf("pinning image remotely: %v", err)
+		if err := m.pinPaths(ctx, paths); err != nil {
+			return nil, fmt.Errorf("pinning images remotely: %v", err)
 		}
 	}
 
-	return rig, nil
+	return rigs, nil
+}
+
+func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path) {
+	for _, path := range paths {
+		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
+			log.Error().Err(err).Msg("unpinning from local ipfs after error inserting rig")
+		}
+	}
+}
+
+func (m *Minter) pinPaths(ctx context.Context, paths []ipfspath.Path) error {
+	for _, path := range paths {
+		if err := m.pinning.Add(ctx, path); err != nil {
+			return fmt.Errorf("pinning image remotely: %v", err)
+		}
+	}
+	return nil
 }
 
 // MintRigData generates a Rig.
@@ -217,6 +237,9 @@ func (m *Minter) MintRigImage(
 	defer func() {
 		logMemUsage()
 	}()
+
+	m.limiter <- struct{}{}
+	defer func() { <-m.limiter }()
 
 	layers, err := m.getLayers(ctx, rig)
 	if err != nil {

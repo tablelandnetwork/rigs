@@ -10,6 +10,8 @@ import (
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 )
 
+var dialect = goqu.Dialect("sqlite3")
+
 const (
 	// CreatePartsTableSQL is the SQL.
 	CreatePartsTableSQL = `create table parts (
@@ -83,32 +85,26 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 	return b.String()
 }
 
-func SQLForInsertingRig(rig store.Rig) (string, error) {
-	ds := goqu.Insert("rigs").Rows(
-		goqu.Record{
-			"id":    rig.ID,
-			"image": rig.Image,
-		},
-	)
+func SQLForInsertingRigs(rigs []store.Rig) (string, error) {
+	var rigVals [][]interface{}
+	var attVales [][]interface{}
+	for _, rig := range rigs {
+		rigVals = append(rigVals, goqu.Vals{rig.ID, rig.Image})
+		for _, att := range rig.Attributes {
+			attVales = append(attVales, goqu.Vals{rig.ID, att.DisplayType, att.TraitType, att.Value})
+		}
+	}
 
+	ds := dialect.Insert("rigs").Cols("id", "image").Vals(rigVals...)
 	sql1, _, err := ds.ToSQL()
 	if err != nil {
-		return "", fmt.Errorf("creating sql to insert rig: %v", err)
+		return "", fmt.Errorf("creating sql to insert rigs: %v", err)
 	}
 
-	recs := []goqu.Record{}
-	for _, att := range rig.Attributes {
-		recs = append(recs, goqu.Record{
-			"rig_id":       rig.ID,
-			"display_type": att.DisplayType,
-			"trait_type":   att.TraitType,
-			"value":        att.Value,
-		})
-	}
-	ds = goqu.Insert("rig_attributes").Rows(recs)
+	ds = dialect.Insert("rig_attributes").Cols("rig_id", "display_type", "trait_type", "value").Vals(attVales...)
 	sql2, _, err := ds.ToSQL()
 	if err != nil {
-		return "", fmt.Errorf("creating sql to insert rig: %v", err)
+		return "", fmt.Errorf("creating sql to insert rig attributes: %v", err)
 	}
 
 	return strings.Join([]string{sql1, sql2}, ";\n"), nil

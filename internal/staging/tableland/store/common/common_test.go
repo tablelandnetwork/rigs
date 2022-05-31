@@ -16,7 +16,7 @@ func TestGetSQLForGettingLayers(t *testing.T) {
 }
 
 func TestFoo(t *testing.T) {
-	rig := store.Rig{
+	rig1 := store.Rig{
 		ID:    1,
 		Image: "image here",
 		Attributes: []store.RigAttribute{
@@ -24,8 +24,16 @@ func TestFoo(t *testing.T) {
 			{DisplayType: "number", TraitType: "Age", Value: 40},
 		},
 	}
+	rig2 := store.Rig{
+		ID:    2,
+		Image: "image here",
+		Attributes: []store.RigAttribute{
+			{DisplayType: "string", TraitType: "Color", Value: "Grey"},
+			{DisplayType: "number", TraitType: "Age", Value: 40},
+		},
+	}
 
-	sql, err := SQLForInsertingRig(rig)
+	sql, err := SQLForInsertingRigs([]store.Rig{rig1, rig2})
 	require.NoError(t, err)
 
 	fmt.Println(sql)

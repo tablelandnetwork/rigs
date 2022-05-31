@@ -25,7 +25,7 @@ func TestMint(t *testing.T) {
 
 	rig, err := m.Mint(
 		context.Background(),
-		1,
+		[]int{1, 2, 3},
 		system.NewSystemRandomnessSource(),
 		1200,
 		1200,

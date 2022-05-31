@@ -12,6 +12,8 @@ import (
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/common"
 )
 
+const rigsSQLLengthLimit = 35000
+
 // SQLiteStore implements Store using SQLite.
 type SQLiteStore struct {
 	db *sql.DB
@@ -65,12 +67,16 @@ func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) er
 	return nil
 }
 
-// InsertRig implements InsertRig.
-func (s *SQLiteStore) InsertRig(ctx context.Context, rig store.Rig) error {
-	sql, err := common.SQLForInsertingRig(rig)
+// InsertRigs implements InsertRigs.
+func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []store.Rig) error {
+	sql, err := common.SQLForInsertingRigs(rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rig: %v", err)
 	}
+	if len(sql) > rigsSQLLengthLimit {
+		return fmt.Errorf("sql query length of %d is longer than limit of %d", len(sql), rigsSQLLengthLimit)
+	}
+	fmt.Println(sql)
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("inserting rig: %v", err)
 	}

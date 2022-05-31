@@ -123,7 +123,7 @@ type Store interface {
 	CreateTables(context.Context) error
 	InsertParts(context.Context, []Part) error
 	InsertLayers(context.Context, []Layer) error
-	InsertRig(context.Context, Rig) error
+	InsertRigs(context.Context, []Rig) error
 	GetPartTypesByFleet(context.Context, string) ([]string, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
 	GetLayers(context.Context, string, ...string) ([]Layer, error)
