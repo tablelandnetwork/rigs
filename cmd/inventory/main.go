@@ -128,7 +128,6 @@ func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node, 
 }
 
 func processFleetNode(ctx context.Context, api core.CoreAPI, fleetNode ipld.Node, fleetName string) error {
-	fmt.Printf("Processing fleet: %s\n", fleetName)
 	processedParts := make(map[string]bool)
 	entries := fleetNode.Links()
 	for _, l := range entries {
@@ -144,8 +143,6 @@ func processFleetNode(ctx context.Context, api core.CoreAPI, fleetNode ipld.Node
 		partTypeName := displayString(parts[0])
 
 		processedParts, err = processPartTypeNode(
-			ctx,
-			api,
 			n,
 			fleetName,
 			partTypeName,
@@ -160,15 +157,12 @@ func processFleetNode(ctx context.Context, api core.CoreAPI, fleetNode ipld.Node
 }
 
 func processPartTypeNode(
-	ctx context.Context,
-	api core.CoreAPI,
 	partTypeNode ipld.Node,
 	fleetName string,
 	partTypeName string,
 	layerName string,
 	processedParts map[string]bool,
 ) (map[string]bool, error) {
-	fmt.Printf("	Processing part type layer: %s\n", layerName)
 	entries := partTypeNode.Links()
 	for _, l := range entries {
 		if l.Name == ".DS_Store" {
@@ -212,7 +206,6 @@ func processPartTypeNode(
 			Path:     l.Cid.String(),
 			// Path:     ipfspath.Join(partTypePath, l.Name).String(),
 		})
-		fmt.Printf("		Done processing part: %s|%s|%s|%s\n", fleetName, original, color, name)
 	}
 	return processedParts, nil
 }

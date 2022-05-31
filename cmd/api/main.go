@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
@@ -40,14 +42,27 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	store, err := sqlite.NewSQLiteStore("./parts.db", false)
+	store, err := sqlite.NewSQLiteStore("./inventory.db", false)
 	if err != nil {
 		log.Fatal().
 			Err(err).
 			Msg("could not create store")
 	}
 
-	minter := minter.NewMinter(store, 20)
+	httpClient := &http.Client{}
+
+	ipfs, err := httpapi.NewURLApiWithClient(config.IPFS.APIAddr, httpClient)
+	if err != nil {
+		log.Fatal().Err(err).Msg("creating ipfs client")
+	}
+
+	remoteIpfs, err := httpapi.NewURLApiWithClient(config.RemoteIPFS.APIAddr, httpClient)
+	if err != nil {
+		log.Fatal().Err(err).Msg("creating remote ipfs client")
+	}
+	remoteIpfs.Headers.Add("Authorization", "Basic "+basicAuth(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
+
+	minter := minter.NewMinter(store, 20, ipfs, remoteIpfs.Pin())
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,
@@ -132,4 +147,9 @@ func handleInterrupt(stop func()) {
 	fmt.Println("Gracefully stopping... (press Ctrl+C again to force)")
 	stop()
 	os.Exit(1)
+}
+
+func basicAuth(projectID, projectSecret string) string {
+	auth := projectID + ":" + projectSecret
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

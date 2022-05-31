@@ -21,9 +21,9 @@ func TestMint(t *testing.T) {
 	ipfs, err := httpapi.NewURLApiWithClient("http://127.0.0.1:5001", httpClient)
 	require.NoError(t, err)
 
-	m := NewMinter(s, 10, ipfs)
+	m := NewMinter(s, 10, ipfs, nil)
 
-	rig, _, _, _, err := m.Mint(
+	rig, err := m.Mint(
 		context.Background(),
 		1,
 		system.NewSystemRandomnessSource(),
@@ -31,6 +31,8 @@ func TestMint(t *testing.T) {
 		1200,
 		png.DefaultCompression,
 		true,
+		true,
+		false,
 	)
 	require.NoError(t, err)
 	fmt.Println(rig)

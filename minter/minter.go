@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"image/png"
 	"io"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -27,9 +28,10 @@ type RandomnessSource interface {
 
 // Minter mints a Rig NFT.
 type Minter struct {
-	s      store.Store
-	layers *Layers
-	ipfs   iface.CoreAPI
+	s       store.Store
+	layers  *Layers
+	ipfs    iface.CoreAPI
+	pinning iface.PinAPI
 
 	fleetsCache     []store.Part
 	fleetsCacheLock sync.Mutex
@@ -44,11 +46,12 @@ type Minter struct {
 }
 
 // NewMinter creates a Minter.
-func NewMinter(s store.Store, concurrency int, ipfs iface.CoreAPI) *Minter {
+func NewMinter(s store.Store, concurrency int, ipfs iface.CoreAPI, pinning iface.PinAPI) *Minter {
 	return &Minter{
 		s:       s,
 		layers:  NewLayers(ipfs),
 		ipfs:    ipfs,
+		pinning: pinning,
 		limiter: make(chan struct{}, concurrency),
 	}
 }
@@ -61,10 +64,59 @@ func (m *Minter) Mint(
 	width, height int,
 	compression png.CompressionLevel,
 	drawLabels bool,
-) (store.Rig, float64, float64, float64, error) {
+	pinLocal, pinRemote bool,
+) (store.Rig, error) {
 	m.limiter <- struct{}{}
 	defer func() { <-m.limiter }()
 
+	rig, _, _, _, err := m.MintRigData(ctx, ID, rs)
+	if err != nil {
+		return store.Rig{}, fmt.Errorf("minting rig data: %v", err)
+	}
+
+	reader, writer := io.Pipe()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader")
+		}
+	}()
+
+	go func() {
+		m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
+		writer.Close()
+	}()
+
+	ipfsFile := ipfsfiles.NewReaderFile(reader)
+
+	path, err := m.ipfs.Unixfs().Add(ctx, ipfsFile, options.Unixfs.Pin(pinLocal))
+	if err != nil {
+		return store.Rig{}, fmt.Errorf("adding image to ipfs: %v", err)
+	}
+
+	rig.Image = path.String()
+
+	if err := m.s.InsertRig(ctx, rig); err != nil {
+		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
+			log.Error().Err(err).Msg("unpinning from local ipfs after error inserting rig")
+		}
+		return store.Rig{}, fmt.Errorf("inserting rig: %v", err)
+	}
+
+	if pinRemote {
+		if err := m.pinning.Add(ctx, path); err != nil {
+			return store.Rig{}, fmt.Errorf("pinning image remotely: %v", err)
+		}
+	}
+
+	return rig, nil
+}
+
+// MintRigData generates a Rig.
+func (m *Minter) MintRigData(
+	ctx context.Context,
+	ID int,
+	rs RandomnessSource,
+) (store.Rig, float64, float64, float64, error) {
 	rig := store.Rig{ID: ID}
 
 	fleets, err := m.fleets(ctx)
@@ -150,23 +202,38 @@ func (m *Minter) Mint(
 			rig.Attributes...,
 		)
 	}
+	return rig, dist, min, max, nil
+}
+
+// MintRigImage writes the Rig image to the provider Writer for the provided Rig.
+func (m *Minter) MintRigImage(
+	ctx context.Context,
+	rig store.Rig,
+	width, height int,
+	compression png.CompressionLevel,
+	drawLabels bool,
+	writer io.Writer,
+) error {
+	defer func() {
+		logMemUsage()
+	}()
 
 	layers, err := m.getLayers(ctx, rig)
 	if err != nil {
-		return store.Rig{}, 0, 0, 0, fmt.Errorf("getting layers for rig: %v", err)
+		return fmt.Errorf("getting layers for rig: %v", err)
 	}
 
 	var label string
 	if drawLabels {
 		label, err = getRigLabel(rig)
 		if err != nil {
-			return store.Rig{}, 0, 0, 0, fmt.Errorf("getting rig label: %v", err)
+			return fmt.Errorf("getting rig label: %v", err)
 		}
 	}
 
 	r, err := renderer.NewRenderer(width, height, drawLabels, label)
 	if err != nil {
-		return store.Rig{}, 0, 0, 0, fmt.Errorf("building renderer: %v", err)
+		return fmt.Errorf("building renderer: %v", err)
 	}
 	defer r.Dispose()
 
@@ -177,49 +244,21 @@ func (m *Minter) Mint(
 
 		i, err := m.layers.GetLayer(ctx, l.Path)
 		if err != nil {
-			return store.Rig{}, 0, 0, 0, fmt.Errorf("getting layer: %v", err)
+			return fmt.Errorf("getting layer: %v", err)
 		}
 
 		label := fmt.Sprintf("%d: %s: %s", l.Position, l.Part, l.Path)
 
 		if err := r.AddLayer(i, label); err != nil {
-			return store.Rig{}, 0, 0, 0, fmt.Errorf("adding layer to renderer: %v", err)
+			return fmt.Errorf("adding layer to renderer: %v", err)
 		}
 	}
 
-	reader, writer := io.Pipe()
-	defer func() {
-		if err := reader.Close(); err != nil {
-			log.Error().Err(err).Msg("closing reader")
-		}
-	}()
-
-	go func() {
-		if err := r.Write(writer, compression); err != nil {
-			fmt.Printf("got a writer error: %v", err)
-		}
-		writer.Close()
-	}()
-
-	ipfsFile := ipfsfiles.NewReaderFile(reader)
-
-	path, err := m.ipfs.Unixfs().Add(ctx, ipfsFile, options.Unixfs.Pin(true))
-	if err != nil {
-		return store.Rig{}, 0, 0, 0, fmt.Errorf("adding image to ipfs: %v", err)
+	if err := r.Write(writer, compression); err != nil {
+		return fmt.Errorf("writing to renderer: %v", err)
 	}
 
-	rig.Image = path.String()
-
-	if err := m.s.InsertRig(ctx, rig); err != nil {
-		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
-			log.Error().Err(err).Msg("unpinning from local ipfs after error inserting rig")
-		}
-		return store.Rig{}, 0, 0, 0, fmt.Errorf("inserting rig: %v", err)
-	}
-
-	// TODO: Pin remote.
-
-	return rig, dist, min, max, nil
+	return nil
 }
 
 func (m *Minter) getLayers(ctx context.Context, rig store.Rig) ([]store.Layer, error) {
@@ -416,4 +455,19 @@ func (m *Minter) fleetPartTypeParts(ctx context.Context, fleet string, partType 
 	}
 	m.fleetPartTypePartsCache[fleet][partType] = parts
 	return parts, nil
+}
+
+func logMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	log.Debug().
+		Str("alloc", fmt.Sprintf("%v", bToMb(m.Alloc))).
+		Str("total", fmt.Sprintf("%v", bToMb(m.TotalAlloc))).
+		Str("sys", fmt.Sprintf("%v", bToMb(m.Sys))).
+		Str("gc", fmt.Sprintf("%v", m.NumGC)).
+		Msg("memstats")
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }

@@ -2,15 +2,12 @@ package tableland
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"image/png"
 	"io"
 	"math/rand"
 	"os"
-	"path"
-	"runtime"
 	"sync"
 	"time"
 
@@ -19,10 +16,9 @@ import (
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/minter/randomness/system"
-	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 )
 
-// TablelandGenerator generates NFT metadata from traits defined in parts.db.
+// TablelandGenerator generates NFT metadata from traits defined in inventory.db.
 type TablelandGenerator struct {
 	s        store.Store
 	m        *minter.Minter
@@ -75,7 +71,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		rig, dist, mindist, maxdist, err := g.m.Mint(ctx, i, system.NewSystemRandomnessSource())
+		rig, dist, mindist, maxdist, err := g.m.MintRigData(ctx, i, system.NewSystemRandomnessSource())
 		if err != nil {
 			return nil, fmt.Errorf("minting: %v", err)
 		}
@@ -116,10 +112,6 @@ func (g *TablelandGenerator) RenderImage(
 	reloadLayers bool,
 	writer io.Writer,
 ) error {
-	defer func() {
-		logMemUsage()
-	}()
-
 	g.limiter <- struct{}{}
 	defer func() { <-g.limiter }()
 
@@ -127,95 +119,22 @@ func (g *TablelandGenerator) RenderImage(
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
 
-	layers, err := g.getLayers(ctx, md)
-	if err != nil {
-		return fmt.Errorf("getting layers: %v", err)
-	}
-
-	var label string
-	if drawLabels {
-		label, err = getTraitsLabel(md)
-		if err != nil {
-			return fmt.Errorf("getting traits label: %v", err)
-		}
-	}
-
-	r, err := renderer.NewRenderer(width, height, drawLabels, label)
-	if err != nil {
-		return fmt.Errorf("building renderer: %v", err)
-	}
-	defer r.Dispose()
-
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("getting home dir: %v", err)
-	}
-
-	for _, l := range layers {
-		// TODO: Check in memory cache for staging.Image
-
-		log.Debug().
-			Str("name", l.Part).
-			Msg("adding layer")
-
-		label := fmt.Sprintf("%d: %s: %s", l.Position, l.Part, l.Path)
-		if err := r.AddLayerByFile(path.Join(home, "Dropbox/Tableland/NFT/Fleets", l.Path), label); err != nil {
-			// if err := r.AddLayerByFile(path.Join(home, "tmp", l.Path), label); err != nil {
-			return fmt.Errorf("adding layer: %v", err)
-		}
-	}
-
-	return r.Write(writer, compression)
+	return g.m.MintRigImage(ctx, metadataToRig(md), width, height, compression, drawLabels, writer)
 }
 
-func (g *TablelandGenerator) getLayers(ctx context.Context, md staging.Metadata) ([]store.Layer, error) {
-	fleet, err := getFleet(md)
-	if err != nil {
-		return nil, err
-	}
-
-	var partValues []string
+func metadataToRig(md staging.Metadata) store.Rig {
+	rig := store.Rig{}
 	for _, att := range md.Attributes {
-		if val, ok := att.Value.(string); ok {
-			partValues = append(partValues, val)
-		}
+		rig.Attributes = append(rig.Attributes, store.RigAttribute{
+			DisplayType: att.DisplayType,
+			TraitType:   att.TraitType,
+			Value:       att.Value,
+		})
 	}
-	return g.s.GetLayers(ctx, fleet, partValues...)
-}
-
-func getFleet(md staging.Metadata) (string, error) {
-	for _, trait := range md.Attributes {
-		if trait.TraitType == "Fleet" {
-			return trait.Value.(string), nil
-		}
-	}
-	return "", errors.New("no Fleet attribute found")
-}
-
-func getTraitsLabel(md staging.Metadata) (string, error) {
-	b, err := json.MarshalIndent(md, "", "  ")
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
+	return rig
 }
 
 // Close implements io.Closer.
 func (g *TablelandGenerator) Close() error {
 	return nil
-}
-
-func logMemUsage() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	log.Debug().
-		Str("alloc", fmt.Sprintf("%v", bToMb(m.Alloc))).
-		Str("total", fmt.Sprintf("%v", bToMb(m.TotalAlloc))).
-		Str("sys", fmt.Sprintf("%v", bToMb(m.Sys))).
-		Str("gc", fmt.Sprintf("%v", m.NumGC)).
-		Msg("memstats")
-}
-
-func bToMb(b uint64) uint64 {
-	return b / 1024 / 1024
 }
