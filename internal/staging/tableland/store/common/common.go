@@ -110,6 +110,14 @@ func SQLForInsertingRigs(rigs []store.Rig) (string, error) {
 	return strings.Join([]string{sql1, sql2}, ";\n"), nil
 }
 
+// SQLForGettingOriginalRigs returns the SQL statement.
+func SQLForGettingOriginalRigs() string {
+	return `select distinct
+		fleet, original, color
+		from parts
+		where fleet is not null and original is not null and color is not null`
+}
+
 // SQLForGettingPartTypesByFleet returns the SQL statement.
 func SQLForGettingPartTypesByFleet(fleet string) string {
 	return fmt.Sprintf("select distinct type from parts where fleet = '%s'", fleet)

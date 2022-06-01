@@ -62,7 +62,7 @@ func main() {
 	}
 	remoteIpfs.Headers.Add("Authorization", "Basic "+basicAuth(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
 
-	minter := minter.NewMinter(store, 20, ipfs, remoteIpfs.Pin())
+	minter := minter.NewMinter(store, 20, ipfs, remoteIpfs.Pin(), config.RemoteIPFS.GatewayURL)
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,

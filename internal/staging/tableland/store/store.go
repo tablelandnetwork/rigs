@@ -66,6 +66,12 @@ type Rig struct {
 	Attributes []RigAttribute `json:"attributes"`
 }
 
+type OriginalRig struct {
+	Fleet string
+	Name  string
+	Color string
+}
+
 type GetPartsOptions struct {
 	Fleet    string
 	Original string
@@ -124,6 +130,7 @@ type Store interface {
 	InsertParts(context.Context, []Part) error
 	InsertLayers(context.Context, []Layer) error
 	InsertRigs(context.Context, []Rig) error
+	GetOriginalRigs(context.Context) ([]OriginalRig, error)
 	GetPartTypesByFleet(context.Context, string) ([]string, error)
 	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
 	GetLayers(context.Context, string, ...string) ([]Layer, error)

@@ -76,11 +76,32 @@ func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []store.Rig) error {
 	if len(sql) > rigsSQLLengthLimit {
 		return fmt.Errorf("sql query length of %d is longer than limit of %d", len(sql), rigsSQLLengthLimit)
 	}
-	fmt.Println(sql)
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("inserting rig: %v", err)
 	}
 	return nil
+}
+
+// GetOriginalRigs implements GetOriginalRigs.
+func (s *SQLiteStore) GetOriginalRigs(ctx context.Context) ([]store.OriginalRig, error) {
+	ss := common.SQLForGettingOriginalRigs()
+	rows, err := s.db.QueryContext(ctx, ss)
+	if err != nil {
+		return nil, fmt.Errorf("querying for original rigs: %v", err)
+	}
+
+	var originals []store.OriginalRig
+	for rows.Next() {
+		var o store.OriginalRig
+		if err := rows.Scan(&o.Fleet, &o.Name, &o.Color); err != nil {
+			return nil, fmt.Errorf("scanning row into original rig: %v", err)
+		}
+		originals = append(originals, o)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("processing oringinal rigs query results: %v", err)
+	}
+	return originals, nil
 }
 
 // GetPartTypesByFleet implements GetPartTypesByFleet.

@@ -71,19 +71,13 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		rig, dist, mindist, maxdist, err := g.m.MintRigData(ctx, i, system.NewSystemRandomnessSource())
+		rig, err := g.m.MintRigData(ctx, minter.RandomRigData(i, system.NewSystemRandomnessSource()))
 		if err != nil {
 			return nil, fmt.Errorf("minting: %v", err)
 		}
 
-		var rarity float64 = 1
-		if maxdist != 0 && maxdist > mindist {
-			rarity = (dist - mindist) / (maxdist - mindist) // scale to range 0-1
-		}
-
 		md = append(md, staging.GeneratedMetadata{
 			Metadata: rigToMetadata(rig),
-			Rarity:   staging.Rarity(rarity * 100),
 		})
 	}
 	return md, nil

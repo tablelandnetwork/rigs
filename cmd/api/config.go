@@ -37,10 +37,11 @@ type config struct {
 		Pin     bool   `default:"false"`
 	}
 	RemoteIPFS struct {
-		APIAddr string `default:"https://ipfs.infura.io:5001"`
-		APIUser string `default:""`
-		APIPass string `default:""`
-		Pin     bool   `default:"false"`
+		APIAddr    string `default:"https://ipfs.infura.io:5001"`
+		APIUser    string `default:""`
+		APIPass    string `default:""`
+		Pin        bool   `default:"false"`
+		GatewayURL string `default:"https://ipfs.infura-ipfs.io"`
 	}
 	Metrics struct {
 		Port string `default:"5090"`
