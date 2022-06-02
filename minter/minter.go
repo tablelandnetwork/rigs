@@ -1,6 +1,7 @@
 package minter
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -35,10 +36,10 @@ type RandomnessSource interface {
 
 // Minter mints a Rig NFT.
 type Minter struct {
-	s       store.Store
-	layers  *Layers
-	ipfs    iface.CoreAPI
-	pinning iface.PinAPI
+	s          store.Store
+	layers     *Layers
+	ipfs       iface.CoreAPI
+	remoteIpfs iface.CoreAPI
 
 	ipfsGatewayURL string
 
@@ -59,14 +60,14 @@ func NewMinter(
 	s store.Store,
 	concurrency int,
 	ipfs iface.CoreAPI,
-	pinning iface.PinAPI,
+	remoteIpfs iface.CoreAPI,
 	ipfsGatewayURL string,
 ) *Minter {
 	return &Minter{
 		s:              s,
 		layers:         NewLayers(ipfs),
 		ipfs:           ipfs,
-		pinning:        pinning,
+		remoteIpfs:     remoteIpfs,
 		ipfsGatewayURL: ipfsGatewayURL,
 		limiter:        make(chan struct{}, concurrency),
 	}
@@ -108,7 +109,8 @@ func (m *Minter) Mint(
 	width, height int,
 	compression png.CompressionLevel,
 	drawLabels bool,
-	pinLocal, pinRemote bool,
+	pinLocal,
+	pinRemote bool,
 	opts ...Option,
 ) ([]store.Rig, error) {
 	c := config{}
@@ -119,7 +121,7 @@ func (m *Minter) Mint(
 	var rigs []store.Rig
 	var paths []ipfspath.Path
 
-	processRig := func(rig store.Rig) error {
+	processRig := func(rig store.Rig) (store.Rig, ipfspath.Path, error) {
 		reader, writer := io.Pipe()
 		defer func() {
 			if err := reader.Close(); err != nil {
@@ -127,24 +129,39 @@ func (m *Minter) Mint(
 			}
 		}()
 
+		var buf bytes.Buffer
+		tee := io.TeeReader(reader, &buf)
+
 		go func() {
 			m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
 			writer.Close()
 		}()
 
-		ipfsFile := ipfsfiles.NewReaderFile(reader)
-
-		path, err := m.ipfs.Unixfs().Add(ctx, ipfsFile, options.Unixfs.Pin(pinLocal), options.Unixfs.CidVersion(1))
+		path, err := m.ipfs.Unixfs().Add(
+			ctx,
+			ipfsfiles.NewReaderFile(tee),
+			options.Unixfs.Pin(pinLocal),
+			options.Unixfs.CidVersion(1),
+		)
 		if err != nil {
-			return fmt.Errorf("adding image to ipfs: %v", err)
+			return store.Rig{}, nil, fmt.Errorf("adding image to ipfs: %v", err)
+		}
+
+		if pinRemote {
+			_, err := m.remoteIpfs.Unixfs().Add(
+				ctx,
+				ipfsfiles.NewReaderFile(&buf),
+				options.Unixfs.Pin(pinRemote),
+				options.Unixfs.CidVersion(1),
+			)
+			if err != nil {
+				return store.Rig{}, nil, fmt.Errorf("adding image to remote ipfs: %v", err)
+			}
 		}
 
 		rig.Image = m.ipfsGatewayURL + path.String()
 
-		rigs = append(rigs, rig)
-		paths = append(paths, path)
-
-		return nil
+		return rig, path, nil
 	}
 
 	for _, ID := range c.ids {
@@ -153,9 +170,12 @@ func (m *Minter) Mint(
 			return nil, fmt.Errorf("minting random rig data: %v", err)
 		}
 
-		if err := processRig(rig); err != nil {
+		rig, path, err := processRig(rig)
+		if err != nil {
 			return nil, err
 		}
+		rigs = append(rigs, rig)
+		paths = append(paths, path)
 	}
 
 	for _, target := range c.targets {
@@ -164,40 +184,35 @@ func (m *Minter) Mint(
 			return nil, fmt.Errorf("minting original rig data: %v", err)
 		}
 
-		if err := processRig(rig); err != nil {
+		rig, path, err := processRig(rig)
+		if err != nil {
 			return nil, err
 		}
+		rigs = append(rigs, rig)
+		paths = append(paths, path)
 	}
 
 	if err := m.s.InsertRigs(ctx, rigs); err != nil {
-		m.unpinPaths(ctx, paths)
+		m.unpinPaths(ctx, paths, pinLocal, pinRemote)
 		return nil, fmt.Errorf("inserting rigs: %v", err)
-	}
-
-	if pinRemote {
-		if err := m.pinPaths(ctx, paths); err != nil {
-			return nil, fmt.Errorf("pinning images remotely: %v", err)
-		}
 	}
 
 	return rigs, nil
 }
 
-func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path) {
+func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path, local, remote bool) {
 	for _, path := range paths {
-		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
-			log.Error().Err(err).Msg("unpinning from local ipfs after error inserting rig")
+		if local {
+			if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
+				log.Error().Err(err).Msg("unpinning from local ipfs")
+			}
+		}
+		if remote {
+			if err := m.remoteIpfs.Pin().Rm(ctx, path); err != nil {
+				log.Error().Err(err).Msg("unpinning from remote ipfs")
+			}
 		}
 	}
-}
-
-func (m *Minter) pinPaths(ctx context.Context, paths []ipfspath.Path) error {
-	for _, path := range paths {
-		if err := m.pinning.Add(ctx, path); err != nil {
-			return fmt.Errorf("pinning image remotely: %v", err)
-		}
-	}
-	return nil
 }
 
 type rigDataConfig struct {
@@ -362,8 +377,12 @@ func (m *Minter) mintOriginalRigData(
 		return store.Rig{}, nil, fmt.Errorf("getting fleet part types: %v", err)
 	}
 
+	randomVals, err := rs.GenRandoms(10)
+	if err != nil {
+		return store.Rig{}, nil, fmt.Errorf("generating random numbers part type seleciton: %v", err)
+	}
 	var selectedParts []store.Part
-	for _, partType := range partTypes {
+	for i, partType := range partTypes {
 		var options []store.GetPartsOption
 		if partType == backgroundPartTypeName {
 			options = []store.GetPartsOption{
@@ -374,7 +393,7 @@ func (m *Minter) mintOriginalRigData(
 			options = []store.GetPartsOption{
 				store.OfFleet(fleetPart.Name),
 				store.OfType(partType),
-				store.OfColor(original.Color),
+				// store.OfColor(original.Color), // TODO: re-enable this.
 			}
 		} else {
 			options = []store.GetPartsOption{
@@ -391,26 +410,30 @@ func (m *Minter) mintOriginalRigData(
 		}
 
 		var part store.Part
-		if partType == backgroundPartTypeName {
-			randomVals, err := rs.GenRandoms(1)
+		if partType == backgroundPartTypeName || partType == riderPartTypename {
+			selectedPart, err := selectPart(parts, randomVals[i])
 			if err != nil {
-				return store.Rig{}, nil, fmt.Errorf("generating random number for background: %v", err)
-			}
-			selectedPart, err := selectPart(parts, randomVals[0])
-			if err != nil {
-				return store.Rig{}, nil, fmt.Errorf("selecting background part: %v", err)
+				return store.Rig{}, nil, fmt.Errorf("selecting part: %v", err)
 			}
 			part = selectedPart
-		} else {
-			if len(parts) != 1 {
-				return store.Rig{},
-					nil,
-					fmt.Errorf(
-						"should have found 1 part for original: %s, part type: %s, but found %d",
-						original.Name, partType, len(parts),
-					)
-			}
+		} else if len(parts) == 1 {
 			part = parts[0]
+		} else {
+			// log.Debug().Msgf(
+			// 	"should have found 1 or more parts for original %s, color %s, part type %s, but found 0",
+			// 	original.Name,
+			// 	original.Color,
+			// 	partType,
+			// )
+			return store.Rig{},
+				nil,
+				fmt.Errorf(
+					"should have found 1 part for original %s, color %s, part type %s, but found %d",
+					original.Name,
+					original.Color,
+					partType,
+					len(parts),
+				)
 		}
 
 		applyPartToRig(&rig, part)
@@ -598,6 +621,7 @@ func applyPartToRig(rig *store.Rig, part store.Part) {
 }
 
 func percentOriginal(parts []store.Part) (float64, string, string) {
+	// TODO: Figure out how to deal with Riders and other strange parts.
 	counts := make(map[string]int)
 	total := 0
 	lastColor := ""

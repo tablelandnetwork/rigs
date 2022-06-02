@@ -115,7 +115,7 @@ func SQLForGettingOriginalRigs() string {
 	return `select distinct
 		fleet, original, color
 		from parts
-		where fleet is not null and original is not null and color is not null`
+		where fleet is not null and original is not null and color is not null and original != 'Circuit Sled'`
 }
 
 // SQLForGettingPartTypesByFleet returns the SQL statement.
