@@ -25,7 +25,6 @@ import (
 const (
 	fleetPartTypename      = "Fleet"
 	backgroundPartTypeName = "Background"
-	riderPartTypename      = "Rider"
 )
 
 // RandomnessSource defines the API for a source of random numbers.
@@ -383,17 +382,16 @@ func (m *Minter) mintOriginalRigData(
 	}
 	var selectedParts []store.Part
 	for i, partType := range partTypes {
+		// We don't have a utility pack for Heavy Medler, skip it.
+		if original.Name == "Heavy Medler" && partType == "Utility Pack" {
+			continue
+		}
+
 		var options []store.GetPartsOption
 		if partType == backgroundPartTypeName {
 			options = []store.GetPartsOption{
 				store.OfFleet(fleetPart.Name),
 				store.OfType(partType),
-			}
-		} else if partType == riderPartTypename {
-			options = []store.GetPartsOption{
-				store.OfFleet(fleetPart.Name),
-				store.OfType(partType),
-				// store.OfColor(original.Color), // TODO: re-enable this.
 			}
 		} else {
 			options = []store.GetPartsOption{
@@ -410,7 +408,7 @@ func (m *Minter) mintOriginalRigData(
 		}
 
 		var part store.Part
-		if partType == backgroundPartTypeName || partType == riderPartTypename {
+		if partType == backgroundPartTypeName {
 			selectedPart, err := selectPart(parts, randomVals[i])
 			if err != nil {
 				return store.Rig{}, nil, fmt.Errorf("selecting part: %v", err)
@@ -553,9 +551,6 @@ func selectPart(parts []store.Part, random float64) (store.Part, error) {
 		if part.Type == fleetPartTypename {
 			category = "Fleets"
 			item = part.Name
-		} else if part.Type == riderPartTypename {
-			category = "Riders"
-			item = part.Color.String
 		} else if part.Type == backgroundPartTypeName {
 			category = "Backgrounds"
 			item = part.Color.String

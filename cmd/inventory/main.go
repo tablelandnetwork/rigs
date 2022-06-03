@@ -3,11 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/fatih/camelcase"
@@ -19,12 +16,13 @@ import (
 	"github.com/tablelandnetwork/nft-minter/minter"
 
 	// _ "github.com/motemen/go-loghttp/global"
-	"github.com/omeid/uconfig"
+
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
+	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
 type config struct {
@@ -47,7 +45,8 @@ var configFilename = "config.json"
 func main() {
 	ctx := context.Background()
 
-	config := setupConfig()
+	config := &config{}
+	util.SetupConfig(config, configFilename)
 	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
 
 	s, err := sqlite.NewSQLiteStore(config.SQLiteDBPath, true)
@@ -222,26 +221,4 @@ func displayString(s string) string {
 	final = strings.ReplaceAll(final, "S Po F", "SPoF")
 	final = strings.ReplaceAll(final, "M 2", "M2")
 	return final
-}
-
-func setupConfig() *config {
-	conf := &config{}
-	confFiles := uconfig.Files{
-		{configFilename, json.Unmarshal},
-	}
-
-	c, err := uconfig.Classic(&conf, confFiles)
-	if err != nil {
-		if c != nil {
-			c.Usage()
-		}
-		os.Exit(1)
-	}
-
-	return conf
-}
-
-func basicAuth(projectID, projectSecret string) string {
-	auth := projectID + ":" + projectSecret
-	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

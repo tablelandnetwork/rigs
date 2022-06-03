@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"os"
@@ -19,10 +18,12 @@ import (
 	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
+	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
 func main() {
-	config := setupConfig()
+	config := &config{}
+	util.SetupConfig(config, configFilename)
 	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
 
 	// conn, err := ethclient.Dial(config.Registry.EthEndpoint)
@@ -60,7 +61,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("creating remote ipfs client")
 	}
-	remoteIpfs.Headers.Add("Authorization", "Basic "+basicAuth(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
+	remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
 
 	minter := minter.NewMinter(store, 20, ipfs, remoteIpfs, config.RemoteIPFS.GatewayURL)
 
@@ -147,9 +148,4 @@ func handleInterrupt(stop func()) {
 	fmt.Println("Gracefully stopping... (press Ctrl+C again to force)")
 	stop()
 	os.Exit(1)
-}
-
-func basicAuth(projectID, projectSecret string) string {
-	auth := projectID + ":" + projectSecret
-	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

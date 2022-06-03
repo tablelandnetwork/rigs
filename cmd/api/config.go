@@ -1,12 +1,5 @@
 package main
 
-import (
-	"encoding/json"
-	"os"
-
-	"github.com/omeid/uconfig"
-)
-
 // configFilename is the filename of the config file automatically loaded.
 var configFilename = "config.json"
 
@@ -50,21 +43,4 @@ type config struct {
 		Human bool `default:"false"`
 		Debug bool `default:"false"`
 	}
-}
-
-func setupConfig() *config {
-	conf := &config{}
-	confFiles := uconfig.Files{
-		{configFilename, json.Unmarshal},
-	}
-
-	c, err := uconfig.Classic(&conf, confFiles)
-	if err != nil {
-		if c != nil {
-			c.Usage()
-		}
-		os.Exit(1)
-	}
-
-	return conf
 }

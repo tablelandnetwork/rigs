@@ -137,11 +137,6 @@ var partRanks = partRank{
 		"Hue Shift": 3,
 		"Main":      4,
 	},
-	"Riders": {
-		"Midnight":  1,
-		"Moonlight": 1,
-		"Sunset":    1,
-	},
 }
 
 // GetRank returns the rank for the provided category and item.
@@ -190,7 +185,7 @@ var layers = layerGuide{
 		"SideMod_Right": 1,
 		"Frame":         2,
 		"BackMod":       3,
-		"Rider":         4,
+		"Suit":          4,
 		"Cockpit":       5,
 		"SideMod_Left":  6,
 	},

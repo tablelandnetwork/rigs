@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,10 +9,10 @@ import (
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/ipfs/interface-go-ipfs-core/options"
-	"github.com/omeid/uconfig"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
+	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
 type config struct {
@@ -40,7 +38,8 @@ var configFilename = "config.json"
 func main() {
 	ctx := context.Background()
 
-	config := setupConfig()
+	config := &config{}
+	util.SetupConfig(config, configFilename)
 	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
 
 	httpClient := &http.Client{}
@@ -54,7 +53,7 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("creating remote ipfs client")
 	}
-	remoteIpfs.Headers.Add("Authorization", "Basic "+basicAuth(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
+	remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
 
 	fi, err := os.Stat(config.LayersPath)
 	if err != nil {
@@ -81,26 +80,4 @@ func main() {
 	}
 
 	fmt.Printf("Layers loaded to IPFS with path %s\n", path.String())
-}
-
-func setupConfig() *config {
-	conf := &config{}
-	confFiles := uconfig.Files{
-		{configFilename, json.Unmarshal},
-	}
-
-	c, err := uconfig.Classic(&conf, confFiles)
-	if err != nil {
-		if c != nil {
-			c.Usage()
-		}
-		os.Exit(1)
-	}
-
-	return conf
-}
-
-func basicAuth(projectID, projectSecret string) string {
-	auth := projectID + ":" + projectSecret
-	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
