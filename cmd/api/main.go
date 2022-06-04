@@ -8,17 +8,22 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
-	stagingimpl "github.com/tablelandnetwork/nft-minter/internal/staging/impl"
+	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland"
+	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
+	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
+	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
 func main() {
-	config := setupConfig()
+	config := &config{}
+	util.SetupConfig(config, configFilename)
 	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
 
 	// conn, err := ethclient.Dial(config.Registry.EthEndpoint)
@@ -38,17 +43,46 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	stagingService, err := stagingimpl.NewSheetsGenerator(
-		config.GCP.SheetID,
-		config.GCP.DriveFolderID,
-		config.GCP.ServiceAccountKeyFile,
-		config.Render.Concurrency,
-		config.Render.CacheDir,
-	)
+	store, err := sqlite.NewSQLiteStore("./inventory.db", false)
 	if err != nil {
 		log.Fatal().
 			Err(err).
-			Msg("could not setup sheets generator")
+			Msg("could not create store")
+	}
+
+	httpClient := &http.Client{}
+
+	ipfs, err := httpapi.NewURLApiWithClient(config.IPFS.APIAddr, httpClient)
+	if err != nil {
+		log.Fatal().Err(err).Msg("creating ipfs client")
+	}
+
+	remoteIpfs, err := httpapi.NewURLApiWithClient(config.RemoteIPFS.APIAddr, httpClient)
+	if err != nil {
+		log.Fatal().Err(err).Msg("creating remote ipfs client")
+	}
+	remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
+
+	minter := minter.NewMinter(store, 20, ipfs, remoteIpfs, config.RemoteIPFS.GatewayURL)
+
+	stagingService, err := tableland.NewTablelandGenerator(
+		store,
+		minter,
+		config.Render.Concurrency,
+		config.Render.CacheDir,
+	)
+
+	// stagingService, err := sheets.NewSheetsGenerator(
+	// 	config.GCP.SheetID,
+	// 	config.GCP.DriveFolderID,
+	// 	config.GCP.ServiceAccountKeyFile,
+	// 	config.Render.Concurrency,
+	// 	config.Render.CacheDir,
+	// )
+	if err != nil {
+		log.Fatal().
+			Err(err).
+			Msg("could not setup generator")
 	}
 	stagingController := controllers.NewStagingController(stagingService)
 

@@ -17,6 +17,7 @@
 
 # Project
 .env
+.envrc
 *.ignore
 
 #client

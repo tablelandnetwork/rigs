@@ -1,4 +1,4 @@
-package impl
+package sheets
 
 import (
 	"context"
@@ -439,7 +439,7 @@ func (g *SheetsGenerator) RenderImage(
 		if l.Trait == nil {
 			continue // trait was optional
 		}
-		pth := path.Join(l.Name, l.Trait.Value)
+		pth := path.Join(l.Name, l.Trait.Value.(string))
 		img, err := g.fetchImage(pth, reloadLayers)
 		if err != nil {
 			return fmt.Errorf("fetching image: %v", err)
@@ -472,7 +472,7 @@ func (g *SheetsGenerator) getTraitsLabel(md staging.Metadata) string {
 	for _, s := range g.sheets {
 		if s.Label {
 			if t := getTrait(s.Name, md); t != nil {
-				label = append(label, t.Value)
+				label = append(label, t.Value.(string))
 			}
 		}
 	}
@@ -486,7 +486,7 @@ func getLayers(md staging.Metadata, sheet Sheet) ([]staging.Layer, error) {
 	}
 	var prefix string
 	for _, f := range filter {
-		prefix += f.Value + "/"
+		prefix += f.Value.(string) + "/"
 	}
 
 	tmp := make(map[int]staging.Layer)
