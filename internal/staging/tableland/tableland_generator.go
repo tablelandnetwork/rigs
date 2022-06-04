@@ -8,7 +8,6 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -24,7 +23,6 @@ type TablelandGenerator struct {
 	m        *minter.Minter
 	cacheDir string
 	images   map[string]*staging.Image
-	lk       sync.Mutex
 	limiter  chan struct{}
 }
 
