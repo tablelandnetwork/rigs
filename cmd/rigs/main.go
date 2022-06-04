@@ -11,9 +11,9 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
-	"github.com/tablelandnetwork/nft-minter/minter"
-	"github.com/tablelandnetwork/nft-minter/minter/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
+	"github.com/tablelandnetwork/nft-minter/pkg/minter"
+	"github.com/tablelandnetwork/nft-minter/pkg/minter/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 

@@ -10,7 +10,7 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/stretchr/testify/require"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
-	"github.com/tablelandnetwork/nft-minter/minter"
+	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 )
 
 func TestIt(t *testing.T) {

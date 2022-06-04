@@ -12,7 +12,7 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	ipld "github.com/ipfs/go-ipld-format"
 	core "github.com/ipfs/interface-go-ipfs-core"
-	"github.com/tablelandnetwork/nft-minter/minter"
+	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 
 	// _ "github.com/motemen/go-loghttp/global".
 

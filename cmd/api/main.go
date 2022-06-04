@@ -15,9 +15,9 @@ import (
 	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
-	"github.com/tablelandnetwork/nft-minter/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
+	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
