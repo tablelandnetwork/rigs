@@ -18,7 +18,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.12
 	github.com/omeid/uconfig v1.2.0
 	github.com/rs/zerolog v1.26.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.29.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.29.0
 	go.opentelemetry.io/otel/exporters/prometheus v0.27.0
