@@ -2,12 +2,13 @@ package common
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
-	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
+
+	// Import the SQLite driver.
+	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 )
 
 var dialect = goqu.Dialect("sqlite3")
@@ -85,6 +86,7 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 	return b.String()
 }
 
+// SQLForInsertingRigs returns the SQL statement.
 func SQLForInsertingRigs(rigs []store.Rig) (string, error) {
 	var rigVals [][]interface{}
 	var attVales [][]interface{}
@@ -124,7 +126,7 @@ func SQLForGettingPartTypesByFleet(fleet string) string {
 }
 
 // SQLForGettingParts returns the SQL statement.
-func SQLForGettingParts(options *store.GetPartsOptions) string {
+func SQLForGettingParts(options *store.GetPartsConfig) string {
 	b := new(strings.Builder)
 	b.WriteString("select * from parts")
 	var wheres []string
@@ -153,6 +155,7 @@ func SQLForGettingParts(options *store.GetPartsOptions) string {
 	return b.String()
 }
 
+// SQLForGettingLayers returns the SQL statement.
 func SQLForGettingLayers(fleet string, parts []string) string {
 	var partsExp []string
 	for _, part := range parts {
@@ -168,13 +171,6 @@ func SQLForGettingLayers(fleet string, parts []string) string {
 func nullableStringValue(s store.NullableString) string {
 	if s.Valid {
 		return fmt.Sprintf("'%s'", s.String)
-	}
-	return "NULL"
-}
-
-func nullableInt16Value(s store.NullableInt16) string {
-	if s.Valid {
-		return strconv.Itoa(int(s.Int16))
 	}
 	return "NULL"
 }

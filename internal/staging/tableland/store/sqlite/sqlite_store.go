@@ -127,12 +127,12 @@ func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]
 
 // GetParts implements GetParts.
 func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption) ([]store.Part, error) {
-	o := &store.GetPartsOptions{}
+	c := &store.GetPartsConfig{}
 	for _, opt := range opts {
-		opt(o)
+		opt(c)
 	}
 
-	ss := common.SQLForGettingParts(o)
+	ss := common.SQLForGettingParts(c)
 	rows, err := s.db.QueryContext(ctx, ss)
 	if err != nil {
 		return nil, fmt.Errorf("querying for parts: %v", err)

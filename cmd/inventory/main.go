@@ -12,10 +12,9 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	ipld "github.com/ipfs/go-ipld-format"
 	core "github.com/ipfs/interface-go-ipfs-core"
-	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/tablelandnetwork/nft-minter/minter"
 
-	// _ "github.com/motemen/go-loghttp/global"
+	// _ "github.com/motemen/go-loghttp/global".
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
@@ -53,7 +52,11 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("failed to create sqlite store")
 	}
-	defer s.Close()
+	defer func() {
+		if err := s.Close(); err != nil {
+			log.Err(err).Msg("closing store")
+		}
+	}()
 
 	if err := s.CreateTables(ctx); err != nil {
 		log.Fatal().Err(err).Msg("failed to create tables")
@@ -65,7 +68,6 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	path := ipfspath.New(config.IPFS.LayersPath)
 	lcid, err := cid.Parse(config.IPFS.LayersPath)
 	if err != nil {
 		log.Fatal().Err(err).Msg("parsing layers path")
@@ -76,7 +78,7 @@ func main() {
 		log.Fatal().Err(err).Msg("getting node to read")
 	}
 
-	if err := processRootNode(ctx, ipfs, rootNode, path); err != nil {
+	if err := processRootNode(ctx, ipfs, rootNode); err != nil {
 		log.Fatal().Err(err).Msg("processing root directory")
 	}
 
@@ -105,7 +107,7 @@ func main() {
 	// }
 }
 
-func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node, rootPath ipfspath.Path) error {
+func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) error {
 	entries := rootNode.Links()
 	// Process each fleet dir.
 	for _, l := range entries {

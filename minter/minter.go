@@ -132,8 +132,12 @@ func (m *Minter) Mint(
 		tee := io.TeeReader(reader, &buf)
 
 		go func() {
-			m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
-			writer.Close()
+			if err := m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer); err != nil {
+				log.Err(err).Msg("minting rig image")
+			}
+			if err := writer.Close(); err != nil {
+				log.Err(err).Msg("closing image writer")
+			}
 		}()
 
 		path, err := m.ipfs.Unixfs().Add(
@@ -450,9 +454,9 @@ func (m *Minter) MintRigImage(
 	drawLabels bool,
 	writer io.Writer,
 ) error {
-	// defer func() {
-	// 	logMemUsage()
-	// }()
+	defer func() {
+		logMemUsage()
+	}()
 
 	m.limiter <- struct{}{}
 	defer func() { <-m.limiter }()
