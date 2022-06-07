@@ -1,58 +1,18 @@
-package store
+package tableland
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
+
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 )
-
-// NullableString wraps a sql.NullString to provide custom JSON.
-type NullableString struct {
-	sql.NullString
-}
-
-// MarshalJSON implements MarshalJSON.
-func (ns *NullableString) MarshalJSON() ([]byte, error) {
-	if !ns.Valid {
-		return []byte("null"), nil
-	}
-	return json.Marshal(ns.String)
-}
-
-// UnmarshalJSON implements UnmarshalJSON.
-func (ns *NullableString) UnmarshalJSON(b []byte) error {
-	err := json.Unmarshal(b, &ns.String)
-	ns.Valid = (err == nil)
-	return err
-}
-
-// NullableInt16 wraps a sql.NullInt16 to provide custom JSON.
-type NullableInt16 struct {
-	sql.NullInt16
-}
-
-// MarshalJSON implements MarshalJSON.
-func (ni *NullableInt16) MarshalJSON() ([]byte, error) {
-	if !ni.Valid {
-		return []byte("null"), nil
-	}
-	return json.Marshal(ni.Int16)
-}
-
-// UnmarshalJSON implements UnmarshalJSON.
-func (ni *NullableInt16) UnmarshalJSON(b []byte) error {
-	err := json.Unmarshal(b, &ni.Int16)
-	ni.Valid = (err == nil)
-	return err
-}
 
 // Part describes a rig part.
 type Part struct {
-	Fleet    NullableString `json:"fleet"`
-	Original NullableString `json:"original"`
-	Type     string         `json:"type"`
-	Name     string         `json:"name"`
-	Color    NullableString `json:"color"`
+	Fleet    common.NullableString `json:"fleet"`
+	Original common.NullableString `json:"original"`
+	Type     string                `json:"type"`
+	Name     string                `json:"name"`
+	Color    common.NullableString `json:"color"`
 }
 
 // Layer describes an image layer used for rendering a rig.

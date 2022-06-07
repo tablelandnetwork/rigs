@@ -26,15 +26,9 @@ type config struct {
 		ContractAddress string `default:"contract_address"`
 	}
 	IPFS struct {
-		APIAddr string `default:"http://127.0.0.1:5001"`
-		Pin     bool   `default:"false"`
-	}
-	RemoteIPFS struct {
-		APIAddr    string `default:"https://ipfs.infura.io:5001"`
-		APIUser    string `default:""`
-		APIPass    string `default:""`
+		APIAddr    string `default:"http://127.0.0.1:5001"`
 		Pin        bool   `default:"false"`
-		GatewayURL string `default:"https://ipfs.infura-ipfs.io"`
+		GatewayURL string `default:"http://127.0.0.1:8080"`
 	}
 	Metrics struct {
 		Port string `default:"5090"`

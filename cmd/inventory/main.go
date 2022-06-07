@@ -18,9 +18,9 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
@@ -36,8 +36,8 @@ type config struct {
 	}
 }
 
-var parts = []store.Part{}
-var layers = []store.Layer{}
+var parts = []local.Part{}
+var layers = []local.Layer{}
 
 var configFilename = "config.json"
 
@@ -48,9 +48,9 @@ func main() {
 	util.SetupConfig(config, configFilename)
 	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
 
-	s, err := sqlite.NewSQLiteStore(config.SQLiteDBPath, true)
+	s, err := local.NewStore(config.SQLiteDBPath, true)
 	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create sqlite store")
+		log.Fatal().Err(err).Msg("failed to create local store")
 	}
 	defer func() {
 		if err := s.Close(); err != nil {
@@ -116,7 +116,7 @@ func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) 
 			return fmt.Errorf("getting node: %v", err)
 		}
 		fleetName := displayString(l.Name)
-		parts = append(parts, store.Part{
+		parts = append(parts, local.Part{
 			Type: "Fleet",
 			Name: fleetName,
 		})
@@ -186,12 +186,12 @@ func processPartTypeNode(
 		partKey := fmt.Sprintf("%s|%s|%s", original, color, name)
 		if _, processedPart := processedParts[partKey]; !processedPart {
 			processedParts[partKey] = true
-			parts = append(parts, store.Part{
-				Fleet:    store.NullableString{NullString: sql.NullString{String: fleetName, Valid: true}},
-				Original: store.NullableString{NullString: sql.NullString{String: original, Valid: len(original) > 0}},
+			parts = append(parts, local.Part{
+				Fleet:    common.NullableString{NullString: sql.NullString{String: fleetName, Valid: true}},
+				Original: common.NullableString{NullString: sql.NullString{String: original, Valid: len(original) > 0}},
 				Type:     partTypeName,
 				Name:     name,
-				Color:    store.NullableString{NullString: sql.NullString{String: color, Valid: true}},
+				Color:    common.NullableString{NullString: sql.NullString{String: color, Valid: true}},
 			})
 		}
 
@@ -200,9 +200,11 @@ func processPartTypeNode(
 			return nil, fmt.Errorf("getting layer position: %v", err)
 		}
 
-		layers = append(layers, store.Layer{
+		layers = append(layers, local.Layer{
 			Fleet:    fleetName,
-			Part:     fmt.Sprintf("%s %s", color, name),
+			Color:    color,
+			PartName: name,
+			PartType: partTypeName,
 			Position: uint(pos),
 			Path:     l.Cid.String(),
 			// Path:     ipfspath.Join(partTypePath, l.Name).String(),

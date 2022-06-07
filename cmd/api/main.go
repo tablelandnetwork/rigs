@@ -14,10 +14,10 @@ import (
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
@@ -43,7 +43,7 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	store, err := sqlite.NewSQLiteStore("./inventory.db", false)
+	store, err := local.NewStore("./local.db", false)
 	if err != nil {
 		log.Fatal().
 			Err(err).
@@ -57,13 +57,7 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	remoteIpfs, err := httpapi.NewURLApiWithClient(config.RemoteIPFS.APIAddr, httpClient)
-	if err != nil {
-		log.Fatal().Err(err).Msg("creating remote ipfs client")
-	}
-	remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
-
-	minter := minter.NewMinter(store, 20, ipfs, remoteIpfs, config.RemoteIPFS.GatewayURL)
+	minter := minter.NewMinter(store, 20, ipfs, config.IPFS.GatewayURL)
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,

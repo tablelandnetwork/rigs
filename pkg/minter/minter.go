@@ -10,7 +10,6 @@ import (
 	"io"
 	"runtime"
 	"sort"
-	"strings"
 	"sync"
 
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
@@ -18,8 +17,8 @@ import (
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/rs/zerolog/log"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
 const (
@@ -35,20 +34,19 @@ type RandomnessSource interface {
 
 // Minter mints a Rig NFT.
 type Minter struct {
-	s          store.Store
-	layers     *Layers
-	ipfs       iface.CoreAPI
-	remoteIpfs iface.CoreAPI
+	s      *local.Store
+	layers *Layers
+	ipfs   iface.CoreAPI
 
 	ipfsGatewayURL string
 
-	fleetsCache     []store.Part
+	fleetsCache     []local.Part
 	fleetsCacheLock sync.Mutex
 
 	fleetPartTypesCache     map[string][]string
 	fleetPartTypesCacheLock sync.Mutex
 
-	fleetPartTypePartsCache     map[string]map[string][]store.Part
+	fleetPartTypePartsCache     map[string]map[string][]local.Part
 	fleetPartTypePartsCacheLock sync.Mutex
 
 	limiter chan struct{}
@@ -56,26 +54,23 @@ type Minter struct {
 
 // NewMinter creates a Minter.
 func NewMinter(
-	s store.Store,
+	s *local.Store,
 	concurrency int,
 	ipfs iface.CoreAPI,
-	remoteIpfs iface.CoreAPI,
 	ipfsGatewayURL string,
 ) *Minter {
 	return &Minter{
 		s:              s,
 		layers:         NewLayers(ipfs),
 		ipfs:           ipfs,
-		remoteIpfs:     remoteIpfs,
 		ipfsGatewayURL: ipfsGatewayURL,
-		limiter:        make(chan struct{}, concurrency),
 	}
 }
 
 // OrignalTarget describes an original rig to be minted.
 type OrignalTarget struct {
 	ID       int
-	Original store.OriginalRig
+	Original local.OriginalRig
 }
 type config struct {
 	ids        []int
@@ -108,19 +103,18 @@ func (m *Minter) Mint(
 	width, height int,
 	compression png.CompressionLevel,
 	drawLabels bool,
-	pinLocal,
-	pinRemote bool,
+	pin bool,
 	opts ...Option,
-) ([]store.Rig, error) {
+) ([]local.Rig, error) {
 	c := config{}
 	for _, opt := range opts {
 		opt(&c)
 	}
 
-	var rigs []store.Rig
+	var rigs []local.Rig
 	var paths []ipfspath.Path
 
-	processRig := func(rig store.Rig) (store.Rig, ipfspath.Path, error) {
+	processRig := func(rig local.Rig) (local.Rig, ipfspath.Path, error) {
 		reader, writer := io.Pipe()
 		defer func() {
 			if err := reader.Close(); err != nil {
@@ -143,23 +137,11 @@ func (m *Minter) Mint(
 		path, err := m.ipfs.Unixfs().Add(
 			ctx,
 			ipfsfiles.NewReaderFile(tee),
-			options.Unixfs.Pin(pinLocal),
+			options.Unixfs.Pin(pin),
 			options.Unixfs.CidVersion(1),
 		)
 		if err != nil {
-			return store.Rig{}, nil, fmt.Errorf("adding image to ipfs: %v", err)
-		}
-
-		if pinRemote {
-			_, err := m.remoteIpfs.Unixfs().Add(
-				ctx,
-				ipfsfiles.NewReaderFile(&buf),
-				options.Unixfs.Pin(pinRemote),
-				options.Unixfs.CidVersion(1),
-			)
-			if err != nil {
-				return store.Rig{}, nil, fmt.Errorf("adding image to remote ipfs: %v", err)
-			}
+			return local.Rig{}, nil, fmt.Errorf("adding image to ipfs: %v", err)
 		}
 
 		rig.Image = m.ipfsGatewayURL + path.String()
@@ -196,24 +178,19 @@ func (m *Minter) Mint(
 	}
 
 	if err := m.s.InsertRigs(ctx, rigs); err != nil {
-		m.unpinPaths(ctx, paths, pinLocal, pinRemote)
+		if pin {
+			m.unpinPaths(ctx, paths)
+		}
 		return nil, fmt.Errorf("inserting rigs: %v", err)
 	}
 
 	return rigs, nil
 }
 
-func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path, local, remote bool) {
+func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path) {
 	for _, path := range paths {
-		if local {
-			if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
-				log.Error().Err(err).Msg("unpinning from local ipfs")
-			}
-		}
-		if remote {
-			if err := m.remoteIpfs.Pin().Rm(ctx, path); err != nil {
-				log.Error().Err(err).Msg("unpinning from remote ipfs")
-			}
+		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
+			log.Error().Err(err).Msg("unpinning from local ipfs")
 		}
 	}
 }
@@ -221,7 +198,7 @@ func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path, local, r
 type rigDataConfig struct {
 	id          int
 	randomness  RandomnessSource
-	originalRig store.OriginalRig
+	originalRig local.OriginalRig
 }
 
 // RigDataOption is an item that controls the behavior of MintRigData.
@@ -236,7 +213,7 @@ func RandomRigData(ID int, randomnessSource RandomnessSource) RigDataOption {
 }
 
 // OriginalRigData provides configuration for minting an original rig.
-func OriginalRigData(ID int, randomnessSource RandomnessSource, originalRig store.OriginalRig) RigDataOption {
+func OriginalRigData(ID int, randomnessSource RandomnessSource, originalRig local.OriginalRig) RigDataOption {
 	return func(c *rigDataConfig) {
 		c.id = ID
 		c.randomness = randomnessSource
@@ -248,55 +225,27 @@ func OriginalRigData(ID int, randomnessSource RandomnessSource, originalRig stor
 func (m *Minter) MintRigData(
 	ctx context.Context,
 	opts ...RigDataOption,
-) (store.Rig, error) {
+) (local.Rig, error) {
 	c := rigDataConfig{}
 	for _, opt := range opts {
 		opt(&c)
 	}
 
-	var rig store.Rig
-	var parts []store.Part
+	var rig local.Rig
 	var err error
 
 	if c.originalRig.Name == "" {
-		rig, parts, err = m.mintRandomRigData(ctx, c.id, c.randomness)
+		rig, err = m.mintRandomRigData(ctx, c.id, c.randomness)
 	} else if c.originalRig.Name != "" {
-		rig, parts, err = m.mintOriginalRigData(ctx, c.id, c.randomness, c.originalRig)
+		rig, err = m.mintOriginalRigData(ctx, c.id, c.randomness, c.originalRig)
 	} else {
-		return store.Rig{}, errors.New("no RigDataOption provided")
+		return local.Rig{}, errors.New("no RigDataOption provided")
 	}
 	if err != nil {
-		return store.Rig{}, fmt.Errorf("minting rig data: %v", err)
+		return local.Rig{}, fmt.Errorf("minting rig data: %v", err)
 	}
 
-	percentOriginal, color, original := percentOriginal(parts)
-
-	rig.Attributes = append(
-		[]store.RigAttribute{{
-			DisplayType: "number",
-			TraitType:   "Percent Original",
-			Value:       percentOriginal * 100,
-		}},
-		rig.Attributes...,
-	)
-
-	if percentOriginal == 1 {
-		rig.Attributes = append(
-			[]store.RigAttribute{
-				{
-					DisplayType: "string",
-					TraitType:   "Name",
-					Value:       original,
-				},
-				{
-					DisplayType: "string",
-					TraitType:   "Color",
-					Value:       color,
-				},
-			},
-			rig.Attributes...,
-		)
-	}
+	rig.PercentOriginal = percentOriginal(rig.Parts)
 	return rig, nil
 }
 
@@ -304,35 +253,34 @@ func (m *Minter) mintRandomRigData(
 	ctx context.Context,
 	ID int,
 	rs RandomnessSource,
-) (store.Rig, []store.Part, error) {
-	rig := store.Rig{ID: ID}
+) (local.Rig, error) {
+	rig := local.Rig{ID: ID}
 
 	fleets, err := m.fleets(ctx)
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("getting fleets: %v", err)
+		return local.Rig{}, fmt.Errorf("getting fleets: %v", err)
 	}
 
 	randoms, err := rs.GenRandoms(10)
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("getting random numbers: %v", err)
+		return local.Rig{}, fmt.Errorf("getting random numbers: %v", err)
 	}
 
 	fleetPart, err := selectPart(fleets, randoms[0])
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("selecting fleet trait: %v", err)
+		return local.Rig{}, fmt.Errorf("selecting fleet trait: %v", err)
 	}
-	applyPartToRig(&rig, fleetPart)
+	rig.Parts = append(rig.Parts, fleetPart)
 
 	partTypes, err := m.fleetPartTypes(ctx, fleetPart.Name)
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("getting fleet part types: %v", err)
+		return local.Rig{}, fmt.Errorf("getting fleet part types: %v", err)
 	}
 
 	if len(partTypes) > len(randoms)-1 {
-		return store.Rig{}, nil, errors.New("more part types than random numbers")
+		return local.Rig{}, errors.New("more part types than random numbers")
 	}
 
-	var selectedParts []store.Part
 	for i, partType := range partTypes {
 		parts, err := m.fleetPartTypeParts(
 			ctx,
@@ -340,82 +288,80 @@ func (m *Minter) mintRandomRigData(
 			partType,
 		)
 		if err != nil {
-			return store.Rig{}, nil, fmt.Errorf("getting parts for fleet and part type: %v", err)
+			return local.Rig{}, fmt.Errorf("getting parts for fleet and part type: %v", err)
 		}
 
 		part, err := selectPart(parts, randoms[i+1])
 		if err != nil {
-			return store.Rig{}, nil, fmt.Errorf("selecting part %s: %v", partType, err)
+			return local.Rig{}, fmt.Errorf("selecting part %s: %v", partType, err)
 		}
-		applyPartToRig(&rig, part)
-
-		selectedParts = append(selectedParts, part)
+		rig.Parts = append(rig.Parts, part)
 	}
 
-	return rig, selectedParts, nil
+	return rig, nil
 }
 
 func (m *Minter) mintOriginalRigData(
 	ctx context.Context,
 	id int,
 	rs RandomnessSource,
-	original store.OriginalRig,
-) (store.Rig, []store.Part, error) {
-	rig := store.Rig{ID: id}
+	original local.OriginalRig,
+) (local.Rig, error) {
+	rig := local.Rig{ID: id, Original: true}
 
-	fleetParts, err := m.s.GetParts(ctx, store.OfType("Fleet"), store.OfName(original.Fleet))
+	fleetParts, err := m.s.Parts(ctx, local.PartsOfType("Fleet"), local.PartsOfName(original.Fleet))
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("getting fleet part: %v", err)
+		return local.Rig{}, fmt.Errorf("getting fleet part: %v", err)
 	}
 	if len(fleetParts) != 1 {
-		return store.Rig{}, nil, fmt.Errorf("should have found 1 fleet part, but found %d", len(fleetParts))
+		return local.Rig{}, fmt.Errorf("should have found 1 fleet part, but found %d", len(fleetParts))
 	}
 
 	fleetPart := fleetParts[0]
 
-	applyPartToRig(&rig, fleetPart)
+	rig.Parts = append(rig.Parts, fleetPart)
 
 	partTypes, err := m.fleetPartTypes(ctx, fleetPart.Name)
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("getting fleet part types: %v", err)
+		return local.Rig{}, fmt.Errorf("getting fleet part types: %v", err)
 	}
 
 	randomVals, err := rs.GenRandoms(10)
 	if err != nil {
-		return store.Rig{}, nil, fmt.Errorf("generating random numbers part type seleciton: %v", err)
+		return local.Rig{}, fmt.Errorf("generating random numbers part type seleciton: %v", err)
 	}
-	var selectedParts []store.Part
+
 	for i, partType := range partTypes {
 		// We don't have a utility pack for Heavy Medler, skip it.
 		if original.Name == "Heavy Medler" && partType == "Utility Pack" {
 			continue
 		}
 
-		var options []store.GetPartsOption
+		var options []local.PartsOption
 		if partType == backgroundPartTypeName {
-			options = []store.GetPartsOption{
-				store.OfFleet(fleetPart.Name),
-				store.OfType(partType),
+			options = []local.PartsOption{
+				local.PartsOfFleet(fleetPart.Name),
+				local.PartsOfType(partType),
 			}
 		} else {
-			options = []store.GetPartsOption{
-				store.OfFleet(fleetPart.Name),
-				store.OfType(partType),
-				store.OfColor(original.Color),
-				store.OfOriginal(original.Name),
+			options = []local.PartsOption{
+				local.PartsOfFleet(fleetPart.Name),
+				local.PartsOfType(partType),
+				local.PartsOfColor(original.Color),
+				local.PartsOfOriginal(original.Name),
 			}
 		}
 
-		parts, err := m.s.GetParts(ctx, options...)
+		parts, err := m.s.Parts(ctx, options...)
 		if err != nil {
-			return store.Rig{}, nil, fmt.Errorf("getting parts for original fleet part type: %v", err)
+			return local.Rig{}, fmt.Errorf("getting parts for original fleet part type: %v", err)
 		}
 
-		var part store.Part
+		var part local.Part
 		if partType == backgroundPartTypeName {
 			selectedPart, err := selectPart(parts, randomVals[i])
 			if err != nil {
-				return store.Rig{}, nil, fmt.Errorf("selecting part: %v", err)
+				return local.Rig{}, fmt.Errorf("selecting part: %v", err)
 			}
 			part = selectedPart
 		} else if len(parts) == 1 {
@@ -427,8 +373,7 @@ func (m *Minter) mintOriginalRigData(
 			// 	original.Color,
 			// 	partType,
 			// )
-			return store.Rig{},
-				nil,
+			return local.Rig{},
 				fmt.Errorf(
 					"should have found 1 part for original %s, color %s, part type %s, but found %d",
 					original.Name,
@@ -438,17 +383,15 @@ func (m *Minter) mintOriginalRigData(
 				)
 		}
 
-		applyPartToRig(&rig, part)
-
-		selectedParts = append(selectedParts, part)
+		rig.Parts = append(rig.Parts, part)
 	}
-	return rig, selectedParts, nil
+	return rig, nil
 }
 
 // MintRigImage writes the Rig image to the provider Writer for the provided Rig.
 func (m *Minter) MintRigImage(
 	ctx context.Context,
-	rig store.Rig,
+	rig local.Rig,
 	width, height int,
 	compression png.CompressionLevel,
 	drawLabels bool,
@@ -490,7 +433,7 @@ func (m *Minter) MintRigImage(
 			return fmt.Errorf("getting layer: %v", err)
 		}
 
-		label := fmt.Sprintf("%d: %s: %s", l.Position, l.Part, l.Path)
+		label := fmt.Sprintf("%d: %s: %s: %s", l.Position, l.Color, l.PartName, l.Path)
 
 		if err := r.AddLayer(i, label); err != nil {
 			return fmt.Errorf("adding layer to renderer: %v", err)
@@ -504,31 +447,29 @@ func (m *Minter) MintRigImage(
 	return nil
 }
 
-func (m *Minter) getLayers(ctx context.Context, rig store.Rig) ([]store.Layer, error) {
+func (m *Minter) getLayers(ctx context.Context, rig local.Rig) ([]local.Layer, error) {
 	fleet, err := getFleet(rig)
 	if err != nil {
 		return nil, err
 	}
 
-	var partValues []string
-	for _, att := range rig.Attributes {
-		if val, ok := att.Value.(string); ok {
-			partValues = append(partValues, val)
-		}
+	var nameAndColors []local.PartNameAndColor
+	for _, part := range rig.Parts {
+		nameAndColors = append(nameAndColors, local.PartNameAndColor{PartName: part.Name, Color: part.Color.String})
 	}
-	return m.s.GetLayers(ctx, fleet, partValues...)
+	return m.s.Layers(ctx, fleet, nameAndColors...)
 }
 
-func getFleet(rig store.Rig) (string, error) {
-	for _, att := range rig.Attributes {
-		if att.TraitType == "Fleet" {
-			return att.Value.(string), nil
+func getFleet(rig local.Rig) (string, error) {
+	for _, part := range rig.Parts {
+		if part.Type == "Fleet" {
+			return part.Name, nil
 		}
 	}
-	return "", errors.New("no Fleet attribute found")
+	return "", errors.New("no fleet part found")
 }
 
-func getRigLabel(rig store.Rig) (string, error) {
+func getRigLabel(rig local.Rig) (string, error) {
 	b, err := json.MarshalIndent(rig, "", "  ")
 	if err != nil {
 		return "", err
@@ -538,14 +479,14 @@ func getRigLabel(rig store.Rig) (string, error) {
 
 type opt struct {
 	dist float64
-	part store.Part
+	part local.Part
 }
 
-func selectPart(parts []store.Part, random float64) (store.Part, error) {
+func selectPart(parts []local.Part, random float64) (local.Part, error) {
 	var opts []opt
 
 	if len(parts) == 0 {
-		return store.Part{}, errors.New("no parts provided to select from")
+		return local.Part{}, errors.New("no parts provided to select from")
 	}
 
 	var breaks []float64
@@ -565,7 +506,7 @@ func selectPart(parts []store.Part, random float64) (store.Part, error) {
 
 		rank, err := GetRank(category, item)
 		if err != nil {
-			return store.Part{}, err
+			return local.Part{}, err
 		}
 
 		fRank := float64(rank)
@@ -603,35 +544,18 @@ func selectPart(parts []store.Part, random float64) (store.Part, error) {
 		lower = upper
 	}
 
-	return store.Part{}, errors.New("couldn't randomly select part")
+	return local.Part{}, errors.New("couldn't randomly select part")
 }
 
-func applyPartToRig(rig *store.Rig, part store.Part) {
-	b := new(strings.Builder)
-	if part.Color.Valid {
-		b.WriteString(fmt.Sprintf("%s ", part.Color.String))
-	}
-	b.WriteString(part.Name)
-	rig.Attributes = append(rig.Attributes, store.RigAttribute{
-		DisplayType: "string",
-		TraitType:   part.Type,
-		Value:       b.String(),
-	})
-}
-
-func percentOriginal(parts []store.Part) (float64, string, string) {
+func percentOriginal(parts []local.Part) float64 {
 	// TODO: Figure out how to deal with Riders and other strange parts.
 	counts := make(map[string]int)
 	total := 0
-	lastColor := ""
-	lastOriginal := ""
 	for _, part := range parts {
 		if !part.Color.Valid || !part.Original.Valid {
 			continue
 		}
-		lastColor = part.Color.String
-		lastOriginal = part.Original.String
-		key := fmt.Sprintf("%s|%s", lastColor, lastOriginal)
+		key := fmt.Sprintf("%s|%s", part.Color.String, part.Original.String)
 		if _, exists := counts[key]; !exists {
 			counts[key] = 0
 		}
@@ -644,15 +568,15 @@ func percentOriginal(parts []store.Part) (float64, string, string) {
 			max = count
 		}
 	}
-	return float64(max) / float64(total), lastColor, lastOriginal
+	return float64(max) / float64(total)
 }
 
-func (m *Minter) fleets(ctx context.Context) ([]store.Part, error) {
+func (m *Minter) fleets(ctx context.Context) ([]local.Part, error) {
 	m.fleetsCacheLock.Lock()
 	defer m.fleetsCacheLock.Unlock()
 
 	if m.fleetsCache == nil || len(m.fleetsCache) == 0 {
-		fleets, err := m.s.GetParts(ctx, store.OfType("Fleet"))
+		fleets, err := m.s.Parts(ctx, local.PartsOfType("Fleet"))
 		if err != nil {
 			return nil, fmt.Errorf("getting parts of fleet type: %v", err)
 		}
@@ -679,20 +603,20 @@ func (m *Minter) fleetPartTypes(ctx context.Context, fleet string) ([]string, er
 	return partTypes, nil
 }
 
-func (m *Minter) fleetPartTypeParts(ctx context.Context, fleet string, partType string) ([]store.Part, error) {
+func (m *Minter) fleetPartTypeParts(ctx context.Context, fleet string, partType string) ([]local.Part, error) {
 	m.fleetPartTypePartsCacheLock.Lock()
 	defer m.fleetPartTypePartsCacheLock.Unlock()
 
 	if m.fleetPartTypePartsCache == nil {
-		m.fleetPartTypePartsCache = make(map[string]map[string][]store.Part)
+		m.fleetPartTypePartsCache = make(map[string]map[string][]local.Part)
 	}
 	if m.fleetPartTypePartsCache[fleet] == nil {
-		m.fleetPartTypePartsCache[fleet] = make(map[string][]store.Part)
+		m.fleetPartTypePartsCache[fleet] = make(map[string][]local.Part)
 	}
 	if parts, ok := m.fleetPartTypePartsCache[fleet][partType]; ok {
 		return parts, nil
 	}
-	parts, err := m.s.GetParts(ctx, store.OfFleet(fleet), store.OfType(partType))
+	parts, err := m.s.Parts(ctx, local.PartsOfFleet(fleet), local.PartsOfType(partType))
 	if err != nil {
 		return nil, err
 	}

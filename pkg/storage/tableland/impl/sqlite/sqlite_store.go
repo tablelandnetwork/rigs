@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/common"
+
 	// Importing the sqlite driver.
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/common"
 )
 
 const rigsSQLLengthLimit = 35000
@@ -52,15 +53,19 @@ func (s *SQLiteStore) CreateTables(ctx context.Context) error {
 }
 
 // InsertParts implements InsertParts.
-func (s *SQLiteStore) InsertParts(ctx context.Context, parts []store.Part) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingParts(parts)); err != nil {
+func (s *SQLiteStore) InsertParts(ctx context.Context, parts []tableland.Part) error {
+	sql, err := common.SQLForInsertingParts(parts)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting parts: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("inserting parts: %v", err)
 	}
 	return nil
 }
 
 // InsertLayers implements InsertLayers.
-func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) error {
+func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []tableland.Layer) error {
 	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayers(layers)); err != nil {
 		return fmt.Errorf("inserting layers: %v", err)
 	}
@@ -68,7 +73,7 @@ func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []store.Layer) er
 }
 
 // InsertRigs implements InsertRigs.
-func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []store.Rig) error {
+func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []tableland.Rig) error {
 	sql, err := common.SQLForInsertingRigs(rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rig: %v", err)
@@ -83,16 +88,16 @@ func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []store.Rig) error {
 }
 
 // GetOriginalRigs implements GetOriginalRigs.
-func (s *SQLiteStore) GetOriginalRigs(ctx context.Context) ([]store.OriginalRig, error) {
+func (s *SQLiteStore) GetOriginalRigs(ctx context.Context) ([]tableland.OriginalRig, error) {
 	ss := common.SQLForGettingOriginalRigs()
 	rows, err := s.db.QueryContext(ctx, ss)
 	if err != nil {
 		return nil, fmt.Errorf("querying for original rigs: %v", err)
 	}
 
-	var originals []store.OriginalRig
+	var originals []tableland.OriginalRig
 	for rows.Next() {
-		var o store.OriginalRig
+		var o tableland.OriginalRig
 		if err := rows.Scan(&o.Fleet, &o.Name, &o.Color); err != nil {
 			return nil, fmt.Errorf("scanning row into original rig: %v", err)
 		}
@@ -126,8 +131,8 @@ func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]
 }
 
 // GetParts implements GetParts.
-func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption) ([]store.Part, error) {
-	c := &store.GetPartsConfig{}
+func (s *SQLiteStore) GetParts(ctx context.Context, opts ...tableland.GetPartsOption) ([]tableland.Part, error) {
+	c := &tableland.GetPartsConfig{}
 	for _, opt := range opts {
 		opt(c)
 	}
@@ -138,9 +143,9 @@ func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption
 		return nil, fmt.Errorf("querying for parts: %v", err)
 	}
 
-	var parts []store.Part
+	var parts []tableland.Part
 	for rows.Next() {
-		var part store.Part
+		var part tableland.Part
 		if err := rows.Scan(&part.Fleet, &part.Original, &part.Type, &part.Name, &part.Color); err != nil {
 			return nil, fmt.Errorf("scanning row into part: %v", err)
 		}
@@ -153,15 +158,15 @@ func (s *SQLiteStore) GetParts(ctx context.Context, opts ...store.GetPartsOption
 }
 
 // GetLayers implements GetLayers.
-func (s *SQLiteStore) GetLayers(ctx context.Context, fleet string, parts ...string) ([]store.Layer, error) {
+func (s *SQLiteStore) GetLayers(ctx context.Context, fleet string, parts ...string) ([]tableland.Layer, error) {
 	rows, err := s.db.QueryContext(ctx, common.SQLForGettingLayers(fleet, parts))
 	if err != nil {
 		return nil, fmt.Errorf("querying for layers: %v", err)
 	}
 
-	var layers []store.Layer
+	var layers []tableland.Layer
 	for rows.Next() {
-		var layer store.Layer
+		var layer tableland.Layer
 		if err := rows.Scan(&layer.Fleet, &layer.Part, &layer.Position, &layer.Path); err != nil {
 			return nil, fmt.Errorf("scanning row into layer: %v", err)
 		}

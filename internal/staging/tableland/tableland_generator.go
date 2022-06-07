@@ -12,14 +12,14 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter/randomness/system"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
-// TablelandGenerator generates NFT metadata from traits defined in inventory.db.
+// TablelandGenerator generates NFT metadata from traits defined in local.db.
 type TablelandGenerator struct {
-	s        store.Store
+	s        *local.Store
 	m        *minter.Minter
 	cacheDir string
 	images   map[string]*staging.Image
@@ -32,7 +32,7 @@ func init() {
 
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
-	s store.Store,
+	s *local.Store,
 	m *minter.Minter,
 	concurrency int,
 	cacheDir string,
@@ -81,13 +81,33 @@ func (g *TablelandGenerator) GenerateMetadata(
 	return md, nil
 }
 
-func rigToMetadata(rig store.Rig) staging.Metadata {
+func rigToMetadata(rig local.Rig) staging.Metadata {
 	m := staging.Metadata{}
-	for _, att := range rig.Attributes {
+	if rig.Original {
+		m.Attributes = append(
+			m.Attributes,
+			staging.Trait{
+				DisplayType: "string",
+				TraitType:   "Name",
+				Value:       rig.Parts[0].Original,
+			},
+			staging.Trait{
+				DisplayType: "string",
+				TraitType:   "Color",
+				Value:       rig.Parts[0].Color,
+			},
+		)
+	}
+	m.Attributes = append(m.Attributes, staging.Trait{
+		DisplayType: "number",
+		TraitType:   "Percent Original",
+		Value:       rig.PercentOriginal,
+	})
+	for _, part := range rig.Parts {
 		m.Attributes = append(m.Attributes, staging.Trait{
-			DisplayType: att.DisplayType,
-			TraitType:   att.TraitType,
-			Value:       att.Value,
+			DisplayType: "string",
+			TraitType:   part.Type,
+			Value:       part.Name,
 		})
 	}
 	return m
@@ -114,15 +134,16 @@ func (g *TablelandGenerator) RenderImage(
 	return g.m.MintRigImage(ctx, metadataToRig(md), width, height, compression, drawLabels, writer)
 }
 
-func metadataToRig(md staging.Metadata) store.Rig {
-	rig := store.Rig{}
-	for _, att := range md.Attributes {
-		rig.Attributes = append(rig.Attributes, store.RigAttribute{
-			DisplayType: att.DisplayType,
-			TraitType:   att.TraitType,
-			Value:       att.Value,
-		})
-	}
+func metadataToRig(md staging.Metadata) local.Rig {
+	// TODO: Make the generators work off of local.Rig.
+	rig := local.Rig{}
+	// for _, att := range md.Attributes {
+	// 	rig.Attributes = append(rig.Attributes, local.RigAttribute{
+	// 		DisplayType: att.DisplayType,
+	// 		TraitType:   att.TraitType,
+	// 		Value:       att.Value,
+	// 	})
+	// }
 	return rig
 }
 
