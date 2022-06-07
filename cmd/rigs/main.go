@@ -19,8 +19,11 @@ import (
 
 type config struct {
 	SQLiteDBPath string `default:""`
-	LayersPath   string `default:""`
-	IPFS         struct {
+	Layers       struct {
+		Path           string `default:""`
+		UseLocalLayers bool   `default:"false"`
+	}
+	IPFS struct {
 		APIAddr    string `default:"http://127.0.0.1:5001"`
 		Pin        bool   `default:"false"`
 		GatewayURL string `default:"http://127.0.0.1:8080"`
@@ -60,7 +63,12 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	m := minter.NewMinter(s, 10, ipfs, config.IPFS.GatewayURL)
+	localLayersDir := ""
+	if config.Layers.UseLocalLayers {
+		localLayersDir = config.Layers.Path
+	}
+
+	m := minter.NewMinter(s, ipfs, config.IPFS.GatewayURL, localLayersDir)
 
 	originals, err := s.GetOriginalRigs(ctx)
 	if err != nil {

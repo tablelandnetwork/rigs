@@ -24,7 +24,7 @@ func TestMint(t *testing.T) {
 	ipfs, err := httpapi.NewURLApiWithClient("http://127.0.0.1:5001", httpClient)
 	require.NoError(t, err)
 
-	m := NewMinter(s, 10, ipfs, "http://127.0.0.1:8080")
+	m := NewMinter(s, ipfs, "http://127.0.0.1:8080", "")
 
 	originals, err := s.GetOriginalRigs(ctx)
 	require.NoError(t, err)

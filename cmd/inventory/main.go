@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/fatih/camelcase"
@@ -38,6 +39,7 @@ type config struct {
 
 var parts = []local.Part{}
 var layers = []local.Layer{}
+var layerMaps = []local.LayerMap{}
 
 var configFilename = "config.json"
 
@@ -105,6 +107,10 @@ func main() {
 	// 		log.Fatal().Err(err).Msg("inserting layer")
 	// 	}
 	// }
+
+	if err := s.InsertLayerMaps(ctx, layerMaps...); err != nil {
+		log.Fatal().Err(err).Msg("inserting layer maps")
+	}
 }
 
 func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) error {
@@ -121,14 +127,20 @@ func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) 
 			Name: fleetName,
 		})
 
-		if err := processFleetNode(ctx, api, n, fleetName); err != nil {
+		if err := processFleetNode(ctx, api, n, fleetName, l.Name); err != nil {
 			return fmt.Errorf("processing fleet node: %v", err)
 		}
 	}
 	return nil
 }
 
-func processFleetNode(ctx context.Context, api core.CoreAPI, fleetNode ipld.Node, fleetName string) error {
+func processFleetNode(
+	ctx context.Context,
+	api core.CoreAPI,
+	fleetNode ipld.Node,
+	fleetName string,
+	dirName string,
+) error {
 	processedParts := make(map[string]bool)
 	entries := fleetNode.Links()
 	for _, l := range entries {
@@ -149,6 +161,7 @@ func processFleetNode(ctx context.Context, api core.CoreAPI, fleetNode ipld.Node
 			partTypeName,
 			l.Name,
 			processedParts,
+			path.Join(dirName, l.Name),
 		)
 		if err != nil {
 			return fmt.Errorf("processing part type node: %v", err)
@@ -163,6 +176,7 @@ func processPartTypeNode(
 	partTypeName string,
 	layerName string,
 	processedParts map[string]bool,
+	dirName string,
 ) (map[string]bool, error) {
 	entries := partTypeNode.Links()
 	for _, l := range entries {
@@ -207,8 +221,8 @@ func processPartTypeNode(
 			PartType: partTypeName,
 			Position: uint(pos),
 			Path:     l.Cid.String(),
-			// Path:     ipfspath.Join(partTypePath, l.Name).String(),
 		})
+		layerMaps = append(layerMaps, local.LayerMap{Cid: l.Cid.String(), Path: path.Join(dirName, l.Name)})
 	}
 	return processedParts, nil
 }

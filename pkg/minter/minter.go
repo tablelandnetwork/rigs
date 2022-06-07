@@ -1,14 +1,12 @@
 package minter
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"image/png"
 	"io"
-	"runtime"
 	"sort"
 	"sync"
 
@@ -48,20 +46,18 @@ type Minter struct {
 
 	fleetPartTypePartsCache     map[string]map[string][]local.Part
 	fleetPartTypePartsCacheLock sync.Mutex
-
-	limiter chan struct{}
 }
 
 // NewMinter creates a Minter.
 func NewMinter(
 	s *local.Store,
-	concurrency int,
 	ipfs iface.CoreAPI,
 	ipfsGatewayURL string,
+	localLayersDir string,
 ) *Minter {
 	return &Minter{
 		s:              s,
-		layers:         NewLayers(ipfs),
+		layers:         NewLayers(ipfs, s, localLayersDir),
 		ipfs:           ipfs,
 		ipfsGatewayURL: ipfsGatewayURL,
 	}
@@ -122,9 +118,6 @@ func (m *Minter) Mint(
 			}
 		}()
 
-		var buf bytes.Buffer
-		tee := io.TeeReader(reader, &buf)
-
 		go func() {
 			if err := m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer); err != nil {
 				log.Err(err).Msg("minting rig image")
@@ -136,7 +129,7 @@ func (m *Minter) Mint(
 
 		path, err := m.ipfs.Unixfs().Add(
 			ctx,
-			ipfsfiles.NewReaderFile(tee),
+			ipfsfiles.NewReaderFile(reader),
 			options.Unixfs.Pin(pin),
 			options.Unixfs.CidVersion(1),
 		)
@@ -397,13 +390,6 @@ func (m *Minter) MintRigImage(
 	drawLabels bool,
 	writer io.Writer,
 ) error {
-	defer func() {
-		logMemUsage()
-	}()
-
-	m.limiter <- struct{}{}
-	defer func() { <-m.limiter }()
-
 	layers, err := m.getLayers(ctx, rig)
 	if err != nil {
 		return fmt.Errorf("getting layers for rig: %v", err)
@@ -622,19 +608,4 @@ func (m *Minter) fleetPartTypeParts(ctx context.Context, fleet string, partType 
 	}
 	m.fleetPartTypePartsCache[fleet][partType] = parts
 	return parts, nil
-}
-
-func logMemUsage() {
-	var m runtime.MemStats
-	runtime.ReadMemStats(&m)
-	log.Debug().
-		Str("alloc", fmt.Sprintf("%v", bToMb(m.Alloc))).
-		Str("total", fmt.Sprintf("%v", bToMb(m.TotalAlloc))).
-		Str("sys", fmt.Sprintf("%v", bToMb(m.Sys))).
-		Str("gc", fmt.Sprintf("%v", m.NumGC)).
-		Msg("memstats")
-}
-
-func bToMb(b uint64) uint64 {
-	return b / 1024 / 1024
 }

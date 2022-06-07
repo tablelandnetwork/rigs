@@ -22,7 +22,7 @@ func TestIt(t *testing.T) {
 	ipfs, err := httpapi.NewURLApiWithClient("http://127.0.0.1:5001", httpClient)
 	require.NoError(t, err)
 
-	m := minter.NewMinter(s, 10, ipfs, "")
+	m := minter.NewMinter(s, ipfs, "", "")
 	g, err := NewTablelandGenerator(s, m, 1, "./cache")
 	require.NoError(t, err)
 	md, err := g.GenerateMetadata(context.Background(), 1, false)

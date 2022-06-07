@@ -37,6 +37,11 @@ const (
 		primary key(fleet,color,part_name,position)
 	)`
 
+	createLayersMapSQL = `create table layer_maps (
+		cid text not null,
+		path text not null
+	)`
+
 	createRigsSQL = `create table rigs (
 		id integer primary key,
 		image text,
@@ -44,10 +49,11 @@ const (
 	)`
 
 	createRigPartsSQL = `create table rig_parts (
-		rig_id integer primary key,
-		fleet text not null,
+		rig_id integer not null,
+		fleet text,
 		name text not null,
-		color text not null,
+		color text,
+		primary key(rig_id,fleet,name,color),
 		foreign key (rig_id) references rigs (id),
 		foreign key (fleet,name,color) references parts (fleet,name,color)
 	)`
@@ -124,6 +130,9 @@ func (s *Store) CreateTables(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, createRigPartsSQL); err != nil {
 		return fmt.Errorf("creating rig parts table: %v", err)
 	}
+	if _, err := s.db.ExecContext(ctx, createLayersMapSQL); err != nil {
+		return fmt.Errorf("creating layers map table: %v", err)
+	}
 	return nil
 }
 
@@ -154,6 +163,39 @@ func (s *Store) InsertLayers(ctx context.Context, layers []Layer) error {
 		return fmt.Errorf("inserting layers: %v", err)
 	}
 	return nil
+}
+
+// LayerMap associates an image cid with a path to a file.
+type LayerMap struct {
+	Cid  string
+	Path string
+}
+
+// InsertLayerMaps inserts LayerMaps.
+func (s *Store) InsertLayerMaps(ctx context.Context, layerMaps ...LayerMap) error {
+	var vals [][]interface{}
+	for _, layerMap := range layerMaps {
+		vals = append(vals, goqu.Vals{layerMap.Cid, layerMap.Path})
+	}
+	insert := s.db.Insert("layer_maps").Cols("cid", "path").Vals(vals...).Executor()
+	if _, err := insert.ExecContext(ctx); err != nil {
+		return fmt.Errorf("inserting layer maps: %v", err)
+	}
+	return nil
+}
+
+// LayerPathForCid returns the file path for the cid.
+func (s *Store) LayerPathForCid(ctx context.Context, cid string) (string, error) {
+	sel := s.db.Select("path").From("layer_maps").Where(goqu.C("cid").Eq(cid))
+	var path string
+	found, err := sel.ScanValContext(ctx, &path)
+	if err != nil {
+		return "", fmt.Errorf("querying for path from cid: %v", err)
+	}
+	if !found {
+		return "", fmt.Errorf("no path found for cid %s", cid)
+	}
+	return path, nil
 }
 
 // InsertRigs inserts Rigs and their Parts.
@@ -339,8 +381,6 @@ func (s *Store) Layers(ctx context.Context, fleet string, parts ...PartNameAndCo
 		ands = append(ands, goqu.And(goqu.C("part_name").Eq(part.PartName), goqu.C("color").Eq(part.Color)))
 	}
 	q = q.Where(goqu.Or(ands...)).Order(goqu.C("position").Asc())
-	ss, _, _ := q.ToSQL()
-	fmt.Println(ss)
 
 	var layers []Layer
 	if err := q.ScanStructsContext(ctx, &layers); err != nil {

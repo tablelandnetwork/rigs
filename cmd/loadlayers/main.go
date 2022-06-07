@@ -16,8 +16,10 @@ import (
 )
 
 type config struct {
-	LayersPath string `default:""`
-	IPFS       struct {
+	Layers struct {
+		Path string `default:""`
+	}
+	IPFS struct {
 		APIAddr string `default:"http://127.0.0.1:5001"`
 		Pin     bool   `default:"false"`
 	}
@@ -43,12 +45,12 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	fi, err := os.Stat(config.LayersPath)
+	fi, err := os.Stat(config.Layers.Path)
 	if err != nil {
 		log.Fatal().Err(err).Msg("statting path to layers")
 	}
 
-	node, err := ipfsfiles.NewSerialFile(config.LayersPath, false, fi)
+	node, err := ipfsfiles.NewSerialFile(config.Layers.Path, false, fi)
 	if err != nil {
 		log.Fatal().Err(err).Msg("creating searial file from path to layers")
 	}
