@@ -57,6 +57,12 @@ const (
 		foreign key (rig_id) references rigs (id),
 		foreign key (fleet,name,color) references parts (fleet,name,color)
 	)`
+
+	createRigImagesSQL = `create table rig_images (
+		rig_id integer not null,
+		ipfs_path text not null,
+		foreign key (rig_id) references rigs (id)
+	)`
 )
 
 // Part describes a rig part.
@@ -100,6 +106,8 @@ type Store struct {
 	sqlDb *sql.DB
 }
 
+// TODO: When querying for Rigs, be sure to join rig_parts to parts to get all the properties.
+
 // NewStore creates a new SQLite store.
 func NewStore(dbFile string, reset bool) (*Store, error) {
 	if reset {
@@ -124,14 +132,17 @@ func (s *Store) CreateTables(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, createLayersSQL); err != nil {
 		return fmt.Errorf("creating layers table: %v", err)
 	}
+	if _, err := s.db.ExecContext(ctx, createLayersMapSQL); err != nil {
+		return fmt.Errorf("creating layers map table: %v", err)
+	}
 	if _, err := s.db.ExecContext(ctx, createRigsSQL); err != nil {
 		return fmt.Errorf("creating rigs table: %v", err)
 	}
 	if _, err := s.db.ExecContext(ctx, createRigPartsSQL); err != nil {
 		return fmt.Errorf("creating rig parts table: %v", err)
 	}
-	if _, err := s.db.ExecContext(ctx, createLayersMapSQL); err != nil {
-		return fmt.Errorf("creating layers map table: %v", err)
+	if _, err := s.db.ExecContext(ctx, createRigImagesSQL); err != nil {
+		return fmt.Errorf("creating rig images table: %v", err)
 	}
 	return nil
 }
@@ -236,6 +247,39 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 	}
 
 	return nil
+}
+
+// RigImage associates a rig with its image on IPFS.
+type RigImage struct {
+	RigID    int
+	IpfsPath string
+}
+
+// InsertRigImages inserts RigImgaes.
+func (s *Store) InsertRigImages(ctx context.Context, rigImages []RigImage) error {
+	var vals [][]interface{}
+	for _, rigImage := range rigImages {
+		vals = append(vals, goqu.Vals{rigImage.RigID, rigImage.IpfsPath})
+	}
+	insert := s.db.Insert("rig_images").Cols("rig_id", "ipfs_path").Vals(vals...).Executor()
+	if _, err := insert.ExecContext(ctx); err != nil {
+		return fmt.Errorf("inserting rig images: %v", err)
+	}
+	return nil
+}
+
+// ImageForRig returns the ipfs path for the rig id.
+func (s *Store) ImageForRig(ctx context.Context, rigID string) (string, error) {
+	sel := s.db.Select("ipfs_path").From("rig_images").Where(goqu.C("rig_id").Eq(rigID))
+	var path string
+	found, err := sel.ScanValContext(ctx, &path)
+	if err != nil {
+		return "", fmt.Errorf("querying for image for rig id: %v", err)
+	}
+	if !found {
+		return "", fmt.Errorf("no image found for rig id %s", rigID)
+	}
+	return path, nil
 }
 
 // GetOriginalRigs gets a list of all OriginalRigs.

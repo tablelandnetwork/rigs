@@ -109,6 +109,7 @@ func (m *Minter) Mint(
 
 	var rigs []local.Rig
 	var paths []ipfspath.Path
+	var rigImages []local.RigImage
 
 	processRig := func(rig local.Rig) (local.Rig, ipfspath.Path, error) {
 		reader, writer := io.Pipe()
@@ -154,6 +155,7 @@ func (m *Minter) Mint(
 		}
 		rigs = append(rigs, rig)
 		paths = append(paths, path)
+		rigImages = append(rigImages, local.RigImage{RigID: rig.ID, IpfsPath: path.String()})
 	}
 
 	for _, target := range c.targets {
@@ -168,6 +170,7 @@ func (m *Minter) Mint(
 		}
 		rigs = append(rigs, rig)
 		paths = append(paths, path)
+		rigImages = append(rigImages, local.RigImage{RigID: rig.ID, IpfsPath: path.String()})
 	}
 
 	if err := m.s.InsertRigs(ctx, rigs); err != nil {
@@ -175,6 +178,10 @@ func (m *Minter) Mint(
 			m.unpinPaths(ctx, paths)
 		}
 		return nil, fmt.Errorf("inserting rigs: %v", err)
+	}
+
+	if err := m.s.InsertRigImages(ctx, rigImages); err != nil {
+		return nil, fmt.Errorf("inserting rig images: %v", err)
 	}
 
 	return rigs, nil
