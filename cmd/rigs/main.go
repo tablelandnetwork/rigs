@@ -10,26 +10,23 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter/randomness/system"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
 type config struct {
 	SQLiteDBPath string `default:""`
-	LayersPath   string `default:""`
-	IPFS         struct {
-		APIAddr string `default:"http://127.0.0.1:5001"`
-		Pin     bool   `default:"false"`
+	Layers       struct {
+		Path           string `default:""`
+		UseLocalLayers bool   `default:"false"`
 	}
-	RemoteIPFS struct {
-		APIAddr    string `default:"https://ipfs.infura.io:5001"`
-		APIUser    string `default:""`
-		APIPass    string `default:""`
+	IPFS struct {
+		APIAddr    string `default:"http://127.0.0.1:5001"`
 		Pin        bool   `default:"false"`
-		GatewayURL string `default:"https://ipfs.infura-ipfs.io"`
+		GatewayURL string `default:"http://127.0.0.1:8080"`
 	}
 	Images struct {
 		Width  int  `default:"1200"`
@@ -54,7 +51,7 @@ func main() {
 
 	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
 
-	s, err := sqlite.NewSQLiteStore(config.SQLiteDBPath, false)
+	s, err := local.NewStore(config.SQLiteDBPath, false)
 	if err != nil {
 		log.Fatal().Err(err).Msg("creating sqlite store")
 	}
@@ -66,13 +63,12 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	remoteIpfs, err := httpapi.NewURLApiWithClient(config.RemoteIPFS.APIAddr, httpClient)
-	if err != nil {
-		log.Fatal().Err(err).Msg("creating remote ipfs client")
+	localLayersDir := ""
+	if config.Layers.UseLocalLayers {
+		localLayersDir = config.Layers.Path
 	}
-	remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(config.RemoteIPFS.APIUser, config.RemoteIPFS.APIPass))
 
-	m := minter.NewMinter(s, 10, ipfs, remoteIpfs, config.RemoteIPFS.GatewayURL)
+	m := minter.NewMinter(s, ipfs, config.IPFS.GatewayURL, localLayersDir)
 
 	originals, err := s.GetOriginalRigs(ctx)
 	if err != nil {
@@ -88,7 +84,6 @@ func main() {
 			png.DefaultCompression,
 			config.Images.Labels,
 			config.IPFS.Pin,
-			config.RemoteIPFS.Pin,
 			minter.Originals(system.NewSystemRandomnessSource(), minter.OrignalTarget{ID: i + 1, Original: original}),
 			// Randoms(system.NewSystemRandomnessSource(), 1, 2, 3),
 		)

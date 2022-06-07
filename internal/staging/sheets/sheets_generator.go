@@ -274,7 +274,7 @@ func (g *SheetsGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		var m staging.Metadata
+		m := staging.Metadata{ID: i}
 		var dist, mindist, maxdist, rarity float64
 		for _, s := range g.sheets {
 			d, min, max, err := selectTrait(&m, s)

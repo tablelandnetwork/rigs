@@ -12,15 +12,16 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/minter/randomness/system"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
-// TablelandGenerator generates NFT metadata from traits defined in inventory.db.
+// TablelandGenerator generates NFT metadata from traits defined in local.db.
 type TablelandGenerator struct {
-	s        store.Store
+	s        *local.Store
 	m        *minter.Minter
+	rigCache map[int]local.Rig
 	cacheDir string
 	images   map[string]*staging.Image
 	limiter  chan struct{}
@@ -32,7 +33,7 @@ func init() {
 
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
-	s store.Store,
+	s *local.Store,
 	m *minter.Minter,
 	concurrency int,
 	cacheDir string,
@@ -50,6 +51,7 @@ func NewTablelandGenerator(
 	return &TablelandGenerator{
 		s:        s,
 		m:        m,
+		rigCache: make(map[int]local.Rig),
 		cacheDir: cacheDir,
 		images:   make(map[string]*staging.Image),
 		limiter:  make(chan struct{}, concurrency),
@@ -77,17 +79,38 @@ func (g *TablelandGenerator) GenerateMetadata(
 		md = append(md, staging.GeneratedMetadata{
 			Metadata: rigToMetadata(rig),
 		})
+		g.rigCache[rig.ID] = rig
 	}
 	return md, nil
 }
 
-func rigToMetadata(rig store.Rig) staging.Metadata {
-	m := staging.Metadata{}
-	for _, att := range rig.Attributes {
+func rigToMetadata(rig local.Rig) staging.Metadata {
+	m := staging.Metadata{ID: rig.ID}
+	if rig.Original {
+		m.Attributes = append(
+			m.Attributes,
+			staging.Trait{
+				DisplayType: "string",
+				TraitType:   "Name",
+				Value:       rig.Parts[0].Original,
+			},
+			staging.Trait{
+				DisplayType: "string",
+				TraitType:   "Color",
+				Value:       rig.Parts[0].Color,
+			},
+		)
+	}
+	m.Attributes = append(m.Attributes, staging.Trait{
+		DisplayType: "number",
+		TraitType:   "Percent Original",
+		Value:       rig.PercentOriginal,
+	})
+	for _, part := range rig.Parts {
 		m.Attributes = append(m.Attributes, staging.Trait{
-			DisplayType: att.DisplayType,
-			TraitType:   att.TraitType,
-			Value:       att.Value,
+			DisplayType: "string",
+			TraitType:   part.Type,
+			Value:       part.Name,
 		})
 	}
 	return m
@@ -111,19 +134,12 @@ func (g *TablelandGenerator) RenderImage(
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
 
-	return g.m.MintRigImage(ctx, metadataToRig(md), width, height, compression, drawLabels, writer)
-}
-
-func metadataToRig(md staging.Metadata) store.Rig {
-	rig := store.Rig{}
-	for _, att := range md.Attributes {
-		rig.Attributes = append(rig.Attributes, store.RigAttribute{
-			DisplayType: att.DisplayType,
-			TraitType:   att.TraitType,
-			Value:       att.Value,
-		})
+	rig, ok := g.rigCache[md.ID]
+	if !ok {
+		return fmt.Errorf("no rig cached for id %d", md.ID)
 	}
-	return rig
+
+	return g.m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
 }
 
 // Close implements io.Closer.

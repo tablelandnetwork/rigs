@@ -30,6 +30,7 @@ type Image struct {
 
 // Metadata defines NFT metadata.
 type Metadata struct {
+	ID         int     `json:"id"`
 	Attributes []Trait `json:"attributes"`
 }
 

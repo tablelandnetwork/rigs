@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland/store"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
 
 	// Import the SQLite driver.
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
@@ -50,26 +50,21 @@ const (
 )
 
 // SQLForInsertingParts returns the SQL statement.
-func SQLForInsertingParts(parts []store.Part) string {
-	b := new(strings.Builder)
-	b.WriteString("insert into parts(fleet, original, type, name, color) values ")
-	vals := []string{}
+func SQLForInsertingParts(parts []tableland.Part) (string, error) {
+	var vals [][]interface{}
 	for _, part := range parts {
-		vals = append(vals, fmt.Sprintf(
-			"(%s,%s,'%s','%s',%s)",
-			nullableStringValue(part.Fleet),
-			nullableStringValue(part.Original),
-			part.Type,
-			part.Name,
-			nullableStringValue(part.Color),
-		))
+		vals = append(vals, goqu.Vals{part.Fleet, part.Original, part.Type, part.Name, part.Color})
 	}
-	b.WriteString(fmt.Sprintf("%s;", strings.Join(vals, ",")))
-	return b.String()
+	ds := dialect.Insert("parts").Cols("fleet", "original", "type", "name", "color").Vals(vals...)
+	sql, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert parts: %v", err)
+	}
+	return sql, nil
 }
 
 // SQLForInsertingLayers returns the SQL statement.
-func SQLForInsertingLayers(layers []store.Layer) string {
+func SQLForInsertingLayers(layers []tableland.Layer) string {
 	b := new(strings.Builder)
 	b.WriteString("insert into layers(fleet, part, position, path) values ")
 	vals := []string{}
@@ -87,7 +82,7 @@ func SQLForInsertingLayers(layers []store.Layer) string {
 }
 
 // SQLForInsertingRigs returns the SQL statement.
-func SQLForInsertingRigs(rigs []store.Rig) (string, error) {
+func SQLForInsertingRigs(rigs []tableland.Rig) (string, error) {
 	var rigVals [][]interface{}
 	var attVales [][]interface{}
 	for _, rig := range rigs {
@@ -126,7 +121,7 @@ func SQLForGettingPartTypesByFleet(fleet string) string {
 }
 
 // SQLForGettingParts returns the SQL statement.
-func SQLForGettingParts(options *store.GetPartsConfig) string {
+func SQLForGettingParts(options *tableland.GetPartsConfig) string {
 	b := new(strings.Builder)
 	b.WriteString("select * from parts")
 	var wheres []string
@@ -166,11 +161,4 @@ func SQLForGettingLayers(fleet string, parts []string) string {
 	b.WriteString(strings.Join(partsExp, " or "))
 	b.WriteString(") order by position;")
 	return b.String()
-}
-
-func nullableStringValue(s store.NullableString) string {
-	if s.Valid {
-		return fmt.Sprintf("'%s'", s.String)
-	}
-	return "NULL"
 }
