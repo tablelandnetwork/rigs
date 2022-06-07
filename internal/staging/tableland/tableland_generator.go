@@ -21,6 +21,7 @@ import (
 type TablelandGenerator struct {
 	s        *local.Store
 	m        *minter.Minter
+	rigCache map[int]local.Rig
 	cacheDir string
 	images   map[string]*staging.Image
 	limiter  chan struct{}
@@ -50,6 +51,7 @@ func NewTablelandGenerator(
 	return &TablelandGenerator{
 		s:        s,
 		m:        m,
+		rigCache: make(map[int]local.Rig),
 		cacheDir: cacheDir,
 		images:   make(map[string]*staging.Image),
 		limiter:  make(chan struct{}, concurrency),
@@ -77,12 +79,13 @@ func (g *TablelandGenerator) GenerateMetadata(
 		md = append(md, staging.GeneratedMetadata{
 			Metadata: rigToMetadata(rig),
 		})
+		g.rigCache[rig.ID] = rig
 	}
 	return md, nil
 }
 
 func rigToMetadata(rig local.Rig) staging.Metadata {
-	m := staging.Metadata{}
+	m := staging.Metadata{ID: rig.ID}
 	if rig.Original {
 		m.Attributes = append(
 			m.Attributes,
@@ -131,20 +134,12 @@ func (g *TablelandGenerator) RenderImage(
 		Bool("reload layers", reloadLayers).
 		Msg("rendering image")
 
-	return g.m.MintRigImage(ctx, metadataToRig(md), width, height, compression, drawLabels, writer)
-}
+	rig, ok := g.rigCache[md.ID]
+	if !ok {
+		return fmt.Errorf("no rig cached for id %d", md.ID)
+	}
 
-func metadataToRig(md staging.Metadata) local.Rig {
-	// TODO: Make the generators work off of local.Rig.
-	rig := local.Rig{}
-	// for _, att := range md.Attributes {
-	// 	rig.Attributes = append(rig.Attributes, local.RigAttribute{
-	// 		DisplayType: att.DisplayType,
-	// 		TraitType:   att.TraitType,
-	// 		Value:       att.Value,
-	// 	})
-	// }
-	return rig
+	return g.m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
 }
 
 // Close implements io.Closer.
