@@ -30,8 +30,6 @@ func TestBuild(t *testing.T) {
 	originals, err := s.GetOriginalRigs(ctx)
 	require.NoError(t, err)
 
-	pool := wpool.New(10)
-
 	buildExecFcn := func(id int, original local.OriginalRig, opt Option) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			fmt.Printf("%d. %s: %s %s\n", id, original.Fleet, original.Color, original.Name)
@@ -61,8 +59,8 @@ func TestBuild(t *testing.T) {
 		})
 	}
 
+	pool := wpool.New(10)
 	go pool.GenerateFrom(jobs)
-
 	go pool.Run(ctx)
 
 	for {
