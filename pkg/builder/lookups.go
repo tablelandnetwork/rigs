@@ -1,4 +1,4 @@
-package minter
+package builder
 
 import (
 	"fmt"

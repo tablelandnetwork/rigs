@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/doug-martin/goqu/v9"
+	"github.com/doug-martin/goqu/v9/exp"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 
 	// Importing the SQLite driver.
@@ -14,7 +15,6 @@ import (
 
 	// Import the SQLite dialect.
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
-	"github.com/doug-martin/goqu/v9/exp"
 )
 
 const (

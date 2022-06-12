@@ -1,4 +1,4 @@
-package minter
+package builder
 
 import (
 	"context"
@@ -24,38 +24,105 @@ const (
 	backgroundPartTypeName = "Background"
 )
 
+var (
+	defaultConfig = config{
+		width:       1200,
+		height:      1200,
+		compression: png.DefaultCompression,
+		drawLabels:  false,
+		pin:         false,
+	}
+)
+
+type config struct {
+	width       int
+	height      int
+	compression png.CompressionLevel
+	drawLabels  bool
+	pin         bool
+	id          int
+	original    *local.OriginalRig
+	randomness  RandomnessSource
+}
+
+// Option is an item that controls the behavior of Build.
+type Option func(*config)
+
+// Size controls the size of the created image.
+func Size(width, height int) Option {
+	return func(c *config) {
+		c.width = width
+		c.height = height
+	}
+}
+
+// Compression controls the compression level of the created image.
+func Compression(level png.CompressionLevel) Option {
+	return func(c *config) {
+		c.compression = level
+	}
+}
+
+// Labels controls wheterh or not to draw labels on the created image.
+func Labels(drawLabels bool) Option {
+	return func(c *config) {
+		c.drawLabels = drawLabels
+	}
+}
+
+// Pin controls wheterh or not to pin the created image in IPFS.
+func Pin(pin bool) Option {
+	return func(c *config) {
+		c.pin = pin
+	}
+}
+
+// Random provides configuration for random rig building.
+func Random(id int, randomnessSource RandomnessSource) Option {
+	return func(c *config) {
+		c.id = id
+		c.randomness = randomnessSource
+	}
+}
+
+// Original provides configuration for building original rigs.
+func Original(id int, original local.OriginalRig, randomnessSource RandomnessSource) Option {
+	return func(c *config) {
+		c.id = id
+		c.original = &original
+		c.randomness = randomnessSource
+	}
+}
+
 // RandomnessSource defines the API for a source of random numbers.
 type RandomnessSource interface {
 	// GenRandoms returns n random numbers.
 	GenRandoms(int) ([]float64, error)
 }
 
-// Minter mints a Rig NFT.
-type Minter struct {
+// Builder builds Rigs.
+type Builder struct {
 	s      *local.Store
 	layers *Layers
 	ipfs   iface.CoreAPI
 
 	ipfsGatewayURL string
 
-	fleetsCache     []local.Part
-	fleetsCacheLock sync.Mutex
-
+	fleetsCache             []local.Part
 	fleetPartTypesCache     map[string][]string
-	fleetPartTypesCacheLock sync.Mutex
+	fleetPartTypePartsCache map[string]map[string][]local.Part
 
-	fleetPartTypePartsCache     map[string]map[string][]local.Part
-	fleetPartTypePartsCacheLock sync.Mutex
+	locks sync.Map
 }
 
-// NewMinter creates a Minter.
-func NewMinter(
+// NewBuilder creates a Builder.
+func NewBuilder(
 	s *local.Store,
 	ipfs iface.CoreAPI,
 	ipfsGatewayURL string,
 	localLayersDir string,
-) *Minter {
-	return &Minter{
+) *Builder {
+	return &Builder{
 		s:              s,
 		layers:         NewLayers(ipfs, s, localLayersDir),
 		ipfs:           ipfs,
@@ -63,170 +130,70 @@ func NewMinter(
 	}
 }
 
-// OrignalTarget describes an original rig to be minted.
-type OrignalTarget struct {
-	ID       int
-	Original local.OriginalRig
-}
-type config struct {
-	ids        []int
-	targets    []OrignalTarget
-	randomness RandomnessSource
-}
-
-// Option is an item that controls the behavior of Mint.
-type Option func(*config)
-
-// Randoms provides configuration for random rig minting.
-func Randoms(randomnessSource RandomnessSource, IDs ...int) Option {
-	return func(c *config) {
-		c.ids = IDs
-		c.randomness = randomnessSource
-	}
-}
-
-// Originals provides configuration for minting original rigs.
-func Originals(randomnessSource RandomnessSource, targets ...OrignalTarget) Option {
-	return func(c *config) {
-		c.targets = targets
-		c.randomness = randomnessSource
-	}
-}
-
-// Mint mints the Rig NFT.
-func (m *Minter) Mint(
-	ctx context.Context,
-	width, height int,
-	compression png.CompressionLevel,
-	drawLabels bool,
-	pin bool,
-	opts ...Option,
-) ([]local.Rig, error) {
-	c := config{}
+// Build creates a Rig.
+func (m *Builder) Build(ctx context.Context, opts ...Option) (*local.Rig, error) {
+	c := defaultConfig
 	for _, opt := range opts {
 		opt(&c)
 	}
 
-	var rigs []local.Rig
-	var paths []ipfspath.Path
-	var rigImages []local.RigImage
-
-	processRig := func(rig local.Rig) (local.Rig, ipfspath.Path, error) {
-		reader, writer := io.Pipe()
-		defer func() {
-			if err := reader.Close(); err != nil {
-				log.Error().Err(err).Msg("closing reader")
-			}
-		}()
-
-		go func() {
-			if err := m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer); err != nil {
-				log.Err(err).Msg("minting rig image")
-			}
-			if err := writer.Close(); err != nil {
-				log.Err(err).Msg("closing image writer")
-			}
-		}()
-
-		path, err := m.ipfs.Unixfs().Add(
-			ctx,
-			ipfsfiles.NewReaderFile(reader),
-			options.Unixfs.Pin(pin),
-			options.Unixfs.CidVersion(1),
-		)
-		if err != nil {
-			return local.Rig{}, nil, fmt.Errorf("adding image to ipfs: %v", err)
-		}
-
-		rig.Image = m.ipfsGatewayURL + path.String()
-
-		return rig, path, nil
+	rig, err := m.BuildRigData(ctx, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("building rig data: %v", err)
 	}
 
-	for _, ID := range c.ids {
-		rig, err := m.MintRigData(ctx, RandomRigData(ID, c.randomness))
-		if err != nil {
-			return nil, fmt.Errorf("minting random rig data: %v", err)
+	reader, writer := io.Pipe()
+	defer func() {
+		if err := reader.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader")
 		}
+	}()
 
-		rig, path, err := processRig(rig)
-		if err != nil {
-			return nil, err
+	go func() {
+		if err := m.BuildRigImage(ctx, rig, writer, opts...); err != nil {
+			log.Err(err).Msg("building rig image")
 		}
-		rigs = append(rigs, rig)
-		paths = append(paths, path)
-		rigImages = append(rigImages, local.RigImage{RigID: rig.ID, IpfsPath: path.String()})
+		if err := writer.Close(); err != nil {
+			log.Err(err).Msg("closing image writer")
+		}
+	}()
+
+	path, err := m.ipfs.Unixfs().Add(
+		ctx,
+		ipfsfiles.NewReaderFile(reader),
+		options.Unixfs.Pin(c.pin),
+		options.Unixfs.CidVersion(1),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("adding image to ipfs: %v", err)
 	}
 
-	for _, target := range c.targets {
-		rig, err := m.MintRigData(ctx, OriginalRigData(target.ID, c.randomness, target.Original))
-		if err != nil {
-			return nil, fmt.Errorf("minting original rig data: %v", err)
-		}
+	rig.Image = m.ipfsGatewayURL + path.String()
 
-		rig, path, err := processRig(rig)
-		if err != nil {
-			return nil, err
-		}
-		rigs = append(rigs, rig)
-		paths = append(paths, path)
-		rigImages = append(rigImages, local.RigImage{RigID: rig.ID, IpfsPath: path.String()})
-	}
-
-	if err := m.s.InsertRigs(ctx, rigs); err != nil {
-		if pin {
-			m.unpinPaths(ctx, paths)
+	if err := m.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
+		if c.pin {
+			m.unpinPath(ctx, path)
 		}
 		return nil, fmt.Errorf("inserting rigs: %v", err)
 	}
 
-	if err := m.s.InsertRigImages(ctx, rigImages); err != nil {
+	rigImage := local.RigImage{RigID: rig.ID, IpfsPath: path.String()}
+	if err := m.s.InsertRigImages(ctx, []local.RigImage{rigImage}); err != nil {
 		return nil, fmt.Errorf("inserting rig images: %v", err)
 	}
 
-	return rigs, nil
+	return &rig, nil
 }
 
-func (m *Minter) unpinPaths(ctx context.Context, paths []ipfspath.Path) {
-	for _, path := range paths {
-		if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
-			log.Error().Err(err).Msg("unpinning from local ipfs")
-		}
+func (m *Builder) unpinPath(ctx context.Context, path ipfspath.Path) {
+	if err := m.ipfs.Pin().Rm(ctx, path); err != nil {
+		log.Error().Err(err).Msg("unpinning from local ipfs")
 	}
 }
 
-type rigDataConfig struct {
-	id          int
-	randomness  RandomnessSource
-	originalRig local.OriginalRig
-}
-
-// RigDataOption is an item that controls the behavior of MintRigData.
-type RigDataOption func(*rigDataConfig)
-
-// RandomRigData provides configuration for minting a random rig.
-func RandomRigData(ID int, randomnessSource RandomnessSource) RigDataOption {
-	return func(c *rigDataConfig) {
-		c.id = ID
-		c.randomness = randomnessSource
-	}
-}
-
-// OriginalRigData provides configuration for minting an original rig.
-func OriginalRigData(ID int, randomnessSource RandomnessSource, originalRig local.OriginalRig) RigDataOption {
-	return func(c *rigDataConfig) {
-		c.id = ID
-		c.randomness = randomnessSource
-		c.originalRig = originalRig
-	}
-}
-
-// MintRigData generates a Rig.
-func (m *Minter) MintRigData(
-	ctx context.Context,
-	opts ...RigDataOption,
-) (local.Rig, error) {
-	c := rigDataConfig{}
+// BuildRigData generates a Rig.
+func (m *Builder) BuildRigData(ctx context.Context, opts ...Option) (local.Rig, error) {
+	c := defaultConfig
 	for _, opt := range opts {
 		opt(&c)
 	}
@@ -234,27 +201,25 @@ func (m *Minter) MintRigData(
 	var rig local.Rig
 	var err error
 
-	if c.originalRig.Name == "" {
-		rig, err = m.mintRandomRigData(ctx, c.id, c.randomness)
-	} else if c.originalRig.Name != "" {
-		rig, err = m.mintOriginalRigData(ctx, c.id, c.randomness, c.originalRig)
+	if c.original != nil {
+		rig, err = m.buildOriginalRigData(ctx, c.id, *c.original, c.randomness)
 	} else {
-		return local.Rig{}, errors.New("no RigDataOption provided")
+		rig, err = m.buildRandomRigData(ctx, c.id, c.randomness)
 	}
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("minting rig data: %v", err)
+		return local.Rig{}, fmt.Errorf("building rig data: %v", err)
 	}
 
 	rig.PercentOriginal = percentOriginal(rig.Parts)
 	return rig, nil
 }
 
-func (m *Minter) mintRandomRigData(
+func (m *Builder) buildRandomRigData(
 	ctx context.Context,
-	ID int,
+	id int,
 	rs RandomnessSource,
 ) (local.Rig, error) {
-	rig := local.Rig{ID: ID}
+	rig := local.Rig{ID: id}
 
 	fleets, err := m.fleets(ctx)
 	if err != nil {
@@ -301,11 +266,11 @@ func (m *Minter) mintRandomRigData(
 	return rig, nil
 }
 
-func (m *Minter) mintOriginalRigData(
+func (m *Builder) buildOriginalRigData(
 	ctx context.Context,
 	id int,
-	rs RandomnessSource,
 	original local.OriginalRig,
+	rs RandomnessSource,
 ) (local.Rig, error) {
 	rig := local.Rig{ID: id, Original: true}
 
@@ -367,12 +332,6 @@ func (m *Minter) mintOriginalRigData(
 		} else if len(parts) == 1 {
 			part = parts[0]
 		} else {
-			// log.Debug().Msgf(
-			// 	"should have found 1 or more parts for original %s, color %s, part type %s, but found 0",
-			// 	original.Name,
-			// 	original.Color,
-			// 	partType,
-			// )
 			return local.Rig{},
 				fmt.Errorf(
 					"should have found 1 part for original %s, color %s, part type %s, but found %d",
@@ -388,39 +347,38 @@ func (m *Minter) mintOriginalRigData(
 	return rig, nil
 }
 
-// MintRigImage writes the Rig image to the provider Writer for the provided Rig.
-func (m *Minter) MintRigImage(
+// BuildRigImage writes the Rig image to the provider Writer for the provided Rig.
+func (m *Builder) BuildRigImage(
 	ctx context.Context,
 	rig local.Rig,
-	width, height int,
-	compression png.CompressionLevel,
-	drawLabels bool,
 	writer io.Writer,
+	opts ...Option,
 ) error {
+	c := defaultConfig
+	for _, opt := range opts {
+		opt(&c)
+	}
+
 	layers, err := m.getLayers(ctx, rig)
 	if err != nil {
 		return fmt.Errorf("getting layers for rig: %v", err)
 	}
 
 	var label string
-	if drawLabels {
+	if c.drawLabels {
 		label, err = getRigLabel(rig)
 		if err != nil {
 			return fmt.Errorf("getting rig label: %v", err)
 		}
 	}
 
-	r, err := renderer.NewRenderer(width, height, drawLabels, label)
+	r, err := renderer.NewRenderer(c.width, c.height, c.drawLabels, label)
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}
 	defer r.Dispose()
 
 	for _, l := range layers {
-		// log.Debug().
-		// 	Str("name", l.Part).
-		// 	Msg("adding layer")
-
 		i, err := m.layers.GetLayer(ctx, l.Path)
 		if err != nil {
 			return fmt.Errorf("getting layer: %v", err)
@@ -433,14 +391,14 @@ func (m *Minter) MintRigImage(
 		}
 	}
 
-	if err := r.Write(writer, compression); err != nil {
+	if err := r.Write(writer, c.compression); err != nil {
 		return fmt.Errorf("writing to renderer: %v", err)
 	}
 
 	return nil
 }
 
-func (m *Minter) getLayers(ctx context.Context, rig local.Rig) ([]local.Layer, error) {
+func (m *Builder) getLayers(ctx context.Context, rig local.Rig) ([]local.Layer, error) {
 	fleet, err := getFleet(rig)
 	if err != nil {
 		return nil, err
@@ -564,9 +522,11 @@ func percentOriginal(parts []local.Part) float64 {
 	return float64(max) / float64(total)
 }
 
-func (m *Minter) fleets(ctx context.Context) ([]local.Part, error) {
-	m.fleetsCacheLock.Lock()
-	defer m.fleetsCacheLock.Unlock()
+func (m *Builder) fleets(ctx context.Context) ([]local.Part, error) {
+	value, _ := m.locks.LoadOrStore("fleets", &sync.Mutex{})
+	lock := value.(*sync.Mutex)
+	lock.Lock()
+	defer lock.Unlock()
 
 	if m.fleetsCache == nil || len(m.fleetsCache) == 0 {
 		fleets, err := m.s.Parts(ctx, local.PartsOfType("Fleet"))
@@ -578,9 +538,11 @@ func (m *Minter) fleets(ctx context.Context) ([]local.Part, error) {
 	return m.fleetsCache, nil
 }
 
-func (m *Minter) fleetPartTypes(ctx context.Context, fleet string) ([]string, error) {
-	m.fleetPartTypesCacheLock.Lock()
-	defer m.fleetPartTypesCacheLock.Unlock()
+func (m *Builder) fleetPartTypes(ctx context.Context, fleet string) ([]string, error) {
+	value, _ := m.locks.LoadOrStore(fleet, &sync.Mutex{})
+	lock := value.(*sync.Mutex)
+	lock.Lock()
+	defer lock.Unlock()
 
 	if m.fleetPartTypesCache == nil {
 		m.fleetPartTypesCache = make(map[string][]string)
@@ -596,9 +558,11 @@ func (m *Minter) fleetPartTypes(ctx context.Context, fleet string) ([]string, er
 	return partTypes, nil
 }
 
-func (m *Minter) fleetPartTypeParts(ctx context.Context, fleet string, partType string) ([]local.Part, error) {
-	m.fleetPartTypePartsCacheLock.Lock()
-	defer m.fleetPartTypePartsCacheLock.Unlock()
+func (m *Builder) fleetPartTypeParts(ctx context.Context, fleet string, partType string) ([]local.Part, error) {
+	value, _ := m.locks.LoadOrStore(fleet+partType, &sync.Mutex{})
+	lock := value.(*sync.Mutex)
+	lock.Lock()
+	defer lock.Unlock()
 
 	if m.fleetPartTypePartsCache == nil {
 		m.fleetPartTypePartsCache = make(map[string]map[string][]local.Part)

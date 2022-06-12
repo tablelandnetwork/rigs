@@ -1,4 +1,4 @@
-package minter
+package builder
 
 import (
 	"context"
@@ -21,7 +21,7 @@ type Layers struct {
 	store          *local.Store
 	localLayersDir string
 	cache          map[string]image.Image
-	lck            sync.Mutex
+	locks          sync.Map
 }
 
 // NewLayers creates a new Layers.
@@ -36,8 +36,10 @@ func NewLayers(ipfs iface.CoreAPI, store *local.Store, localLayersDir string) *L
 
 // GetLayer returns a layer image for the provided path.
 func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, error) {
-	l.lck.Lock()
-	defer l.lck.Unlock()
+	value, _ := l.locks.LoadOrStore(ipfsPath, &sync.Mutex{})
+	lock := value.(*sync.Mutex)
+	lock.Lock()
+	defer lock.Unlock()
 
 	if image, ok := l.cache[ipfsPath]; ok {
 		return image, nil
