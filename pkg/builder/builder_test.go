@@ -3,7 +3,6 @@ package builder
 import (
 	"context"
 	"fmt"
-	"image/png"
 	"net/http"
 	"testing"
 
@@ -33,15 +32,7 @@ func TestBuild(t *testing.T) {
 	buildExecFcn := func(id int, original local.OriginalRig, opt Option) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			fmt.Printf("%d. %s: %s %s\n", id, original.Fleet, original.Color, original.Name)
-			rig, err := m.Build(
-				ctx,
-				1200,
-				1200,
-				png.DefaultCompression,
-				false,
-				false,
-				opt,
-			)
+			rig, err := m.Build(ctx, opt)
 			return rig, err
 		}
 	}
@@ -53,8 +44,7 @@ func TestBuild(t *testing.T) {
 			ExecFn: buildExecFcn(
 				i+1,
 				original,
-				Original(system.NewSystemRandomnessSource(), OrignalTarget{ID: i + 1, Original: original}),
-				// Random(system.NewSystemRandomnessSource(), 1),
+				Original(i+1, original, system.NewSystemRandomnessSource()),
 			),
 		})
 	}

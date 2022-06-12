@@ -71,7 +71,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		rig, err := g.m.BuildRigData(ctx, builder.RandomRigData(i, system.NewSystemRandomnessSource()))
+		rig, err := g.m.BuildRigData(ctx, builder.Random(i, system.NewSystemRandomnessSource()))
 		if err != nil {
 			return nil, fmt.Errorf("minting: %v", err)
 		}
@@ -139,7 +139,14 @@ func (g *TablelandGenerator) RenderImage(
 		return fmt.Errorf("no rig cached for id %d", md.ID)
 	}
 
-	return g.m.BuildRigImage(ctx, rig, width, height, compression, drawLabels, writer)
+	return g.m.BuildRigImage(
+		ctx,
+		rig,
+		writer,
+		builder.Size(width, height),
+		builder.Compression(compression),
+		builder.Labels(drawLabels),
+	)
 }
 
 // Close implements io.Closer.

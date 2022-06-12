@@ -24,6 +24,76 @@ const (
 	backgroundPartTypeName = "Background"
 )
 
+var (
+	defaultConfig = config{
+		width:       1200,
+		height:      1200,
+		compression: png.DefaultCompression,
+		drawLabels:  false,
+		pin:         false,
+	}
+)
+
+type config struct {
+	width       int
+	height      int
+	compression png.CompressionLevel
+	drawLabels  bool
+	pin         bool
+	id          int
+	original    *local.OriginalRig
+	randomness  RandomnessSource
+}
+
+// Option is an item that controls the behavior of Build.
+type Option func(*config)
+
+// Size controls the size of the created image.
+func Size(width, height int) Option {
+	return func(c *config) {
+		c.width = width
+		c.height = height
+	}
+}
+
+// Compression controls the compression level of the created image.
+func Compression(level png.CompressionLevel) Option {
+	return func(c *config) {
+		c.compression = level
+	}
+}
+
+// Labels controls wheterh or not to draw labels on the created image.
+func Labels(drawLabels bool) Option {
+	return func(c *config) {
+		c.drawLabels = drawLabels
+	}
+}
+
+// Pin controls wheterh or not to pin the created image in IPFS.
+func Pin(pin bool) Option {
+	return func(c *config) {
+		c.pin = pin
+	}
+}
+
+// Random provides configuration for random rig building.
+func Random(id int, randomnessSource RandomnessSource) Option {
+	return func(c *config) {
+		c.id = id
+		c.randomness = randomnessSource
+	}
+}
+
+// Original provides configuration for building original rigs.
+func Original(id int, original local.OriginalRig, randomnessSource RandomnessSource) Option {
+	return func(c *config) {
+		c.id = id
+		c.original = &original
+		c.randomness = randomnessSource
+	}
+}
+
 // RandomnessSource defines the API for a source of random numbers.
 type RandomnessSource interface {
 	// GenRandoms returns n random numbers.
@@ -60,64 +130,14 @@ func NewBuilder(
 	}
 }
 
-// OrignalTarget describes an original rig to be built.
-type OrignalTarget struct {
-	ID       int
-	Original local.OriginalRig
-}
-type config struct {
-	id         *int
-	target     *OrignalTarget
-	randomness RandomnessSource
-}
-
-// Option is an item that controls the behavior of Build.
-type Option func(*config)
-
-// Random provides configuration for random rig building.
-func Random(randomnessSource RandomnessSource, ID int) Option {
-	return func(c *config) {
-		c.id = &ID
-		c.randomness = randomnessSource
-	}
-}
-
-// Original provides configuration for building original rigs.
-func Original(randomnessSource RandomnessSource, target OrignalTarget) Option {
-	return func(c *config) {
-		c.target = &target
-		c.randomness = randomnessSource
-	}
-}
-
 // Build creates a Rig.
-func (m *Builder) Build(
-	ctx context.Context,
-	width, height int,
-	compression png.CompressionLevel,
-	drawLabels bool,
-	pin bool,
-	opts ...Option,
-) (*local.Rig, error) {
-	c := config{}
+func (m *Builder) Build(ctx context.Context, opts ...Option) (*local.Rig, error) {
+	c := defaultConfig
 	for _, opt := range opts {
 		opt(&c)
 	}
-	if c.id == nil && c.target == nil {
-		return nil, errors.New("must specify random or original build option")
-	}
-	if c.id != nil && c.target != nil {
-		return nil, errors.New("must specify either random or original build option, not both")
-	}
 
-	var opt RigDataOption
-	if c.id != nil {
-		opt = RandomRigData(*c.id, c.randomness)
-	} else {
-		opt = OriginalRigData(c.target.ID, c.randomness, c.target.Original)
-	}
-
-	rig, err := m.BuildRigData(ctx, opt)
+	rig, err := m.BuildRigData(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("building rig data: %v", err)
 	}
@@ -130,7 +150,7 @@ func (m *Builder) Build(
 	}()
 
 	go func() {
-		if err := m.BuildRigImage(ctx, rig, width, height, compression, drawLabels, writer); err != nil {
+		if err := m.BuildRigImage(ctx, rig, writer, opts...); err != nil {
 			log.Err(err).Msg("building rig image")
 		}
 		if err := writer.Close(); err != nil {
@@ -141,7 +161,7 @@ func (m *Builder) Build(
 	path, err := m.ipfs.Unixfs().Add(
 		ctx,
 		ipfsfiles.NewReaderFile(reader),
-		options.Unixfs.Pin(pin),
+		options.Unixfs.Pin(c.pin),
 		options.Unixfs.CidVersion(1),
 	)
 	if err != nil {
@@ -151,7 +171,7 @@ func (m *Builder) Build(
 	rig.Image = m.ipfsGatewayURL + path.String()
 
 	if err := m.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
-		if pin {
+		if c.pin {
 			m.unpinPath(ctx, path)
 		}
 		return nil, fmt.Errorf("inserting rigs: %v", err)
@@ -171,38 +191,9 @@ func (m *Builder) unpinPath(ctx context.Context, path ipfspath.Path) {
 	}
 }
 
-type rigDataConfig struct {
-	id          int
-	randomness  RandomnessSource
-	originalRig local.OriginalRig
-}
-
-// RigDataOption is an item that controls the behavior of BuildRigData.
-type RigDataOption func(*rigDataConfig)
-
-// RandomRigData provides configuration for building a random rig.
-func RandomRigData(ID int, randomnessSource RandomnessSource) RigDataOption {
-	return func(c *rigDataConfig) {
-		c.id = ID
-		c.randomness = randomnessSource
-	}
-}
-
-// OriginalRigData provides configuration for building an original rig.
-func OriginalRigData(ID int, randomnessSource RandomnessSource, originalRig local.OriginalRig) RigDataOption {
-	return func(c *rigDataConfig) {
-		c.id = ID
-		c.randomness = randomnessSource
-		c.originalRig = originalRig
-	}
-}
-
 // BuildRigData generates a Rig.
-func (m *Builder) BuildRigData(
-	ctx context.Context,
-	opts ...RigDataOption,
-) (local.Rig, error) {
-	c := rigDataConfig{}
+func (m *Builder) BuildRigData(ctx context.Context, opts ...Option) (local.Rig, error) {
+	c := defaultConfig
 	for _, opt := range opts {
 		opt(&c)
 	}
@@ -210,12 +201,10 @@ func (m *Builder) BuildRigData(
 	var rig local.Rig
 	var err error
 
-	if c.originalRig.Name == "" {
-		rig, err = m.buildRandomRigData(ctx, c.id, c.randomness)
-	} else if c.originalRig.Name != "" {
-		rig, err = m.buildOriginalRigData(ctx, c.id, c.randomness, c.originalRig)
+	if c.original != nil {
+		rig, err = m.buildOriginalRigData(ctx, c.id, *c.original, c.randomness)
 	} else {
-		return local.Rig{}, errors.New("no RigDataOption provided")
+		rig, err = m.buildRandomRigData(ctx, c.id, c.randomness)
 	}
 	if err != nil {
 		return local.Rig{}, fmt.Errorf("building rig data: %v", err)
@@ -227,10 +216,10 @@ func (m *Builder) BuildRigData(
 
 func (m *Builder) buildRandomRigData(
 	ctx context.Context,
-	ID int,
+	id int,
 	rs RandomnessSource,
 ) (local.Rig, error) {
-	rig := local.Rig{ID: ID}
+	rig := local.Rig{ID: id}
 
 	fleets, err := m.fleets(ctx)
 	if err != nil {
@@ -280,8 +269,8 @@ func (m *Builder) buildRandomRigData(
 func (m *Builder) buildOriginalRigData(
 	ctx context.Context,
 	id int,
-	rs RandomnessSource,
 	original local.OriginalRig,
+	rs RandomnessSource,
 ) (local.Rig, error) {
 	rig := local.Rig{ID: id, Original: true}
 
@@ -343,12 +332,6 @@ func (m *Builder) buildOriginalRigData(
 		} else if len(parts) == 1 {
 			part = parts[0]
 		} else {
-			// log.Debug().Msgf(
-			// 	"should have found 1 or more parts for original %s, color %s, part type %s, but found 0",
-			// 	original.Name,
-			// 	original.Color,
-			// 	partType,
-			// )
 			return local.Rig{},
 				fmt.Errorf(
 					"should have found 1 part for original %s, color %s, part type %s, but found %d",
@@ -368,35 +351,34 @@ func (m *Builder) buildOriginalRigData(
 func (m *Builder) BuildRigImage(
 	ctx context.Context,
 	rig local.Rig,
-	width, height int,
-	compression png.CompressionLevel,
-	drawLabels bool,
 	writer io.Writer,
+	opts ...Option,
 ) error {
+	c := defaultConfig
+	for _, opt := range opts {
+		opt(&c)
+	}
+
 	layers, err := m.getLayers(ctx, rig)
 	if err != nil {
 		return fmt.Errorf("getting layers for rig: %v", err)
 	}
 
 	var label string
-	if drawLabels {
+	if c.drawLabels {
 		label, err = getRigLabel(rig)
 		if err != nil {
 			return fmt.Errorf("getting rig label: %v", err)
 		}
 	}
 
-	r, err := renderer.NewRenderer(width, height, drawLabels, label)
+	r, err := renderer.NewRenderer(c.width, c.height, c.drawLabels, label)
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}
 	defer r.Dispose()
 
 	for _, l := range layers {
-		// log.Debug().
-		// 	Str("name", l.Part).
-		// 	Msg("adding layer")
-
 		i, err := m.layers.GetLayer(ctx, l.Path)
 		if err != nil {
 			return fmt.Errorf("getting layer: %v", err)
@@ -409,7 +391,7 @@ func (m *Builder) BuildRigImage(
 		}
 	}
 
-	if err := r.Write(writer, compression); err != nil {
+	if err := r.Write(writer, c.compression); err != nil {
 		return fmt.Errorf("writing to renderer: %v", err)
 	}
 

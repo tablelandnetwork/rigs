@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"image/png"
 	"net/http"
 
 	httpapi "github.com/ipfs/go-ipfs-http-client"
@@ -71,15 +70,7 @@ func main() {
 
 	buildExecFcn := func(opt builder.Option) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			rig, err := b.Build(
-				ctx,
-				1200,
-				1200,
-				png.DefaultCompression,
-				false,
-				false,
-				opt,
-			)
+			rig, err := b.Build(ctx, opt)
 			return rig, err
 		}
 	}
@@ -94,9 +85,7 @@ func main() {
 		jobs = append(jobs, wpool.Job{
 			ID: wpool.JobID(i + 1),
 			ExecFn: buildExecFcn(
-				builder.Original(system.NewSystemRandomnessSource(), builder.OrignalTarget{ID: i + 1, Original: original}),
-				// Random(system.NewSystemRandomnessSource(), 1),
-			),
+				builder.Original(i+1, original, system.NewSystemRandomnessSource())),
 		})
 	}
 
