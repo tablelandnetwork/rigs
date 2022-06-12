@@ -14,9 +14,9 @@ import (
 	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
 	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
 	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland"
+	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
-	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
@@ -62,7 +62,7 @@ func main() {
 		localLayersDir = config.Layers.Path
 	}
 
-	minter := minter.NewMinter(store, ipfs, config.IPFS.GatewayURL, localLayersDir)
+	minter := builder.NewBuilder(store, ipfs, config.IPFS.GatewayURL, localLayersDir)
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,

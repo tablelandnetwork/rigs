@@ -12,15 +12,15 @@ import (
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/internal/staging"
-	"github.com/tablelandnetwork/nft-minter/pkg/minter"
-	"github.com/tablelandnetwork/nft-minter/pkg/minter/randomness/system"
+	"github.com/tablelandnetwork/nft-minter/pkg/builder"
+	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
 // TablelandGenerator generates NFT metadata from traits defined in local.db.
 type TablelandGenerator struct {
 	s        *local.Store
-	m        *minter.Minter
+	m        *builder.Builder
 	rigCache map[int]local.Rig
 	cacheDir string
 	images   map[string]*staging.Image
@@ -34,7 +34,7 @@ func init() {
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
 	s *local.Store,
-	m *minter.Minter,
+	m *builder.Builder,
 	concurrency int,
 	cacheDir string,
 ) (*TablelandGenerator, error) {
@@ -71,7 +71,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		rig, err := g.m.MintRigData(ctx, minter.RandomRigData(i, system.NewSystemRandomnessSource()))
+		rig, err := g.m.BuildRigData(ctx, builder.RandomRigData(i, system.NewSystemRandomnessSource()))
 		if err != nil {
 			return nil, fmt.Errorf("minting: %v", err)
 		}
@@ -139,7 +139,7 @@ func (g *TablelandGenerator) RenderImage(
 		return fmt.Errorf("no rig cached for id %d", md.ID)
 	}
 
-	return g.m.MintRigImage(ctx, rig, width, height, compression, drawLabels, writer)
+	return g.m.BuildRigImage(ctx, rig, width, height, compression, drawLabels, writer)
 }
 
 // Close implements io.Closer.

@@ -13,12 +13,12 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	ipld "github.com/ipfs/go-ipld-format"
 	core "github.com/ipfs/interface-go-ipfs-core"
-	"github.com/tablelandnetwork/nft-minter/pkg/minter"
 
 	// _ "github.com/motemen/go-loghttp/global".
 
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/buildinfo"
+	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
@@ -209,7 +209,7 @@ func processPartTypeNode(
 			})
 		}
 
-		pos, err := minter.GetPosition(fleetName, layerName)
+		pos, err := builder.GetPosition(fleetName, layerName)
 		if err != nil {
 			return nil, fmt.Errorf("getting layer position: %v", err)
 		}
