@@ -41,7 +41,7 @@ const (
 
 	// CreateRigAttributesTableSQL is the SQL.
 	CreateRigAttributesTableSQL = `create table rig_attributes (
-		rig_id,
+		rig_id integer,
 		display_type text,
 		trait_type text,
 		value integer,

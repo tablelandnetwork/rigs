@@ -24,7 +24,7 @@ func TestBuild(t *testing.T) {
 	ipfs, err := httpapi.NewURLApiWithClient("http://127.0.0.1:5001", httpClient)
 	require.NoError(t, err)
 
-	m := NewBuilder(s, ipfs, "http://127.0.0.1:8080", "")
+	m := NewBuilder(s, ipfs, "http://127.0.0.1:8080")
 
 	originals, err := s.GetOriginalRigs(ctx)
 	require.NoError(t, err)

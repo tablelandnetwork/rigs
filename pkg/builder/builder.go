@@ -120,11 +120,10 @@ func NewBuilder(
 	s *local.Store,
 	ipfs iface.CoreAPI,
 	ipfsGatewayURL string,
-	localLayersDir string,
 ) *Builder {
 	return &Builder{
 		s:              s,
-		layers:         NewLayers(ipfs, s, localLayersDir),
+		layers:         NewLayers(ipfs, s),
 		ipfs:           ipfs,
 		ipfsGatewayURL: ipfsGatewayURL,
 	}
