@@ -3,12 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/sqlite"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/client"
 )
 
 func init() {
@@ -23,10 +23,11 @@ var createCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		store, err := sqlite.NewSQLiteStore(viper.GetString("tbl-db-path"), true)
-		if err != nil {
-			return fmt.Errorf("creating tableland store: %v", err)
-		}
+		store := client.NewStore(tblClient, time.Second*10)
+		// store, err := sqlite.NewStore(viper.GetString("tbl-db-path"), true)
+		// if err != nil {
+		// 	return fmt.Errorf("creating tableland store: %v", err)
+		// }
 
 		createTableExecFcn := func(definition tableland.TableDefinition) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {

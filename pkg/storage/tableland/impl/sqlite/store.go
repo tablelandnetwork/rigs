@@ -16,13 +16,13 @@ import (
 
 const rigsSQLLengthLimit = 35000
 
-// SQLiteStore implements Store using SQLite.
-type SQLiteStore struct {
+// Store implements Store using SQLite.
+type Store struct {
 	db *sql.DB
 }
 
-// NewSQLiteStore creates a new SQLite store.
-func NewSQLiteStore(dbFile string, reset bool) (tableland.Store, error) {
+// NewStore creates a new SQLite store.
+func NewStore(dbFile string, reset bool) (tableland.Store, error) {
 	if reset {
 		_ = os.Remove(dbFile)
 	}
@@ -31,13 +31,13 @@ func NewSQLiteStore(dbFile string, reset bool) (tableland.Store, error) {
 		return nil, fmt.Errorf("opening db: %v", err)
 	}
 
-	return &SQLiteStore{
+	return &Store{
 		db: db,
 	}, nil
 }
 
 // CreateTable implements CreateTable.
-func (s *SQLiteStore) CreateTable(ctx context.Context, definition tableland.TableDefinition) (string, error) {
+func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefinition) (string, error) {
 	statement := fmt.Sprintf("create table %s %s", definition.Prefix, definition.Schema)
 	if _, err := s.db.Exec(statement); err != nil {
 		return "", fmt.Errorf("creatingtable: %v", err)
@@ -46,7 +46,7 @@ func (s *SQLiteStore) CreateTable(ctx context.Context, definition tableland.Tabl
 }
 
 // InsertParts implements InsertParts.
-func (s *SQLiteStore) InsertParts(ctx context.Context, parts []local.Part) error {
+func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 	sql, err := common.SQLForInsertingParts(parts)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting parts: %v", err)
@@ -58,7 +58,7 @@ func (s *SQLiteStore) InsertParts(ctx context.Context, parts []local.Part) error
 }
 
 // InsertLayers implements InsertLayers.
-func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []local.Layer) error {
+func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	sql, err := common.SQLForInsertingLayers(layers)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting layers: %v", err)
@@ -70,7 +70,7 @@ func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []local.Layer) er
 }
 
 // InsertRigs implements InsertRigs.
-func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []local.Rig) error {
+func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	sql, err := common.SQLForInsertingRigs(rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rig: %v", err)
@@ -85,6 +85,6 @@ func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 }
 
 // Close implements io.Closer.
-func (s *SQLiteStore) Close() error {
+func (s *Store) Close() error {
 	return s.db.Close()
 }
