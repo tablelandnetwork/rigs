@@ -25,7 +25,7 @@ var layers = []local.Layer{}
 func init() {
 	rootCmd.AddCommand(&inventoryCmd)
 
-	inventoryCmd.Flags().String("db-path", "", "path the the sqlite db file")
+	inventoryCmd.Flags().String("local-db-path", "", "path the the sqlite db file")
 }
 
 var inventoryCmd = cobra.Command{
@@ -34,7 +34,7 @@ var inventoryCmd = cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		s, err := local.NewStore(viper.GetString("db-path"), true)
+		s, err := local.NewStore(viper.GetString("local-db-path"), true)
 		if err != nil {
 			return fmt.Errorf("error creating local store: %v", err)
 		}

@@ -15,7 +15,7 @@ import (
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.PersistentFlags().String("db-path", "", "path the the sqlite db file")
+	buildCmd.PersistentFlags().String("local-db-path", "", "path the the sqlite db file")
 	buildCmd.PersistentFlags().String("ipfs-gateway-url", "http://127.0.0.1:8080", "address of the local ipfs gateway")
 	buildCmd.PersistentFlags().Bool("ipfs-pin", true, "whether or not to pin generated images to the local ipfs")
 
@@ -39,7 +39,7 @@ var buildCmd = &cobra.Command{
 }
 
 func build(ctx context.Context) error {
-	s, err := local.NewStore(viper.GetString("db-path"), false)
+	s, err := local.NewStore(viper.GetString("local-db-path"), false)
 	if err != nil {
 		return fmt.Errorf("error creating sqlite store: %v", err)
 	}

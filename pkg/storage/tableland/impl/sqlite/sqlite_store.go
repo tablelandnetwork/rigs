@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/common"
 
@@ -21,7 +22,7 @@ type SQLiteStore struct {
 }
 
 // NewSQLiteStore creates a new SQLite store.
-func NewSQLiteStore(dbFile string, reset bool) (*SQLiteStore, error) {
+func NewSQLiteStore(dbFile string, reset bool) (tableland.Store, error) {
 	if reset {
 		_ = os.Remove(dbFile)
 	}
@@ -35,25 +36,17 @@ func NewSQLiteStore(dbFile string, reset bool) (*SQLiteStore, error) {
 	}, nil
 }
 
-// CreateTables implements CreateTables.
-func (s *SQLiteStore) CreateTables(ctx context.Context) error {
-	if _, err := s.db.Exec(common.CreatePartsTableSQL); err != nil {
-		return fmt.Errorf("creating parts table: %v", err)
+// CreateTable implements CreateTable.
+func (s *SQLiteStore) CreateTable(ctx context.Context, definition tableland.TableDefinition) (string, error) {
+	statement := fmt.Sprintf("create table %s %s", definition.Prefix, definition.Schema)
+	if _, err := s.db.Exec(statement); err != nil {
+		return "", fmt.Errorf("creatingtable: %v", err)
 	}
-	if _, err := s.db.Exec(common.CreateLayersTableSQL); err != nil {
-		return fmt.Errorf("creating layers table: %v", err)
-	}
-	if _, err := s.db.Exec(common.CreateRigsTableSQL); err != nil {
-		return fmt.Errorf("creating rigs table: %v", err)
-	}
-	if _, err := s.db.Exec(common.CreateRigAttributesTableSQL); err != nil {
-		return fmt.Errorf("creating rig attributes table: %v", err)
-	}
-	return nil
+	return definition.Prefix, nil
 }
 
 // InsertParts implements InsertParts.
-func (s *SQLiteStore) InsertParts(ctx context.Context, parts []tableland.Part) error {
+func (s *SQLiteStore) InsertParts(ctx context.Context, parts []local.Part) error {
 	sql, err := common.SQLForInsertingParts(parts)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting parts: %v", err)
@@ -65,15 +58,19 @@ func (s *SQLiteStore) InsertParts(ctx context.Context, parts []tableland.Part) e
 }
 
 // InsertLayers implements InsertLayers.
-func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []tableland.Layer) error {
-	if _, err := s.db.ExecContext(ctx, common.SQLForInsertingLayers(layers)); err != nil {
+func (s *SQLiteStore) InsertLayers(ctx context.Context, layers []local.Layer) error {
+	sql, err := common.SQLForInsertingLayers(layers)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting layers: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("inserting layers: %v", err)
 	}
 	return nil
 }
 
 // InsertRigs implements InsertRigs.
-func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []tableland.Rig) error {
+func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	sql, err := common.SQLForInsertingRigs(rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rig: %v", err)
@@ -85,97 +82,6 @@ func (s *SQLiteStore) InsertRigs(ctx context.Context, rigs []tableland.Rig) erro
 		return fmt.Errorf("inserting rig: %v", err)
 	}
 	return nil
-}
-
-// GetOriginalRigs implements GetOriginalRigs.
-func (s *SQLiteStore) GetOriginalRigs(ctx context.Context) ([]tableland.OriginalRig, error) {
-	ss := common.SQLForGettingOriginalRigs()
-	rows, err := s.db.QueryContext(ctx, ss)
-	if err != nil {
-		return nil, fmt.Errorf("querying for original rigs: %v", err)
-	}
-
-	var originals []tableland.OriginalRig
-	for rows.Next() {
-		var o tableland.OriginalRig
-		if err := rows.Scan(&o.Fleet, &o.Name, &o.Color); err != nil {
-			return nil, fmt.Errorf("scanning row into original rig: %v", err)
-		}
-		originals = append(originals, o)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("processing oringinal rigs query results: %v", err)
-	}
-	return originals, nil
-}
-
-// GetPartTypesByFleet implements GetPartTypesByFleet.
-func (s *SQLiteStore) GetPartTypesByFleet(ctx context.Context, fleet string) ([]string, error) {
-	rows, err := s.db.QueryContext(ctx, common.SQLForGettingPartTypesByFleet(fleet))
-	if err != nil {
-		return nil, fmt.Errorf("querying for fleet part types: %v", err)
-	}
-
-	var types []string
-	for rows.Next() {
-		var t string
-		if err := rows.Scan(&t); err != nil {
-			return nil, fmt.Errorf("scanning row into type string: %v", err)
-		}
-		types = append(types, t)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("processing part types query results: %v", err)
-	}
-	return types, nil
-}
-
-// GetParts implements GetParts.
-func (s *SQLiteStore) GetParts(ctx context.Context, opts ...tableland.GetPartsOption) ([]tableland.Part, error) {
-	c := &tableland.GetPartsConfig{}
-	for _, opt := range opts {
-		opt(c)
-	}
-
-	ss := common.SQLForGettingParts(c)
-	rows, err := s.db.QueryContext(ctx, ss)
-	if err != nil {
-		return nil, fmt.Errorf("querying for parts: %v", err)
-	}
-
-	var parts []tableland.Part
-	for rows.Next() {
-		var part tableland.Part
-		if err := rows.Scan(&part.Fleet, &part.Original, &part.Type, &part.Name, &part.Color); err != nil {
-			return nil, fmt.Errorf("scanning row into part: %v", err)
-		}
-		parts = append(parts, part)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("processing parts query results: %v", err)
-	}
-	return parts, nil
-}
-
-// GetLayers implements GetLayers.
-func (s *SQLiteStore) GetLayers(ctx context.Context, fleet string, parts ...string) ([]tableland.Layer, error) {
-	rows, err := s.db.QueryContext(ctx, common.SQLForGettingLayers(fleet, parts))
-	if err != nil {
-		return nil, fmt.Errorf("querying for layers: %v", err)
-	}
-
-	var layers []tableland.Layer
-	for rows.Next() {
-		var layer tableland.Layer
-		if err := rows.Scan(&layer.Fleet, &layer.Part, &layer.Position, &layer.Path); err != nil {
-			return nil, fmt.Errorf("scanning row into layer: %v", err)
-		}
-		layers = append(layers, layer)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("processing parts query results: %v", err)
-	}
-	return layers, nil
 }
 
 // Close implements io.Closer.

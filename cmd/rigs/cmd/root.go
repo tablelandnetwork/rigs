@@ -81,7 +81,7 @@ func Execute() {
 }
 
 func initConfig() {
-	viper.SetEnvPrefix("TBL")
+	viper.SetEnvPrefix("NFT")
 	viper.AutomaticEnv()
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)

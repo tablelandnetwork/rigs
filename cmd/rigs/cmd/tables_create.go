@@ -3,127 +3,77 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
-	"github.com/textileio/go-tableland/pkg/client"
-)
-
-type tableDefinition struct {
-	prefix string
-	schema string
-}
-
-var (
-	partsDefinition = tableDefinition{
-		prefix: "parts",
-		schema: `(
-			fleet text,
-			original text,
-			type text not null,
-			name text not null,
-			color text,
-			primary key(fleet,name,color)
-		)`,
-	}
-	rigsDefinition = tableDefinition{
-		prefix: "rigs",
-		schema: `(
-			id integer primary key,
-			image text
-		)`,
-	}
-	rigAttributesDefinition = tableDefinition{
-		prefix: "rig_attributes",
-		schema: `(
-			rig_id integer,
-			display_type text,
-			trait_type text,
-			value integer,
-			primary key(rig_id, trait_type)
-		)`,
-	}
-	layersDefinition = tableDefinition{
-		prefix: "layers",
-		schema: `(
-			fleet text not null,
-			rig_attribute_value text not null,
-			position integer not null,
-			path text not null,
-			primary key(fleet,rig_attribute_value,position)
-		)`,
-	}
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/sqlite"
 )
 
 func init() {
 	tablesCmd.AddCommand(createCmd)
+
+	createCmd.Flags().String("tbl-db-path", "", "path to the tableland sqlite db file")
 }
 
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create the rigs tables",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return createTables(cmd.Context())
+		ctx := cmd.Context()
+
+		store, err := sqlite.NewSQLiteStore(viper.GetString("tbl-db-path"), true)
+		if err != nil {
+			return fmt.Errorf("creating tableland store: %v", err)
+		}
+
+		createTableExecFcn := func(definition tableland.TableDefinition) wpool.ExecutionFn {
+			return func(ctx context.Context) (interface{}, error) {
+				tblName, err := store.CreateTable(ctx, definition)
+				if err != nil {
+					return nil, fmt.Errorf("creating table: %v", err)
+				}
+				return tblName, nil
+			}
+		}
+		jobs := []wpool.Job{
+			{
+				ID:     1,
+				ExecFn: createTableExecFcn(tableland.PartsDefinition),
+			},
+			{
+				ID:     2,
+				ExecFn: createTableExecFcn(tableland.RigsDefinition),
+			},
+			{
+				ID:     3,
+				ExecFn: createTableExecFcn(tableland.RigAttributesDefinition),
+			},
+			{
+				ID:     4,
+				ExecFn: createTableExecFcn(tableland.LayersDefinition),
+			},
+		}
+
+		pool := wpool.New(4)
+		go pool.GenerateFrom(jobs)
+		go pool.Run(ctx)
+		for {
+			select {
+			case r, ok := <-pool.Results():
+				if !ok {
+					continue
+				}
+				if r.Err != nil {
+					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
+					continue
+				}
+				result := r.Value.(string)
+				fmt.Printf("created table %s\n", result)
+			case <-pool.Done:
+				return nil
+			}
+		}
 	},
-}
-
-func createTables(ctx context.Context) error {
-	type createTableResult struct {
-		id   client.TableID
-		name string
-	}
-
-	createTableExecFcn := func(definition tableDefinition) wpool.ExecutionFn {
-		return func(ctx context.Context) (interface{}, error) {
-			id, name, err := tblClient.Create(
-				ctx,
-				definition.schema,
-				client.WithPrefix(definition.prefix),
-				client.WithReceiptTimeout(time.Second*10),
-			)
-			if err != nil {
-				return nil, fmt.Errorf("calling create: %v", err)
-			}
-			return createTableResult{id: id, name: name}, nil
-		}
-	}
-	jobs := []wpool.Job{
-		{
-			ID:     1,
-			ExecFn: createTableExecFcn(partsDefinition),
-		},
-		{
-			ID:     2,
-			ExecFn: createTableExecFcn(rigsDefinition),
-		},
-		{
-			ID:     3,
-			ExecFn: createTableExecFcn(rigAttributesDefinition),
-		},
-		{
-			ID:     4,
-			ExecFn: createTableExecFcn(layersDefinition),
-		},
-	}
-
-	pool := wpool.New(4)
-	go pool.GenerateFrom(jobs)
-	go pool.Run(ctx)
-	for {
-		select {
-		case r, ok := <-pool.Results():
-			if !ok {
-				continue
-			}
-			if r.Err != nil {
-				fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
-				continue
-			}
-			result := r.Value.(createTableResult)
-			fmt.Printf("created table with id %s and name %s\n", result.id.String(), result.name)
-		case <-pool.Done:
-			return nil
-		}
-	}
 }
