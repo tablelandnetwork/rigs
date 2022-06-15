@@ -25,10 +25,6 @@ type config struct {
 		EthEndpoint     string `default:"eth_endpoint"`
 		ContractAddress string `default:"contract_address"`
 	}
-	Layers struct {
-		Path           string `default:""`
-		UseLocalLayers bool   `default:"false"`
-	}
 	IPFS struct {
 		APIAddr    string `default:"http://127.0.0.1:5001"`
 		Pin        bool   `default:"false"`

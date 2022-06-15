@@ -176,39 +176,6 @@ func (s *Store) InsertLayers(ctx context.Context, layers []Layer) error {
 	return nil
 }
 
-// LayerMap associates an image cid with a path to a file.
-type LayerMap struct {
-	Cid  string
-	Path string
-}
-
-// InsertLayerMaps inserts LayerMaps.
-func (s *Store) InsertLayerMaps(ctx context.Context, layerMaps ...LayerMap) error {
-	var vals [][]interface{}
-	for _, layerMap := range layerMaps {
-		vals = append(vals, goqu.Vals{layerMap.Cid, layerMap.Path})
-	}
-	insert := s.db.Insert("layer_maps").Cols("cid", "path").Vals(vals...).Executor()
-	if _, err := insert.ExecContext(ctx); err != nil {
-		return fmt.Errorf("inserting layer maps: %v", err)
-	}
-	return nil
-}
-
-// LayerPathForCid returns the file path for the cid.
-func (s *Store) LayerPathForCid(ctx context.Context, cid string) (string, error) {
-	sel := s.db.Select("path").From("layer_maps").Where(goqu.C("cid").Eq(cid))
-	var path string
-	found, err := sel.ScanValContext(ctx, &path)
-	if err != nil {
-		return "", fmt.Errorf("querying for path from cid: %v", err)
-	}
-	if !found {
-		return "", fmt.Errorf("no path found for cid %s", cid)
-	}
-	return path, nil
-}
-
 // InsertRigs inserts Rigs and their Parts.
 func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 	var rigVals [][]interface{}

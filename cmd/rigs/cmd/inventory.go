@@ -1,116 +1,77 @@
-package main
+package cmd
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
-	"net/http"
 	"path"
 	"strings"
 
 	"github.com/fatih/camelcase"
 	"github.com/ipfs/go-cid"
-	httpapi "github.com/ipfs/go-ipfs-http-client"
 	ipld "github.com/ipfs/go-ipld-format"
 	core "github.com/ipfs/interface-go-ipfs-core"
-
-	// _ "github.com/motemen/go-loghttp/global".
-
 	"github.com/rs/zerolog/log"
-	"github.com/tablelandnetwork/nft-minter/buildinfo"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
-	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
-
-type config struct {
-	SQLiteDBPath string `default:""`
-	IPFS         struct {
-		APIAddr    string `default:"http://127.0.0.1:5001"`
-		LayersPath string `default:""`
-	}
-	Log struct {
-		Human bool `default:"false"`
-		Debug bool `default:"false"`
-	}
-}
 
 var parts = []local.Part{}
 var layers = []local.Layer{}
-var layerMaps = []local.LayerMap{}
 
-var configFilename = "config.json"
+func init() {
+	rootCmd.AddCommand(&inventoryCmd)
 
-func main() {
-	ctx := context.Background()
+	inventoryCmd.Flags().String("db-path", "", "path the the sqlite db file")
+}
 
-	config := &config{}
-	util.SetupConfig(config, configFilename)
-	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
+var inventoryCmd = cobra.Command{
+	Use:   "inventory",
+	Short: "populate the parts and layers tables from ipfs layers",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		ctx := cmd.Context()
 
-	s, err := local.NewStore(config.SQLiteDBPath, true)
-	if err != nil {
-		log.Fatal().Err(err).Msg("failed to create local store")
-	}
-	defer func() {
-		if err := s.Close(); err != nil {
-			log.Err(err).Msg("closing store")
+		s, err := local.NewStore(viper.GetString("db-path"), true)
+		if err != nil {
+			return fmt.Errorf("error creating local store: %v", err)
 		}
-	}()
+		defer func() {
+			if err := s.Close(); err != nil {
+				log.Err(err).Msg("closing store")
+			}
+		}()
 
-	if err := s.CreateTables(ctx); err != nil {
-		log.Fatal().Err(err).Msg("failed to create tables")
-	}
+		if err := s.CreateTables(ctx); err != nil {
+			return fmt.Errorf("error creating tables: %v", err)
+		}
 
-	httpClient := &http.Client{}
-	ipfs, err := httpapi.NewURLApiWithClient(config.IPFS.APIAddr, httpClient)
-	if err != nil {
-		log.Fatal().Err(err).Msg("creating ipfs client")
-	}
+		lcid, err := cid.Parse(viper.GetString("ipfs-layers-path"))
+		if err != nil {
+			return fmt.Errorf("error parsing layers path: %v", err)
+		}
 
-	lcid, err := cid.Parse(config.IPFS.LayersPath)
-	if err != nil {
-		log.Fatal().Err(err).Msg("parsing layers path")
-	}
+		rootNode, err := ipfsClient.Dag().Get(ctx, lcid)
+		if err != nil {
+			return fmt.Errorf("error getting node to read: %v", err)
+		}
 
-	rootNode, err := ipfs.Dag().Get(ctx, lcid)
-	if err != nil {
-		log.Fatal().Err(err).Msg("getting node to read")
-	}
+		if err := processRootNode(ctx, ipfsClient, rootNode); err != nil {
+			return fmt.Errorf("error processing root directory: %v", err)
+		}
 
-	if err := processRootNode(ctx, ipfs, rootNode); err != nil {
-		log.Fatal().Err(err).Msg("processing root directory")
-	}
+		if err := s.InsertParts(ctx, parts); err != nil {
+			return fmt.Errorf("error inserting parts: %v", err)
+		}
 
-	if err := s.InsertParts(ctx, parts); err != nil {
-		log.Fatal().Err(err).Msg("inserting parts")
-	}
+		if err := s.InsertLayers(ctx, layers); err != nil {
+			return fmt.Errorf("error inserting layers: %v", err)
+		}
 
-	// for _, part := range parts {
-	// 	if err := s.InsertParts(ctx, []store.Part{part}); err != nil {
-	// 		j, _ := json.MarshalIndent(part, "", "  ")
-	// 		fmt.Println(string(j))
-	// 		log.Fatal().Err(err).Msg("inserting part")
-	// 	}
-	// }
-
-	if err := s.InsertLayers(ctx, layers); err != nil {
-		log.Fatal().Err(err).Msg("inserting layers")
-	}
-
-	// for _, layer := range layers {
-	// 	if err := s.InsertLayers(ctx, []store.Layer{layer}); err != nil {
-	// 		j, _ := json.MarshalIndent(layer, "", "  ")
-	// 		fmt.Println(string(j))
-	// 		log.Fatal().Err(err).Msg("inserting layer")
-	// 	}
-	// }
-
-	if err := s.InsertLayerMaps(ctx, layerMaps...); err != nil {
-		log.Fatal().Err(err).Msg("inserting layer maps")
-	}
+		return nil
+	},
 }
 
 func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) error {
@@ -222,7 +183,6 @@ func processPartTypeNode(
 			Position: uint(pos),
 			Path:     l.Cid.String(),
 		})
-		layerMaps = append(layerMaps, local.LayerMap{Cid: l.Cid.String(), Path: path.Join(dirName, l.Name)})
 	}
 	return processedParts, nil
 }

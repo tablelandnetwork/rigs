@@ -4,9 +4,6 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"io"
-	"os"
-	"path"
 	"sync"
 
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
@@ -17,20 +14,18 @@ import (
 
 // Layers provides access to the NFT layer images.
 type Layers struct {
-	ipfs           iface.CoreAPI
-	store          *local.Store
-	localLayersDir string
-	cache          map[string]image.Image
-	locks          sync.Map
+	ipfs  iface.CoreAPI
+	store *local.Store
+	cache map[string]image.Image
+	locks sync.Map
 }
 
 // NewLayers creates a new Layers.
-func NewLayers(ipfs iface.CoreAPI, store *local.Store, localLayersDir string) *Layers {
+func NewLayers(ipfs iface.CoreAPI, store *local.Store) *Layers {
 	return &Layers{
-		ipfs:           ipfs,
-		store:          store,
-		localLayersDir: localLayersDir,
-		cache:          make(map[string]image.Image),
+		ipfs:  ipfs,
+		store: store,
+		cache: make(map[string]image.Image),
 	}
 }
 
@@ -45,27 +40,14 @@ func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, er
 		return image, nil
 	}
 
-	var r io.Reader
-
-	if l.localLayersDir != "" {
-		filePath, err := l.store.LayerPathForCid(ctx, ipfsPath)
-		if err != nil {
-			return nil, fmt.Errorf("getting file path for ipfs path: %v", err)
-		}
-		r, err = os.Open(path.Join(l.localLayersDir, filePath))
-		if err != nil {
-			return nil, fmt.Errorf("opening local layer file: %v", err)
-		}
-	} else {
-		p := ipfspath.New(ipfsPath)
-		n, err := l.ipfs.Unixfs().Get(ctx, p)
-		if err != nil {
-			return nil, fmt.Errorf("getting ipfs node for path: %v", err)
-		}
-		r = ipfsfiles.ToFile(n)
-		if r == nil {
-			return nil, fmt.Errorf("node is a directory")
-		}
+	p := ipfspath.New(ipfsPath)
+	n, err := l.ipfs.Unixfs().Get(ctx, p)
+	if err != nil {
+		return nil, fmt.Errorf("getting ipfs node for path: %v", err)
+	}
+	r := ipfsfiles.ToFile(n)
+	if r == nil {
+		return nil, fmt.Errorf("node is a directory")
 	}
 
 	i, _, err := image.Decode(r)

@@ -57,12 +57,7 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	localLayersDir := ""
-	if config.Layers.UseLocalLayers {
-		localLayersDir = config.Layers.Path
-	}
-
-	minter := builder.NewBuilder(store, ipfs, config.IPFS.GatewayURL, localLayersDir)
+	minter := builder.NewBuilder(store, ipfs, config.IPFS.GatewayURL)
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,
