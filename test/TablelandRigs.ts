@@ -8,6 +8,8 @@ import { TablelandRigs } from "../typechain-types/index";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 describe("Rigs", function () {
   let rigs: TablelandRigs;
   let accounts: SignerWithAddress[];
@@ -26,24 +28,22 @@ describe("Rigs", function () {
     const [event] = receipt.events ?? [];
 
     // check transfer event
-    expect("0x0000000000000000000000000000000000000000").to.equal(
-      event.args?.from
-    );
-    expect(minter.address).to.equal(event.args?.to);
-    expect(BigNumber.from(1)).to.equal(event.args?.tokenId);
+    expect(event.args?.from).to.equal(ZERO_ADDRESS);
+    expect(event.args?.to).to.equal(minter.address);
+    expect(event.args?.tokenId).to.equal(BigNumber.from(1));
 
     // check new balance
     const balance = await rigs.balanceOf(minter.address);
-    expect(BigNumber.from(1)).to.equal(balance);
+    expect(balance).to.equal(BigNumber.from(1));
 
     // check owned tokens
     const tokens = await rigs.tokensOfOwner(minter.address);
-    expect(1).to.equal(tokens.length);
-    expect(BigNumber.from(1)).to.equal(tokens[0]);
+    expect(tokens.length).to.equal(1);
+    expect(tokens[0]).to.equal(BigNumber.from(1));
 
     // check total supply
     const totalSupply = await rigs.totalSupply();
-    expect(BigNumber.from(1)).to.equal(totalSupply);
+    expect(totalSupply).to.equal(BigNumber.from(1));
   });
 
   it("Should mint multiple rigs", async function () {
@@ -53,24 +53,22 @@ describe("Rigs", function () {
     const [event] = receipt.events ?? [];
 
     // check transfer event
-    expect("0x0000000000000000000000000000000000000000").to.equal(
-      event.args?.from
-    );
-    expect(minter.address).to.equal(event.args?.to);
-    expect(BigNumber.from(1)).to.equal(event.args?.tokenId);
+    expect(event.args?.from).to.equal(ZERO_ADDRESS);
+    expect(event.args?.to).to.equal(minter.address);
+    expect(event.args?.tokenId).to.equal(BigNumber.from(1));
 
     // check new balance
     const balance = await rigs.balanceOf(minter.address);
-    expect(BigNumber.from(3)).to.equal(balance);
+    expect(balance).to.equal(BigNumber.from(3));
 
     // check owned tokens
     const tokens = await rigs.tokensOfOwner(minter.address);
-    expect(3).to.equal(tokens.length);
-    expect(BigNumber.from(1)).to.equal(tokens[0]);
+    expect(tokens.length).to.equal(3);
+    expect(tokens[0]).to.equal(BigNumber.from(1));
 
     // check total supply
     const totalSupply = await rigs.totalSupply();
-    expect(BigNumber.from(3)).to.equal(totalSupply);
+    expect(totalSupply).to.equal(BigNumber.from(3));
   });
 
   it("Should udpate the base URI", async function () {
@@ -83,7 +81,7 @@ describe("Rigs", function () {
     const [event] = receipt.events ?? [];
 
     const uri = await rigs.tokenURI(event.args?.tokenId);
-    expect("https://fake.com/1").to.equal(uri);
+    expect(uri).to.equal("https://fake.com/1");
   });
 
   it("Should pause and unpause minting", async function () {
@@ -94,8 +92,9 @@ describe("Rigs", function () {
     tx = await rigs.pause();
     await tx.wait();
 
-    tx = await rigs.connect(minter).mint(1);
-    await expect(tx.wait()).to.be.rejectedWith(Error);
+    await expect(rigs.connect(minter).mint(1)).to.be.revertedWith(
+      "Pausable: paused"
+    );
 
     tx = await rigs.unpause();
     await tx.wait();

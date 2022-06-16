@@ -3,52 +3,66 @@ pragma solidity ^0.8.4;
 
 import "erc721a/contracts/ERC721A.sol";
 import "erc721a/contracts/extensions/ERC721AQueryable.sol";
-import "erc721a/contracts/extensions/ERC721ABurnable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "./ITablelandRigs.sol";
 
+/**
+ * @dev Implementation of {ITablelandRigs}.
+ */
 contract TablelandRigs is
+    ITablelandRigs,
     ERC721A,
-    ERC721ABurnable,
     ERC721AQueryable,
     Ownable,
-    Pausable {
-
+    Pausable
+{
+    // A URI used to reference off-chain metadata.
     string private _baseURIString;
 
     constructor(string memory baseURI) ERC721A("Tableland Rigs", "RIG") {
         _baseURIString = baseURI;
     }
 
-    function mint(uint256 quantity) external payable whenNotPaused {
-        _safeMint(msg.sender, quantity);
+    /**
+     * @dev See {ITablelandRigs-mint}.
+     */
+    function mint(uint256 quantity) external payable override whenNotPaused {
+        _safeMint(_msgSenderERC721A(), quantity);
     }
 
-    function _startTokenId() internal pure override returns (uint256) {
-        return 1;
-    }
-
-    function setBaseURI(string memory baseURI) public onlyOwner {
+    /**
+     * @dev See {ITablelandRigs-setBaseURI}.
+     */
+    function setBaseURI(string memory baseURI) external override onlyOwner {
         _baseURIString = baseURI;
     }
 
+    /**
+     * @dev See {ERC721A-_baseURI}.
+     */
     function _baseURI() internal view override returns (string memory) {
         return _baseURIString;
     }
 
-    function pause() public onlyOwner {
+    /**
+     * @dev See {ITablelandRigs-pause}.
+     */
+    function pause() external override onlyOwner {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    /**
+     * @dev See {ITablelandRigs-unpause}.
+     */
+    function unpause() external override onlyOwner {
         _unpause();
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override (ERC721A)
-        returns (bool) {
-        return super.supportsInterface(interfaceId);
+    /**
+     * @dev See {ERC721A-_startTokenId}.
+     */
+    function _startTokenId() internal pure override returns (uint256) {
+        return 1;
     }
 }

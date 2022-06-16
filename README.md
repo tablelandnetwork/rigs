@@ -13,7 +13,6 @@
 
 - [Background](#background)
 - [Development](#development)
-- [Contributing](#contributing)
 - [License](#license)
 
 # Background
@@ -22,7 +21,9 @@ This is the Tableland Rigs contract and client components.
 
 # Development
 
-Get started with installing and building the project:
+## Building the client
+
+You can build the Typescript client locally:
 
 ```shell
 npm install
@@ -30,9 +31,33 @@ npx hardhat compile
 npm run build
 ```
 
+## Testing
+
+Run the test suite:
+
+```shell
+npm test
+```
+
+Test with gas reporting:
+
+```shell
+REPORT_GAS=true npx hardhat test
+```
+
+## Deploying
+
+Deployments are handled on a per-network basis:
+
+```shell
+npx hardhat run scripts/deploy.ts --network optimism
+```
+
+Refer to the `deployments` entry in `hardhat.config.js` for the list of current deployments.
+
 ## Extacting the ABI and Bytecode
 
-Can you grab the assets you need by compiling and then using some `jq` magic:
+You can you grab the assets you need by compiling and then using some `jq` magic:
 
 ### ABI
 
@@ -54,33 +79,6 @@ You can use the above `abi.json` to build the Go client:
 mkdir gobuild
 abigen --abi ./abi.json --bin ./bytecode.bin --pkg contracts --out gobuild/TablelandRigs.go
 ```
-
-## Etherscan verification
-
-To try out Etherscan verification, you first need to deploy a contract to an Ethereum network that's supported by Etherscan, such as Rinkeby.
-
-In this project, copy the .env.example file to a file named .env, and then edit it to fill in the details. Enter your Etherscan API key, your Rinkeby node URL (e.g., from Alchemy), and the private key of the account which will send the deployment transaction. With a valid `.env` file in place, first deploy your contract:
-
-```shell
-hardhat run --network rinkeby scripts/deploy.ts
-```
-
-Then, copy the deployment address and paste it in to replace `DEPLOYED_CONTRACT_ADDRESS` in this command:
-
-```shell
-npx hardhat verify --network rinkeby DEPLOYED_CONTRACT_ADDRESS
-```
-
-## Performance optimizations
-
-For faster runs of your tests and scripts, consider skipping ts-node's type checking by setting the environment variable `TS_NODE_TRANSPILE_ONLY` to `1` in hardhat's environment. For more details see [the documentation](https://hardhat.org/guides/typescript.html#performance-optimizations).
-
-# Contributing
-
-PRs accepted.
-
-Small note: If editing the README, please conform to the
-[standard-readme](https://github.com/RichardLitt/standard-readme) specification.
 
 # License
 
