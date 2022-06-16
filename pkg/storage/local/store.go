@@ -19,27 +19,24 @@ import (
 
 const (
 	createPartsSQL = `create table parts (
+		id integer primary key,
 		fleet text,
 		original text,
 		type text not null,
 		name text not null,
 		color text,
-		primary key(fleet,name,color)
+		unique(fleet,name,color)
 	)`
 
 	createLayersSQL = `create table layers (
+		id integer primary key,
 		fleet text not null,
 		color text not null,
 		part_name text not null,
 		part_type text not null,
 		position integer not null,
 		path text not null,
-		primary key(fleet,color,part_name,position)
-	)`
-
-	createLayersMapSQL = `create table layer_maps (
-		cid text not null,
-		path text not null
+		unique(fleet,color,part_name,position)
 	)`
 
 	createRigsSQL = `create table rigs (
@@ -50,12 +47,10 @@ const (
 
 	createRigPartsSQL = `create table rig_parts (
 		rig_id integer not null,
-		fleet text,
-		name text not null,
-		color text,
-		primary key(rig_id,fleet,name,color),
-		foreign key (rig_id) references rigs (id),
-		foreign key (fleet,name,color) references parts (fleet,name,color)
+		part_id integer not null,
+		primary key(rig_id,part_id),
+		foreign key (rig_id) references rigs (id)
+		foreign key (part_id) references parts (id)
 	)`
 
 	createRigImagesSQL = `create table rig_images (
@@ -67,6 +62,7 @@ const (
 
 // Part describes a rig part.
 type Part struct {
+	ID       uint                  `json:"id"`
 	Fleet    common.NullableString `json:"fleet"`
 	Original common.NullableString `json:"original"`
 	Type     string                `json:"type"`
@@ -76,6 +72,7 @@ type Part struct {
 
 // Layer describes an image layer used for rendering a rig.
 type Layer struct {
+	ID       uint   `json:"id"`
 	Fleet    string `json:"fleet"`
 	Color    string `json:"color"`
 	PartName string `json:"part_name" db:"part_name"`
@@ -132,9 +129,6 @@ func (s *Store) CreateTables(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, createLayersSQL); err != nil {
 		return fmt.Errorf("creating layers table: %v", err)
 	}
-	if _, err := s.db.ExecContext(ctx, createLayersMapSQL); err != nil {
-		return fmt.Errorf("creating layers map table: %v", err)
-	}
 	if _, err := s.db.ExecContext(ctx, createRigsSQL); err != nil {
 		return fmt.Errorf("creating rigs table: %v", err)
 	}
@@ -183,7 +177,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{rig.ID, rig.Image, rig.Original})
 		for _, part := range rig.Parts {
-			partVals = append(partVals, goqu.Vals{rig.ID, part.Fleet, part.Name, part.Color})
+			partVals = append(partVals, goqu.Vals{rig.ID, part.ID})
 		}
 	}
 
@@ -193,7 +187,10 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 	}
 
 	insertRigs := tx.Insert("rigs").Cols("id", "image", "original").Vals(rigVals...).Executor()
-	insertParts := tx.Insert("rig_parts").Cols("rig_id", "fleet", "name", "color").Vals(partVals...).Executor()
+	insertParts := tx.Insert("rig_parts").
+		Cols("rig_id", "part_id").
+		Vals(partVals...).
+		Executor()
 
 	if _, err = insertRigs.Exec(); err != nil {
 		if rErr := tx.Rollback(); rErr != nil {
@@ -280,87 +277,109 @@ func (s *Store) GetPartTypesByFleet(ctx context.Context, fleet string) ([]string
 	return res, nil
 }
 
-// PartsConfig holds configuration calls to Parts.
-type PartsConfig struct {
-	Fleet    string
-	Original string
-	Type     string
-	Name     string
-	Color    string
-	OrderBy  string
+// partsConfig holds configuration calls to Parts.
+type partsConfig struct {
+	fleet    string
+	original string
+	partType string
+	name     string
+	color    string
+	orderBy  string
+	limit    *uint
+	offset   *uint
 }
 
 // PartsOption controls the behavior of Parts.
-type PartsOption func(*PartsConfig)
+type PartsOption func(*partsConfig)
 
 // PartsOfFleet filters resusts to the specified fleet.
 func PartsOfFleet(fleet string) PartsOption {
-	return func(opts *PartsConfig) {
-		opts.Fleet = fleet
+	return func(opts *partsConfig) {
+		opts.fleet = fleet
 	}
 }
 
 // PartsOfOriginal filters resusts to the specified original.
 func PartsOfOriginal(original string) PartsOption {
-	return func(opts *PartsConfig) {
-		opts.Original = original
+	return func(opts *partsConfig) {
+		opts.original = original
 	}
 }
 
 // PartsOfType filters resusts to the specified type.
 func PartsOfType(t string) PartsOption {
-	return func(opts *PartsConfig) {
-		opts.Type = t
+	return func(opts *partsConfig) {
+		opts.partType = t
 	}
 }
 
 // PartsOfName filters resusts to the specified name.
 func PartsOfName(name string) PartsOption {
-	return func(opts *PartsConfig) {
-		opts.Name = name
+	return func(opts *partsConfig) {
+		opts.name = name
 	}
 }
 
 // PartsOfColor filters resusts to the specified color.
 func PartsOfColor(color string) PartsOption {
-	return func(opts *PartsConfig) {
-		opts.Color = color
+	return func(opts *partsConfig) {
+		opts.color = color
 	}
 }
 
 // OrderPartsBy orders results by the specified column asc.
 func OrderPartsBy(orderBy string) PartsOption {
-	return func(opts *PartsConfig) {
-		opts.OrderBy = orderBy
+	return func(opts *partsConfig) {
+		opts.orderBy = orderBy
+	}
+}
+
+// PartsWithLimit limits the number of results returned.
+func PartsWithLimit(limit uint) PartsOption {
+	return func(pc *partsConfig) {
+		pc.limit = &limit
+	}
+}
+
+// PartsWithOffset offsets the beginning of the results returned.
+func PartsWithOffset(offset uint) PartsOption {
+	return func(pc *partsConfig) {
+		pc.offset = &offset
 	}
 }
 
 // Parts returns a list of parts filtered according to the provided options.
 func (s *Store) Parts(ctx context.Context, opts ...PartsOption) ([]Part, error) {
-	c := &PartsConfig{}
+	c := &partsConfig{}
 	for _, opt := range opts {
 		opt(c)
 	}
 
-	q := s.db.Select("fleet", "original", "type", "name", "color").From("Parts")
+	q := s.db.Select("id", "fleet", "original", "type", "name", "color").From("Parts")
 
-	if c.Color != "" {
-		q = q.Where(goqu.C("color").Eq(c.Color))
+	if c.color != "" {
+		q = q.Where(goqu.C("color").Eq(c.color))
 	}
-	if c.Fleet != "" {
-		q = q.Where(goqu.C("fleet").Eq(c.Fleet))
+	if c.fleet != "" {
+		q = q.Where(goqu.C("fleet").Eq(c.fleet))
 	}
-	if c.Name != "" {
-		q = q.Where(goqu.C("name").Eq(c.Name))
+	if c.name != "" {
+		q = q.Where(goqu.C("name").Eq(c.name))
 	}
-	if c.Original != "" {
-		q = q.Where(goqu.C("original").Eq(c.Original))
+	if c.original != "" {
+		q = q.Where(goqu.C("original").Eq(c.original))
 	}
-	if c.Type != "" {
-		q = q.Where(goqu.C("type").Eq(c.Type))
+	if c.partType != "" {
+		q = q.Where(goqu.C("type").Eq(c.partType))
 	}
-	if c.OrderBy != "" {
-		q = q.Order(goqu.C(c.OrderBy).Asc())
+	if c.orderBy != "" {
+		q = q.Order(goqu.C(c.orderBy).Asc())
+	}
+	if c.limit != nil {
+		q = q.Limit(*c.limit)
+	}
+	if c.offset != nil {
+		q = q.Offset(*c.offset)
 	}
 
 	var parts []Part
@@ -372,10 +391,22 @@ func (s *Store) Parts(ctx context.Context, opts ...PartsOption) ([]Part, error) 
 }
 
 // LayersConfig holds configuration calls to Layers.
-type LayersConfig struct {
-	Fleet    string
-	Color    string
-	PartName string
+type layersConfig struct {
+	fleet   string
+	parts   []PartNameAndColor
+	orderBy string
+	limit   *uint
+	offset  *uint
+}
+
+// LayersOption controls the behavior of Layers.
+type LayersOption func(*layersConfig)
+
+// LayersOfFleet filters results to the specified fleet.
+func LayersOfFleet(fleet string) LayersOption {
+	return func(lc *layersConfig) {
+		lc.fleet = fleet
+	}
 }
 
 // PartNameAndColor is used to query Layers by part name and color.
@@ -384,20 +415,89 @@ type PartNameAndColor struct {
 	Color    string
 }
 
+// LayersForParts filters results to the specified parts.
+func LayersForParts(parts ...PartNameAndColor) LayersOption {
+	return func(lc *layersConfig) {
+		lc.parts = parts
+	}
+}
+
+// OrderLayersBy orders results by the specified column asc.
+func OrderLayersBy(orderBy string) LayersOption {
+	return func(lc *layersConfig) {
+		lc.orderBy = orderBy
+	}
+}
+
+// LayersWithLimit limits the number of results returned.
+func LayersWithLimit(limit uint) LayersOption {
+	return func(lc *layersConfig) {
+		lc.limit = &limit
+	}
+}
+
+// LayersWithOffset offsets the beginning of the results returned.
+func LayersWithOffset(offset uint) LayersOption {
+	return func(lc *layersConfig) {
+		lc.offset = &offset
+	}
+}
+
 // Layers returns a list of Layers for the specified fleet and part name/colors.
-func (s *Store) Layers(ctx context.Context, fleet string, parts ...PartNameAndColor) ([]Layer, error) {
-	q := s.db.Select("*").From("layers").Where(goqu.C("fleet").Eq(fleet))
+func (s *Store) Layers(ctx context.Context, opts ...LayersOption) ([]Layer, error) {
+	c := layersConfig{}
+	for _, opt := range opts {
+		opt(&c)
+	}
+
+	q := s.db.Select("*").From("layers")
+
+	if c.fleet != "" {
+		q = q.Where(goqu.C("fleet").Eq(c.fleet))
+	}
+
 	var ands []exp.Expression
-	for _, part := range parts {
+	for _, part := range c.parts {
 		ands = append(ands, goqu.And(goqu.C("part_name").Eq(part.PartName), goqu.C("color").Eq(part.Color)))
 	}
-	q = q.Where(goqu.Or(ands...)).Order(goqu.C("position").Asc())
+	q = q.Where(goqu.Or(ands...))
+
+	if c.orderBy != "" {
+		q = q.Order(goqu.C(c.orderBy).Asc())
+	}
+	if c.limit != nil {
+		q = q.Limit(*c.limit)
+	}
+	if c.offset != nil {
+		q = q.Offset(*c.offset)
+	}
 
 	var layers []Layer
 	if err := q.ScanStructsContext(ctx, &layers); err != nil {
 		return nil, fmt.Errorf("querying layers: %v", err)
 	}
 	return layers, nil
+}
+
+// Rigs returns a list of Rigs.
+func (s *Store) Rigs(ctx context.Context) ([]Rig, error) {
+	q := s.db.Select("*").From("rigs")
+	var rigs []Rig
+	if err := q.ScanStructsContext(ctx, &rigs); err != nil {
+		return nil, fmt.Errorf("querying rigs: %v", err)
+	}
+	for i := 0; i < len(rigs); i++ {
+		q := s.db.Select("id", "fleet", "original", "type", "name", "color").
+			From("rig_parts").
+			Join(goqu.T("parts"), goqu.On(goqu.Ex{"rig_parts.part_id": goqu.I("parts.id")})).
+			Where(goqu.C("rig_id").Eq(rigs[i].ID))
+		var parts []Part
+		if err := q.ScanStructsContext(ctx, &parts); err != nil {
+			return nil, fmt.Errorf("querying parts for rig: %v", err)
+		}
+		rigs[i].Parts = parts
+	}
+	return nil, nil
 }
 
 // Close implements Close.

@@ -8,12 +8,12 @@ import (
 )
 
 func init() {
-	tablesCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(listTablesCmd)
 }
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list existing tables",
+var listTablesCmd = &cobra.Command{
+	Use:   "list-tables",
+	Short: "list existing tableland tables",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		res, err := tblClient.List(cmd.Context())
 		if err != nil {

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/doug-martin/goqu/v9"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/common"
@@ -14,11 +15,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-const rigsSQLLengthLimit = 35000
-
 // Store implements Store using SQLite.
 type Store struct {
-	db *sql.DB
+	db      *sql.DB
+	factory *common.SQLFactory
 }
 
 // NewStore creates a new SQLite store.
@@ -32,7 +32,8 @@ func NewStore(dbFile string, reset bool) (tableland.Store, error) {
 	}
 
 	return &Store{
-		db: db,
+		db:      db,
+		factory: common.NewSQLFactory(goqu.Dialect("sqlite3")),
 	}, nil
 }
 
@@ -47,7 +48,7 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 
 // InsertParts implements InsertParts.
 func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
-	sql, err := common.SQLForInsertingParts(parts)
+	sql, err := s.factory.SQLForInsertingParts("parts", parts)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting parts: %v", err)
 	}
@@ -59,7 +60,7 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 
 // InsertLayers implements InsertLayers.
 func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	sql, err := common.SQLForInsertingLayers(layers)
+	sql, err := s.factory.SQLForInsertingLayers("layers", layers)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting layers: %v", err)
 	}
@@ -71,15 +72,72 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 
 // InsertRigs implements InsertRigs.
 func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
-	sql, err := common.SQLForInsertingRigs(rigs)
+	sql, err := s.factory.SQLForInsertingRigs("rigs", rigs)
 	if err != nil {
-		return fmt.Errorf("getting sql for inserting rig: %v", err)
-	}
-	if len(sql) > rigsSQLLengthLimit {
-		return fmt.Errorf("sql query length of %d is longer than limit of %d", len(sql), rigsSQLLengthLimit)
+		return fmt.Errorf("getting sql for inserting rigs: %v", err)
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("inserting rig: %v", err)
+		return fmt.Errorf("inserting rigs: %v", err)
+	}
+	return nil
+}
+
+// InsertRigAttributes implements InsertRigAttributes.
+func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingRigAttributes("rig_attributes", rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting rig attributes: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("inserting rig attributes: %v", err)
+	}
+	return nil
+}
+
+// ClearPartsData implements ClearPartsData.
+func (s *Store) ClearPartsData(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData("parts")
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing parts data: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing parts data: %v", err)
+	}
+	return nil
+}
+
+// ClearLayersData implements ClearLayersData.
+func (s *Store) ClearLayersData(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData("layers")
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing layers data: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing layers data: %v", err)
+	}
+	return nil
+}
+
+// ClearRigsData implements ClearRigsData.
+func (s *Store) ClearRigsData(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData("rigs")
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing rigs data: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing rigs data: %v", err)
+	}
+	return nil
+}
+
+// ClearRigAttributesData implements ClearRigAttributesData.
+func (s *Store) ClearRigAttributesData(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData("rig_attributes")
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing rig attributes data: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing rig attributes data: %v", err)
 	}
 	return nil
 }

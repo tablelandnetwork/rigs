@@ -81,9 +81,11 @@ func TestStore_Layers(t *testing.T) {
 
 	layers, err := s.Layers(
 		context.Background(),
-		"Airelights",
-		PartNameAndColor{PartName: "Varchar", Color: "Sunset"},
-		PartNameAndColor{PartName: "Alpine 4", Color: "Dark"},
+		LayersOfFleet("Airelights"),
+		LayersForParts(
+			PartNameAndColor{PartName: "Varchar", Color: "Sunset"},
+			PartNameAndColor{PartName: "Alpine 4", Color: "Dark"},
+		),
 	)
 	require.NoError(t, err)
 	require.Len(t, layers, 2)

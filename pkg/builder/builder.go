@@ -407,7 +407,12 @@ func (m *Builder) getLayers(ctx context.Context, rig local.Rig) ([]local.Layer, 
 	for _, part := range rig.Parts {
 		nameAndColors = append(nameAndColors, local.PartNameAndColor{PartName: part.Name, Color: part.Color.String})
 	}
-	return m.s.Layers(ctx, fleet, nameAndColors...)
+	return m.s.Layers(
+		ctx,
+		local.LayersOfFleet(fleet),
+		local.LayersForParts(nameAndColors...),
+		local.OrderLayersBy("position"),
+	)
 }
 
 func getFleet(rig local.Rig) (string, error) {

@@ -17,23 +17,24 @@ var (
 	PartsDefinition = TableDefinition{
 		Prefix: "parts",
 		Schema: `(
+			id integer primary key,
 			fleet text,
 			original text,
 			type text not null,
 			name text not null,
-			color text,
-			primary key(fleet,name,color)
+			color text
 		)`,
 	}
 	// LayersDefinition defines the layers table.
 	LayersDefinition = TableDefinition{
 		Prefix: "layers",
 		Schema: `(
+			id integer primary key,
 			fleet text not null,
-			rig_attribute_value text not null,
+			rig_attributes_value text not null,
 			position integer not null,
 			path text not null,
-			primary key(fleet,rig_attribute_value,position)
+			unique(fleet,rig_attributes_value,position)
 		)`,
 	}
 	// RigsDefinition defines the rigs table.
@@ -64,4 +65,9 @@ type Store interface {
 	InsertParts(context.Context, []local.Part) error
 	InsertLayers(context.Context, []local.Layer) error
 	InsertRigs(context.Context, []local.Rig) error
+	InsertRigAttributes(context.Context, []local.Rig) error
+	ClearPartsData(context.Context) error
+	ClearLayersData(context.Context) error
+	ClearRigsData(context.Context) error
+	ClearRigAttributesData(context.Context) error
 }
