@@ -31,8 +31,8 @@ func NewLayers(ipfs iface.CoreAPI, store *local.Store) *Layers {
 
 // GetLayer returns a layer image for the provided path.
 func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, error) {
-	value, _ := l.locks.LoadOrStore(ipfsPath, &sync.Mutex{})
-	lock := value.(*sync.Mutex)
+	value, _ := l.locks.LoadOrStore(ipfsPath, &sync.RWMutex{})
+	lock := value.(*sync.RWMutex)
 	lock.Lock()
 	defer lock.Unlock()
 

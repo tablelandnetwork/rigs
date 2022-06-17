@@ -527,7 +527,7 @@ func percentOriginal(parts []local.Part) float64 {
 }
 
 func (m *Builder) fleets(ctx context.Context) ([]local.Part, error) {
-	value, _ := m.locks.LoadOrStore("fleets", &sync.Mutex{})
+	value, _ := m.locks.LoadOrStore("fleets", &sync.RWMutex{})
 	lock := value.(*sync.Mutex)
 	lock.Lock()
 	defer lock.Unlock()
@@ -543,7 +543,7 @@ func (m *Builder) fleets(ctx context.Context) ([]local.Part, error) {
 }
 
 func (m *Builder) fleetPartTypes(ctx context.Context, fleet string) ([]string, error) {
-	value, _ := m.locks.LoadOrStore(fleet, &sync.Mutex{})
+	value, _ := m.locks.LoadOrStore(fleet, &sync.RWMutex{})
 	lock := value.(*sync.Mutex)
 	lock.Lock()
 	defer lock.Unlock()
@@ -563,7 +563,7 @@ func (m *Builder) fleetPartTypes(ctx context.Context, fleet string) ([]string, e
 }
 
 func (m *Builder) fleetPartTypeParts(ctx context.Context, fleet string, partType string) ([]local.Part, error) {
-	value, _ := m.locks.LoadOrStore(fleet+partType, &sync.Mutex{})
+	value, _ := m.locks.LoadOrStore(fleet+partType, &sync.RWMutex{})
 	lock := value.(*sync.Mutex)
 	lock.Lock()
 	defer lock.Unlock()

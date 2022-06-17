@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
@@ -84,7 +85,12 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 		}
 		attVales = append(attVales, goqu.Vals{rig.ID, "text", "Percent Original", fmt.Sprintf("%f", rig.PercentOriginal)})
 		for _, part := range rig.Parts {
-			attVales = append(attVales, goqu.Vals{rig.ID, "text", part.Type, part.Name})
+			b := strings.Builder{}
+			if part.Color.Valid {
+				b.WriteString(fmt.Sprintf("%s ", part.Color.String))
+			}
+			b.WriteString(part.Name)
+			attVales = append(attVales, goqu.Vals{rig.ID, "text", part.Type, b.String()})
 		}
 	}
 

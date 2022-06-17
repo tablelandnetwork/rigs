@@ -53,21 +53,30 @@ func build(ctx context.Context) error {
 		}
 	}
 
-	originals, err := s.GetOriginalRigs(ctx)
-	if err != nil {
-		return fmt.Errorf("error getting originals: %v", err)
-	}
-
 	var jobs []wpool.Job
-	for i, original := range originals {
+
+	for i := 1; i <= 3000; i++ {
 		jobs = append(jobs, wpool.Job{
-			ID: wpool.JobID(i + 1),
+			ID: wpool.JobID(i),
 			ExecFn: buildExecFcn(
-				builder.Original(i+1, original, system.NewSystemRandomnessSource())),
+				builder.Random(i, system.NewSystemRandomnessSource())),
 		})
 	}
 
-	pool := wpool.New(10)
+	// originals, err := s.GetOriginalRigs(ctx)
+	// if err != nil {
+	// 	return fmt.Errorf("error getting originals: %v", err)
+	// }
+
+	// for i, original := range originals {
+	// 	jobs = append(jobs, wpool.Job{
+	// 		ID: wpool.JobID(i + 1),
+	// 		ExecFn: buildExecFcn(
+	// 			builder.Original(i+1, original, system.NewSystemRandomnessSource())),
+	// 	})
+	// }
+
+	pool := wpool.New(4)
 	go pool.GenerateFrom(jobs)
 	go pool.Run(ctx)
 	for {

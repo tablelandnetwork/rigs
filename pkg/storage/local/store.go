@@ -479,9 +479,43 @@ func (s *Store) Layers(ctx context.Context, opts ...LayersOption) ([]Layer, erro
 	return layers, nil
 }
 
+type rigsConfig struct {
+	limit  *uint
+	offset *uint
+}
+
+// RigsOption controls the behavior of Rigs.
+type RigsOption func(*rigsConfig)
+
+// RigsWithLimit limits the number of results.
+func RigsWithLimit(limit uint) RigsOption {
+	return func(rc *rigsConfig) {
+		rc.limit = &limit
+	}
+}
+
+// RigsWithOffset specifies the offset of the results.
+func RigsWithOffset(offset uint) RigsOption {
+	return func(rc *rigsConfig) {
+		rc.offset = &offset
+	}
+}
+
 // Rigs returns a list of Rigs.
-func (s *Store) Rigs(ctx context.Context) ([]Rig, error) {
+func (s *Store) Rigs(ctx context.Context, opts ...RigsOption) ([]Rig, error) {
+	c := rigsConfig{}
+	for _, opt := range opts {
+		opt(&c)
+	}
+
 	q := s.db.Select("*").From("rigs")
+	if c.limit != nil {
+		q = q.Limit(*c.limit)
+	}
+	if c.offset != nil {
+		q = q.Offset(*c.offset)
+	}
+
 	var rigs []Rig
 	if err := q.ScanStructsContext(ctx, &rigs); err != nil {
 		return nil, fmt.Errorf("querying rigs: %v", err)
@@ -497,7 +531,7 @@ func (s *Store) Rigs(ctx context.Context) ([]Rig, error) {
 		}
 		rigs[i].Parts = parts
 	}
-	return nil, nil
+	return rigs, nil
 }
 
 // Close implements Close.
