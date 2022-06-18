@@ -3,9 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
+	"golang.org/x/time/rate"
 )
 
 func init() {
@@ -35,7 +37,7 @@ var clearDataCmd = &cobra.Command{
 			{ID: 4, ExecFn: clearDataExecFn(store.ClearRigAttributesData)},
 		}
 
-		pool := wpool.New(4)
+		pool := wpool.New(4, rate.Every(time.Millisecond*100))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
 		for {

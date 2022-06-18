@@ -52,13 +52,19 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 }
 
 // SQLForInsertingRigs returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, rigs []local.Rig) (string, error) {
+func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, gateway string, rigs []local.Rig) (string, error) {
 	var rigVals [][]interface{}
 	for _, rig := range rigs {
-		rigVals = append(rigVals, goqu.Vals{rig.ID, rig.Image})
+		rigVals = append(rigVals, goqu.Vals{
+			rig.ID,
+			fmt.Sprintf("%s%s", gateway, rig.Image),
+			fmt.Sprintf("%s%s", gateway, rig.ImageAlpha),
+			fmt.Sprintf("%s%s", gateway, rig.Thumb),
+			fmt.Sprintf("%s%s", gateway, rig.ThumbAlpha),
+		})
 	}
 
-	ds := s.d.Insert(rigsTable).Cols("id", "image").Vals(rigVals...)
+	ds := s.d.Insert(rigsTable).Cols("id", "image", "image_alpha", "thumb", "thumb_alpha").Vals(rigVals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert rigs: %v", err)

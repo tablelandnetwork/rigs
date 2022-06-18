@@ -15,7 +15,7 @@ type TableDefinition struct {
 var (
 	// PartsDefinition defines the parts table.
 	PartsDefinition = TableDefinition{
-		Prefix: "parts",
+		Prefix: "test_parts",
 		Schema: `(
 			id integer primary key,
 			fleet text,
@@ -27,7 +27,7 @@ var (
 	}
 	// LayersDefinition defines the layers table.
 	LayersDefinition = TableDefinition{
-		Prefix: "layers",
+		Prefix: "test_layers",
 		Schema: `(
 			id integer primary key,
 			fleet text not null,
@@ -39,16 +39,20 @@ var (
 	}
 	// RigsDefinition defines the rigs table.
 	RigsDefinition = TableDefinition{
-		Prefix: "rigs",
+		Prefix: "test_rigs",
 		Schema: `(
 			id integer primary key,
-			image text
+			image text,
+			image_alpha text,
+			thumb text,
+			thumb_alpha text,
+			animation_url text
 		)`,
 	}
 	// RigAttributesDefinition defines the rig attribes table.
 	// TODO: Value can be integer in SQLite, not sure how to deal with Postgres.
 	RigAttributesDefinition = TableDefinition{
-		Prefix: "rig_attributes",
+		Prefix: "test_rig_attributes",
 		Schema: `(
 			rig_id integer,
 			display_type text,
@@ -64,7 +68,7 @@ type Store interface {
 	CreateTable(context.Context, TableDefinition) (string, error)
 	InsertParts(context.Context, []local.Part) error
 	InsertLayers(context.Context, []local.Layer) error
-	InsertRigs(context.Context, []local.Rig) error
+	InsertRigs(context.Context, string, []local.Rig) error
 	InsertRigAttributes(context.Context, []local.Rig) error
 	ClearPartsData(context.Context) error
 	ClearLayersData(context.Context) error

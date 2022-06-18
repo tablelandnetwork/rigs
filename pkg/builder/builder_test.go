@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"net/http"
 	"testing"
+	"time"
 
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/stretchr/testify/require"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"golang.org/x/time/rate"
 )
 
 func TestBuild(t *testing.T) {
@@ -29,7 +31,7 @@ func TestBuild(t *testing.T) {
 	originals, err := s.GetOriginalRigs(ctx)
 	require.NoError(t, err)
 
-	buildExecFcn := func(id int, original local.OriginalRig, opt Option) wpool.ExecutionFn {
+	buildExecFcn := func(id int, original local.OriginalRig, opt BuildOption) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			fmt.Printf("%d. %s: %s %s\n", id, original.Fleet, original.Color, original.Name)
 			rig, err := m.Build(ctx, opt)
@@ -44,12 +46,12 @@ func TestBuild(t *testing.T) {
 			ExecFn: buildExecFcn(
 				i+1,
 				original,
-				Original(i+1, original, system.NewSystemRandomnessSource()),
+				BuildOriginal(i+1, original, system.NewSystemRandomnessSource()),
 			),
 		})
 	}
 
-	pool := wpool.New(10)
+	pool := wpool.New(10, rate.Every(time.Millisecond*100))
 	go pool.GenerateFrom(jobs)
 	go pool.Run(ctx)
 
@@ -62,7 +64,7 @@ func TestBuild(t *testing.T) {
 			require.NoError(t, r.Err)
 			rig := r.Value.(*local.Rig)
 			require.Equal(t, int(r.ID), rig.ID)
-			fmt.Printf("%s\n", rig.Image)
+			fmt.Printf("%s%s\n", rig.Gateway, rig.Image)
 		case <-pool.Done:
 			return
 		}

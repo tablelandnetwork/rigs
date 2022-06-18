@@ -3,10 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	storage "github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
+	"golang.org/x/time/rate"
 )
 
 func init() {
@@ -34,7 +36,7 @@ var schemaCmd = &cobra.Command{
 			{ID: 4, ExecFn: createTableExecFcn(storage.LayersDefinition)},
 		}
 
-		pool := wpool.New(4)
+		pool := wpool.New(1, rate.Every(time.Millisecond*100))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
 		for {

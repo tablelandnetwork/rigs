@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -81,7 +82,7 @@ func Test_job_Execute(t *testing.T) {
 }
 
 func TestWorkerPool(t *testing.T) {
-	wp := New(workerCount)
+	wp := New(workerCount, rate.Inf)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -108,7 +109,7 @@ func TestWorkerPool(t *testing.T) {
 }
 
 func TestWorkerPool_TimeOut(t *testing.T) {
-	wp := New(workerCount)
+	wp := New(workerCount, rate.Inf)
 
 	ctx, cancel := context.WithTimeout(context.TODO(), time.Nanosecond*10)
 	defer cancel()
@@ -128,7 +129,7 @@ func TestWorkerPool_TimeOut(t *testing.T) {
 }
 
 func TestWorkerPool_Cancel(t *testing.T) {
-	wp := New(workerCount)
+	wp := New(workerCount, rate.Inf)
 
 	ctx, cancel := context.WithCancel(context.TODO())
 

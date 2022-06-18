@@ -82,8 +82,8 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs(s.rigsTableName, rigs)
+func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingRigs(s.rigsTableName, gateway, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rigs: %v", err)
 	}

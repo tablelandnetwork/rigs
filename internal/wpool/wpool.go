@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
+
+	"golang.org/x/time/rate"
 )
 
 // JobID identifies a Job.
@@ -40,7 +42,7 @@ func (j Job) execute(ctx context.Context) Result {
 	}
 }
 
-func worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan Job, results chan<- Result) {
+func worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan Job, results chan<- Result, limiter *rate.Limiter) {
 	defer wg.Done()
 	for {
 		select {
@@ -49,6 +51,10 @@ func worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan Job, results ch
 				return
 			}
 			// fan-in job execution multiplexing results into the results channel
+			if err := limiter.Wait(ctx); err != nil {
+				results <- Result{ID: job.ID, Err: err}
+				return
+			}
 			results <- job.execute(ctx)
 		case <-ctx.Done():
 			fmt.Printf("canceled worker. Error detail: %v\n", ctx.Err())
@@ -63,15 +69,17 @@ func worker(ctx context.Context, wg *sync.WaitGroup, jobs <-chan Job, results ch
 // WorkerPool manages a pool of workers to execute Jobs.
 type WorkerPool struct {
 	workersCount int
+	limiter      *rate.Limiter
 	jobs         chan Job
 	results      chan Result
 	Done         chan struct{}
 }
 
 // New create a new WorkerPool.
-func New(wcount int) WorkerPool {
+func New(wcount int, rateLim rate.Limit) WorkerPool {
 	return WorkerPool{
 		workersCount: wcount,
+		limiter:      rate.NewLimiter(rateLim, 1),
 		jobs:         make(chan Job, wcount),
 		results:      make(chan Result, wcount),
 		Done:         make(chan struct{}),
@@ -87,7 +95,7 @@ func (wp WorkerPool) Run(ctx context.Context) {
 		// fan out worker goroutines
 		//reading from jobs channel and
 		//pushing calcs into results channel
-		go worker(ctx, &wg, wp.jobs, wp.results)
+		go worker(ctx, &wg, wp.jobs, wp.results, wp.limiter)
 	}
 
 	wg.Wait()

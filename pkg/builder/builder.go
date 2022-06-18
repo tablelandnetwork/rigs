@@ -25,18 +25,24 @@ const (
 )
 
 var (
-	defaultConfig = config{
-		width:       1200,
-		height:      1200,
+	defaultBuildConfig = buildConfig{
+		size:        1200,
+		thumbSize:   400,
 		compression: png.DefaultCompression,
 		drawLabels:  false,
 		pin:         false,
 	}
+	defaultBuildImageConfig = buildImageConfig{
+		size:        1200,
+		drawLabels:  false,
+		background:  true,
+		compression: png.DefaultCompression,
+	}
 )
 
-type config struct {
-	width       int
-	height      int
+type buildConfig struct {
+	size        int
+	thumbSize   int
 	compression png.CompressionLevel
 	drawLabels  bool
 	pin         bool
@@ -45,49 +51,55 @@ type config struct {
 	randomness  RandomnessSource
 }
 
-// Option is an item that controls the behavior of Build.
-type Option func(*config)
+// BuildOption is an item that controls the behavior of Build.
+type BuildOption func(*buildConfig)
 
-// Size controls the size of the created image.
-func Size(width, height int) Option {
-	return func(c *config) {
-		c.width = width
-		c.height = height
+// BuildSize controls the size of the created image.
+func BuildSize(size int) BuildOption {
+	return func(c *buildConfig) {
+		c.size = size
 	}
 }
 
-// Compression controls the compression level of the created image.
-func Compression(level png.CompressionLevel) Option {
-	return func(c *config) {
+// BuildThumbSize controls the size of the created thumbnail image.
+func BuildThumbSize(size int) BuildOption {
+	return func(c *buildConfig) {
+		c.thumbSize = size
+	}
+}
+
+// BuildCompression controls the compression level of the created image.
+func BuildCompression(level png.CompressionLevel) BuildOption {
+	return func(c *buildConfig) {
 		c.compression = level
 	}
 }
 
-// Labels controls wheterh or not to draw labels on the created image.
-func Labels(drawLabels bool) Option {
-	return func(c *config) {
+// BuildLabels controls wheterh or not to draw labels on the created image.
+func BuildLabels(drawLabels bool) BuildOption {
+	return func(c *buildConfig) {
 		c.drawLabels = drawLabels
 	}
 }
 
-// Pin controls wheterh or not to pin the created image in IPFS.
-func Pin(pin bool) Option {
-	return func(c *config) {
+// BuildPin controls wheterh or not to pin the created image in IPFS.
+func BuildPin(pin bool) BuildOption {
+	return func(c *buildConfig) {
 		c.pin = pin
 	}
 }
 
-// Random provides configuration for random rig building.
-func Random(id int, randomnessSource RandomnessSource) Option {
-	return func(c *config) {
+// BuildRandom provides configuration for random rig building.
+func BuildRandom(id int, randomnessSource RandomnessSource) BuildOption {
+	return func(c *buildConfig) {
 		c.id = id
 		c.randomness = randomnessSource
 	}
 }
 
-// Original provides configuration for building original rigs.
-func Original(id int, original local.OriginalRig, randomnessSource RandomnessSource) Option {
-	return func(c *config) {
+// BuildOriginal provides configuration for building original rigs.
+func BuildOriginal(id int, original local.OriginalRig, randomnessSource RandomnessSource) BuildOption {
+	return func(c *buildConfig) {
 		c.id = id
 		c.original = &original
 		c.randomness = randomnessSource
@@ -130,13 +142,20 @@ func NewBuilder(
 }
 
 // Build creates a Rig.
-func (m *Builder) Build(ctx context.Context, opts ...Option) (*local.Rig, error) {
-	c := defaultConfig
+func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, error) {
+	c := defaultBuildConfig
 	for _, opt := range opts {
 		opt(&c)
 	}
 
-	rig, err := m.BuildRigData(ctx, opts...)
+	var opt BuildDataOption
+	if c.original != nil {
+		opt = BuildOriginalData(c.id, *c.original, c.randomness)
+	} else {
+		opt = BuildRandomData(c.id, c.randomness)
+	}
+
+	rig, err := m.BuildData(ctx, opt)
 	if err != nil {
 		return nil, fmt.Errorf("building rig data: %v", err)
 	}
@@ -148,18 +167,93 @@ func (m *Builder) Build(ctx context.Context, opts ...Option) (*local.Rig, error)
 		}
 	}()
 
-	go func() {
-		if err := m.BuildRigImage(ctx, rig, writer, opts...); err != nil {
-			log.Err(err).Msg("building rig image")
-		}
-		if err := writer.Close(); err != nil {
-			log.Err(err).Msg("closing image writer")
+	alphaReader, alphaWriter := io.Pipe()
+	defer func() {
+		if err := alphaReader.Close(); err != nil {
+			log.Error().Err(err).Msg("closing alpha reader")
 		}
 	}()
 
+	thumbReader, thumbWriter := io.Pipe()
+	defer func() {
+		if err := thumbReader.Close(); err != nil {
+			log.Error().Err(err).Msg("closing thumb reader")
+		}
+	}()
+
+	thumbAlphaReader, thumbAlphaWriter := io.Pipe()
+	defer func() {
+		if err := thumbAlphaReader.Close(); err != nil {
+			log.Error().Err(err).Msg("closing thumb alpha reader")
+		}
+	}()
+
+	go func() {
+		if err := m.BuildImage(ctx, rig, writer,
+			BuildImageBackground(true),
+			BuildImageCompression(c.compression),
+			BuildImageLabels(c.drawLabels),
+			BuildImageSize(c.size),
+		); err != nil {
+			log.Err(err).Msg("building image")
+		}
+		if err := writer.Close(); err != nil {
+			log.Err(err).Msg("closing writer")
+		}
+	}()
+
+	go func() {
+		if err := m.BuildImage(ctx, rig, alphaWriter,
+			BuildImageBackground(false),
+			BuildImageCompression(c.compression),
+			BuildImageLabels(c.drawLabels),
+			BuildImageSize(c.size),
+		); err != nil {
+			log.Err(err).Msg("building image alpha")
+		}
+		if err := alphaWriter.Close(); err != nil {
+			log.Err(err).Msg("closing alpha writer")
+		}
+	}()
+
+	go func() {
+		if err := m.BuildImage(ctx, rig, thumbWriter,
+			BuildImageBackground(true),
+			BuildImageCompression(c.compression),
+			BuildImageLabels(c.drawLabels),
+			BuildImageSize(c.thumbSize),
+		); err != nil {
+			log.Err(err).Msg("building thumb")
+		}
+		if err := thumbWriter.Close(); err != nil {
+			log.Err(err).Msg("closing thumb writer")
+		}
+	}()
+
+	go func() {
+		if err := m.BuildImage(ctx, rig, thumbAlphaWriter,
+			BuildImageBackground(false),
+			BuildImageCompression(c.compression),
+			BuildImageLabels(c.drawLabels),
+			BuildImageSize(c.thumbSize),
+		); err != nil {
+			log.Err(err).Msg("building thumb alpha")
+		}
+		if err := thumbAlphaWriter.Close(); err != nil {
+			log.Err(err).Msg("closing thumb alpha writer")
+		}
+	}()
+
+	dir := ipfsfiles.NewMapDirectory(map[string]ipfsfiles.Node{
+		"image.png":       ipfsfiles.NewReaderFile(reader),
+		"image_alpha.png": ipfsfiles.NewReaderFile(alphaReader),
+		"thumb.png":       ipfsfiles.NewReaderFile(thumbReader),
+		"thumb_alpha.png": ipfsfiles.NewReaderFile(thumbAlphaReader),
+	})
+
 	path, err := m.ipfs.Unixfs().Add(
 		ctx,
-		ipfsfiles.NewReaderFile(reader),
+		dir,
 		options.Unixfs.Pin(c.pin),
 		options.Unixfs.CidVersion(1),
 	)
@@ -167,7 +261,12 @@ func (m *Builder) Build(ctx context.Context, opts ...Option) (*local.Rig, error)
 		return nil, fmt.Errorf("adding image to ipfs: %v", err)
 	}
 
-	rig.Image = m.ipfsGatewayURL + path.String()
+	rig.Gateway = m.ipfsGatewayURL
+	rig.Images = path.String()
+	rig.Image = path.String() + "/image.png"
+	rig.ImageAlpha = path.String() + "/image_alpha.png"
+	rig.Thumb = path.String() + "/thumb.png"
+	rig.ThumbAlpha = path.String() + "/thumb_alpha.png"
 
 	if err := m.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
 		if c.pin {
@@ -190,20 +289,44 @@ func (m *Builder) unpinPath(ctx context.Context, path ipfspath.Path) {
 	}
 }
 
-// BuildRigData generates a Rig.
-func (m *Builder) BuildRigData(ctx context.Context, opts ...Option) (local.Rig, error) {
-	c := defaultConfig
-	for _, opt := range opts {
-		opt(&c)
+type buildDataConfig struct {
+	id         int
+	original   *local.OriginalRig
+	randomness RandomnessSource
+}
+
+// BuildDataOption is an item that controls the behavior of BuildData.
+type BuildDataOption func(*buildDataConfig)
+
+// BuildRandomData provides configuration for random rig building.
+func BuildRandomData(id int, randomnessSource RandomnessSource) BuildDataOption {
+	return func(c *buildDataConfig) {
+		c.id = id
+		c.randomness = randomnessSource
 	}
+}
+
+// BuildOriginalData provides configuration for building original rigs.
+func BuildOriginalData(id int, original local.OriginalRig, randomnessSource RandomnessSource) BuildDataOption {
+	return func(c *buildDataConfig) {
+		c.id = id
+		c.original = &original
+		c.randomness = randomnessSource
+	}
+}
+
+// BuildData generates Rig data.
+func (m *Builder) BuildData(ctx context.Context, opt BuildDataOption) (local.Rig, error) {
+	c := buildDataConfig{}
+	opt(&c)
 
 	var rig local.Rig
 	var err error
 
 	if c.original != nil {
-		rig, err = m.buildOriginalRigData(ctx, c.id, *c.original, c.randomness)
+		rig, err = m.buildOriginalData(ctx, c.id, *c.original, c.randomness)
 	} else {
-		rig, err = m.buildRandomRigData(ctx, c.id, c.randomness)
+		rig, err = m.buildRandomData(ctx, c.id, c.randomness)
 	}
 	if err != nil {
 		return local.Rig{}, fmt.Errorf("building rig data: %v", err)
@@ -213,7 +336,7 @@ func (m *Builder) BuildRigData(ctx context.Context, opts ...Option) (local.Rig, 
 	return rig, nil
 }
 
-func (m *Builder) buildRandomRigData(
+func (m *Builder) buildRandomData(
 	ctx context.Context,
 	id int,
 	rs RandomnessSource,
@@ -265,7 +388,7 @@ func (m *Builder) buildRandomRigData(
 	return rig, nil
 }
 
-func (m *Builder) buildOriginalRigData(
+func (m *Builder) buildOriginalData(
 	ctx context.Context,
 	id int,
 	original local.OriginalRig,
@@ -346,19 +469,57 @@ func (m *Builder) buildOriginalRigData(
 	return rig, nil
 }
 
-// BuildRigImage writes the Rig image to the provider Writer for the provided Rig.
-func (m *Builder) BuildRigImage(
+type buildImageConfig struct {
+	drawLabels  bool
+	size        int
+	background  bool
+	compression png.CompressionLevel
+}
+
+// BuildImageOption controls the behavior of BuildImage.
+type BuildImageOption func(*buildImageConfig)
+
+// BuildImageLabels specifies whether or not to render labels.
+func BuildImageLabels(labels bool) BuildImageOption {
+	return func(bic *buildImageConfig) {
+		bic.drawLabels = labels
+	}
+}
+
+// BuildImageSize specifies the size of the image to render.
+func BuildImageSize(size int) BuildImageOption {
+	return func(bic *buildImageConfig) {
+		bic.size = size
+	}
+}
+
+// BuildImageBackground specifies whether or not to render the background.
+func BuildImageBackground(background bool) BuildImageOption {
+	return func(bic *buildImageConfig) {
+		bic.background = background
+	}
+}
+
+// BuildImageCompression controls the compression level of the image.
+func BuildImageCompression(compression png.CompressionLevel) BuildImageOption {
+	return func(bic *buildImageConfig) {
+		bic.compression = compression
+	}
+}
+
+// BuildImage writes the Rig image to the provider Writer for the provided Rig.
+func (m *Builder) BuildImage(
 	ctx context.Context,
 	rig local.Rig,
 	writer io.Writer,
-	opts ...Option,
+	opts ...BuildImageOption,
 ) error {
-	c := defaultConfig
+	c := defaultBuildImageConfig
 	for _, opt := range opts {
 		opt(&c)
 	}
 
-	layers, err := m.getLayers(ctx, rig)
+	layers, err := m.getLayers(ctx, rig, c.background)
 	if err != nil {
 		return fmt.Errorf("getting layers for rig: %v", err)
 	}
@@ -371,7 +532,7 @@ func (m *Builder) BuildRigImage(
 		}
 	}
 
-	r, err := renderer.NewRenderer(c.width, c.height, c.drawLabels, label)
+	r, err := renderer.NewRenderer(c.size, c.size, c.drawLabels, label)
 	if err != nil {
 		return fmt.Errorf("building renderer: %v", err)
 	}
@@ -397,7 +558,7 @@ func (m *Builder) BuildRigImage(
 	return nil
 }
 
-func (m *Builder) getLayers(ctx context.Context, rig local.Rig) ([]local.Layer, error) {
+func (m *Builder) getLayers(ctx context.Context, rig local.Rig, background bool) ([]local.Layer, error) {
 	fleet, err := getFleet(rig)
 	if err != nil {
 		return nil, err
@@ -405,6 +566,9 @@ func (m *Builder) getLayers(ctx context.Context, rig local.Rig) ([]local.Layer, 
 
 	var nameAndColors []local.PartNameAndColor
 	for _, part := range rig.Parts {
+		if !background && part.Type == "Background" {
+			continue
+		}
 		nameAndColors = append(nameAndColors, local.PartNameAndColor{PartName: part.Name, Color: part.Color.String})
 	}
 	return m.s.Layers(
@@ -528,7 +692,7 @@ func percentOriginal(parts []local.Part) float64 {
 
 func (m *Builder) fleets(ctx context.Context) ([]local.Part, error) {
 	value, _ := m.locks.LoadOrStore("fleets", &sync.RWMutex{})
-	lock := value.(*sync.Mutex)
+	lock := value.(*sync.RWMutex)
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -544,7 +708,7 @@ func (m *Builder) fleets(ctx context.Context) ([]local.Part, error) {
 
 func (m *Builder) fleetPartTypes(ctx context.Context, fleet string) ([]string, error) {
 	value, _ := m.locks.LoadOrStore(fleet, &sync.RWMutex{})
-	lock := value.(*sync.Mutex)
+	lock := value.(*sync.RWMutex)
 	lock.Lock()
 	defer lock.Unlock()
 
@@ -564,7 +728,7 @@ func (m *Builder) fleetPartTypes(ctx context.Context, fleet string) ([]string, e
 
 func (m *Builder) fleetPartTypeParts(ctx context.Context, fleet string, partType string) ([]local.Part, error) {
 	value, _ := m.locks.LoadOrStore(fleet+partType, &sync.RWMutex{})
-	lock := value.(*sync.Mutex)
+	lock := value.(*sync.RWMutex)
 	lock.Lock()
 	defer lock.Unlock()
 

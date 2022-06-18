@@ -48,7 +48,7 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 
 // InsertParts implements InsertParts.
 func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
-	sql, err := s.factory.SQLForInsertingParts("parts", parts)
+	sql, err := s.factory.SQLForInsertingParts(tableland.PartsDefinition.Prefix, parts)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting parts: %v", err)
 	}
@@ -60,7 +60,7 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 
 // InsertLayers implements InsertLayers.
 func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	sql, err := s.factory.SQLForInsertingLayers("layers", layers)
+	sql, err := s.factory.SQLForInsertingLayers(tableland.LayersDefinition.Prefix, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting layers: %v", err)
 	}
@@ -71,8 +71,8 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs("rigs", rigs)
+func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, gateway, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rigs: %v", err)
 	}
@@ -84,7 +84,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigAttributes("rig_attributes", rigs)
+	sql, err := s.factory.SQLForInsertingRigAttributes(tableland.RigAttributesDefinition.Prefix, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rig attributes: %v", err)
 	}
@@ -96,7 +96,7 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 
 // ClearPartsData implements ClearPartsData.
 func (s *Store) ClearPartsData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData("parts")
+	sql, err := s.factory.SQLForClearingData(tableland.PartsDefinition.Prefix)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing parts data: %v", err)
 	}
@@ -108,7 +108,7 @@ func (s *Store) ClearPartsData(ctx context.Context) error {
 
 // ClearLayersData implements ClearLayersData.
 func (s *Store) ClearLayersData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData("layers")
+	sql, err := s.factory.SQLForClearingData(tableland.LayersDefinition.Prefix)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing layers data: %v", err)
 	}
@@ -120,7 +120,7 @@ func (s *Store) ClearLayersData(ctx context.Context) error {
 
 // ClearRigsData implements ClearRigsData.
 func (s *Store) ClearRigsData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData("rigs")
+	sql, err := s.factory.SQLForClearingData(tableland.RigsDefinition.Prefix)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing rigs data: %v", err)
 	}
@@ -132,7 +132,7 @@ func (s *Store) ClearRigsData(ctx context.Context) error {
 
 // ClearRigAttributesData implements ClearRigAttributesData.
 func (s *Store) ClearRigAttributesData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData("rig_attributes")
+	sql, err := s.factory.SQLForClearingData(tableland.RigAttributesDefinition.Prefix)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing rig attributes data: %v", err)
 	}

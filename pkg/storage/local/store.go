@@ -41,8 +41,14 @@ const (
 
 	createRigsSQL = `create table rigs (
 		id integer primary key,
+		gateway text,
+		images text,
 		image text,
-		original boolean
+		image_alpha text,
+		thumb text,
+		thumb_alpha text,
+		original boolean,
+		percent_original float
 	)`
 
 	createRigPartsSQL = `create table rig_parts (
@@ -84,9 +90,14 @@ type Layer struct {
 // Rig represents a generated rig.
 type Rig struct {
 	ID              int     `json:"id"`
+	Gateway         string  `json:"gateway"`
+	Images          string  `json:"images"`
 	Image           string  `json:"image"`
+	ImageAlpha      string  `json:"image_alpha" db:"image_alpha"`
+	Thumb           string  `json:"thumb"`
+	ThumbAlpha      string  `json:"thumb_alpha" db:"thumb_alpha"`
 	Original        bool    `json:"original"`
-	PercentOriginal float64 `json:"percent_original"`
+	PercentOriginal float64 `json:"percent_original" db:"percent_original"`
 	Parts           []Part  `json:"parts"`
 }
 
@@ -175,7 +186,17 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 	var rigVals [][]interface{}
 	var partVals [][]interface{}
 	for _, rig := range rigs {
-		rigVals = append(rigVals, goqu.Vals{rig.ID, rig.Image, rig.Original})
+		rigVals = append(rigVals, goqu.Vals{
+			rig.ID,
+			rig.Gateway,
+			rig.Images,
+			rig.Image,
+			rig.ImageAlpha,
+			rig.Thumb,
+			rig.ThumbAlpha,
+			rig.Original,
+			rig.PercentOriginal,
+		})
 		for _, part := range rig.Parts {
 			partVals = append(partVals, goqu.Vals{rig.ID, part.ID})
 		}
@@ -186,7 +207,9 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 		return fmt.Errorf("starting tx: %v", err)
 	}
 
-	insertRigs := tx.Insert("rigs").Cols("id", "image", "original").Vals(rigVals...).Executor()
+	insertRigs := tx.Insert("rigs").Cols(
+		"id", "gateway", "images", "image", "image_alpha", "thumb", "thumb_alpha", "original", "percent_original",
+	).Vals(rigVals...).Executor()
 	insertParts := tx.Insert("rig_parts").
 		Cols("rig_id", "part_id").
 		Vals(partVals...).

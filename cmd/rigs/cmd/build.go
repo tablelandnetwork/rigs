@@ -10,6 +10,7 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"golang.org/x/time/rate"
 )
 
 func init() {
@@ -46,7 +47,7 @@ func build(ctx context.Context) error {
 
 	b := builder.NewBuilder(s, ipfsClient, viper.GetString("ipfs-gateway-url"))
 
-	buildExecFcn := func(opt builder.Option) wpool.ExecutionFn {
+	buildExecFcn := func(opt builder.BuildOption) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			rig, err := b.Build(ctx, opt)
 			return rig, err
@@ -55,28 +56,28 @@ func build(ctx context.Context) error {
 
 	var jobs []wpool.Job
 
-	for i := 1; i <= 3000; i++ {
-		jobs = append(jobs, wpool.Job{
-			ID: wpool.JobID(i),
-			ExecFn: buildExecFcn(
-				builder.Random(i, system.NewSystemRandomnessSource())),
-		})
-	}
-
-	// originals, err := s.GetOriginalRigs(ctx)
-	// if err != nil {
-	// 	return fmt.Errorf("error getting originals: %v", err)
-	// }
-
-	// for i, original := range originals {
+	// for i := 1; i <= 3000; i++ {
 	// 	jobs = append(jobs, wpool.Job{
-	// 		ID: wpool.JobID(i + 1),
+	// 		ID: wpool.JobID(i),
 	// 		ExecFn: buildExecFcn(
-	// 			builder.Original(i+1, original, system.NewSystemRandomnessSource())),
+	// 			builder.Random(i, system.NewSystemRandomnessSource())),
 	// 	})
 	// }
 
-	pool := wpool.New(4)
+	originals, err := s.GetOriginalRigs(ctx)
+	if err != nil {
+		return fmt.Errorf("error getting originals: %v", err)
+	}
+
+	for i, original := range originals {
+		jobs = append(jobs, wpool.Job{
+			ID: wpool.JobID(i + 1),
+			ExecFn: buildExecFcn(
+				builder.BuildOriginal(i+1, original, system.NewSystemRandomnessSource())),
+		})
+	}
+
+	pool := wpool.New(3, rate.Inf)
 	go pool.GenerateFrom(jobs)
 	go pool.Run(ctx)
 	for {
@@ -90,7 +91,7 @@ func build(ctx context.Context) error {
 				continue
 			}
 			rig := r.Value.(*local.Rig)
-			fmt.Printf("%d. %s\n", rig.ID, rig.Image)
+			fmt.Printf("%d. %s%s\n", rig.ID, rig.Gateway, rig.Image)
 		case <-pool.Done:
 			return nil
 		}

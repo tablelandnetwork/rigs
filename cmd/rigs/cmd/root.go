@@ -41,7 +41,6 @@ var rootCmd = &cobra.Command{
 		}
 
 		httpClient := &http.Client{}
-
 		ipfs, err := httpapi.NewURLApiWithClient(viper.GetString("ipfs-api-url"), httpClient)
 		if err != nil {
 			return fmt.Errorf("error creating ipfs client: %v", err)
