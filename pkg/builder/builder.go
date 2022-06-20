@@ -321,6 +321,9 @@ func (m *Builder) BuildData(ctx context.Context, opt BuildDataOption) (local.Rig
 	}
 
 	rig.PercentOriginal = percentOriginal(rig.Parts)
+	if rig.PercentOriginal == 1 {
+		rig.Original = true
+	}
 	return rig, nil
 }
 
@@ -382,7 +385,7 @@ func (m *Builder) buildOriginalData(
 	original local.OriginalRig,
 	rs RandomnessSource,
 ) (local.Rig, error) {
-	rig := local.Rig{ID: id, Original: true}
+	rig := local.Rig{ID: id}
 
 	fleetParts, err := m.s.Parts(ctx, local.PartsOfType("Fleet"), local.PartsOfName(original.Fleet))
 	if err != nil {
@@ -654,28 +657,64 @@ func selectPart(parts []local.Part, random float64) (local.Part, error) {
 	return local.Part{}, errors.New("couldn't randomly select part")
 }
 
+// func percentOriginal(parts []local.Part) float64 {
+// 	// TODO: Figure out how to deal with Riders and other strange parts.
+// 	counts := make(map[string]int)
+// 	total := 0
+// 	for _, part := range parts {
+// 		if !part.Color.Valid || !part.Original.Valid {
+// 			continue
+// 		}
+// 		key := fmt.Sprintf("%s|%s", part.Color.String, part.Original.String)
+// 		if _, exists := counts[key]; !exists {
+// 			counts[key] = 0
+// 		}
+// 		counts[key]++
+// 		total++
+// 	}
+// 	max := 0
+// 	for _, count := range counts {
+// 		if count > max {
+// 			max = count
+// 		}
+// 	}
+// 	return float64(max) / float64(total)
+// }
+
 func percentOriginal(parts []local.Part) float64 {
-	// TODO: Figure out how to deal with Riders and other strange parts.
-	counts := make(map[string]int)
+	originalColorCounts := make(map[string]map[string]int)
 	total := 0
 	for _, part := range parts {
 		if !part.Color.Valid || !part.Original.Valid {
 			continue
 		}
-		key := fmt.Sprintf("%s|%s", part.Color.String, part.Original.String)
-		if _, exists := counts[key]; !exists {
-			counts[key] = 0
+		if _, exists := originalColorCounts[part.Original.String]; !exists {
+			originalColorCounts[part.Original.String] = make(map[string]int)
 		}
-		counts[key]++
+		originalColorCounts[part.Original.String][part.Color.String]++
 		total++
 	}
 	max := 0
-	for _, count := range counts {
-		if count > max {
-			max = count
+	maxColor := ""
+	originalWithMax := ""
+	for original, colorCount := range originalColorCounts {
+		for color, count := range colorCount {
+			if count > max {
+				max = count
+				maxColor = color
+				originalWithMax = original
+			}
 		}
 	}
-	return float64(max) / float64(total)
+
+	var bonus float64
+	for color, count := range originalColorCounts[originalWithMax] {
+		if color != maxColor {
+			bonus += float64(count) * 0.8
+		}
+	}
+
+	return (float64(max) + bonus) / float64(total)
 }
 
 func resizeImage(data io.Reader, size image.Rectangle, to io.Writer) error {
@@ -684,7 +723,7 @@ func resizeImage(data io.Reader, size image.Rectangle, to io.Writer) error {
 		return err
 	}
 	dst := image.NewRGBA(size)
-	draw.BiLinear.Scale(dst, size, i, i.Bounds(), draw.Over, nil)
+	draw.CatmullRom.Scale(dst, size, i, i.Bounds(), draw.Over, nil)
 	if err := png.Encode(to, dst); err != nil {
 		return err
 	}

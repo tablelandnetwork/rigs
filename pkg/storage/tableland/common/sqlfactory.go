@@ -75,14 +75,24 @@ func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, gateway string, rigs 
 
 // SQLForInsertingRigAttributes returns the SQL statement.
 func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []local.Rig) (string, error) {
+	firstOriginalAndColor := func(parts []local.Part) (string, string, error) {
+		for _, part := range parts {
+			if part.Original.Valid && part.Color.Valid {
+				return part.Original.String, part.Color.String, nil
+			}
+		}
+		return "", "", errors.New("couldn't find part with original and color")
+	}
 	var attVales [][]interface{}
 	for _, rig := range rigs {
 		if rig.Original {
 			if len(rig.Parts) == 0 {
 				return "", errors.New("no parts for getting original rig color and original")
 			}
-			original := rig.Parts[0].Original
-			color := rig.Parts[0].Color
+			original, color, err := firstOriginalAndColor(rig.Parts)
+			if err != nil {
+				return "", fmt.Errorf("getting original and color: %v", err)
+			}
 			attVales = append(
 				attVales,
 				goqu.Vals{rig.ID, "text", "Name", original},
