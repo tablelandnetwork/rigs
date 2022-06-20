@@ -1,10 +1,14 @@
 package builder
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"  // register format
+	_ "image/jpeg" // register format
 	"image/png"
 	"io"
 	"sort"
@@ -17,6 +21,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"golang.org/x/image/draw"
 )
 
 const (
@@ -161,32 +166,31 @@ func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, e
 	}
 
 	reader, writer := io.Pipe()
+	var readerData bytes.Buffer
+	readerThrough := io.TeeReader(reader, &readerData)
+	readerThumb, writerThumb := io.Pipe()
+
+	readerAlpha, writerAlpha := io.Pipe()
+	var readerAlphaData bytes.Buffer
+	readerAlphaThrough := io.TeeReader(readerAlpha, &readerAlphaData)
+	readerAlphaThumb, writerAlphaThumb := io.Pipe()
+
 	defer func() {
 		if err := reader.Close(); err != nil {
 			log.Error().Err(err).Msg("closing reader")
 		}
-	}()
-
-	alphaReader, alphaWriter := io.Pipe()
-	defer func() {
-		if err := alphaReader.Close(); err != nil {
-			log.Error().Err(err).Msg("closing alpha reader")
+		if err := readerThumb.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader thumb")
+		}
+		if err := readerAlpha.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader alpha")
+		}
+		if err := readerAlphaThumb.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader alpha thumb")
 		}
 	}()
 
-	thumbReader, thumbWriter := io.Pipe()
-	defer func() {
-		if err := thumbReader.Close(); err != nil {
-			log.Error().Err(err).Msg("closing thumb reader")
-		}
-	}()
-
-	thumbAlphaReader, thumbAlphaWriter := io.Pipe()
-	defer func() {
-		if err := thumbAlphaReader.Close(); err != nil {
-			log.Error().Err(err).Msg("closing thumb alpha reader")
-		}
-	}()
+	rect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
 
 	go func() {
 		if err := m.BuildImage(ctx, rig, writer,
@@ -200,10 +204,16 @@ func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, e
 		if err := writer.Close(); err != nil {
 			log.Err(err).Msg("closing writer")
 		}
+		if err := resizeImage(&readerData, rect, writerThumb); err != nil {
+			log.Err(err).Msg("resizing image")
+		}
+		if err := writerThumb.Close(); err != nil {
+			log.Err(err).Msg("closing writer thumb")
+		}
 	}()
 
 	go func() {
-		if err := m.BuildImage(ctx, rig, alphaWriter,
+		if err := m.BuildImage(ctx, rig, writerAlpha,
 			BuildImageBackground(false),
 			BuildImageCompression(c.compression),
 			BuildImageLabels(c.drawLabels),
@@ -211,44 +221,22 @@ func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, e
 		); err != nil {
 			log.Err(err).Msg("building image alpha")
 		}
-		if err := alphaWriter.Close(); err != nil {
-			log.Err(err).Msg("closing alpha writer")
+		if err := writerAlpha.Close(); err != nil {
+			log.Err(err).Msg("closing writer alpha")
 		}
-	}()
-
-	go func() {
-		if err := m.BuildImage(ctx, rig, thumbWriter,
-			BuildImageBackground(true),
-			BuildImageCompression(c.compression),
-			BuildImageLabels(c.drawLabels),
-			BuildImageSize(c.thumbSize),
-		); err != nil {
-			log.Err(err).Msg("building thumb")
+		if err := resizeImage(&readerAlphaData, rect, writerAlphaThumb); err != nil {
+			log.Err(err).Msg("resizing image alpha")
 		}
-		if err := thumbWriter.Close(); err != nil {
-			log.Err(err).Msg("closing thumb writer")
-		}
-	}()
-
-	go func() {
-		if err := m.BuildImage(ctx, rig, thumbAlphaWriter,
-			BuildImageBackground(false),
-			BuildImageCompression(c.compression),
-			BuildImageLabels(c.drawLabels),
-			BuildImageSize(c.thumbSize),
-		); err != nil {
-			log.Err(err).Msg("building thumb alpha")
-		}
-		if err := thumbAlphaWriter.Close(); err != nil {
-			log.Err(err).Msg("closing thumb alpha writer")
+		if err := writerAlphaThumb.Close(); err != nil {
+			log.Err(err).Msg("closing writer alpha thumb")
 		}
 	}()
 
 	dir := ipfsfiles.NewMapDirectory(map[string]ipfsfiles.Node{
-		"image.png":       ipfsfiles.NewReaderFile(reader),
-		"image_alpha.png": ipfsfiles.NewReaderFile(alphaReader),
-		"thumb.png":       ipfsfiles.NewReaderFile(thumbReader),
-		"thumb_alpha.png": ipfsfiles.NewReaderFile(thumbAlphaReader),
+		"image.png":       ipfsfiles.NewReaderFile(readerThrough),
+		"image_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThrough),
+		"thumb.png":       ipfsfiles.NewReaderFile(readerThumb),
+		"thumb_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThumb),
 	})
 
 	path, err := m.ipfs.Unixfs().Add(
@@ -688,6 +676,19 @@ func percentOriginal(parts []local.Part) float64 {
 		}
 	}
 	return float64(max) / float64(total)
+}
+
+func resizeImage(data io.Reader, size image.Rectangle, to io.Writer) error {
+	i, _, err := image.Decode(data)
+	if err != nil {
+		return err
+	}
+	dst := image.NewRGBA(size)
+	draw.BiLinear.Scale(dst, size, i, i.Bounds(), draw.Over, nil)
+	if err := png.Encode(to, dst); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *Builder) fleets(ctx context.Context) ([]local.Part, error) {
