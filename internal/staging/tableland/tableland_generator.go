@@ -20,7 +20,7 @@ import (
 // TablelandGenerator generates NFT metadata from traits defined in local.db.
 type TablelandGenerator struct {
 	s        local.Store
-	m        *builder.Builder
+	b        *builder.Builder
 	rigCache map[int]local.Rig
 	cacheDir string
 	images   map[string]*staging.Image
@@ -34,7 +34,7 @@ func init() {
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
 	s local.Store,
-	m *builder.Builder,
+	b *builder.Builder,
 	concurrency int,
 	cacheDir string,
 ) (*TablelandGenerator, error) {
@@ -50,7 +50,7 @@ func NewTablelandGenerator(
 
 	return &TablelandGenerator{
 		s:        s,
-		m:        m,
+		b:        b,
 		rigCache: make(map[int]local.Rig),
 		cacheDir: cacheDir,
 		images:   make(map[string]*staging.Image),
@@ -71,7 +71,7 @@ func (g *TablelandGenerator) GenerateMetadata(
 
 	var md []staging.GeneratedMetadata
 	for i := 0; i < count; i++ {
-		rig, err := g.m.BuildData(ctx, builder.BuildRandomData(i, system.NewSystemRandomnessSource()))
+		rig, err := g.b.BuildData(ctx, builder.BuildRandomData(i, system.NewSystemRandomnessSource()))
 		if err != nil {
 			return nil, fmt.Errorf("minting: %v", err)
 		}
@@ -139,7 +139,7 @@ func (g *TablelandGenerator) RenderImage(
 		return fmt.Errorf("no rig cached for id %d", md.ID)
 	}
 
-	return g.m.BuildImage(
+	return g.b.BuildImage(
 		ctx,
 		rig,
 		writer,
