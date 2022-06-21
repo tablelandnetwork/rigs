@@ -320,7 +320,10 @@ func (m *Builder) BuildData(ctx context.Context, opt BuildDataOption) (local.Rig
 		return local.Rig{}, fmt.Errorf("building rig data: %v", err)
 	}
 
-	rig.PercentOriginal = percentOriginal(rig.Parts)
+	rig.PercentOriginal = percentOriginal(rig.Parts, 0)
+	rig.PercentOriginal50 = percentOriginal(rig.Parts, 0.5)
+	rig.PercentOriginal75 = percentOriginal(rig.Parts, 0.75)
+	rig.PercentOriginal90 = percentOriginal(rig.Parts, 0.90)
 	if rig.PercentOriginal == 1 {
 		rig.Original = true
 	}
@@ -681,7 +684,7 @@ func selectPart(parts []local.Part, random float64) (local.Part, error) {
 // 	return float64(max) / float64(total)
 // }
 
-func percentOriginal(parts []local.Part) float64 {
+func percentOriginal(parts []local.Part, bonusFactor float64) float64 {
 	originalColorCounts := make(map[string]map[string]int)
 	total := 0
 	for _, part := range parts {
@@ -710,7 +713,7 @@ func percentOriginal(parts []local.Part) float64 {
 	var bonus float64
 	for color, count := range originalColorCounts[originalWithMax] {
 		if color != maxColor {
-			bonus += float64(count) * 0.8
+			bonus += float64(count) * bonusFactor
 		}
 	}
 

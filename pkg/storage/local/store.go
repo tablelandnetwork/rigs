@@ -48,7 +48,10 @@ const (
 		thumb text,
 		thumb_alpha text,
 		original boolean,
-		percent_original float
+		percent_original float,
+		percent_original_50 float,
+		percent_original_75 float,
+		percent_original_90 float
 	)`
 
 	createRigPartsSQL = `create table rig_parts (
@@ -89,16 +92,19 @@ type Layer struct {
 
 // Rig represents a generated rig.
 type Rig struct {
-	ID              int     `json:"id"`
-	Gateway         string  `json:"gateway"`
-	Images          string  `json:"images"`
-	Image           string  `json:"image"`
-	ImageAlpha      string  `json:"image_alpha" db:"image_alpha"`
-	Thumb           string  `json:"thumb"`
-	ThumbAlpha      string  `json:"thumb_alpha" db:"thumb_alpha"`
-	Original        bool    `json:"original"`
-	PercentOriginal float64 `json:"percent_original" db:"percent_original"`
-	Parts           []Part  `json:"parts"`
+	ID                int     `json:"id"`
+	Gateway           string  `json:"gateway"`
+	Images            string  `json:"images"`
+	Image             string  `json:"image"`
+	ImageAlpha        string  `json:"image_alpha" db:"image_alpha"`
+	Thumb             string  `json:"thumb"`
+	ThumbAlpha        string  `json:"thumb_alpha" db:"thumb_alpha"`
+	Original          bool    `json:"original"`
+	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
+	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
+	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
+	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
+	Parts             []Part  `json:"parts"`
 }
 
 // OriginalRig represents an original rig.
@@ -196,6 +202,9 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 			rig.ThumbAlpha,
 			rig.Original,
 			rig.PercentOriginal,
+			rig.PercentOriginal50,
+			rig.PercentOriginal75,
+			rig.PercentOriginal90,
 		})
 		for _, part := range rig.Parts {
 			partVals = append(partVals, goqu.Vals{rig.ID, part.ID})
@@ -208,7 +217,8 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []Rig) error {
 	}
 
 	insertRigs := tx.Insert("rigs").Cols(
-		"id", "gateway", "images", "image", "image_alpha", "thumb", "thumb_alpha", "original", "percent_original",
+		"id", "gateway", "images", "image", "image_alpha", "thumb", "thumb_alpha", "original",
+		"percent_original", "percent_original_50", "percent_original_75", "percent_original_90",
 	).Vals(rigVals...).Executor()
 	insertParts := tx.Insert("rig_parts").
 		Cols("rig_id", "part_id").
