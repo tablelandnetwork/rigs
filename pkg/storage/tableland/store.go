@@ -3,110 +3,75 @@ package tableland
 import (
 	"context"
 
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
-// Part describes a rig part.
-type Part struct {
-	Fleet    common.NullableString `json:"fleet"`
-	Original common.NullableString `json:"original"`
-	Type     string                `json:"type"`
-	Name     string                `json:"name"`
-	Color    common.NullableString `json:"color"`
+// TableDefinition describes the definition of a table.
+type TableDefinition struct {
+	Prefix string
+	Schema string
 }
 
-// Layer describes an image layer used for rendering a rig.
-type Layer struct {
-	Fleet    string `json:"fleet"`
-	Part     string `json:"part"`
-	Position uint   `json:"position"`
-	Path     string `json:"path"`
-}
-
-// RigAttribute holds rig attribute information.
-type RigAttribute struct {
-	DisplayType string      `json:"display_type,omitempty"`
-	TraitType   string      `json:"trait_type"`
-	Value       interface{} `json:"value"`
-}
-
-// Rig represents a generated rig.
-type Rig struct {
-	ID         int            `json:"id"`
-	Image      string         `json:"image"`
-	Attributes []RigAttribute `json:"attributes"`
-}
-
-// OriginalRig represents an original rig.
-type OriginalRig struct {
-	Fleet string
-	Name  string
-	Color string
-}
-
-// GetPartsConfig holds configuration calls to GetParts.
-type GetPartsConfig struct {
-	Fleet    string
-	Original string
-	Type     string
-	Name     string
-	Color    string
-	OrderBy  string
-}
-
-// GetPartsOption controls the behavior of GetResults.
-type GetPartsOption func(*GetPartsConfig)
-
-// OfFleet filter resusts to the specified fleet.
-func OfFleet(fleet string) GetPartsOption {
-	return func(opts *GetPartsConfig) {
-		opts.Fleet = fleet
+var (
+	// PartsDefinition defines the parts table.
+	PartsDefinition = TableDefinition{
+		Prefix: "test_parts",
+		Schema: `(
+			id integer primary key,
+			fleet text,
+			original text,
+			type text not null,
+			name text not null,
+			color text
+		)`,
 	}
-}
-
-// OfOriginal filter resusts to the specified original.
-func OfOriginal(original string) GetPartsOption {
-	return func(opts *GetPartsConfig) {
-		opts.Original = original
+	// LayersDefinition defines the layers table.
+	LayersDefinition = TableDefinition{
+		Prefix: "test_layers",
+		Schema: `(
+			id integer primary key,
+			fleet text not null,
+			rig_attributes_value text not null,
+			position integer not null,
+			path text not null,
+			unique(fleet,rig_attributes_value,position)
+		)`,
 	}
-}
-
-// OfType filter resusts to the specified type.
-func OfType(t string) GetPartsOption {
-	return func(opts *GetPartsConfig) {
-		opts.Type = t
+	// RigsDefinition defines the rigs table.
+	RigsDefinition = TableDefinition{
+		Prefix: "test_rigs",
+		Schema: `(
+			id integer primary key,
+			image text,
+			image_alpha text,
+			thumb text,
+			thumb_alpha text,
+			animation_url text
+		)`,
 	}
-}
-
-// OfName filter resusts to the specified name.
-func OfName(name string) GetPartsOption {
-	return func(opts *GetPartsConfig) {
-		opts.Name = name
+	// RigAttributesDefinition defines the rig attribes table.
+	// TODO: Value can be integer in SQLite, not sure how to deal with Postgres.
+	RigAttributesDefinition = TableDefinition{
+		Prefix: "test_rig_attributes",
+		Schema: `(
+			rig_id integer,
+			display_type text,
+			trait_type text,
+			value text,
+			primary key(rig_id, trait_type)
+		)`,
 	}
-}
-
-// OfColor filter resusts to the specified color.
-func OfColor(color string) GetPartsOption {
-	return func(opts *GetPartsConfig) {
-		opts.Color = color
-	}
-}
-
-// OrderBy orders results by the specified column.
-func OrderBy(orderBy string) GetPartsOption {
-	return func(opts *GetPartsConfig) {
-		opts.OrderBy = orderBy
-	}
-}
+)
 
 // Store defines a data store interface for rigs.
 type Store interface {
-	CreateTables(context.Context) error
-	InsertParts(context.Context, []Part) error
-	InsertLayers(context.Context, []Layer) error
-	InsertRigs(context.Context, []Rig) error
-	GetOriginalRigs(context.Context) ([]OriginalRig, error)
-	GetPartTypesByFleet(context.Context, string) ([]string, error)
-	GetParts(context.Context, ...GetPartsOption) ([]Part, error)
-	GetLayers(context.Context, string, ...string) ([]Layer, error)
+	CreateTable(context.Context, TableDefinition) (string, error)
+	InsertParts(context.Context, []local.Part) error
+	InsertLayers(context.Context, []local.Layer) error
+	InsertRigs(context.Context, string, []local.Rig) error
+	InsertRigAttributes(context.Context, []local.Rig) error
+	ClearPartsData(context.Context) error
+	ClearLayersData(context.Context) error
+	ClearRigsData(context.Context) error
+	ClearRigAttributesData(context.Context) error
 }

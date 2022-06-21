@@ -10,11 +10,11 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/stretchr/testify/require"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 )
 
 func TestIt(t *testing.T) {
-	s, err := local.NewStore("../../../local.db", false)
+	s, err := impl.NewStore("../../../local.db", false)
 	require.NoError(t, err)
 
 	httpClient := &http.Client{}

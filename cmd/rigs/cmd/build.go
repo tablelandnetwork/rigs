@@ -10,12 +10,14 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
+	"golang.org/x/time/rate"
 )
 
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
-	buildCmd.PersistentFlags().String("db-path", "", "path the the sqlite db file")
+	buildCmd.PersistentFlags().String("local-db-path", "", "path the the sqlite db file")
 	buildCmd.PersistentFlags().String("ipfs-gateway-url", "http://127.0.0.1:8080", "address of the local ipfs gateway")
 	buildCmd.PersistentFlags().Bool("ipfs-pin", true, "whether or not to pin generated images to the local ipfs")
 
@@ -39,35 +41,44 @@ var buildCmd = &cobra.Command{
 }
 
 func build(ctx context.Context) error {
-	s, err := local.NewStore(viper.GetString("db-path"), false)
+	s, err := impl.NewStore(viper.GetString("local-db-path"), false)
 	if err != nil {
 		return fmt.Errorf("error creating sqlite store: %v", err)
 	}
 
 	b := builder.NewBuilder(s, ipfsClient, viper.GetString("ipfs-gateway-url"))
 
-	buildExecFcn := func(opt builder.Option) wpool.ExecutionFn {
+	buildExecFcn := func(opt builder.BuildOption) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			rig, err := b.Build(ctx, opt)
 			return rig, err
 		}
 	}
 
+	var jobs []wpool.Job
+
+	// for i := 1; i <= 1000; i++ {
+	// 	jobs = append(jobs, wpool.Job{
+	// 		ID: wpool.JobID(i),
+	// 		ExecFn: buildExecFcn(
+	// 			builder.BuildRandom(i, system.NewSystemRandomnessSource())),
+	// 	})
+	// }
+
 	originals, err := s.GetOriginalRigs(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting originals: %v", err)
 	}
 
-	var jobs []wpool.Job
 	for i, original := range originals {
 		jobs = append(jobs, wpool.Job{
 			ID: wpool.JobID(i + 1),
 			ExecFn: buildExecFcn(
-				builder.Original(i+1, original, system.NewSystemRandomnessSource())),
+				builder.BuildOriginal(i+1, original, system.NewSystemRandomnessSource())),
 		})
 	}
 
-	pool := wpool.New(10)
+	pool := wpool.New(2, rate.Inf)
 	go pool.GenerateFrom(jobs)
 	go pool.Run(ctx)
 	for {
@@ -81,7 +92,7 @@ func build(ctx context.Context) error {
 				continue
 			}
 			rig := r.Value.(*local.Rig)
-			fmt.Printf("%d. %s\n", rig.ID, rig.Image)
+			fmt.Printf("%d. %s%s\n", rig.ID, rig.Gateway, rig.Image)
 		case <-pool.Done:
 			return nil
 		}
