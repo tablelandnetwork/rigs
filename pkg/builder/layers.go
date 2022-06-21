@@ -15,12 +15,12 @@ import (
 // Layers provides access to the NFT layer images.
 type Layers struct {
 	ipfs  iface.CoreAPI
-	store *local.Store
+	store local.Store
 	cache sync.Map
 }
 
 // NewLayers creates a new Layers.
-func NewLayers(ipfs iface.CoreAPI, store *local.Store) *Layers {
+func NewLayers(ipfs iface.CoreAPI, store local.Store) *Layers {
 	return &Layers{
 		ipfs:  ipfs,
 		store: store,

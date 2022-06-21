@@ -17,6 +17,7 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 )
 
 var parts = []local.Part{}
@@ -34,7 +35,7 @@ var inventoryCmd = cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		s, err := local.NewStore(viper.GetString("local-db-path"), true)
+		s, err := impl.NewStore(viper.GetString("local-db-path"), true)
 		if err != nil {
 			return fmt.Errorf("error creating local store: %v", err)
 		}

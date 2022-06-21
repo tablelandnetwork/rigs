@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 	"golang.org/x/time/rate"
 )
@@ -34,7 +35,7 @@ var dataCmd = &cobra.Command{
 	Short: "push all data to tableland",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		s, err := local.NewStore(viper.GetString("local-db-path"), false)
+		s, err := impl.NewStore(viper.GetString("local-db-path"), false)
 		if err != nil {
 			return fmt.Errorf("error creating local store: %v", err)
 		}
@@ -144,7 +145,7 @@ var dataCmd = &cobra.Command{
 	},
 }
 
-func partsJobs(ctx context.Context, s *local.Store, jobID *int) ([]wpool.Job, error) {
+func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	var hasResults = true
@@ -176,7 +177,7 @@ func partsJobs(ctx context.Context, s *local.Store, jobID *int) ([]wpool.Job, er
 	return jobs, nil
 }
 
-func layersJobs(ctx context.Context, s *local.Store, jobID *int) ([]wpool.Job, error) {
+func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	var hasResults = true
@@ -208,7 +209,7 @@ func layersJobs(ctx context.Context, s *local.Store, jobID *int) ([]wpool.Job, e
 	return jobs, nil
 }
 
-func rigsJobs(ctx context.Context, s *local.Store, jobID *int, gateway string) ([]wpool.Job, error) {
+func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	var hasResults = true

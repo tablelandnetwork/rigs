@@ -1,4 +1,4 @@
-package local
+package impl
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
 func TestStore_CreateTables(t *testing.T) {
@@ -35,7 +36,7 @@ func TestStore_InsertParts(t *testing.T) {
 	err := s.CreateTables(context.Background())
 	require.NoError(t, err)
 
-	parts := []Part{
+	parts := []local.Part{
 		{
 			Fleet: common.NullableString{NullString: sql.NullString{String: "Fleet One", Valid: true}},
 		},
@@ -70,7 +71,7 @@ func TestStore_Parts(t *testing.T) {
 	s, err := NewStore("../../../local.db", false)
 	require.NoError(t, err)
 
-	parts, err := s.Parts(context.Background(), PartsOfColor("Dark"), PartsOfFleet("Titans"))
+	parts, err := s.Parts(context.Background(), local.PartsOfColor("Dark"), local.PartsOfFleet("Titans"))
 	require.NoError(t, err)
 	require.Len(t, parts, 4)
 }
@@ -81,10 +82,10 @@ func TestStore_Layers(t *testing.T) {
 
 	layers, err := s.Layers(
 		context.Background(),
-		LayersOfFleet("Airelights"),
-		LayersForParts(
-			PartNameAndColor{PartName: "Varchar", Color: "Sunset"},
-			PartNameAndColor{PartName: "Alpine 4", Color: "Dark"},
+		local.LayersOfFleet("Airelights"),
+		local.LayersForParts(
+			local.PartNameAndColor{PartName: "Varchar", Color: "Sunset"},
+			local.PartNameAndColor{PartName: "Alpine 4", Color: "Dark"},
 		),
 	)
 	require.NoError(t, err)

@@ -17,7 +17,7 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/logging"
 	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
@@ -43,7 +43,7 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	store, err := local.NewStore("./local.db", false)
+	store, err := impl.NewStore("./local.db", false)
 	if err != nil {
 		log.Fatal().
 			Err(err).

@@ -12,13 +12,14 @@ import (
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 	"golang.org/x/time/rate"
 )
 
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
 
-	s, err := local.NewStore("/Users/aaron/Code/textile/nft-minter/local.db", false)
+	s, err := impl.NewStore("/Users/aaron/Code/textile/nft-minter/local.db", false)
 	require.NoError(t, err)
 
 	httpClient := &http.Client{}

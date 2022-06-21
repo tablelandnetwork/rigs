@@ -119,7 +119,7 @@ type RandomnessSource interface {
 
 // Builder builds Rigs.
 type Builder struct {
-	s      *local.Store
+	s      local.Store
 	layers *Layers
 	ipfs   iface.CoreAPI
 
@@ -134,7 +134,7 @@ type Builder struct {
 
 // NewBuilder creates a Builder.
 func NewBuilder(
-	s *local.Store,
+	s local.Store,
 	ipfs iface.CoreAPI,
 	ipfsGatewayURL string,
 ) *Builder {
@@ -263,11 +263,6 @@ func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, e
 		return nil, fmt.Errorf("inserting rigs: %v", err)
 	}
 
-	rigImage := local.RigImage{RigID: rig.ID, IpfsPath: path.String()}
-	if err := m.s.InsertRigImages(ctx, []local.RigImage{rigImage}); err != nil {
-		return nil, fmt.Errorf("inserting rig images: %v", err)
-	}
-
 	return &rig, nil
 }
 
@@ -379,6 +374,10 @@ func (m *Builder) buildRandomData(
 		rig.Parts = append(rig.Parts, part)
 	}
 
+	if percentOriginal(rig.Parts, 0) == 1 {
+		log.Info().Msg("randomly generated original, ignoring and retrying")
+		return m.buildRandomData(ctx, id, rs)
+	}
 	return rig, nil
 }
 

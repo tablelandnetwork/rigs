@@ -19,7 +19,7 @@ import (
 
 // TablelandGenerator generates NFT metadata from traits defined in local.db.
 type TablelandGenerator struct {
-	s        *local.Store
+	s        local.Store
 	m        *builder.Builder
 	rigCache map[int]local.Rig
 	cacheDir string
@@ -33,7 +33,7 @@ func init() {
 
 // NewTablelandGenerator returns a new SQLiteGenerator.
 func NewTablelandGenerator(
-	s *local.Store,
+	s local.Store,
 	m *builder.Builder,
 	concurrency int,
 	cacheDir string,
