@@ -57,13 +57,13 @@ func build(ctx context.Context) error {
 
 	var jobs []wpool.Job
 
-	// for i := 1; i <= 1000; i++ {
-	// 	jobs = append(jobs, wpool.Job{
-	// 		ID: wpool.JobID(i),
-	// 		ExecFn: buildExecFcn(
-	// 			builder.BuildRandom(i, system.NewSystemRandomnessSource())),
-	// 	})
-	// }
+	for i := 1; i <= 200; i++ {
+		jobs = append(jobs, wpool.Job{
+			ID: wpool.JobID(i),
+			ExecFn: buildExecFcn(
+				builder.BuildRandom(i, system.NewSystemRandomnessSource())),
+		})
+	}
 
 	originals, err := s.GetOriginalRigs(ctx)
 	if err != nil {
@@ -72,9 +72,9 @@ func build(ctx context.Context) error {
 
 	for i, original := range originals {
 		jobs = append(jobs, wpool.Job{
-			ID: wpool.JobID(i + 1),
+			ID: wpool.JobID(i + 1 + 200),
 			ExecFn: buildExecFcn(
-				builder.BuildOriginal(i+1, original, system.NewSystemRandomnessSource())),
+				builder.BuildOriginal(i+1+200, original, system.NewSystemRandomnessSource())),
 		})
 	}
 

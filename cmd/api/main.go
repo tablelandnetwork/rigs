@@ -57,11 +57,11 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	minter := builder.NewBuilder(store, ipfs, config.IPFS.GatewayURL)
+	builder := builder.NewBuilder(store, ipfs, config.IPFS.GatewayURL)
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,
-		minter,
+		builder,
 		config.Render.Concurrency,
 		config.Render.CacheDir,
 	)
@@ -79,6 +79,7 @@ func main() {
 			Msg("could not setup generator")
 	}
 	stagingController := controllers.NewStagingController(stagingService)
+	localController := controllers.NewLocalControlelr(store)
 
 	// General router configuration.
 	router := newRouter()
@@ -90,9 +91,13 @@ func main() {
 		basicAuth := middlewares.BasicAuth(config.Admin.Username, config.Admin.Password)
 		middleware = append(middleware, basicAuth)
 	}
-	middleware = append(middleware, middlewares.OtelHTTP("GenerateMetadata"))
-	router.Get("/generate", stagingController.GenerateMetadata, middleware...)
+	router.Get(
+		"/generate",
+		stagingController.GenerateMetadata,
+		append(middleware, middlewares.OtelHTTP("GenerateMetadata"))...,
+	)
 	router.Get("/render", stagingController.RenderImage, middlewares.OtelHTTP("RenderImage"))
+	router.Get("/rigs", localController.Rigs, append(middleware, middlewares.OtelHTTP("Rigs"))...)
 
 	// Health endpoint configuration.
 	router.Get("/healthz", healthHandler)
