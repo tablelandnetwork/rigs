@@ -40,7 +40,13 @@ svg.spinner {
     will-change: filter;
     opacity: 0;
 }
+
 .v-lazy-image-loaded {
     filter: blur(0);
     opacity: 1;
+}
+
+.v-lazy-image.original {
+    border-width: 7px;
+    border-color: #b7556b
 }
