@@ -6,6 +6,7 @@ import "erc721a/contracts/extensions/ERC721AQueryable.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "./ITablelandRigs.sol";
+import "./utils/Strings.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -43,6 +44,28 @@ contract TablelandRigs is
      */
     function _baseURI() internal view override returns (string memory) {
         return _baseURIString;
+    }
+
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+
+        strings.slice memory suffix = strings.toSlice(_baseURI());
+        strings.slice memory prefix;
+
+        strings.split(suffix, strings.toSlice("{id}"), prefix);
+
+        string memory uri = strings.concat(prefix, strings.toSlice(_toString(tokenId)));
+        uri = strings.concat(strings.toSlice(uri), suffix);
+
+        return uri;
     }
 
     /**

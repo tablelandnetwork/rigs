@@ -1,0 +1,117 @@
+// // SPDX-License-Identifier: MIT
+// pragma solidity ^0.8.4;
+
+// import "erc721a/contracts/ERC721A.sol";
+// import "erc721a/contracts/extensions/ERC721AQueryable.sol";
+// import "@openzeppelin/contracts/access/Ownable.sol";
+// import "@openzeppelin/contracts/security/Pausable.sol";
+// // import "@divergencetech/ethier/contracts/sales/FixedPriceSeller.sol";
+// // import "@openzeppelin/contracts/token/common/ERC2981.sol";
+// import "./ITablelandRigs.sol";
+
+// /**
+//  * @dev Implementation of {ITablelandRigs}.
+//  */
+// contract TablelandRigs is
+//     ITablelandRigs,
+//     ERC721A,
+//     ERC721AQueryable,
+//     Ownable,
+//     Pausable
+// {
+//     // A URI used to reference off-chain metadata.
+//     string private _baseURIString;
+
+//     constructor(
+//         string memory baseURI
+//         // address payable beneficiary,
+//         // address payable royaltyReceiver
+//     )
+//         ERC721A("Tableland Rigs", "RIG")
+//         // FixedPriceSeller(
+//         //     0.05 ether,
+//         //     Seller.SellerConfig({
+//         //         totalInventory: 3_000,
+//         //         maxPerAddress: 0,
+//         //         maxPerTx: 0,
+//         //         freeQuota: 0,
+//         //         reserveFreeQuota: true,
+//         //         lockFreeQuota: true,
+//         //         lockTotalInventory: true
+//         //     }),
+//         //     beneficiary
+//         // )
+//     {
+//         _baseURIString = baseURI;
+//         // _setDefaultRoyalty(royaltyReceiver, 500);
+//     }
+
+//     /**
+//      * @dev See {ITablelandRigs-mint}.
+//      */
+//     function mint(uint256 quantity) external payable override whenNotPaused {
+//         _safeMint(_msgSenderERC721A(), quantity);
+//     }
+
+//     // function _handlePurchase(
+//     //     address to,
+//     //     uint256 n,
+//     //     bool freeOfCharge
+//     // ) internal override {
+
+//     // }
+
+//     /**
+//      * @dev See {ITablelandRigs-setBaseURI}.
+//      */
+//     function setBaseURI(string memory baseURI) external override onlyOwner {
+//         _baseURIString = baseURI;
+//     }
+
+//     /**
+//      * @dev See {ERC721A-_baseURI}.
+//      */
+//     function _baseURI() internal view override returns (string memory) {
+//         return _baseURIString;
+//     }
+
+//     /**
+//      * @dev See {ITablelandRigs-pause}.
+//      */
+//     function pause() external override onlyOwner {
+//         _pause();
+//     }
+
+//     /**
+//      * @dev See {ITablelandRigs-unpause}.
+//      */
+//     function unpause() external override onlyOwner {
+//         _unpause();
+//     }
+
+//     /**
+//      * @dev See {ERC721A-_startTokenId}.
+//      */
+//     function _startTokenId() internal pure override returns (uint256) {
+//         return 1;
+//     }
+
+//     // /**
+//     // @notice Sets the contract-wide royalty info.
+//     //  */
+//     // function setRoyaltyInfo(address receiver, uint96 feeBasisPoints)
+//     //     external
+//     //     onlyOwner
+//     // {
+//     //     _setDefaultRoyalty(receiver, feeBasisPoints);
+//     // }
+
+//     // function supportsInterface(bytes4 interfaceId)
+//     //     public
+//     //     view
+//     //     override(ERC2981)
+//     //     returns (bool)
+//     // {
+//     //     return super.supportsInterface(interfaceId);
+//     // }
+// }
