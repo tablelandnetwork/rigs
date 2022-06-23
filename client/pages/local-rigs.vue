@@ -170,15 +170,11 @@ export default {
     },
 
     openRig: function (rig) {
-      // const routeData = this.$router.resolve({
-      //   name: 'local-rig',
-      //   query: { rig: JSON.stringify(rig) }
-      // });
-      // window.open(routeData.href, '_blank');
-      this.$router.push({
+      const routeData = this.$router.resolve({
         name: 'local-rig',
         query: { rig: JSON.stringify(rig) }
       });
+      window.open(routeData.href, '_blank');
     }
   }
 };
