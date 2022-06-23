@@ -25,7 +25,7 @@ async function main() {
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     deployment
   );
-  const tx = await rigs.setBaseURI(baseURI);
+  const tx = await rigs.setURITemplate(baseURI);
   const receipt = await tx.wait();
   console.log(`base URI set with tx '${receipt.transactionHash}'`);
 }

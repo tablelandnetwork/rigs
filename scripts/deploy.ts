@@ -1,5 +1,6 @@
 import { ethers, network, baseURI, deployment } from "hardhat";
-import type { TablelandRigs } from "../typechain-types";
+import { BigNumber, utils } from "ethers";
+import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
 
 async function main() {
   console.log(`\nDeploying to '${network.name}'...`);
@@ -22,11 +23,29 @@ async function main() {
   }
 
   // Deploy
-  const Factory = await ethers.getContractFactory("TablelandRigs");
-  const rigs = (await Factory.deploy(baseURI)) as TablelandRigs;
+  const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");
+  const splitter = (await SplitterFactory.deploy(
+    [
+      "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F",
+      "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65",
+    ],
+    [20, 80]
+  )) as PaymentSplitter;
+  await splitter.deployed();
+
+  console.log("New splitter address:", splitter.address);
+
+  const RigsFactory = await ethers.getContractFactory("TablelandRigs");
+  const rigs = (await RigsFactory.deploy(
+    BigNumber.from(1000),
+    utils.parseEther("0.05"),
+    baseURI,
+    "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe",
+    splitter.address
+  )) as TablelandRigs;
   await rigs.deployed();
 
-  console.log("New address:", rigs.address);
+  console.log("New rigs address:", rigs.address);
 
   // Warn that address needs to be saved in config
   console.warn(

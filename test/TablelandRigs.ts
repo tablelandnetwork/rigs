@@ -1,9 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
-import { TablelandRigs } from "../typechain-types/index";
+import { PaymentSplitter, TablelandRigs } from "../typechain-types";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -12,21 +12,37 @@ const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
 describe("Rigs", function () {
   let rigs: TablelandRigs;
+  let splitter: PaymentSplitter;
   let accounts: SignerWithAddress[];
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
-    const Factory = await ethers.getContractFactory("TablelandRigs");
-    rigs = await Factory.deploy(
-      "https://staging.tableland.network/query?s=select%20json_build_object(%27name%27%2C%20concat(%27%23%27%2C%20id)%2C%20%27external_url%27%2C%20concat(%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%2C%20id)%2C%20%27image%27%2C%20image%2C%20%27image_alpha%27%2C%20image_alpha%2C%20%27thumb%27%2C%20thumb%2C%20%27thumb_alpha%27%2C%20thumb_alpha%2C%20%27attributes%27%2C%20%20json_agg(json_build_object(%27display_type%27%2C%20display_type%2C%20%27trait_type%27%2C%20trait_type%2C%20%27value%27%2C%20value)))%20from%20test_rigs_69_5%20join%20test_rig_attributes_69_6%20on%20test_rigs_69_5.id%20%3D%20test_rig_attributes_69_6.rig_id%20where%20id%20%3D%20{id}%20group%20by%20id%3B&mode=list"
+
+    const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");
+    splitter = (await SplitterFactory.deploy(
+      [accounts[2].address, accounts[3].address],
+      [20, 80]
+    )) as PaymentSplitter;
+    await splitter.deployed();
+
+    const RigsFactory = await ethers.getContractFactory("TablelandRigs");
+    rigs = await RigsFactory.deploy(
+      BigNumber.from(3000),
+      utils.parseEther("0.05"),
+      "https://foo.xyz/{id}/bar",
+      accounts[1].address,
+      splitter.address
     );
     await rigs.deployed();
   });
 
-  it("Should mint a single rig", async function () {
+  it.only("Should mint a single rig", async function () {
     const minter = accounts[4];
-    const tx = await rigs.connect(minter).mint(1);
+    const tx = await rigs
+      .connect(minter)
+      .mint(1, { value: utils.parseEther("0.06") });
     const receipt = await tx.wait();
+    console.log(receipt.events);
     const [event] = receipt.events ?? [];
 
     // check transfer event
@@ -73,8 +89,8 @@ describe("Rigs", function () {
     expect(totalSupply).to.equal(BigNumber.from(3));
   });
 
-  it("Should udpate the base URI", async function () {
-    let tx = await rigs.setBaseURI("https://fake.com/");
+  it("Should udpate the URI template", async function () {
+    let tx = await rigs.setURITemplate("https://fake.com/");
     await tx.wait();
 
     const minter = accounts[6];
@@ -107,7 +123,9 @@ describe("Rigs", function () {
 
   it.only("Should return token URI for a token", async function () {
     const minter = accounts[7];
-    const tx = await rigs.connect(minter).mint(1);
+    const tx = await rigs
+      .connect(minter)
+      .mint(1, { value: utils.parseEther("0.06") });
     const receipt = await tx.wait();
     const [event] = receipt.events ?? [];
     const tokenId = event.args?.tokenId;

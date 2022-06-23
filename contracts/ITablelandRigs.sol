@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity >=0.8.10 <0.9.0;
 
 /**
  * @dev Interface of a TablelandRigs compliant contract.
@@ -17,15 +17,15 @@ interface ITablelandRigs {
     function mint(uint256 quantity) external payable;
 
     /**
-     * @dev Sets the contract base URI.
+     * @dev Sets the contract URI template.
      *
-     * baseURI - the new base URI
+     * uriTemplate - the new URI template
      *
      * Requirements:
      *
      * - `msg.sender` must be contract owner
      */
-    function setBaseURI(string memory baseURI) external;
+    function setURITemplate(string memory uriTemplate) external;
 
     /**
      * @dev Pauses the contract.
