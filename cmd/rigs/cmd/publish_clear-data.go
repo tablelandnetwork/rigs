@@ -25,16 +25,15 @@ var clearDataCmd = &cobra.Command{
 				if err := clearDataFn(ctx); err != nil {
 					return nil, fmt.Errorf("clearing data from table: %v", err)
 				}
-				fmt.Println("table cleared")
 				return nil, nil
 			}
 		}
 
 		jobs := []wpool.Job{
-			{ID: 1, ExecFn: clearDataExecFn(store.ClearPartsData)},
-			{ID: 2, ExecFn: clearDataExecFn(store.ClearLayersData)},
-			{ID: 3, ExecFn: clearDataExecFn(store.ClearRigsData)},
-			{ID: 4, ExecFn: clearDataExecFn(store.ClearRigAttributesData)},
+			{ID: 1, ExecFn: clearDataExecFn(store.ClearPartsData), Desc: "parts"},
+			{ID: 2, ExecFn: clearDataExecFn(store.ClearLayersData), Desc: "layers"},
+			{ID: 3, ExecFn: clearDataExecFn(store.ClearRigsData), Desc: "rigs"},
+			{ID: 4, ExecFn: clearDataExecFn(store.ClearRigAttributesData), Desc: "rig attributes"},
 		}
 
 		pool := wpool.New(4, rate.Every(time.Millisecond*100))
@@ -50,6 +49,7 @@ var clearDataCmd = &cobra.Command{
 					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
 					continue
 				}
+				fmt.Printf("cleared table %s\n", r.Desc)
 			case <-pool.Done:
 				fmt.Println("Ok done")
 				return nil

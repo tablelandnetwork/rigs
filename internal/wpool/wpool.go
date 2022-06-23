@@ -17,6 +17,7 @@ type ExecutionFn func(ctx context.Context) (interface{}, error)
 // Result is the result of running a Job.
 type Result struct {
 	ID    JobID
+	Desc  string
 	Value interface{}
 	Err   error
 }
@@ -25,20 +26,23 @@ type Result struct {
 type Job struct {
 	ID     JobID
 	ExecFn ExecutionFn
+	Desc   string
 }
 
 func (j Job) execute(ctx context.Context) Result {
 	value, err := j.ExecFn(ctx)
 	if err != nil {
 		return Result{
-			ID:  j.ID,
-			Err: err,
+			ID:   j.ID,
+			Err:  err,
+			Desc: j.Desc,
 		}
 	}
 
 	return Result{
 		ID:    j.ID,
 		Value: value,
+		Desc:  j.Desc,
 	}
 }
 

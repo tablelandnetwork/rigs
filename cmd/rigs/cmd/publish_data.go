@@ -3,17 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
-	httpapi "github.com/ipfs/go-ipfs-http-client"
-	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
-	"github.com/tablelandnetwork/nft-minter/pkg/util"
 	"golang.org/x/time/rate"
 )
 
@@ -62,10 +58,6 @@ var dataCmd = &cobra.Command{
 			return fmt.Errorf("generating rigs jobs: %v", err)
 		}
 
-		_ = partsJobs
-		_ = layersJobs
-		_ = rigsJobs
-
 		var jobs []wpool.Job
 		jobs = append(jobs, partsJobs...)
 		jobs = append(jobs, layersJobs...)
@@ -85,60 +77,10 @@ var dataCmd = &cobra.Command{
 					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
 					continue
 				}
+				fmt.Printf("processed job %d. %s\n", r.ID, r.Desc)
 			case <-pool.Done:
 				fmt.Println("done")
 				break Loop
-			}
-		}
-
-		httpClient := &http.Client{}
-		remoteIpfs, err := httpapi.NewURLApiWithClient(viper.GetString("remote-ipfs-api-url"), httpClient)
-		if err != nil {
-			return fmt.Errorf("error creating ipfs client: %v", err)
-		}
-		user := viper.GetString("remote-ipfs-api-user")
-		pass := viper.GetString("remote-ipfs-api-pass")
-		remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(user, pass))
-
-		rigs, err := s.Rigs(ctx)
-		if err != nil {
-			return fmt.Errorf("error getting rigs: %v", err)
-		}
-		var pinJobs []wpool.Job
-		execFcn := func(path ipfspath.Path, desc string) wpool.ExecutionFn {
-			return func(ctx context.Context) (interface{}, error) {
-				if err := remoteIpfs.Pin().Add(ctx, path); err != nil {
-					return nil, fmt.Errorf("adding pin: %v", err)
-				}
-				fmt.Printf("pinned %s\n", desc)
-				return nil, nil
-			}
-		}
-		for i, rig := range rigs {
-			path := ipfspath.New(rig.Images)
-			pinJobs = append(
-				pinJobs,
-				wpool.Job{ID: wpool.JobID(i), ExecFn: execFcn(path, fmt.Sprintf("%d, %s", rig.ID, rig.Images))},
-			)
-		}
-
-		pool2 := wpool.New(10, rate.Every(time.Millisecond*200))
-		go pool2.GenerateFrom(pinJobs)
-		go pool2.Run(ctx)
-	Loop2:
-		for {
-			select {
-			case r, ok := <-pool2.Results():
-				if !ok {
-					continue
-				}
-				if r.Err != nil {
-					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
-					continue
-				}
-			case <-pool2.Done:
-				fmt.Println("done")
-				break Loop2
 			}
 		}
 		return nil
@@ -148,28 +90,25 @@ var dataCmd = &cobra.Command{
 func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
-	var hasResults = true
-	execFn := func(parts []local.Part, desc string) wpool.ExecutionFn {
+	execFn := func(parts []local.Part) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			if err := store.InsertParts(ctx, parts); err != nil {
-				return nil, fmt.Errorf("calling insert parts for %s: %v", desc, err)
+				return nil, fmt.Errorf("calling insert parts: %v", err)
 			}
-			fmt.Printf("inserted parts batch %s\n", desc)
 			return nil, nil
 		}
 	}
-	for hasResults {
+	for {
 		parts, err := s.Parts(ctx, local.PartsWithLimit(partsPageSize), local.PartsWithOffset(offset))
 		if err != nil {
 			return nil, fmt.Errorf("getting parts: %v", err)
 		}
 		if len(parts) == 0 {
-			hasResults = false
-			continue
+			break
 		}
 		jobs = append(
 			jobs,
-			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: execFn(parts, fmt.Sprintf("offset %d", offset))},
+			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: execFn(parts), Desc: fmt.Sprintf("parts with offset %d", offset)},
 		)
 		*jobID++
 		offset += partsPageSize
@@ -180,28 +119,25 @@ func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
-	var hasResults = true
-	execFn := func(layers []local.Layer, desc string) wpool.ExecutionFn {
+	execFn := func(layers []local.Layer) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			if err := store.InsertLayers(ctx, layers); err != nil {
-				return nil, fmt.Errorf("calling insert layers for %s: %v", desc, err)
+				return nil, fmt.Errorf("calling insert layers: %v", err)
 			}
-			fmt.Printf("inserted layers batch %s\n", desc)
 			return nil, nil
 		}
 	}
-	for hasResults {
+	for {
 		layers, err := s.Layers(ctx, local.LayersWithLimit(layersPageSize), local.LayersWithOffset(offset))
 		if err != nil {
 			return nil, fmt.Errorf("getting layers: %v", err)
 		}
 		if len(layers) == 0 {
-			hasResults = false
-			continue
+			break
 		}
 		jobs = append(
 			jobs,
-			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: execFn(layers, fmt.Sprintf("offset %d", offset))},
+			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: execFn(layers), Desc: fmt.Sprintf("layers with offset %d", offset)},
 		)
 		*jobID++
 		offset += layersPageSize
@@ -212,39 +148,39 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, er
 func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
-	var hasResults = true
-	rigsExecFn := func(rigs []local.Rig, desc string) wpool.ExecutionFn {
+	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			if err := store.InsertRigs(ctx, gateway, rigs); err != nil {
-				return nil, fmt.Errorf("calling insert rigs for %s: %v", desc, err)
+				return nil, fmt.Errorf("calling insert rigs: %v", err)
 			}
-			fmt.Printf("inserted rigs batch %s\n", desc)
 			return nil, nil
 		}
 	}
-	rigAttrsExecFn := func(rigs []local.Rig, desc string) wpool.ExecutionFn {
+	rigAttrsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			if err := store.InsertRigAttributes(ctx, rigs); err != nil {
-				return nil, fmt.Errorf("calling insert rig attrs for %s: %v", desc, err)
+				return nil, fmt.Errorf("calling insert rig attrs: %v", err)
 			}
-			fmt.Printf("inserted rig attrs batch %s\n", desc)
 			return nil, nil
 		}
 	}
-	for hasResults {
+	for {
 		rigs, err := s.Rigs(ctx, local.RigsWithLimit(rigsPageSize), local.RigsWithOffset(offset))
 		if err != nil {
 			return nil, fmt.Errorf("getting rigs: %v", err)
 		}
 		if len(rigs) == 0 {
-			hasResults = false
-			continue
+			break
 		}
 
 		jobs = append(
 			jobs,
-			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: rigsExecFn(rigs, fmt.Sprintf("offset %d", offset))},
-			wpool.Job{ID: wpool.JobID(*jobID + 1), ExecFn: rigAttrsExecFn(rigs, fmt.Sprintf("offset %d", offset))},
+			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: rigsExecFn(rigs), Desc: fmt.Sprintf("rigs with offset %d", offset)},
+			wpool.Job{
+				ID:     wpool.JobID(*jobID + 1),
+				ExecFn: rigAttrsExecFn(rigs),
+				Desc:   fmt.Sprintf("rig attrs offset %d", offset),
+			},
 		)
 		*jobID += 2
 		offset += rigsPageSize
