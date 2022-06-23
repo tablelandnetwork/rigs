@@ -1,21 +1,29 @@
 package cmd
 
 import (
-	"fmt"
+	"net/http"
 	"time"
 
+	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	storage "github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/tableland"
+	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
-var store storage.Store
+var (
+	remoteIpfs *httpapi.HttpApi
+	store      storage.Store
+)
 
 func init() {
 	rootCmd.AddCommand(publishCmd)
 
+	publishCmd.PersistentFlags().String("remote-ipfs-api-url", "", "ipfs api url used for remotely pinning data")
+	publishCmd.PersistentFlags().String("remote-ipfs-api-user", "", "auth user for remote ipfs api")
+	publishCmd.PersistentFlags().String("remote-ipfs-api-pass", "", "auth pass for remote ipfs api")
 	publishCmd.PersistentFlags().Bool(
 		"to-tableland",
 		false,
@@ -30,14 +38,20 @@ func init() {
 
 var publishCmd = &cobra.Command{
 	Use:   "publish",
-	Short: "push rigs data to tableland",
-	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := rootCmd.PersistentPreRunE(cmd, args); err != nil {
-			return fmt.Errorf("running root cmd persistent pre run: %v", err)
-		}
-		if err := viper.BindPFlags(cmd.Flags()); err != nil {
-			return fmt.Errorf("error binding flags: %v", err)
-		}
+	Short: "Push rigs data to tableland and remote IPFS",
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		rootCmd.PersistentPreRun(cmd, args)
+		checkErr(viper.BindPFlags(cmd.Flags()))
+
+		var err error
+
+		httpClient := &http.Client{}
+		remoteIpfs, err = httpapi.NewURLApiWithClient(viper.GetString("remote-ipfs-api-url"), httpClient)
+		checkErr(err)
+		user := viper.GetString("remote-ipfs-api-user")
+		pass := viper.GetString("remote-ipfs-api-pass")
+		remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(user, pass))
+
 		if viper.GetBool("to-tableland") {
 			store = tableland.NewStore(tableland.Config{
 				TblClient:              tblClient,
@@ -50,13 +64,7 @@ var publishCmd = &cobra.Command{
 		} else {
 			var err error
 			store, err = sqlite.NewStore(viper.GetString("tbl-db-path"), cmd.Use == "schema")
-			if err != nil {
-				return fmt.Errorf("creating tableland store: %v", err)
-			}
+			checkErr(err)
 		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return nil
 	},
 }

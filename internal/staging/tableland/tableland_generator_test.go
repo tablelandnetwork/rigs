@@ -2,6 +2,7 @@ package tableland
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -14,7 +15,10 @@ import (
 )
 
 func TestIt(t *testing.T) {
-	s, err := impl.NewStore("../../../local.db", false)
+	db, err := sql.Open("sqlite3", "../../../local.db")
+	require.NoError(t, err)
+	defer db.Close()
+	s, err := impl.NewStore(context.Background(), db)
 	require.NoError(t, err)
 
 	httpClient := &http.Client{}

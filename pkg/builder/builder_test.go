@@ -2,6 +2,7 @@ package builder
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"testing"
@@ -19,7 +20,11 @@ import (
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
 
-	s, err := impl.NewStore("/Users/aaron/Code/textile/nft-minter/local.db", false)
+	db, err := sql.Open("sqlite3", "/Users/aaron/Code/textile/nft-minter/local.db")
+	require.NoError(t, err)
+	defer db.Close()
+
+	s, err := impl.NewStore(ctx, db)
 	require.NoError(t, err)
 
 	httpClient := &http.Client{}

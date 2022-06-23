@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 	"golang.org/x/time/rate"
 )
 
@@ -22,41 +21,25 @@ const (
 func init() {
 	publishCmd.AddCommand(dataCmd)
 
-	dataCmd.Flags().String("local-db-path", "", "path the the sqlite db file")
 	dataCmd.Flags().String("remote-ipfs-gateway-url", "", "url of the gateway to use for nft image metadata")
 }
 
 var dataCmd = &cobra.Command{
 	Use:   "data",
-	Short: "push all data to tableland",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Short: "Push all data to tableland",
+	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		s, err := impl.NewStore(viper.GetString("local-db-path"), false)
-		if err != nil {
-			return fmt.Errorf("error creating local store: %v", err)
-		}
-		defer func() {
-			if err := s.Close(); err != nil {
-				fmt.Println("closing store")
-			}
-		}()
 
 		jobID := 1
 
-		partsJobs, err := partsJobs(ctx, s, &jobID)
-		if err != nil {
-			return fmt.Errorf("generating parts jobs: %v", err)
-		}
+		partsJobs, err := partsJobs(ctx, localStore, &jobID)
+		checkErr(err)
 
-		layersJobs, err := layersJobs(ctx, s, &jobID)
-		if err != nil {
-			return fmt.Errorf("generating layers jobs: %v", err)
-		}
+		layersJobs, err := layersJobs(ctx, localStore, &jobID)
+		checkErr(err)
 
-		rigsJobs, err := rigsJobs(ctx, s, &jobID, viper.GetString("remote-ipfs-gateway-url"))
-		if err != nil {
-			return fmt.Errorf("generating rigs jobs: %v", err)
-		}
+		rigsJobs, err := rigsJobs(ctx, localStore, &jobID, viper.GetString("remote-ipfs-gateway-url"))
+		checkErr(err)
 
 		var jobs []wpool.Job
 		jobs = append(jobs, partsJobs...)
@@ -83,7 +66,6 @@ var dataCmd = &cobra.Command{
 				break Loop
 			}
 		}
-		return nil
 	},
 }
 

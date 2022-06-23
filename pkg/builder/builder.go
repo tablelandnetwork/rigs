@@ -35,7 +35,6 @@ var (
 		thumbSize:   400,
 		compression: png.DefaultCompression,
 		drawLabels:  false,
-		pin:         false,
 	}
 	defaultBuildImageConfig = buildImageConfig{
 		size:        1200,
@@ -50,7 +49,6 @@ type buildConfig struct {
 	thumbSize   int
 	compression png.CompressionLevel
 	drawLabels  bool
-	pin         bool
 	id          int
 	original    *local.OriginalRig
 	randomness  RandomnessSource
@@ -84,13 +82,6 @@ func BuildCompression(level png.CompressionLevel) BuildOption {
 func BuildLabels(drawLabels bool) BuildOption {
 	return func(c *buildConfig) {
 		c.drawLabels = drawLabels
-	}
-}
-
-// BuildPin controls wheterh or not to pin the created image in IPFS.
-func BuildPin(pin bool) BuildOption {
-	return func(c *buildConfig) {
-		c.pin = pin
 	}
 }
 
@@ -242,7 +233,7 @@ func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, e
 	path, err := m.ipfs.Unixfs().Add(
 		ctx,
 		dir,
-		options.Unixfs.Pin(c.pin),
+		options.Unixfs.Pin(true),
 		options.Unixfs.CidVersion(1),
 	)
 	if err != nil {
@@ -257,9 +248,7 @@ func (m *Builder) Build(ctx context.Context, opts ...BuildOption) (*local.Rig, e
 	rig.ThumbAlpha = path.String() + "/thumb_alpha.png"
 
 	if err := m.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
-		if c.pin {
-			m.unpinPath(ctx, path)
-		}
+		m.unpinPath(ctx, path)
 		return nil, fmt.Errorf("inserting rigs: %v", err)
 	}
 

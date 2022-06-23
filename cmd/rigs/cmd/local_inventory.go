@@ -11,67 +11,41 @@ import (
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 	core "github.com/ipfs/interface-go-ipfs-core"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 )
 
 var parts = []local.Part{}
 var layers = []local.Layer{}
 
 func init() {
-	rootCmd.AddCommand(&inventoryCmd)
+	localCmd.AddCommand(inventoryCmd)
 
-	inventoryCmd.Flags().String("local-db-path", "", "path the the sqlite db file")
+	inventoryCmd.Flags().String("ipfs-layers-path", "", "ipfs path to the rigs layers images")
 }
 
-var inventoryCmd = cobra.Command{
+var inventoryCmd = &cobra.Command{
 	Use:   "inventory",
-	Short: "populate the parts and layers tables from ipfs layers",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Short: "Populate the parts and layers tables from ipfs layers",
+	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		s, err := impl.NewStore(viper.GetString("local-db-path"), true)
-		if err != nil {
-			return fmt.Errorf("error creating local store: %v", err)
-		}
-		defer func() {
-			if err := s.Close(); err != nil {
-				log.Err(err).Msg("closing store")
-			}
-		}()
-
-		if err := s.CreateTables(ctx); err != nil {
-			return fmt.Errorf("error creating tables: %v", err)
-		}
+		checkErr(localStore.Reset(ctx))
 
 		lcid, err := cid.Parse(viper.GetString("ipfs-layers-path"))
-		if err != nil {
-			return fmt.Errorf("error parsing layers path: %v", err)
-		}
+		checkErr(err)
 
 		rootNode, err := ipfsClient.Dag().Get(ctx, lcid)
-		if err != nil {
-			return fmt.Errorf("error getting node to read: %v", err)
-		}
+		checkErr(err)
 
-		if err := processRootNode(ctx, ipfsClient, rootNode); err != nil {
-			return fmt.Errorf("error processing root directory: %v", err)
-		}
+		checkErr(processRootNode(ctx, ipfsClient, rootNode))
 
-		if err := s.InsertParts(ctx, parts); err != nil {
-			return fmt.Errorf("error inserting parts: %v", err)
-		}
+		checkErr(localStore.InsertParts(ctx, parts))
 
-		if err := s.InsertLayers(ctx, layers); err != nil {
-			return fmt.Errorf("error inserting layers: %v", err)
-		}
-
-		return nil
+		checkErr(localStore.InsertLayers(ctx, layers))
 	},
 }
 

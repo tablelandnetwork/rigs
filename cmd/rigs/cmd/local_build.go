@@ -14,59 +14,45 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
 	"golang.org/x/time/rate"
 )
 
 func init() {
-	rootCmd.AddCommand(buildCmd)
+	localCmd.AddCommand(buildCmd)
 
-	buildCmd.PersistentFlags().String("local-db-path", "", "path the the sqlite db file")
 	buildCmd.PersistentFlags().String("ipfs-gateway-url", "http://127.0.0.1:8080", "address of the local ipfs gateway")
-	buildCmd.PersistentFlags().Bool("ipfs-pin", true, "whether or not to pin generated images to the local ipfs")
 
 	buildCmd.Flags().Bool("no-originals", false, "don't include the originals")
 	buildCmd.Flags().Int("size", 1200, "width and height of generated images")
 	buildCmd.Flags().Int("thumb-size", 600, "width and height of generated thumb images")
 	buildCmd.Flags().Bool("labels", false, "render metadata labels on generated images")
-	buildCmd.Flags().Bool("ipfs-pin", true, "whether or not to pin the generated images to the local ipfs node")
 	buildCmd.Flags().Int("concurrency", 2, "how many concurrent workers used for generating rigs")
 }
 
 var buildCmd = &cobra.Command{
 	Use:   "build count",
-	Short: "builds rig data and imagery",
+	Short: "Builds rig data and imagery",
 	Args:  cobra.ExactArgs(1),
-	PreRunE: func(cmd *cobra.Command, args []string) error {
-		if err := viper.BindPFlags(cmd.Flags()); err != nil {
-			return fmt.Errorf("error binding flags: %v", err)
-		}
-		return nil
+	PreRun: func(cmd *cobra.Command, args []string) {
+		checkErr(viper.BindPFlags(cmd.Flags()))
 	},
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
 		count, err := strconv.Atoi(args[0])
-		if err != nil {
-			return fmt.Errorf("error parsing count arg: %v", err)
-		}
+		checkErr(err)
 
-		s, err := impl.NewStore(viper.GetString("local-db-path"), false)
-		if err != nil {
-			return fmt.Errorf("error creating sqlite store: %v", err)
-		}
+		checkErr(localStore.ClearRigs(ctx))
 
-		b := builder.NewBuilder(s, ipfsClient, viper.GetString("ipfs-gateway-url"))
+		b := builder.NewBuilder(localStore, ipfsClient, viper.GetString("ipfs-gateway-url"))
 
 		jobMeta := make([]*local.OriginalRig, count)
 
 		if !viper.GetBool("no-originals") {
-			originals, err := s.GetOriginalRigs(ctx)
-			if err != nil {
-				return fmt.Errorf("error getting originals: %v", err)
-			}
+			originals, err := localStore.GetOriginalRigs(ctx)
+			checkErr(err)
 			if len(originals) > count {
-				return fmt.Errorf("build count isn't >= number of originals (%d)", len(originals))
+				checkErr(fmt.Errorf("build count isn't >= number of originals (%d)", len(originals)))
 			}
 
 			origIndexes := randoms(len(originals), 0, count-1)
@@ -90,7 +76,6 @@ var buildCmd = &cobra.Command{
 			opts := []builder.BuildOption{
 				builder.BuildCompression(png.DefaultCompression),
 				builder.BuildLabels(viper.GetBool("lablels")),
-				builder.BuildPin(viper.GetBool("ipfs-pin")),
 				builder.BuildSize(viper.GetInt("size")),
 				builder.BuildThumbSize(viper.GetInt("thumb-size")),
 			}
@@ -108,6 +93,7 @@ var buildCmd = &cobra.Command{
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Inf)
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
+	Loop:
 		for {
 			select {
 			case r, ok := <-pool.Results():
@@ -121,7 +107,7 @@ var buildCmd = &cobra.Command{
 				rig := r.Value.(*local.Rig)
 				fmt.Printf("%d. %s%s\n", rig.ID, rig.Gateway, rig.Image)
 			case <-pool.Done:
-				return nil
+				break Loop
 			}
 		}
 	},

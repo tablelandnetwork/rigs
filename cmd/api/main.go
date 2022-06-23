@@ -1,6 +1,8 @@
 package main
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -43,11 +45,14 @@ func main() {
 	// 		Msg("failed to create new ethereum client")
 	// }
 
-	store, err := impl.NewStore("./local.db", false)
+	db, err := sql.Open("sqlite3", "./local.db")
 	if err != nil {
-		log.Fatal().
-			Err(err).
-			Msg("could not create store")
+		log.Fatal().Err(err).Msg("opening sqlite db")
+	}
+	defer db.Close()
+	store, err := impl.NewStore(context.Background(), db)
+	if err != nil {
+		log.Fatal().Err(err).Msg("could not create store")
 	}
 
 	httpClient := &http.Client{}
