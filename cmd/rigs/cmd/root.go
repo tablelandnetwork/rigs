@@ -46,7 +46,7 @@ var rootCmd = &cobra.Command{
 		checkErr(err)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		localDB.Close()
+		_ = localDB.Close()
 	},
 }
 

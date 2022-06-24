@@ -17,7 +17,9 @@ import (
 func TestIt(t *testing.T) {
 	db, err := sql.Open("sqlite3", "../../../local.db")
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	s, err := impl.NewStore(context.Background(), db)
 	require.NoError(t, err)
 

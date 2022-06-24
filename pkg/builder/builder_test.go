@@ -22,7 +22,9 @@ func TestBuild(t *testing.T) {
 
 	db, err := sql.Open("sqlite3", "/Users/aaron/Code/textile/nft-minter/local.db")
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 
 	s, err := impl.NewStore(ctx, db)
 	require.NoError(t, err)

@@ -49,7 +49,9 @@ func main() {
 	if err != nil {
 		log.Fatal().Err(err).Msg("opening sqlite db")
 	}
-	defer db.Close()
+	defer func() {
+		_ = db.Close()
+	}()
 	store, err := impl.NewStore(context.Background(), db)
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not create store")

@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/ethclient"
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -11,11 +13,14 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/tableland"
 	"github.com/tablelandnetwork/nft-minter/pkg/util"
+	"github.com/textileio/go-tableland/pkg/client"
+	"github.com/textileio/go-tableland/pkg/wallet"
 )
 
 var (
 	remoteIpfs *httpapi.HttpApi
 	store      storage.Store
+	tblClient  *client.Client
 )
 
 func init() {
@@ -34,12 +39,20 @@ func init() {
 	publishCmd.PersistentFlags().String("rigs-table", "", "name of the tableland rigs table")
 	publishCmd.PersistentFlags().String("rig-attrs-table", "", "name of the tableland rig attributes table")
 	publishCmd.Flags().String("tbl-db-path", "", "path to the local tableland sqlite db file")
+
+	publishCmd.PersistentFlags().String("tbl-api-url", "http://localhost:8080", "tableland validator api url")
+	publishCmd.PersistentFlags().String("eth-api-url", "http://localhost:8545", "ethereum api url")
+	publishCmd.PersistentFlags().Int64("chain-id", 31337, "the chain id")
+	publishCmd.PersistentFlags().String("contract-addr", "", "the tableland contract address")
+	publishCmd.PersistentFlags().String("private-key", "", "the private key of for the client to use")
 }
 
 var publishCmd = &cobra.Command{
 	Use:   "publish",
 	Short: "Push rigs data to tableland and remote IPFS",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		ctx := cmd.Context()
+
 		rootCmd.PersistentPreRun(cmd, args)
 		checkErr(viper.BindPFlags(cmd.Flags()))
 
@@ -51,6 +64,22 @@ var publishCmd = &cobra.Command{
 		user := viper.GetString("remote-ipfs-api-user")
 		pass := viper.GetString("remote-ipfs-api-pass")
 		remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(user, pass))
+
+		ethClient, err := ethclient.Dial(viper.GetString("eth-api-url"))
+		checkErr(err)
+
+		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
+		checkErr(err)
+
+		config := client.Config{
+			TblAPIURL:    viper.GetString("tbl-api-url"),
+			EthBackend:   ethClient,
+			ChainID:      client.ChainID(viper.GetInt64("chain-id")),
+			ContractAddr: common.HexToAddress(viper.GetString("contract-addr")),
+			Wallet:       wallet,
+		}
+		tblClient, err = client.NewClient(ctx, config)
+		checkErr(err)
 
 		if viper.GetBool("to-tableland") {
 			store = tableland.NewStore(tableland.Config{
