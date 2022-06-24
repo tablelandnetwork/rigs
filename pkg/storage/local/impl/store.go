@@ -180,6 +180,22 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	return nil
 }
 
+// UpdateRigImages implements UpdateRigImages.
+func (s *Store) UpdateRigImages(ctx context.Context, rig local.Rig) error {
+	update := s.db.Update("rigs").Set(goqu.Record{
+		"gateway":     rig.Gateway,
+		"images":      rig.Images,
+		"image":       rig.Image,
+		"image_alpha": rig.ImageAlpha,
+		"thumb":       rig.Thumb,
+		"thumb_alpha": rig.ThumbAlpha,
+	}).Where(goqu.C("id").Eq(rig.ID)).Executor()
+	if _, err := update.ExecContext(ctx); err != nil {
+		return fmt.Errorf("executing update: %v", err)
+	}
+	return nil
+}
+
 // GetOriginalRigs gets a list of all OriginalRigs.
 func (s *Store) GetOriginalRigs(ctx context.Context) ([]local.OriginalRig, error) {
 	sel := s.db.Select("fleet", "original", "color").Distinct().

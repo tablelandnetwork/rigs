@@ -59,13 +59,13 @@ var unpinImagesCmd = &cobra.Command{
 			checkErr(err)
 
 			for _, rig := range rigs {
-				path := ipfspath.New(rig.Images)
+				path := ipfspath.New(rig.Images.String)
 				unpinJobs = append(
 					unpinJobs,
 					wpool.Job{
 						ID:     wpool.JobID(rig.ID),
 						ExecFn: execFcn(path),
-						Desc:   fmt.Sprintf("%d, %s", rig.ID, rig.Images),
+						Desc:   fmt.Sprintf("%d, %s", rig.ID, rig.Images.String),
 					},
 				)
 			}

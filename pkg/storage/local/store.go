@@ -29,19 +29,19 @@ type Layer struct {
 
 // Rig represents a generated rig.
 type Rig struct {
-	ID                int     `json:"id"`
-	Gateway           string  `json:"gateway"`
-	Images            string  `json:"images"`
-	Image             string  `json:"image"`
-	ImageAlpha        string  `json:"image_alpha" db:"image_alpha"`
-	Thumb             string  `json:"thumb"`
-	ThumbAlpha        string  `json:"thumb_alpha" db:"thumb_alpha"`
-	Original          bool    `json:"original"`
-	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
-	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
-	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
-	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
-	Parts             []Part  `json:"parts"`
+	ID                int                   `json:"id"`
+	Gateway           common.NullableString `json:"gateway"`
+	Images            common.NullableString `json:"images"`
+	Image             common.NullableString `json:"image"`
+	ImageAlpha        common.NullableString `json:"image_alpha" db:"image_alpha"`
+	Thumb             common.NullableString `json:"thumb"`
+	ThumbAlpha        common.NullableString `json:"thumb_alpha" db:"thumb_alpha"`
+	Original          bool                  `json:"original"`
+	PercentOriginal   float64               `json:"percent_original" db:"percent_original"`
+	PercentOriginal50 float64               `json:"percent_original_50" db:"percent_original_50"`
+	PercentOriginal75 float64               `json:"percent_original_75" db:"percent_original_75"`
+	PercentOriginal90 float64               `json:"percent_original_90" db:"percent_original_90"`
+	Parts             []Part                `json:"parts"`
 }
 
 // OriginalRig represents an original rig.
@@ -208,6 +208,9 @@ type Store interface {
 
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
+
+	// UpdateRigImages updates Rig image-related fields.
+	UpdateRigImages(ctx context.Context, rig Rig) error
 
 	// GetOriginalRigs gets a list of all OriginalRigs.
 	GetOriginalRigs(ctx context.Context) ([]OriginalRig, error)

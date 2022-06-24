@@ -50,10 +50,10 @@ var imagesCmd = &cobra.Command{
 			}
 		}
 		for i, rig := range rigs {
-			path := ipfspath.New(rig.Images)
+			path := ipfspath.New(rig.Images.String)
 			pinJobs = append(
 				pinJobs,
-				wpool.Job{ID: wpool.JobID(i), ExecFn: execFcn(path), Desc: fmt.Sprintf("%d, %s", rig.ID, rig.Images)},
+				wpool.Job{ID: wpool.JobID(i), ExecFn: execFcn(path), Desc: fmt.Sprintf("%d, %s", rig.ID, rig.Images.String)},
 			)
 		}
 

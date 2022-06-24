@@ -57,10 +57,10 @@ func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, gateway string, rigs 
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{
 			rig.ID,
-			fmt.Sprintf("%s%s", gateway, rig.Image),
-			fmt.Sprintf("%s%s", gateway, rig.ImageAlpha),
-			fmt.Sprintf("%s%s", gateway, rig.Thumb),
-			fmt.Sprintf("%s%s", gateway, rig.ThumbAlpha),
+			fmt.Sprintf("%s%s", gateway, rig.Image.String),
+			fmt.Sprintf("%s%s", gateway, rig.ImageAlpha.String),
+			fmt.Sprintf("%s%s", gateway, rig.Thumb.String),
+			fmt.Sprintf("%s%s", gateway, rig.ThumbAlpha.String),
 		})
 	}
 

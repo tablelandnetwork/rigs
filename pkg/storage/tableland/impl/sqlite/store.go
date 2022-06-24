@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
@@ -22,15 +21,7 @@ type Store struct {
 }
 
 // NewStore creates a new SQLite store.
-func NewStore(dbFile string, reset bool) (tableland.Store, error) {
-	if reset {
-		_ = os.Remove(dbFile)
-	}
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return nil, fmt.Errorf("opening db: %v", err)
-	}
-
+func NewStore(db *sql.DB) (tableland.Store, error) {
 	return &Store{
 		db:      db,
 		factory: common.NewSQLFactory(goqu.Dialect("sqlite3")),
@@ -39,9 +30,13 @@ func NewStore(dbFile string, reset bool) (tableland.Store, error) {
 
 // CreateTable implements CreateTable.
 func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefinition) (string, error) {
+	drop := fmt.Sprintf("drop table if exists %s", definition.Prefix)
+	if _, err := s.db.Exec(drop); err != nil {
+		return "", fmt.Errorf("dropping table: %v", err)
+	}
 	statement := fmt.Sprintf("create table %s %s", definition.Prefix, definition.Schema)
 	if _, err := s.db.Exec(statement); err != nil {
-		return "", fmt.Errorf("creatingtable: %v", err)
+		return "", fmt.Errorf("creating table: %v", err)
 	}
 	return definition.Prefix, nil
 }

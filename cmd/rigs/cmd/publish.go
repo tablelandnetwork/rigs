@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"database/sql"
 	"net/http"
 	"time"
 
@@ -18,6 +19,9 @@ import (
 )
 
 var (
+	_db        *sql.DB
+	_ethClient *ethclient.Client
+
 	remoteIpfs *httpapi.HttpApi
 	store      storage.Store
 	tblClient  *client.Client
@@ -53,8 +57,9 @@ var publishCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		rootCmd.PersistentPreRun(cmd, args)
-		checkErr(viper.BindPFlags(cmd.Flags()))
+		cmd.VisitParents(func(c *cobra.Command) {
+			c.PersistentPreRun(cmd, args)
+		})
 
 		var err error
 
@@ -65,7 +70,7 @@ var publishCmd = &cobra.Command{
 		pass := viper.GetString("remote-ipfs-api-pass")
 		remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(user, pass))
 
-		ethClient, err := ethclient.Dial(viper.GetString("eth-api-url"))
+		_ethClient, err = ethclient.Dial(viper.GetString("eth-api-url"))
 		checkErr(err)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
@@ -73,7 +78,7 @@ var publishCmd = &cobra.Command{
 
 		config := client.Config{
 			TblAPIURL:    viper.GetString("tbl-api-url"),
-			EthBackend:   ethClient,
+			EthBackend:   _ethClient,
 			ChainID:      client.ChainID(viper.GetInt64("chain-id")),
 			ContractAddr: common.HexToAddress(viper.GetString("contract-addr")),
 			Wallet:       wallet,
@@ -91,9 +96,20 @@ var publishCmd = &cobra.Command{
 				RigAttributesTableName: viper.GetString("rig-attrs-table"),
 			})
 		} else {
-			var err error
-			store, err = sqlite.NewStore(viper.GetString("tbl-db-path"), cmd.Use == "schema")
+			_db, err = sql.Open("sqlite3", viper.GetString("tbl-db-path"))
 			checkErr(err)
+			store, err = sqlite.NewStore(_db)
+			checkErr(err)
+		}
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		cmd.VisitParents(func(c *cobra.Command) {
+			c.PersistentPostRun(cmd, args)
+		})
+		_ethClient.Close()
+		tblClient.Close()
+		if _db != nil {
+			_ = _db.Close()
 		}
 	},
 }

@@ -64,7 +64,7 @@ func main() {
 		log.Fatal().Err(err).Msg("creating ipfs client")
 	}
 
-	builder := builder.NewBuilder(store, ipfs, config.IPFS.GatewayURL)
+	builder := builder.NewBuilder(store, ipfs)
 
 	stagingService, err := tableland.NewTablelandGenerator(
 		store,

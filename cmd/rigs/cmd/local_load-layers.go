@@ -19,9 +19,6 @@ func init() {
 var loadLayersCmd = &cobra.Command{
 	Use:   "load-layers",
 	Short: "Load rig image layers to ipfs",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		checkErr(viper.BindPFlags(cmd.Flags()))
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		path := viper.GetString("layers-path")
 		fi, err := os.Stat(path)

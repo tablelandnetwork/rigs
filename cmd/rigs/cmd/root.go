@@ -15,7 +15,8 @@ import (
 )
 
 var (
-	localDB    *sql.DB
+	_localDB *sql.DB
+
 	localStore local.Store
 	ipfsClient *httpapi.HttpApi
 )
@@ -36,9 +37,9 @@ var rootCmd = &cobra.Command{
 
 		checkErr(viper.BindPFlags(cmd.Flags()))
 
-		localDB, err = sql.Open("sqlite3", viper.GetString("local-db-path"))
+		_localDB, err = sql.Open("sqlite3", viper.GetString("local-db-path"))
 		checkErr(err)
-		localStore, err = impl.NewStore(ctx, localDB)
+		localStore, err = impl.NewStore(ctx, _localDB)
 		checkErr(err)
 
 		httpClient := &http.Client{}
@@ -46,23 +47,19 @@ var rootCmd = &cobra.Command{
 		checkErr(err)
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		_ = localDB.Close()
+		_ = _localDB.Close()
 	},
 }
 
 // Execute executes the command.
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	checkErr(rootCmd.Execute())
 }
 
 func initConfig() {
-	viper.SetEnvPrefix("NFT")
+	viper.SetEnvPrefix("RIGS")
 	viper.AutomaticEnv()
-	replacer := strings.NewReplacer("-", "_")
-	viper.SetEnvKeyReplacer(replacer)
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 }
 
 func checkErr(err error) {

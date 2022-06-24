@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"image/png"
 	"math/rand"
 	"strconv"
 	"time"
@@ -20,22 +19,14 @@ import (
 func init() {
 	localCmd.AddCommand(buildCmd)
 
-	buildCmd.PersistentFlags().String("ipfs-gateway-url", "http://127.0.0.1:8080", "address of the local ipfs gateway")
-
 	buildCmd.Flags().Bool("no-originals", false, "don't include the originals")
-	buildCmd.Flags().Int("size", 1200, "width and height of generated images")
-	buildCmd.Flags().Int("thumb-size", 600, "width and height of generated thumb images")
-	buildCmd.Flags().Bool("labels", false, "render metadata labels on generated images")
-	buildCmd.Flags().Int("concurrency", 2, "how many concurrent workers used for generating rigs")
+	buildCmd.Flags().Int("concurrency", 1, "how many concurrent workers used for generating rigs")
 }
 
 var buildCmd = &cobra.Command{
 	Use:   "build count",
 	Short: "Builds rig data and imagery",
 	Args:  cobra.ExactArgs(1),
-	PreRun: func(cmd *cobra.Command, args []string) {
-		checkErr(viper.BindPFlags(cmd.Flags()))
-	},
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
@@ -44,7 +35,7 @@ var buildCmd = &cobra.Command{
 
 		checkErr(localStore.ClearRigs(ctx))
 
-		b := builder.NewBuilder(localStore, ipfsClient, viper.GetString("ipfs-gateway-url"))
+		b := builder.NewBuilder(localStore, ipfsClient)
 
 		jobMeta := make([]*local.OriginalRig, count)
 
@@ -63,9 +54,9 @@ var buildCmd = &cobra.Command{
 			}
 		}
 
-		buildExecFcn := func(opts []builder.BuildOption) wpool.ExecutionFn {
+		buildExecFcn := func(opt builder.BuildOption) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
-				rig, err := b.Build(ctx, opts...)
+				rig, err := b.Build(ctx, opt)
 				return rig, err
 			}
 		}
@@ -73,20 +64,20 @@ var buildCmd = &cobra.Command{
 		var jobs []wpool.Job
 
 		for i, originalRig := range jobMeta {
-			opts := []builder.BuildOption{
-				builder.BuildCompression(png.DefaultCompression),
-				builder.BuildLabels(viper.GetBool("lablels")),
-				builder.BuildSize(viper.GetInt("size")),
-				builder.BuildThumbSize(viper.GetInt("thumb-size")),
-			}
+			rigID := i + 1
+			var opt builder.BuildOption
+			var desc string
 			if originalRig != nil {
-				opts = append(opts, builder.BuildOriginal(i+1, *originalRig, system.NewSystemRandomnessSource()))
+				opt = builder.BuildOriginal(rigID, *originalRig, system.NewSystemRandomnessSource())
+				desc = "original"
 			} else {
-				opts = append(opts, builder.BuildRandom(i+1, system.NewSystemRandomnessSource()))
+				opt = builder.BuildRandom(rigID, system.NewSystemRandomnessSource())
+				desc = "random"
 			}
 			jobs = append(jobs, wpool.Job{
-				ID:     wpool.JobID(i + 1),
-				ExecFn: buildExecFcn(opts),
+				ID:     wpool.JobID(rigID),
+				ExecFn: buildExecFcn(opt),
+				Desc:   desc,
 			})
 		}
 
@@ -105,7 +96,7 @@ var buildCmd = &cobra.Command{
 					continue
 				}
 				rig := r.Value.(*local.Rig)
-				fmt.Printf("%d. %s%s\n", rig.ID, rig.Gateway, rig.Image)
+				fmt.Printf("built %s rig %d\n", r.Desc, rig.ID)
 			case <-pool.Done:
 				break Loop
 			}

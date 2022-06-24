@@ -3,7 +3,6 @@ package impl
 import (
 	"context"
 	"database/sql"
-	"os"
 	"testing"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -81,12 +80,11 @@ func TestStore_Layers(t *testing.T) {
 }
 
 func requireStore(t *testing.T) (local.Store, func()) {
-	db, err := sql.Open("sqlite3", "test.db")
+	db, err := sql.Open("sqlite3", "file::memory:?cache=shared")
 	require.NoError(t, err)
 	s, err := NewStore(context.Background(), db)
 	require.NoError(t, err)
 	return s, func() {
 		_ = db.Close()
-		_ = os.Remove("test.db")
 	}
 }
