@@ -7,7 +7,7 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
+	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
@@ -25,10 +25,10 @@ func TestStore_InsertParts(t *testing.T) {
 
 	parts := []local.Part{
 		{
-			Fleet: common.NullableString{NullString: sql.NullString{String: "Fleet One", Valid: true}},
+			Fleet: nullable.FromString("Fleet One"),
 		},
 		{
-			Fleet: common.NullableString{NullString: sql.NullString{String: "Fleet Two", Valid: true}},
+			Fleet: nullable.FromString("Fleet Two"),
 		},
 	}
 

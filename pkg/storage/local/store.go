@@ -3,17 +3,17 @@ package local
 import (
 	"context"
 
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
+	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
 )
 
 // Part describes a rig part.
 type Part struct {
-	ID       uint                  `json:"id"`
-	Fleet    common.NullableString `json:"fleet"`
-	Original common.NullableString `json:"original"`
-	Type     string                `json:"type"`
-	Name     string                `json:"name"`
-	Color    common.NullableString `json:"color"`
+	ID       uint            `json:"id"`
+	Fleet    nullable.String `json:"fleet"`
+	Original nullable.String `json:"original"`
+	Type     string          `json:"type"`
+	Name     string          `json:"name"`
+	Color    nullable.String `json:"color"`
 }
 
 // Layer describes an image layer used for rendering a rig.
@@ -29,19 +29,19 @@ type Layer struct {
 
 // Rig represents a generated rig.
 type Rig struct {
-	ID                int                   `json:"id"`
-	Gateway           common.NullableString `json:"gateway"`
-	Images            common.NullableString `json:"images"`
-	Image             common.NullableString `json:"image"`
-	ImageAlpha        common.NullableString `json:"image_alpha" db:"image_alpha"`
-	Thumb             common.NullableString `json:"thumb"`
-	ThumbAlpha        common.NullableString `json:"thumb_alpha" db:"thumb_alpha"`
-	Original          bool                  `json:"original"`
-	PercentOriginal   float64               `json:"percent_original" db:"percent_original"`
-	PercentOriginal50 float64               `json:"percent_original_50" db:"percent_original_50"`
-	PercentOriginal75 float64               `json:"percent_original_75" db:"percent_original_75"`
-	PercentOriginal90 float64               `json:"percent_original_90" db:"percent_original_90"`
-	Parts             []Part                `json:"parts"`
+	ID                int             `json:"id"`
+	Gateway           nullable.String `json:"gateway"`
+	Images            nullable.String `json:"images"`
+	Image             nullable.String `json:"image"`
+	ImageAlpha        nullable.String `json:"image_alpha" db:"image_alpha"`
+	Thumb             nullable.String `json:"thumb"`
+	ThumbAlpha        nullable.String `json:"thumb_alpha" db:"thumb_alpha"`
+	Original          bool            `json:"original"`
+	PercentOriginal   float64         `json:"percent_original" db:"percent_original"`
+	PercentOriginal50 float64         `json:"percent_original_50" db:"percent_original_50"`
+	PercentOriginal75 float64         `json:"percent_original_75" db:"percent_original_75"`
+	PercentOriginal90 float64         `json:"percent_original_90" db:"percent_original_90"`
+	Parts             []Part          `json:"parts"`
 }
 
 // OriginalRig represents an original rig.

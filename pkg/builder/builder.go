@@ -3,7 +3,6 @@ package builder
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -20,8 +19,8 @@ import (
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/rs/zerolog/log"
+	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"golang.org/x/image/draw"
 )
@@ -264,16 +263,12 @@ func (b *Builder) Render(ctx context.Context, rig *local.Rig, opts ...RenderOpti
 		return fmt.Errorf("adding image to ipfs: %v", err)
 	}
 
-	rig.Gateway = common.NullableString{NullString: sql.NullString{String: c.gatewayURL, Valid: c.gatewayURL != ""}}
-	rig.Images = common.NullableString{NullString: sql.NullString{String: path.String(), Valid: true}}
-	rig.Image = common.NullableString{NullString: sql.NullString{String: path.String() + "/image.png", Valid: true}}
-	rig.ImageAlpha = common.NullableString{
-		NullString: sql.NullString{String: path.String() + "/image_alpha.png", Valid: true},
-	}
-	rig.Thumb = common.NullableString{NullString: sql.NullString{String: path.String() + "/thumb.png", Valid: true}}
-	rig.ThumbAlpha = common.NullableString{
-		NullString: sql.NullString{String: path.String() + "/thumb_alpha.png", Valid: true},
-	}
+	rig.Gateway = nullable.FromString(c.gatewayURL, nullable.EmptyIsNull())
+	rig.Images = nullable.FromString(path.String())
+	rig.Image = nullable.FromString(path.String() + "/image.png")
+	rig.ImageAlpha = nullable.FromString(path.String() + "/image_alpha.png")
+	rig.Thumb = nullable.FromString(path.String() + "/thumb.png")
+	rig.ThumbAlpha = nullable.FromString(path.String() + "/thumb_alpha.png")
 
 	if err := b.s.UpdateRigImages(ctx, *rig); err != nil {
 		b.unpinPath(ctx, path)

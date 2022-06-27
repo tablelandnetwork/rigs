@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"path"
 	"strings"
@@ -14,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
+	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
@@ -137,11 +136,11 @@ func processPartTypeNode(
 		if _, processedPart := processedParts[partKey]; !processedPart {
 			processedParts[partKey] = true
 			parts = append(parts, local.Part{
-				Fleet:    common.NullableString{NullString: sql.NullString{String: fleetName, Valid: true}},
-				Original: common.NullableString{NullString: sql.NullString{String: original, Valid: len(original) > 0}},
+				Fleet:    nullable.FromString(fleetName),
+				Original: nullable.FromString(original, nullable.EmptyIsNull()),
 				Type:     partTypeName,
 				Name:     name,
-				Color:    common.NullableString{NullString: sql.NullString{String: color, Valid: true}},
+				Color:    nullable.FromString(color),
 			})
 		}
 
