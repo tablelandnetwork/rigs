@@ -3,16 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 
-	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/nft-minter/internal/wpool"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
-	"github.com/tablelandnetwork/nft-minter/pkg/util"
 	"golang.org/x/time/rate"
 )
 
@@ -28,27 +24,9 @@ func init() {
 
 var unpinImagesCmd = &cobra.Command{
 	Use:   "unpin-images",
-	Short: "unpin rig images from remote ipfs node",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Short: "Unpin rig images from remote ipfs node",
+	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-		s, err := impl.NewStore(viper.GetString("local-db-path"), false)
-		if err != nil {
-			return fmt.Errorf("error creating local store: %v", err)
-		}
-		defer func() {
-			if err := s.Close(); err != nil {
-				fmt.Println("closing store")
-			}
-		}()
-
-		httpClient := &http.Client{}
-		remoteIpfs, err := httpapi.NewURLApiWithClient(viper.GetString("remote-ipfs-api-url"), httpClient)
-		if err != nil {
-			return fmt.Errorf("error creating ipfs client: %v", err)
-		}
-		user := viper.GetString("remote-ipfs-api-user")
-		pass := viper.GetString("remote-ipfs-api-pass")
-		remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(user, pass))
 
 		execFcn := func(path ipfspath.Path) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
@@ -63,9 +41,7 @@ var unpinImagesCmd = &cobra.Command{
 
 		if viper.GetBool("all") {
 			pins, err := remoteIpfs.Pin().Ls(ctx, options.Pin.Ls.Recursive())
-			if err != nil {
-				return fmt.Errorf("error listing remote pins: %v", err)
-			}
+			checkErr(err)
 			i := 1
 			for pin := range pins {
 				unpinJobs = append(
@@ -79,19 +55,17 @@ var unpinImagesCmd = &cobra.Command{
 				i++
 			}
 		} else {
-			rigs, err := s.Rigs(ctx)
-			if err != nil {
-				return fmt.Errorf("error getting rigs: %v", err)
-			}
+			rigs, err := localStore.Rigs(ctx)
+			checkErr(err)
 
 			for _, rig := range rigs {
-				path := ipfspath.New(rig.Images)
+				path := ipfspath.New(rig.Images.String)
 				unpinJobs = append(
 					unpinJobs,
 					wpool.Job{
 						ID:     wpool.JobID(rig.ID),
 						ExecFn: execFcn(path),
-						Desc:   fmt.Sprintf("%d, %s", rig.ID, rig.Images),
+						Desc:   fmt.Sprintf("%d, %s", rig.ID, rig.Images.String),
 					},
 				)
 			}
@@ -119,6 +93,5 @@ var unpinImagesCmd = &cobra.Command{
 			}
 			count++
 		}
-		return nil
 	},
 }

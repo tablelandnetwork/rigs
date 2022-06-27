@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
@@ -17,43 +16,80 @@ import (
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
 )
 
+const (
+	createTablesSQL = `
+		create table if not exists parts (
+			id integer primary key,
+			fleet text,
+			original text,
+			type text not null,
+			name text not null,
+			color text,
+			unique(fleet,name,color)
+		);
+
+		create table if not exists layers (
+			id integer primary key,
+			fleet text not null,
+			color text not null,
+			part_name text not null,
+			part_type text not null,
+			position integer not null,
+			path text not null,
+			unique(fleet,color,part_name,position)
+		);
+
+		create table if not exists rigs (
+			id integer primary key,
+			gateway text,
+			images text,
+			image text,
+			image_alpha text,
+			thumb text,
+			thumb_alpha text,
+			original boolean,
+			percent_original float,
+			percent_original_50 float,
+			percent_original_75 float,
+			percent_original_90 float
+		);
+		
+		create table if not exists rig_parts (
+			rig_id integer not null,
+			part_id integer not null,
+			primary key(rig_id,part_id),
+			foreign key (rig_id) references rigs (id)
+			foreign key (part_id) references parts (id)
+		);
+	`
+	clearInventorySQL = `
+		delete from parts;
+		delete from layers;
+	`
+	clearRigsSQL = `
+		delete from rig_parts;
+		delete from rigs;
+	`
+	dropTablesSQL = `
+		drop table if exists parts;
+		drop table if exists layers;
+		drop table if exists rigs;
+		drop table if exists rig_parts;
+	`
+)
+
 // Store provides local data storage.
 type Store struct {
-	db    *goqu.Database
-	sqlDb *sql.DB
+	db *goqu.Database
 }
 
 // NewStore creates a new SQLite store.
-func NewStore(dbFile string, reset bool) (local.Store, error) {
-	if reset {
-		_ = os.Remove(dbFile)
+func NewStore(ctx context.Context, db *sql.DB) (local.Store, error) {
+	s := &Store{db: goqu.New("sqlite3", db)}
+	if err := s.createTables(ctx); err != nil {
+		return nil, fmt.Errorf("creating tables: %v", err)
 	}
-	db, err := sql.Open("sqlite3", dbFile)
-	if err != nil {
-		return nil, fmt.Errorf("opening db: %v", err)
-	}
-
-	return &Store{
-		db:    goqu.New("sqlite3", db),
-		sqlDb: db,
-	}, nil
-}
-
-// CreateTables creates all the tables.
-func (s *Store) CreateTables(ctx context.Context) error {
-	if _, err := s.db.ExecContext(ctx, local.CreatePartsSQL); err != nil {
-		return fmt.Errorf("creating parts table: %v", err)
-	}
-	if _, err := s.db.ExecContext(ctx, local.CreateLayersSQL); err != nil {
-		return fmt.Errorf("creating layers table: %v", err)
-	}
-	if _, err := s.db.ExecContext(ctx, local.CreateRigsSQL); err != nil {
-		return fmt.Errorf("creating rigs table: %v", err)
-	}
-	if _, err := s.db.ExecContext(ctx, local.CreateRigPartsSQL); err != nil {
-		return fmt.Errorf("creating rig parts table: %v", err)
-	}
-	return nil
+	return s, nil
 }
 
 // InsertParts inserts the Parts.
@@ -141,6 +177,22 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 		return fmt.Errorf("committing tx: %v", err)
 	}
 
+	return nil
+}
+
+// UpdateRigImages implements UpdateRigImages.
+func (s *Store) UpdateRigImages(ctx context.Context, rig local.Rig) error {
+	update := s.db.Update("rigs").Set(goqu.Record{
+		"gateway":     rig.Gateway,
+		"images":      rig.Images,
+		"image":       rig.Image,
+		"image_alpha": rig.ImageAlpha,
+		"thumb":       rig.Thumb,
+		"thumb_alpha": rig.ThumbAlpha,
+	}).Where(goqu.C("id").Eq(rig.ID)).Executor()
+	if _, err := update.ExecContext(ctx); err != nil {
+		return fmt.Errorf("executing update: %v", err)
+	}
 	return nil
 }
 
@@ -286,10 +338,36 @@ func (s *Store) Rigs(ctx context.Context, opts ...local.RigsOption) ([]local.Rig
 	return rigs, nil
 }
 
-// Close implements Close.
-func (s *Store) Close() error {
-	if err := s.sqlDb.Close(); err != nil {
-		return fmt.Errorf("closing sqlite db: %v", err)
+// ClearInventory implements ClearInventory.
+func (s *Store) ClearInventory(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, clearInventorySQL); err != nil {
+		return fmt.Errorf("executing sql: %v", err)
+	}
+	return nil
+}
+
+// ClearRigs implements ClearRigs.
+func (s *Store) ClearRigs(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, clearRigsSQL); err != nil {
+		return fmt.Errorf("executing sql: %v", err)
+	}
+	return nil
+}
+
+// Reset implements Reset.
+func (s *Store) Reset(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, dropTablesSQL); err != nil {
+		return fmt.Errorf("dropping tables: %v", err)
+	}
+	if err := s.createTables(ctx); err != nil {
+		return fmt.Errorf("creating tables: %v", err)
+	}
+	return nil
+}
+
+func (s *Store) createTables(ctx context.Context) error {
+	if _, err := s.db.ExecContext(ctx, createTablesSQL); err != nil {
+		return fmt.Errorf("executing sql: %v", err)
 	}
 	return nil
 }

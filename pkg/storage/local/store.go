@@ -2,59 +2,8 @@ package local
 
 import (
 	"context"
-	"io"
 
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
-)
-
-const (
-	// CreatePartsSQL is to create the parts table.
-	CreatePartsSQL = `create table parts (
-		id integer primary key,
-		fleet text,
-		original text,
-		type text not null,
-		name text not null,
-		color text,
-		unique(fleet,name,color)
-	)`
-
-	// CreateLayersSQL is to create the layers table.
-	CreateLayersSQL = `create table layers (
-		id integer primary key,
-		fleet text not null,
-		color text not null,
-		part_name text not null,
-		part_type text not null,
-		position integer not null,
-		path text not null,
-		unique(fleet,color,part_name,position)
-	)`
-
-	// CreateRigsSQL is to create the rigs table.
-	CreateRigsSQL = `create table rigs (
-		id integer primary key,
-		gateway text,
-		images text,
-		image text,
-		image_alpha text,
-		thumb text,
-		thumb_alpha text,
-		original boolean,
-		percent_original float,
-		percent_original_50 float,
-		percent_original_75 float,
-		percent_original_90 float
-	)`
-
-	// CreateRigPartsSQL is to create the rig parts table.
-	CreateRigPartsSQL = `create table rig_parts (
-		rig_id integer not null,
-		part_id integer not null,
-		primary key(rig_id,part_id),
-		foreign key (rig_id) references rigs (id)
-		foreign key (part_id) references parts (id)
-	)`
 )
 
 // Part describes a rig part.
@@ -80,19 +29,19 @@ type Layer struct {
 
 // Rig represents a generated rig.
 type Rig struct {
-	ID                int     `json:"id"`
-	Gateway           string  `json:"gateway"`
-	Images            string  `json:"images"`
-	Image             string  `json:"image"`
-	ImageAlpha        string  `json:"image_alpha" db:"image_alpha"`
-	Thumb             string  `json:"thumb"`
-	ThumbAlpha        string  `json:"thumb_alpha" db:"thumb_alpha"`
-	Original          bool    `json:"original"`
-	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
-	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
-	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
-	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
-	Parts             []Part  `json:"parts"`
+	ID                int                   `json:"id"`
+	Gateway           common.NullableString `json:"gateway"`
+	Images            common.NullableString `json:"images"`
+	Image             common.NullableString `json:"image"`
+	ImageAlpha        common.NullableString `json:"image_alpha" db:"image_alpha"`
+	Thumb             common.NullableString `json:"thumb"`
+	ThumbAlpha        common.NullableString `json:"thumb_alpha" db:"thumb_alpha"`
+	Original          bool                  `json:"original"`
+	PercentOriginal   float64               `json:"percent_original" db:"percent_original"`
+	PercentOriginal50 float64               `json:"percent_original_50" db:"percent_original_50"`
+	PercentOriginal75 float64               `json:"percent_original_75" db:"percent_original_75"`
+	PercentOriginal90 float64               `json:"percent_original_90" db:"percent_original_90"`
+	Parts             []Part                `json:"parts"`
 }
 
 // OriginalRig represents an original rig.
@@ -251,11 +200,6 @@ func RigsWithOffset(offset uint) RigsOption {
 
 // Store describes the local data store API.
 type Store interface {
-	io.Closer
-
-	// CreateTables creates all the tables.
-	CreateTables(ctx context.Context) error
-
 	// InsertParts inserts the Parts.
 	InsertParts(ctx context.Context, parts []Part) error
 
@@ -264,6 +208,9 @@ type Store interface {
 
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
+
+	// UpdateRigImages updates Rig image-related fields.
+	UpdateRigImages(ctx context.Context, rig Rig) error
 
 	// GetOriginalRigs gets a list of all OriginalRigs.
 	GetOriginalRigs(ctx context.Context) ([]OriginalRig, error)
@@ -279,4 +226,13 @@ type Store interface {
 
 	// Rigs returns a list of Rigs.
 	Rigs(ctx context.Context, opts ...RigsOption) ([]Rig, error)
+
+	// ClearInventory empties the parts and layers records.
+	ClearInventory(ctx context.Context) error
+
+	// ClearRigs empties the rigs records.
+	ClearRigs(ctx context.Context) error
+
+	// Reset clears the db and starts fresh.
+	Reset(ctx context.Context) error
 }

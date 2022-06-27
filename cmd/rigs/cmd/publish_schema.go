@@ -17,8 +17,8 @@ func init() {
 
 var schemaCmd = &cobra.Command{
 	Use:   "schema",
-	Short: "create the rigs tables",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Short: "Create the rigs tables",
+	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		createTableExecFcn := func(definition storage.TableDefinition) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
@@ -39,6 +39,7 @@ var schemaCmd = &cobra.Command{
 		pool := wpool.New(1, rate.Every(time.Millisecond*100))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
+	Loop:
 		for {
 			select {
 			case r, ok := <-pool.Results():
@@ -52,7 +53,7 @@ var schemaCmd = &cobra.Command{
 				result := r.Value.(string)
 				fmt.Printf("created table %s\n", result)
 			case <-pool.Done:
-				return nil
+				break Loop
 			}
 		}
 	},

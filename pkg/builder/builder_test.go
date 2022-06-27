@@ -2,6 +2,7 @@ package builder
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"net/http"
 	"testing"
@@ -19,7 +20,13 @@ import (
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
 
-	s, err := impl.NewStore("/Users/aaron/Code/textile/nft-minter/local.db", false)
+	db, err := sql.Open("sqlite3", "/Users/aaron/Code/textile/nft-minter/local.db")
+	require.NoError(t, err)
+	defer func() {
+		_ = db.Close()
+	}()
+
+	s, err := impl.NewStore(ctx, db)
 	require.NoError(t, err)
 
 	httpClient := &http.Client{}
@@ -27,7 +34,7 @@ func TestBuild(t *testing.T) {
 	ipfs, err := httpapi.NewURLApiWithClient("http://127.0.0.1:5001", httpClient)
 	require.NoError(t, err)
 
-	m := NewBuilder(s, ipfs, "http://127.0.0.1:8080")
+	m := NewBuilder(s, ipfs)
 
 	originals, err := s.GetOriginalRigs(ctx)
 	require.NoError(t, err)
@@ -65,7 +72,7 @@ func TestBuild(t *testing.T) {
 			require.NoError(t, r.Err)
 			rig := r.Value.(*local.Rig)
 			require.Equal(t, int(r.ID), rig.ID)
-			fmt.Printf("%s%s\n", rig.Gateway, rig.Image)
+			fmt.Printf("%s%s\n", rig.Gateway.String, rig.Image.String)
 		case <-pool.Done:
 			return
 		}

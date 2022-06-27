@@ -3,38 +3,25 @@ package impl
 import (
 	"context"
 	"database/sql"
-	"os"
 	"testing"
 
-	"github.com/doug-martin/goqu/v9"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/common"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
-func TestStore_CreateTables(t *testing.T) {
-	db, cleanup := requireDB(t)
+func TestStore_Reset(t *testing.T) {
+	s, cleanup := requireStore(t)
 	t.Cleanup(cleanup)
 
-	s := &Store{
-		db: goqu.New("sqlite3", db),
-	}
-
-	err := s.CreateTables(context.Background())
+	err := s.Reset(context.Background())
 	require.NoError(t, err)
 }
 
 func TestStore_InsertParts(t *testing.T) {
-	db, cleanup := requireDB(t)
+	s, cleanup := requireStore(t)
 	t.Cleanup(cleanup)
-
-	s := &Store{
-		db: goqu.New("sqlite3", db),
-	}
-
-	err := s.CreateTables(context.Background())
-	require.NoError(t, err)
 
 	parts := []local.Part{
 		{
@@ -45,13 +32,13 @@ func TestStore_InsertParts(t *testing.T) {
 		},
 	}
 
-	err = s.InsertParts(context.Background(), parts)
+	err := s.InsertParts(context.Background(), parts)
 	require.NoError(t, err)
 }
 
 func TestStore_GetOriginalRigs(t *testing.T) {
-	s, err := NewStore("../../../local.db", false)
-	require.NoError(t, err)
+	s, cleanup := requireStore(t)
+	t.Cleanup(cleanup)
 
 	originals, err := s.GetOriginalRigs(context.Background())
 	require.NoError(t, err)
@@ -59,8 +46,8 @@ func TestStore_GetOriginalRigs(t *testing.T) {
 }
 
 func TestStore_GetPartTypesByFleet(t *testing.T) {
-	s, err := NewStore("../../../local.db", false)
-	require.NoError(t, err)
+	s, cleanup := requireStore(t)
+	t.Cleanup(cleanup)
 
 	partTypes, err := s.GetPartTypesByFleet(context.Background(), "Titans")
 	require.NoError(t, err)
@@ -68,8 +55,8 @@ func TestStore_GetPartTypesByFleet(t *testing.T) {
 }
 
 func TestStore_Parts(t *testing.T) {
-	s, err := NewStore("../../../local.db", false)
-	require.NoError(t, err)
+	s, cleanup := requireStore(t)
+	t.Cleanup(cleanup)
 
 	parts, err := s.Parts(context.Background(), local.PartsOfColor("Dark"), local.PartsOfFleet("Titans"))
 	require.NoError(t, err)
@@ -77,8 +64,8 @@ func TestStore_Parts(t *testing.T) {
 }
 
 func TestStore_Layers(t *testing.T) {
-	s, err := NewStore("../../../local.db", false)
-	require.NoError(t, err)
+	s, cleanup := requireStore(t)
+	t.Cleanup(cleanup)
 
 	layers, err := s.Layers(
 		context.Background(),
@@ -92,10 +79,12 @@ func TestStore_Layers(t *testing.T) {
 	require.Len(t, layers, 2)
 }
 
-func requireDB(t *testing.T) (*sql.DB, func()) {
-	db, err := sql.Open("sqlite3", "test.db")
+func requireStore(t *testing.T) (local.Store, func()) {
+	db, err := sql.Open("sqlite3", "file::memory:?cache=shared")
 	require.NoError(t, err)
-	return db, func() {
-		_ = os.Remove("test.db")
+	s, err := NewStore(context.Background(), db)
+	require.NoError(t, err)
+	return s, func() {
+		_ = db.Close()
 	}
 }

@@ -16,8 +16,8 @@ func init() {
 
 var clearDataCmd = &cobra.Command{
 	Use:   "clear-data",
-	Short: "delete all data from rigs tables",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Short: "Delete all data from rigs tables",
+	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
 		clearDataExecFn := func(clearDataFn func(context.Context) error) wpool.ExecutionFn {
@@ -39,6 +39,7 @@ var clearDataCmd = &cobra.Command{
 		pool := wpool.New(4, rate.Every(time.Millisecond*100))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
+	Loop:
 		for {
 			select {
 			case r, ok := <-pool.Results():
@@ -46,13 +47,13 @@ var clearDataCmd = &cobra.Command{
 					continue
 				}
 				if r.Err != nil {
-					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
+					fmt.Printf("error processing job %d, %s: %v\n", r.ID, r.Desc, r.Err)
 					continue
 				}
 				fmt.Printf("cleared table %s\n", r.Desc)
 			case <-pool.Done:
 				fmt.Println("Ok done")
-				return nil
+				break Loop
 			}
 		}
 	},
