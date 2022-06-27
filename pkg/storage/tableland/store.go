@@ -50,7 +50,7 @@ var (
 		)`,
 	}
 	// RigAttributesDefinition defines the rig attribes table.
-	// TODO: Swithc this to ANY type for value once we switch to SQLite.
+	// TODO: Switch this to ANY type for value once we switch to SQLite.
 	RigAttributesDefinition = TableDefinition{
 		Prefix: "test_rig_attributes",
 		Schema: `(
