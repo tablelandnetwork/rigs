@@ -676,33 +676,13 @@ func selectPart(parts []local.Part, random float64) (local.Part, error) {
 	return local.Part{}, errors.New("couldn't randomly select part")
 }
 
-// func percentOriginal(parts []local.Part) float64 {
-// 	// TODO: Figure out how to deal with Riders and other strange parts.
-// 	counts := make(map[string]int)
-// 	total := 0
-// 	for _, part := range parts {
-// 		if !part.Color.Valid || !part.Original.Valid {
-// 			continue
-// 		}
-// 		key := fmt.Sprintf("%s|%s", part.Color.String, part.Original.String)
-// 		if _, exists := counts[key]; !exists {
-// 			counts[key] = 0
-// 		}
-// 		counts[key]++
-// 		total++
-// 	}
-// 	max := 0
-// 	for _, count := range counts {
-// 		if count > max {
-// 			max = count
-// 		}
-// 	}
-// 	return float64(max) / float64(total)
-// }
-
 func percentOriginal(parts []local.Part, bonusFactor float64) float64 {
-	// TODO: calc bonus weighted total for every original bin and choose max.
 	originalColorCounts := make(map[string]map[string]int)
+	type originalMax struct {
+		color string
+		max   int
+	}
+	originalColorMaximums := make(map[string]originalMax)
 	total := 0
 	for _, part := range parts {
 		if !part.Color.Valid || !part.Original.Valid {
@@ -712,29 +692,29 @@ func percentOriginal(parts []local.Part, bonusFactor float64) float64 {
 			originalColorCounts[part.Original.String] = make(map[string]int)
 		}
 		originalColorCounts[part.Original.String][part.Color.String]++
-		total++
-	}
-	max := 0
-	maxColor := ""
-	originalWithMax := ""
-	for original, colorCount := range originalColorCounts {
-		for color, count := range colorCount {
-			if count > max {
-				max = count
-				maxColor = color
-				originalWithMax = original
+		if originalColorCounts[part.Original.String][part.Color.String] > originalColorMaximums[part.Original.String].max {
+			originalColorMaximums[part.Original.String] = originalMax{
+				color: part.Color.String,
+				max:   originalColorCounts[part.Original.String][part.Color.String],
 			}
 		}
+		total++
 	}
-
-	var bonus float64
-	for color, count := range originalColorCounts[originalWithMax] {
-		if color != maxColor {
-			bonus += float64(count) * bonusFactor
+	var max float64
+	for original, colorCounts := range originalColorCounts {
+		var score float64
+		for color, count := range colorCounts {
+			if color == originalColorMaximums[original].color {
+				score += float64(count)
+			} else {
+				score += float64(count) * bonusFactor
+			}
+		}
+		if score > max {
+			max = score
 		}
 	}
-
-	return (float64(max) + bonus) / float64(total)
+	return max / float64(total)
 }
 
 func resizeImage(data io.Reader, size image.Rectangle, to io.Writer) error {
