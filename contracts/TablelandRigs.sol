@@ -124,6 +124,10 @@ contract TablelandRigs is
         _setURITemplate(uriTemplate);
     }
 
+    function contractURI() public pure returns (string memory) {
+        return "fixme";
+    }
+
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
@@ -165,9 +169,12 @@ contract TablelandRigs is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC2981, ERC721A, IERC721A)
+        override(ERC721A, IERC721A, ERC2981)
         returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return
+            ERC721A.supportsInterface(interfaceId) ||
+            interfaceId == type(IERC2981).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 }
