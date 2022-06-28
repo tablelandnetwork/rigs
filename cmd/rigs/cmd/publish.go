@@ -57,9 +57,7 @@ var publishCmd = &cobra.Command{
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		cmd.VisitParents(func(c *cobra.Command) {
-			c.PersistentPreRun(cmd, args)
-		})
+		rootCmd.PersistentPreRun(cmd, args)
 
 		var err error
 
@@ -103,9 +101,7 @@ var publishCmd = &cobra.Command{
 		}
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		cmd.VisitParents(func(c *cobra.Command) {
-			c.PersistentPostRun(cmd, args)
-		})
+		rootCmd.PersistentPostRun(cmd, args)
 		_ethClient.Close()
 		tblClient.Close()
 		if _db != nil {
