@@ -338,6 +338,101 @@ func (s *Store) Rigs(ctx context.Context, opts ...local.RigsOption) ([]local.Rig
 	return rigs, nil
 }
 
+// Counts implements Counts.
+func (s *Store) Counts(ctx context.Context) (local.Counts, error) {
+	q := `
+	select 
+		sum(org) as originals,
+		sum(rnd) as randoms from (
+			select 
+				case when original then 1 else 0 end  org,
+				case when not original then 1 else 0 end rnd
+			from rigs
+		)
+	`
+	var counts local.Counts
+	if _, err := s.db.ScanStruct(&counts, q); err != nil {
+		return local.Counts{}, fmt.Errorf("scanning structs: %v", err)
+	}
+	return counts, nil
+}
+
+// FleetRankings implements FleetRankings.
+func (s *Store) FleetRankings(ctx context.Context) ([]local.Ranking, error) {
+	q := `
+		select 
+			name,
+			count (*) as count,
+			round(
+				cast(count(*) * 100 as real) / (
+					select count(*) 
+					from rigs join rig_parts on rigs.id = rig_parts.rig_id join parts on rig_parts.part_id = parts.id 
+					where type = 'Fleet' and not rigs.original
+				),
+				1
+			) as percentage
+		from rigs join rig_parts on rigs.id = rig_parts.rig_id join parts on rig_parts.part_id = parts.id
+		where type = 'Fleet' and not rigs.original
+		group by name
+		order by percentage
+	`
+	var rankings []local.Ranking
+	if err := s.db.ScanStructs(&rankings, q); err != nil {
+		return nil, fmt.Errorf("scanning structs: %v", err)
+	}
+	return rankings, nil
+}
+
+// BackgroundColorRankings implements FleetRankings.
+func (s *Store) BackgroundColorRankings(ctx context.Context) ([]local.Ranking, error) {
+	q := `
+	select 
+		color as name,
+		count (*) as count ,
+		round(
+			cast(count(*) * 100 as real) / (
+				select count(*) 
+				from rigs join rig_parts on rigs.id = rig_parts.rig_id join parts on rig_parts.part_id = parts.id 
+				where type = 'Background'
+			), 1
+		) as percentage
+	from rigs join rig_parts on rigs.id = rig_parts.rig_id join parts on rig_parts.part_id = parts.id
+	where type = 'Background' and not rigs.original
+	group by color
+	order by percentage
+	`
+	var rankings []local.Ranking
+	if err := s.db.ScanStructs(&rankings, q); err != nil {
+		return nil, fmt.Errorf("scanning structs: %v", err)
+	}
+	return rankings, nil
+}
+
+// OriginalRankings implements OriginalRankings.
+func (s *Store) OriginalRankings(ctx context.Context, fleet string) ([]local.Ranking, error) {
+	q := `
+		select 
+			parts.original as name,
+			count (*) as count ,
+			round(
+				cast(count(*) * 100 as real) / (
+					select count(*) 
+					from rigs join rig_parts on rigs.id = rig_parts.rig_id join parts on rig_parts.part_id = parts.id 
+					where parts.original is not null and not rigs.original and fleet = ?
+				), 1
+			) as percentage
+		from rigs join rig_parts on rigs.id = rig_parts.rig_id join parts on rig_parts.part_id = parts.id
+		where parts.original is not null and not rigs.original and fleet = ?
+		group by parts.original
+		order by percentage
+	`
+	var rankings []local.Ranking
+	if err := s.db.ScanStructs(&rankings, q, fleet, fleet); err != nil {
+		return nil, fmt.Errorf("scanning structs: %v", err)
+	}
+	return rankings, nil
+}
+
 // ClearInventory implements ClearInventory.
 func (s *Store) ClearInventory(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, clearInventorySQL); err != nil {

@@ -198,6 +198,19 @@ func RigsWithOffset(offset uint) RigsOption {
 	}
 }
 
+// Counts holds the number or original and random rigs.
+type Counts struct {
+	Originals int
+	Randoms   int
+}
+
+// Ranking represents rank data.
+type Ranking struct {
+	Name       string
+	Count      int
+	Percentage float64
+}
+
 // Store describes the local data store API.
 type Store interface {
 	// InsertParts inserts the Parts.
@@ -226,6 +239,18 @@ type Store interface {
 
 	// Rigs returns a list of Rigs.
 	Rigs(ctx context.Context, opts ...RigsOption) ([]Rig, error)
+
+	// Counts returns the number of original rigs and random rigs.
+	Counts(ctx context.Context) (Counts, error)
+
+	// FleetRankings returns a list of fleets and how commonly they occur.
+	FleetRankings(ctx context.Context) ([]Ranking, error)
+
+	// BackgroundColorRankings returns a list of background colors and how commonly they occur.
+	BackgroundColorRankings(ctx context.Context) ([]Ranking, error)
+
+	// OriginalRankings returns a list of original ranking for the specified fleet.
+	OriginalRankings(ctx context.Context, fleet string) ([]Ranking, error)
 
 	// ClearInventory empties the parts and layers records.
 	ClearInventory(ctx context.Context) error

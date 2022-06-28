@@ -4,10 +4,12 @@ import (
 	"fmt"
 )
 
-type rankCategory string
-type rankItem string
-type rank int
-type partRank map[rankCategory]map[rankItem]rank
+type (
+	rankCategory string
+	rankItem     string
+	rank         int
+	partRank     map[rankCategory]map[rankItem]rank
+)
 
 var partRanks = partRank{
 	"Fleets": {
@@ -147,10 +149,25 @@ func GetRank(category string, item string) (int, error) {
 	return 0, fmt.Errorf("no rank found for category %s, item %s", category, item)
 }
 
-type fleetName string
-type layerName string
-type order int
-type layerGuide map[fleetName]map[layerName]order
+// ScaledRanks returns the category ranks scaled from 0-1.
+func ScaledRanks(category string) map[string]float64 {
+	total := 0
+	for _, r := range partRanks[rankCategory(category)] {
+		total += int(r)
+	}
+	res := make(map[string]float64)
+	for ri, r := range partRanks[rankCategory(category)] {
+		res[string(ri)] = float64(r) / float64(total)
+	}
+	return res
+}
+
+type (
+	fleetName  string
+	layerName  string
+	order      int
+	layerGuide map[fleetName]map[layerName]order
+)
 
 var layers = layerGuide{
 	"Titans": {
