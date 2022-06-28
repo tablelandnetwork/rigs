@@ -52,7 +52,7 @@ var statsCmd = &cobra.Command{
 				ranking.Name, ranking.Count, ranking.Percentage, expected, flag(expected, ranking.Percentage),
 			)
 		}
-		tw.Flush()
+		checkErr(tw.Flush())
 
 		rankings, err := localStore.BackgroundColorRankings(ctx)
 		checkErr(err)
@@ -68,7 +68,7 @@ var statsCmd = &cobra.Command{
 				ranking.Name, ranking.Count, ranking.Percentage, expected, flag(expected, ranking.Percentage),
 			)
 		}
-		tw.Flush()
+		checkErr(tw.Flush())
 
 		for _, fleetRanking := range fleetRankings {
 			rankings, err = localStore.OriginalRankings(ctx, fleetRanking.Name)
@@ -85,7 +85,7 @@ var statsCmd = &cobra.Command{
 					ranking.Name, ranking.Count, ranking.Percentage, expected, flag(expected, ranking.Percentage),
 				)
 			}
-			tw.Flush()
+			checkErr(tw.Flush())
 		}
 	},
 }
