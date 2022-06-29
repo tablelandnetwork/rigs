@@ -75,7 +75,7 @@ var statsCmd = &cobra.Command{
 			checkErr(err)
 			expectedRankings := builder.ScaledRanks(fleetRanking.Name)
 
-			fmt.Printf("\n%s Originals Distribution:\n", fleetRanking.Name)
+			fmt.Printf("\n%s Parts Distribution:\n", fleetRanking.Name)
 			tw = tabwriter.NewWriter(os.Stdout, 0, 8, 2, '\t', tabwriter.AlignRight)
 			for _, ranking := range rankings {
 				expected := expectedRankings[ranking.Name] * 100
