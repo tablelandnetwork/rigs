@@ -3,148 +3,82 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
-	"strings"
 
 	"github.com/gorilla/mux"
-	httpapi "github.com/ipfs/go-ipfs-http-client"
+	"github.com/phayes/freeport"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/tablelandnetwork/nft-minter/buildinfo"
-	"github.com/tablelandnetwork/nft-minter/cmd/api/controllers"
-	"github.com/tablelandnetwork/nft-minter/cmd/api/middlewares"
-	"github.com/tablelandnetwork/nft-minter/internal/staging/tableland"
-	"github.com/tablelandnetwork/nft-minter/pkg/builder"
-	"github.com/tablelandnetwork/nft-minter/pkg/logging"
-	"github.com/tablelandnetwork/nft-minter/pkg/metrics"
+	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
-	"github.com/tablelandnetwork/nft-minter/pkg/util"
 )
 
-func main() {
-	config := &config{}
-	util.SetupConfig(config, configFilename)
-	logging.SetupLogger(buildinfo.GitCommit, config.Log.Debug, config.Log.Human)
+var store local.Store
 
-	// conn, err := ethclient.Dial(config.Registry.EthEndpoint)
-	// if err != nil {
-	// 	log.Fatal().
-	// 		Err(err).
-	// 		Str("ethEndpoint", config.Registry.EthEndpoint).
-	// 		Msg("failed to connect to ethereum endpoint")
-	// }
-	// defer conn.Close()
-	//
-	// registry, err := ethereum.NewClient(conn, common.HexToAddress(config.Registry.ContractAddress))
-	// if err != nil {
-	// 	log.Fatal().
-	// 		Err(err).
-	// 		Str("contractAddress", config.Registry.ContractAddress).
-	// 		Msg("failed to create new ethereum client")
-	// }
+func main() {
+	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
 	db, err := sql.Open("sqlite3", "./local.db")
 	if err != nil {
 		log.Fatal().Err(err).Msg("opening sqlite db")
 	}
-	defer func() {
-		_ = db.Close()
-	}()
-	store, err := impl.NewStore(context.Background(), db)
+	store, err = impl.NewStore(context.Background(), db)
 	if err != nil {
 		log.Fatal().Err(err).Msg("could not create store")
 	}
 
-	httpClient := &http.Client{}
+	r := mux.NewRouter()
+	r.HandleFunc("/rigs", rigsHandler)
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("client/dist")))
 
-	ipfs, err := httpapi.NewURLApiWithClient(config.IPFS.APIAddr, httpClient)
+	port, err := freeport.GetFreePort()
 	if err != nil {
-		log.Fatal().Err(err).Msg("creating ipfs client")
+		log.Fatal().Err(err).Msg("getting free port")
 	}
 
-	builder := builder.NewBuilder(store, ipfs)
+	addr := fmt.Sprintf("localhost:%d", port)
+	api := fmt.Sprintf("http://%s", addr)
 
-	stagingService, err := tableland.NewTablelandGenerator(
-		store,
-		builder,
-		config.Render.Concurrency,
-		config.Render.CacheDir,
-	)
-
-	// stagingService, err := sheets.NewSheetsGenerator(
-	// 	config.GCP.SheetID,
-	// 	config.GCP.DriveFolderID,
-	// 	config.GCP.ServiceAccountKeyFile,
-	// 	config.Render.Concurrency,
-	// 	config.Render.CacheDir,
-	// )
+	if err := os.Setenv("API", api); err != nil {
+		log.Fatal().Err(err).Msg("setting api env var")
+	}
+	cmd := exec.Command("npm", "run", "generate")
+	cmd.Dir = "client"
+	stdout, err := cmd.Output()
 	if err != nil {
-		log.Fatal().
-			Err(err).
-			Msg("could not setup generator")
+		log.Fatal().Err(err).Msg("generating client app")
 	}
-	stagingController := controllers.NewStagingController(stagingService)
-	localController := controllers.NewLocalControlelr(store)
+	fmt.Println(string(stdout))
 
-	// General router configuration.
-	router := newRouter()
-	router.Use(middlewares.CORS(strings.Split(config.HTTP.Origins, ",")), middlewares.TraceID)
-
-	// Gateway configuration.
-	var middleware []mux.MiddlewareFunc
-	if !strings.Contains(config.HTTP.Origins, "localhost") {
-		basicAuth := middlewares.BasicAuth(config.Admin.Username, config.Admin.Password)
-		middleware = append(middleware, basicAuth)
-	}
-	router.Get(
-		"/generate",
-		stagingController.GenerateMetadata,
-		append(middleware, middlewares.OtelHTTP("GenerateMetadata"))...,
-	)
-	router.Get("/render", stagingController.RenderImage, middlewares.OtelHTTP("RenderImage"))
-	router.Get("/rigs", localController.Rigs, append(middleware, middlewares.OtelHTTP("Rigs"))...)
-
-	// Health endpoint configuration.
-	router.Get("/healthz", healthHandler)
-	router.Get("/health", healthHandler)
-
-	// Admin endpoint configuration.
-	if config.Admin.Password == "" {
-		log.Warn().
-			Msg("no admin api password set")
-	}
-
-	// Validator instrumentation configuration.
-	if err := metrics.SetupInstrumentation(":" + config.Metrics.Port); err != nil {
-		log.Fatal().
-			Err(err).
-			Str("port", config.Metrics.Port).
-			Msg("could not setup instrumentation")
-	}
-
-	// Start HTTP server.
 	go func() {
-		if err := router.Serve(":" + config.HTTP.Port); err != nil {
-			log.Fatal().
-				Err(err).
-				Str("port", config.HTTP.Port).
-				Msg("could not start server")
+		if err := http.ListenAndServe(addr, r); err != nil {
+			log.Fatal().Err(err).Int("port", port).Msg("could not start server")
 		}
 	}()
 
+	log.Info().Msgf("server ready and listening at %s", api)
+
 	handleInterrupt(func() {
-		if err := stagingService.Close(); err != nil {
-			log.Fatal().
-				Err(err).
-				Msg("error closing staging service")
+		if err := db.Close(); err != nil {
+			log.Error().Err(err).Msg("error closing local db")
 		}
 	})
 }
 
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
+func rigsHandler(rw http.ResponseWriter, r *http.Request) {
+	rigs, err := store.Rigs(r.Context())
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("querying for rigs")
+		return
+	}
+	rw.WriteHeader(http.StatusOK)
+	_ = json.NewEncoder(rw).Encode(rigs)
 }
 
 func handleInterrupt(stop func()) {

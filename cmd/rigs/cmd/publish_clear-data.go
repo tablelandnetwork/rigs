@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/tablelandnetwork/nft-minter/internal/wpool"
+	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 

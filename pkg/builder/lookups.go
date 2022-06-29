@@ -14,22 +14,14 @@ type (
 var partRanks = partRank{
 	"Fleets": {
 		// 66 styles, 181 originals
-		"Foils":       18, // 6 styles, 18 originals
-		"Tracers":     19, // 6 styles, 19 originals
-		"Sleds":       19, // 8 styles, 19 originals
-		"Airelights":  21, // 8 styles, 21 originals
-		"Edge Riders": 24, // 10 styles, 24 originals
-		"Hoppers":     25, // 8 styles, 25 originals
-		"Tumblers":    27, // 9 styles, 27 originals
-		"Titans":      28, // 11 styles, 28 originals
-		// "Airelights":  1, // 8 styles, 21 originals
-		// "Foils":       1, // 6 styles, 18 originals
-		// "Tracers":     2, // 6 styles, 19 originals
-		// "Hoppers":     2, // 8 styles, 25 originals
-		// "Sleds":       3, // 8 styles, 19 originals
-		// "Edge Riders": 3, // 10 styles, 24 originals
-		// "Titans":      4, // 11 styles, 28 originals
-		// "Tumblers":    4, // 9 styles, 27 originals
+		"Foils":       1, // 6 styles, 18 originals
+		"Airelights":  2, // 8 styles, 21 originals
+		"Hoppers":     3, // 8 styles, 25 originals
+		"Tracers":     4, // 6 styles, 19 originals
+		"Edge Riders": 5, // 10 styles, 24 originals
+		"Sleds":       6, // 8 styles, 19 originals
+		"Tumblers":    7, // 9 styles, 27 originals
+		"Titans":      8, // 11 styles, 28 originals
 	},
 	"Foils": {
 		// 3 colors
@@ -39,30 +31,6 @@ var partRanks = partRank{
 		"The Cricket":   4,
 		"G-Nat":         5,
 		"The Messenger": 6,
-	},
-	"Tracers": {
-		// 2 colors
-		"Vapor Jet": 1,
-		// 3 colors
-		"Sand Splitter":  2,
-		"Hash Grappler":  3,
-		"Herculean Twin": 4,
-		// 4 colors
-		"Skipjack Thunderbolt": 5,
-		"Grohl":                6,
-	},
-	"Sleds": {
-		// 2 colors
-		"The Circuit": 1,
-		"Steamwing":   2,
-		"Skelebit":    3,
-		"Darkmatter":  4,
-		"Speedcube":   5,
-		"Swiftbeak":   6,
-		// 3 colors
-		"Decrypter": 7,
-		// 4 colors
-		"Waveracer": 8,
 	},
 	"Airelights": {
 		// 2 colors
@@ -75,6 +43,30 @@ var partRanks = partRank{
 		"Quantum Whiff":  6,
 		"The Alpensquab": 7,
 		"The Orca":       8,
+	},
+	"Hoppers": {
+		// 2 colors
+		"The Canyonlander": 1,
+		// 3 colors
+		"Block Explorer": 2,
+		"Stealth Node":   3,
+		"Rownum Candle":  4,
+		"Claim Jumper":   5,
+		"Steaming Eagle": 6,
+		// 4 colors
+		"Bit Shifter":    7,
+		"Fusion Scooter": 8,
+	},
+	"Tracers": {
+		// 2 colors
+		"Vapor Jet": 1,
+		// 3 colors
+		"Sand Splitter":  2,
+		"Hash Grappler":  3,
+		"Herculean Twin": 4,
+		// 4 colors
+		"Skipjack Thunderbolt": 5,
+		"Grohl":                6,
 	},
 	"Edge Riders": {
 		// 2 colors
@@ -91,18 +83,18 @@ var partRanks = partRank{
 		// 4 colors
 		"Gwei Jumper": 10,
 	},
-	"Hoppers": {
+	"Sleds": {
 		// 2 colors
-		"The Canyonlander": 1,
+		"The Circuit": 1,
+		"Steamwing":   2,
+		"Skelebit":    3,
+		"Darkmatter":  4,
+		"Speedcube":   5,
+		"Swiftbeak":   6,
 		// 3 colors
-		"Block Explorer": 2,
-		"Stealth Node":   3,
-		"Rownum Candle":  4,
-		"Claim Jumper":   5,
-		"Steaming Eagle": 6,
+		"Decrypter": 7,
 		// 4 colors
-		"Bit Shifter":    7,
-		"Fusion Scooter": 8,
+		"Waveracer": 8,
 	},
 	"Tumblers": {
 		// 3 colors
