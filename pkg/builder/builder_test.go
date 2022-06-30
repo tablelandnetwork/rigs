@@ -13,11 +13,11 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
 	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
+	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 

@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/nft-minter/internal/wpool"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 

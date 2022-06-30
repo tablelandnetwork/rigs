@@ -249,7 +249,7 @@ type Store interface {
 	// BackgroundColorRankings returns a list of background colors and how commonly they occur.
 	BackgroundColorRankings(ctx context.Context) ([]Ranking, error)
 
-	// OriginalRankings returns a list of original ranking for the specified fleet.
+	// OriginalRankings returns a list of original rankings for the specified fleet.
 	OriginalRankings(ctx context.Context, fleet string) ([]Ranking, error)
 
 	// ClearInventory empties the parts and layers records.

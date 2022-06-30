@@ -22,7 +22,9 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
 	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
 	"golang.org/x/image/draw"
+	"golang.org/x/time/rate"
 )
 
 const (
@@ -204,63 +206,95 @@ func (b *Builder) Render(ctx context.Context, rig *local.Rig, opts ...RenderOpti
 		}
 	}()
 
-	rect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
+	execFunc := func(
+		rig local.Rig,
+		writer *io.PipeWriter,
+		readerData io.Reader,
+		writerThumb *io.PipeWriter,
+		background bool,
+	) wpool.ExecutionFn {
+		return func(ctx context.Context) (interface{}, error) {
+			if err := b.AssembleImage(ctx, rig, writer,
+				AssembleImageBackground(background),
+				AssembleImageCompression(c.compression),
+				AssembleImageLabels(c.drawLabels),
+				AssembleImageSize(c.size),
+			); err != nil {
+				return nil, fmt.Errorf("assembling image: %v", err)
+			}
+			if err := writer.Close(); err != nil {
+				return nil, fmt.Errorf("closing writer: %v", err)
+			}
+			thumbRect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
+			if err := resizeImage(readerData, thumbRect, writerThumb); err != nil {
+				return nil, fmt.Errorf("resizing image: %v", err)
+			}
+			if err := writerThumb.Close(); err != nil {
+				return nil, fmt.Errorf("closing thumb writer: %v", err)
+			}
+			return nil, nil
+		}
+	}
 
-	go func() {
-		if err := b.AssembleImage(ctx, *rig, writer,
-			AssembleImageBackground(true),
-			AssembleImageCompression(c.compression),
-			AssembleImageLabels(c.drawLabels),
-			AssembleImageSize(c.size),
-		); err != nil {
-			log.Err(err).Msg("building image")
-		}
-		if err := writer.Close(); err != nil {
-			log.Err(err).Msg("closing writer")
-		}
-		if err := resizeImage(&readerData, rect, writerThumb); err != nil {
-			log.Err(err).Msg("resizing image")
-		}
-		if err := writerThumb.Close(); err != nil {
-			log.Err(err).Msg("closing writer thumb")
-		}
-	}()
+	jobs := []wpool.Job{
+		{
+			ID:     1,
+			Desc:   "render images with background",
+			ExecFn: execFunc(*rig, writer, &readerData, writerThumb, true),
+		},
+		{
+			ID:     2,
+			Desc:   "render images without backgrounds",
+			ExecFn: execFunc(*rig, writerAlpha, &readerAlphaData, writerAlphaThumb, false),
+		},
+		{
+			ID:   3,
+			Desc: "add images to ipfs",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				dir := ipfsfiles.NewMapDirectory(map[string]ipfsfiles.Node{
+					"image.png":       ipfsfiles.NewReaderFile(readerThrough),
+					"image_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThrough),
+					"thumb.png":       ipfsfiles.NewReaderFile(readerThumb),
+					"thumb_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThumb),
+				})
+				path, err := b.ipfs.Unixfs().Add(
+					ctx,
+					dir,
+					options.Unixfs.Pin(true),
+					options.Unixfs.CidVersion(1),
+				)
+				if err != nil {
+					return nil, fmt.Errorf("adding image to ipfs: %v", err)
+				}
+				return path, nil
+			},
+		},
+	}
 
-	go func() {
-		if err := b.AssembleImage(ctx, *rig, writerAlpha,
-			AssembleImageBackground(false),
-			AssembleImageCompression(c.compression),
-			AssembleImageLabels(c.drawLabels),
-			AssembleImageSize(c.size),
-		); err != nil {
-			log.Err(err).Msg("building image alpha")
-		}
-		if err := writerAlpha.Close(); err != nil {
-			log.Err(err).Msg("closing writer alpha")
-		}
-		if err := resizeImage(&readerAlphaData, rect, writerAlphaThumb); err != nil {
-			log.Err(err).Msg("resizing image alpha")
-		}
-		if err := writerAlphaThumb.Close(); err != nil {
-			log.Err(err).Msg("closing writer alpha thumb")
-		}
-	}()
+	wp := wpool.New(3, rate.Inf)
+	go wp.GenerateFrom(jobs)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go wp.Run(ctx)
 
-	dir := ipfsfiles.NewMapDirectory(map[string]ipfsfiles.Node{
-		"image.png":       ipfsfiles.NewReaderFile(readerThrough),
-		"image_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThrough),
-		"thumb.png":       ipfsfiles.NewReaderFile(readerThumb),
-		"thumb_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThumb),
-	})
+	var path ipfspath.Path
 
-	path, err := b.ipfs.Unixfs().Add(
-		ctx,
-		dir,
-		options.Unixfs.Pin(true),
-		options.Unixfs.CidVersion(1),
-	)
-	if err != nil {
-		return fmt.Errorf("adding image to ipfs: %v", err)
+Loop:
+	for {
+		select {
+		case r, ok := <-wp.Results():
+			if !ok {
+				break
+			}
+			if r.Err != nil {
+				return r.Err
+			}
+			if r.ID == wpool.JobID(3) {
+				path = r.Value.(ipfspath.Path)
+			}
+		case <-wp.Done:
+			break Loop
+		}
 	}
 
 	rig.Gateway = nullable.FromString(c.gatewayURL, nullable.EmptyIsNull())

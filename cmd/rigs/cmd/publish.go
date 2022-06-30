@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"database/sql"
+	"encoding/base64"
 	"net/http"
 	"time"
 
@@ -13,7 +14,6 @@ import (
 	storage "github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/sqlite"
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/tableland"
-	"github.com/tablelandnetwork/nft-minter/pkg/util"
 	"github.com/textileio/go-tableland/pkg/client"
 	"github.com/textileio/go-tableland/pkg/wallet"
 )
@@ -66,7 +66,7 @@ var publishCmd = &cobra.Command{
 		checkErr(err)
 		user := viper.GetString("remote-ipfs-api-user")
 		pass := viper.GetString("remote-ipfs-api-pass")
-		remoteIpfs.Headers.Add("Authorization", util.BasicAuthString(user, pass))
+		remoteIpfs.Headers.Add("Authorization", basicAuthString(user, pass))
 
 		_ethClient, err = ethclient.Dial(viper.GetString("eth-api-url"))
 		checkErr(err)
@@ -108,4 +108,9 @@ var publishCmd = &cobra.Command{
 			_ = _db.Close()
 		}
 	},
+}
+
+func basicAuthString(user, pass string) string {
+	auth := user + ":" + pass
+	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
