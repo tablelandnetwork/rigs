@@ -1,43 +1,14 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Apache-2.0
 pragma solidity >=0.8.10 <0.9.0;
 
 /*
  * @title String & slice utility library for Solidity contracts.
  * @author Nick Johnson <arachnid@notdot.net>
  *
- * @dev Functionality in this library is largely implemented using an
- *      abstraction called a 'slice'. A slice represents a part of a string -
- *      anything from the entire string to a single character, or even no
- *      characters at all (a 0-length slice). Since a slice only has to specify
- *      an offset and a length, copying and manipulating slices is a lot less
- *      expensive than copying and manipulating the strings they reference.
- *
- *      To further reduce gas costs, most functions on slice that need to return
- *      a slice modify the original one instead of allocating a new one; for
- *      instance, `s.split(".")` will return the text up to the first '.',
- *      modifying s to only contain the remainder of the string after the '.'.
- *      In situations where you do not want to modify the original slice, you
- *      can make a copy first with `.copy()`, for example:
- *      `s.copy().split(".")`. Try and avoid using this idiom in loops; since
- *      Solidity has no memory management, it will result in allocating many
- *      short-lived slices that are later discarded.
- *
- *      Functions that return two slices come in two versions: a non-allocating
- *      version that takes the second slice as an argument, modifying it in
- *      place, and an allocating version that allocates and returns the second
- *      slice; see `nextRune` for example.
- *
- *      Functions that have to copy string data will return strings rather than
- *      slices; these can be cast back to slices for further processing if
- *      required.
- *
- *      For convenience, some functions are provided with non-modifying
- *      variants that create a new slice and return both; for instance,
- *      `s.splitNew('.')` leaves s unmodified, and returns two values
- *      corresponding to the left and right parts of the string.
+ * @dev This is a subset of methods from https://github.com/Arachnid/solidity-stringutils
  */
 
-library Strings {
+library SStrings {
     struct Slice {
         uint256 _len;
         uint256 _ptr;
@@ -198,63 +169,5 @@ library Strings {
         returns (Slice memory token)
     {
         split(self, needle, token);
-    }
-
-    /*
-     * @dev Returns a newly allocated string containing the concatenation of
-     *      `self` and `other`.
-     * @param self The first slice to concatenate.
-     * @param other The second slice to concatenate.
-     * @return The concatenation of the two strings.
-     */
-    function concat(Slice memory self, Slice memory other)
-        internal
-        pure
-        returns (string memory)
-    {
-        string memory ret = new string(self._len + other._len);
-        uint256 retptr;
-        assembly {
-            retptr := add(ret, 32)
-        }
-        memcpy(retptr, self._ptr, self._len);
-        memcpy(retptr + self._len, other._ptr, other._len);
-        return ret;
-    }
-
-    /*
-     * @dev Joins an array of slices, using `self` as a delimiter, returning a
-     *      newly allocated string.
-     * @param self The delimiter to use.
-     * @param parts A list of slices to join.
-     * @return A newly allocated string containing all the slices in `parts`,
-     *         joined with `self`.
-     */
-    function join(Slice memory self, Slice[] memory parts)
-        internal
-        pure
-        returns (string memory)
-    {
-        if (parts.length == 0) return "";
-
-        uint256 length = self._len * (parts.length - 1);
-        for (uint256 i = 0; i < parts.length; i++) length += parts[i]._len;
-
-        string memory ret = new string(length);
-        uint256 retptr;
-        assembly {
-            retptr := add(ret, 32)
-        }
-
-        for (uint256 i = 0; i < parts.length; i++) {
-            memcpy(retptr, parts[i]._ptr, parts[i]._len);
-            retptr += parts[i]._len;
-            if (i < parts.length - 1) {
-                memcpy(retptr, self._ptr, self._len);
-                retptr += self._len;
-            }
-        }
-
-        return ret;
     }
 }

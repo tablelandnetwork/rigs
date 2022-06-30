@@ -4,19 +4,50 @@ import chaiAsPromised from "chai-as-promised";
 import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
 import { PaymentSplitter, TablelandRigs } from "../typechain-types";
+import { MerkleTree } from "merkletreejs";
+import keccak256 from "keccak256";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
+type AllowListEntry = {
+  account: SignerWithAddress;
+  quantity: number;
+};
+
+function hashEntry(entry: AllowListEntry): Buffer {
+  return Buffer.from(
+    ethers.utils
+      .solidityKeccak256(
+        ["address", "uint256"],
+        [entry.account.address, entry.quantity]
+      )
+      .slice(2),
+    "hex"
+  );
+}
+
 describe("Rigs", function () {
   let rigs: TablelandRigs;
   let splitter: PaymentSplitter;
   let accounts: SignerWithAddress[];
+  let allowlist: AllowListEntry[];
+  let merkletree: MerkleTree;
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
+
+    allowlist = accounts.slice(0, 5).map((a: SignerWithAddress, i: number) => {
+      return {
+        account: a,
+        quantity: i,
+      };
+    });
+    merkletree = new MerkleTree(allowlist.map(hashEntry), keccak256, {
+      sort: true,
+    });
 
     const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");
     splitter = (await SplitterFactory.deploy(
@@ -29,20 +60,20 @@ describe("Rigs", function () {
     rigs = await RigsFactory.deploy(
       BigNumber.from(3000),
       utils.parseEther("0.05"),
-      "https://foo.xyz/{id}/bar",
       accounts[1].address,
-      splitter.address
+      splitter.address,
+      "https://foo.xyz/{id}/bar",
+      merkletree.getHexRoot()
     );
     await rigs.deployed();
   });
 
-  it.only("Should mint a single rig", async function () {
+  it("Should mint a single rig", async function () {
     const minter = accounts[4];
     const tx = await rigs
       .connect(minter)
       .mint(1, { value: utils.parseEther("0.06") });
     const receipt = await tx.wait();
-    console.log(receipt.events);
     const [event] = receipt.events ?? [];
 
     // check transfer event
@@ -121,7 +152,7 @@ describe("Rigs", function () {
     await tx.wait();
   });
 
-  it.only("Should return token URI for a token", async function () {
+  it("Should return token URI for a token", async function () {
     const minter = accounts[7];
     const tx = await rigs
       .connect(minter)
@@ -133,5 +164,53 @@ describe("Rigs", function () {
     const uri = await rigs.tokenURI(tokenId);
 
     console.log(uri);
+  });
+
+  it.only("Should only allow allowed accounts to claim", async function () {
+    // allowlist.forEach((entry) => {
+    // it("element", async function () {
+
+    // const badEntry = {
+    //   account: accounts[6],
+    //   quantity: 1
+    // }
+
+    let tx = await rigs.openClaims();
+    await tx.wait();
+
+    const proof = merkletree.getHexProof(hashEntry(allowlist[1]));
+    tx = await rigs
+      .connect(allowlist[1].account)
+      .claim(1, 1, proof, { value: utils.parseEther("0.05") });
+    const receipt = await tx.wait();
+    console.log(receipt.events);
+
+    // await expect(this.registry.redeem(account, tokenId, proof))
+    //   .to.emit(this.registry, 'Transfer')
+    //   .withArgs(ethers.constants.AddressZero, account, tokenId);
+
+    // });
+    // });
+
+    // const leaves = allowed.map((account) => keccak256(account.address));
+    // const tree = new MerkleTree(leaves, keccak256, { sort: true });
+    // const merkleRoot = tree.getHexRoot();
+
+    // const WhitelistSale = await ethers.getContractFactory("WhitelistSale");
+    // const whitelistSale = await WhitelistSale.deploy(merkleRoot);
+    // await whitelistSale.deployed();
+
+    // const merkleProof = tree.getHexProof(keccak256(whitelisted[0].address));
+    // const invalidMerkleProof = tree.getHexProof(
+    //   keccak256(notWhitelisted[0].address)
+    // );
+
+    // await expect(whitelistSale.mint(merkleProof)).to.not.be.rejected;
+    // await expect(whitelistSale.mint(merkleProof)).to.be.rejectedWith(
+    //   "already claimed"
+    // );
+    // await expect(
+    //   whitelistSale.connect(notWhitelisted[0]).mint(invalidMerkleProof)
+    // ).to.be.rejectedWith("invalid merkle proof");
   });
 });

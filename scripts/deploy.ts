@@ -1,5 +1,6 @@
 import { ethers, network, rigsConfig } from "hardhat";
 import { BigNumber, utils } from "ethers";
+import { buildTree } from "../helpers/allowlist";
 import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
 
 async function main() {
@@ -21,6 +22,9 @@ async function main() {
     throw Error(`already deployed to '${network.name}'`);
   }
 
+  // Build merkle tree for allowlist
+  const merkletree = buildTree(rigsConfig.allowlist);
+
   // Deploy
   const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");
   const splitter = (await SplitterFactory.deploy(
@@ -33,9 +37,10 @@ async function main() {
   const rigs = (await RigsFactory.deploy(
     BigNumber.from(rigsConfig.maxSupply),
     utils.parseEther(rigsConfig.etherPrice),
-    rigsConfig.uriTemplate,
     rigsConfig.beneficiary,
-    splitter.address
+    splitter.address,
+    rigsConfig.uriTemplate,
+    merkletree.getHexRoot()
   )) as TablelandRigs;
   await rigs.deployed();
 
@@ -56,7 +61,7 @@ async function main() {
     });
     await tx.wait();
   }
-  console.log(`\nMinted ${rigsConfig.autoMint} rigs!`)
+  console.log(`\nMinted ${rigsConfig.autoMint} rigs!`);
 }
 
 main().catch((error) => {

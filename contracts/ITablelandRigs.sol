@@ -5,6 +5,35 @@ pragma solidity >=0.8.10 <0.9.0;
  * @dev Interface of a TablelandRigs compliant contract.
  */
 interface ITablelandRigs {
+
+    error ZeroQuantity();
+
+    error InsufficientAllowance();
+
+    error InvalidClaim();
+
+    error InsufficientValue(uint256 price);
+
+    error SoldOut();
+
+    event ClaimsOpen();
+
+    event MintsOpen();
+
+    /**
+     * @dev Emitted when a buyer is refunded.
+     */
+    event Refund(address indexed buyer, uint256 amount);
+
+    /**
+     * @dev Emitted on all purchases of non-zero amount.
+     */
+    event Revenue(
+        address indexed beneficiary,
+        uint256 numPurchased,
+        uint256 amount
+    );
+
     /**
      * @dev Mints Rigs.
      *

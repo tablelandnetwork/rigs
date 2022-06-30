@@ -40,19 +40,6 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY || "",
-    // apiKey: {
-    //   "optimism-kovan-staging": process.env.ETHERSCAN_API_KEY || "",
-    // },
-    // customChains: [
-    //   {
-    //     network: "optimism-kovan-staging",
-    //     chainId: 69,
-    //     urls: {
-    //       apiURL: "https://api-kovan-optimistic.etherscan.io/api",
-    //       browserURL: "https://kovan-optimistic.etherscan.io",
-    //     },
-    //   },
-    // ],
   },
   networks: {
     // mainnets
@@ -139,6 +126,7 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
+      allowlist: new Map(),
       autoMint: 0,
     },
     optimism: {
@@ -150,6 +138,7 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
+      allowlist: new Map(),
       autoMint: 0,
     },
     // testnets
@@ -162,6 +151,7 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
+      allowlist: new Map(),
       autoMint: 0,
     },
     "ethereum-goerli": {
@@ -173,6 +163,7 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
+      allowlist: new Map(),
       autoMint: 0,
     },
     "optimism-kovan": {
@@ -184,6 +175,7 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
+      allowlist: new Map(),
       autoMint: 0,
     },
     // devnets
@@ -200,7 +192,14 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [20, 80],
       contractAddress: "0x879A53A8Ac46fc87Cfe6F7700f0624F50a750713",
       royaltyContractAddress: "0x3f508A8a4c2Db38F5411C9A8CC169cac2AA2822a",
-      autoMint: 10,
+      allowlist: new Map([
+        ["0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe", 3],
+        ["0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F", 4],
+        ["0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65", 5],
+        ["0x06A948303AA30b6870896C84E83Ba00Df5292950", 10],
+        ["0x1f48aa5069bcdae06A0d009b42E20ccc33D1Ff51", 20],
+      ]),
+      autoMint: 1,
     },
     "optimism-kovan-staging": {
       maxSupply: 1000,
@@ -215,7 +214,8 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [20, 80],
       contractAddress: "0xA0C05329DD1100770076631472d0328381d590dB",
       royaltyContractAddress: "0x9D54f454F040fC993924aea7aA6ADec282E280F0",
-      autoMint: 10,
+      allowlist: new Map(),
+      autoMint: 1,
     },
     localhost: {
       maxSupply: 0,
@@ -226,6 +226,7 @@ const config: HardhatUserConfig = {
       royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
+      allowlist: new Map(),
       autoMint: 0,
     },
   },
@@ -245,6 +246,9 @@ interface RigsConfig {
   // deployments
   contractAddress: string;
   royaltyContractAddress: string;
+
+  // allowlist
+  allowlist: Map<string, number>;
 
   // development helpers
   autoMint: number;
@@ -281,7 +285,7 @@ declare module "hardhat/types/runtime" {
 }
 
 extendEnvironment((hre: HardhatRuntimeEnvironment) => {
-  // Get base URI for user-selected network
+  // Get config for user-selected network
   const config = hre.userConfig.config as any;
   hre.rigsConfig = config[hre.network.name];
 });

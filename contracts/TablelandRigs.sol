@@ -9,8 +9,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./ITablelandRigs.sol";
 import "./utils/URITemplate.sol";
+
+import "hardhat/console.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -26,32 +29,33 @@ contract TablelandRigs is
     ERC2981
 {
     // The maximum number of tokens that can be minted.
-    uint256 private _maxSupply;
+    uint256 public immutable maxSupply;
+
     // The price of minting a token.
-    uint256 private _mintPrice;
+    uint256 public immutable mintPrice;
+
+    // The address receiving mint revenue.
+    address payable public beneficiary;
+
+    bytes32 public immutable root;
+
+    bool public claimsOpen;
+    bool public mintsOpen;
 
     constructor(
-        uint256 fixedSupply,
-        uint256 mintPrice,
-        string memory uriTemplate,
+        uint256 _maxSupply,
+        uint256 _mintPrice,
         address payable _beneficiary,
-        address payable royaltyReceiver
+        address payable royaltyReceiver,
+        string memory uriTemplate,
+        bytes32 merkleroot
     ) ERC721A("Tableland Rigs", "RIG") URITemplate(uriTemplate) {
-        _maxSupply = fixedSupply;
-        _mintPrice = mintPrice;
+        maxSupply = _maxSupply;
+        mintPrice = _mintPrice;
         setBeneficiary(_beneficiary);
         _setDefaultRoyalty(royaltyReceiver, 500);
+        root = merkleroot;
     }
-
-    /// @notice Emitted when a buyer is refunded.
-    event Refund(address indexed buyer, uint256 amount);
-
-    /// @notice Emitted on all purchases of non-zero amount.
-    event Revenue(
-        address indexed beneficiary,
-        uint256 numPurchased,
-        uint256 amount
-    );
 
     /**
      * @dev See {ITablelandRigs-mint}.
@@ -60,39 +64,67 @@ contract TablelandRigs is
         external
         payable
         override
-        nonReentrant
         whenNotPaused
+        whenMintsOpen
     {
+        _mint(quantity);
+    }
+
+    function claim(
+        uint256 quantity,
+        uint256 allowance,
+        bytes32[] calldata proof
+    ) external payable whenNotPaused whenClaimsOpen {
+        if (!_verify(_leaf(_msgSenderERC721A(), allowance), proof)) {
+            revert InvalidClaim();
+        }
+
+        if (quantity == 0) {
+            revert ZeroQuantity();
+        }
+
+        uint64 claimed = _getAux(_msgSenderERC721A());
+        quantity = Math.min(quantity, allowance - uint256(claimed));
+        if (quantity == 0) {
+            revert InsufficientAllowance();
+        }
+
+        claimed = claimed + uint64(quantity);
+        _setAux(_msgSenderERC721A(), claimed);
+
+        _mint(quantity);
+
+        // sanity check
+        assert(allowance <= claimed);
+    }
+
+    function _mint(uint256 quantity) private nonReentrant {
         // Check quantity is non-zero and doesn't exceed remaining quota
-        require(quantity > 0, "TablelandRigs: Quantity is zero");
-        quantity = Math.min(quantity, _maxSupply - totalSupply());
-        require(quantity > 0, "TablelandRigs: Sold out");
+        if (quantity == 0) {
+            revert ZeroQuantity();
+        }
+        quantity = Math.min(quantity, maxSupply - totalSupply());
+        if (quantity == 0) {
+            revert SoldOut();
+        }
 
         // Check sufficient value
-        uint256 _cost = cost(quantity);
-        if (msg.value < _cost) {
-            revert(
-                string(
-                    abi.encodePacked(
-                        "TablelandRigs: Costs ",
-                        _toString(_cost / 1e9),
-                        " GWei"
-                    )
-                )
-            );
+        uint256 cost = _cost(quantity);
+        if (msg.value < cost) {
+            revert InsufficientValue(cost);
         }
 
         // Mint effect and interaction
         _safeMint(_msgSenderERC721A(), quantity);
 
         // Handle funds
-        if (_cost > 0) {
-            Address.sendValue(beneficiary, _cost);
-            emit Revenue(beneficiary, quantity, _cost);
+        if (cost > 0) {
+            Address.sendValue(beneficiary, cost);
+            emit Revenue(beneficiary, quantity, cost);
         }
-        if (msg.value > _cost) {
+        if (msg.value > cost) {
             address payable reimburse = payable(_msgSenderERC721A());
-            uint256 refund = msg.value - _cost;
+            uint256 refund = msg.value - cost;
             // solhint-disable-next-line avoid-low-level-calls
             (bool success, bytes memory returnData) = reimburse.call{
                 value: refund
@@ -102,12 +134,25 @@ contract TablelandRigs is
         }
     }
 
-    function cost(uint256 quantity) private view returns (uint256) {
-        return quantity * _mintPrice;
+    function _cost(uint256 quantity) private view returns (uint256) {
+        return quantity * mintPrice;
     }
 
-    // The address receiving mint revenue.
-    address payable public beneficiary;
+    function _leaf(address account, uint256 quantity)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked(account, quantity));
+    }
+
+    function _verify(bytes32 leaf, bytes32[] memory proof)
+        internal
+        view
+        returns (bool)
+    {
+        return MerkleProof.verify(proof, root, leaf);
+    }
 
     function setBeneficiary(address payable _beneficiary) public onlyOwner {
         beneficiary = _beneficiary;
@@ -141,6 +186,34 @@ contract TablelandRigs is
         return _getTokenURI(_toString(tokenId));
     }
 
+    function openClaims() external onlyOwner {
+        claimsOpen = true;
+        emit ClaimsOpen();
+    }
+
+    function openMints() external onlyOwner {
+        mintsOpen = true;
+        emit MintsOpen();
+    }
+
+    error ClaimsNotOpen();
+
+    error MintsNotOpen();
+
+    modifier whenClaimsOpen() {
+        if (!claimsOpen) {
+            revert ClaimsNotOpen();
+        }
+        _;
+    }
+
+    modifier whenMintsOpen() {
+        if (!mintsOpen) {
+            revert MintsNotOpen();
+        }
+        _;
+    }
+
     /**
      * @dev See {ITablelandRigs-pause}.
      */
@@ -153,10 +226,6 @@ contract TablelandRigs is
      */
     function unpause() external override onlyOwner {
         _unpause();
-    }
-
-    function maxSupply() external view returns (uint256) {
-        return _maxSupply;
     }
 
     /**
