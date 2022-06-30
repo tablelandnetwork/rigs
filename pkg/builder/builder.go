@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"image/png"
 	"io"
 	"sort"
+	"strings"
 	"sync"
 
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
@@ -122,7 +124,12 @@ func (b *Builder) Build(ctx context.Context, option BuildOption) (*local.Rig, er
 	}
 
 	if err := b.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
-		return nil, fmt.Errorf("inserting rigs: %v", err)
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: rigs.fingerprint") {
+			// We happened to assemble a duplicate rig, so call this same func recursively.
+			log.Info().Msgf("assembled duplicate rig with fingerprint %s, discarding rig and re-assembling", rig.Fingerprint)
+			return b.Build(ctx, option)
+		}
+		return nil, fmt.Errorf("inserting rig: %v", err)
 	}
 
 	return &rig, nil
@@ -361,6 +368,11 @@ func (b *Builder) AssembleRig(ctx context.Context, opt AssembleRigOption) (local
 		return local.Rig{}, fmt.Errorf("building rig data: %v", err)
 	}
 
+	layers, err := b.getLayers(ctx, rig, false)
+	if err != nil {
+		return local.Rig{}, fmt.Errorf("getting layers for fingerprint: %v", err)
+	}
+	rig.Fingerprint = asSha256(layers)
 	rig.PercentOriginal = percentOriginal(rig.Parts, 0)
 	rig.PercentOriginal50 = percentOriginal(rig.Parts, 0.5)
 	rig.PercentOriginal75 = percentOriginal(rig.Parts, 0.75)
@@ -369,6 +381,12 @@ func (b *Builder) AssembleRig(ctx context.Context, opt AssembleRigOption) (local
 		rig.Original = true
 	}
 	return rig, nil
+}
+
+func asSha256(o interface{}) string {
+	h := sha256.New()
+	h.Write([]byte(fmt.Sprintf("%v", o)))
+	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func (b *Builder) assembleRandomRig(

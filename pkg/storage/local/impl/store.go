@@ -51,7 +51,8 @@ const (
 			percent_original float,
 			percent_original_50 float,
 			percent_original_75 float,
-			percent_original_90 float
+			percent_original_90 float,
+			fingerprint text not null unique
 		);
 		
 		create table if not exists rig_parts (
@@ -139,6 +140,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 			rig.PercentOriginal50,
 			rig.PercentOriginal75,
 			rig.PercentOriginal90,
+			rig.Fingerprint,
 		})
 		for _, part := range rig.Parts {
 			partVals = append(partVals, goqu.Vals{rig.ID, part.ID})
@@ -152,7 +154,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 
 	insertRigs := tx.Insert("rigs").Cols(
 		"id", "gateway", "images", "image", "image_alpha", "thumb", "thumb_alpha", "original",
-		"percent_original", "percent_original_50", "percent_original_75", "percent_original_90",
+		"percent_original", "percent_original_50", "percent_original_75", "percent_original_90", "fingerprint",
 	).Vals(rigVals...).Executor()
 	insertParts := tx.Insert("rig_parts").
 		Cols("rig_id", "part_id").
