@@ -23,7 +23,7 @@ var (
 			type text not null,
 			name text not null,
 			color text
-		)`,
+		) strict`,
 	}
 	// LayersDefinition defines the layers table.
 	LayersDefinition = TableDefinition{
@@ -35,7 +35,7 @@ var (
 			position integer not null,
 			path text not null,
 			unique(fleet,rig_attributes_value,position)
-		)`,
+		) strict`,
 	}
 	// RigsDefinition defines the rigs table.
 	RigsDefinition = TableDefinition{
@@ -47,19 +47,18 @@ var (
 			thumb text,
 			thumb_alpha text,
 			animation_url text
-		)`,
+		) strict`,
 	}
 	// RigAttributesDefinition defines the rig attribes table.
-	// TODO: Switch this to ANY type for value once we switch to SQLite.
 	RigAttributesDefinition = TableDefinition{
 		Prefix: "test_rig_attributes",
 		Schema: `(
-			rig_id integer,
+			rig_id integer not null,
 			display_type text,
-			trait_type text,
-			value text,
-			primary key(rig_id, trait_type)
-		)`,
+			trait_type text not null,
+			value any not null,
+			unique(rig_id, trait_type)
+		) strict`,
 	}
 )
 

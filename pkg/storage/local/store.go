@@ -41,7 +41,7 @@ type Rig struct {
 	PercentOriginal50 float64         `json:"percent_original_50" db:"percent_original_50"`
 	PercentOriginal75 float64         `json:"percent_original_75" db:"percent_original_75"`
 	PercentOriginal90 float64         `json:"percent_original_90" db:"percent_original_90"`
-	Fingerprint       string          `json:"fingerprint"`
+	VIN               string          `json:"vin"`
 	Parts             []Part          `json:"parts"`
 }
 

@@ -85,6 +85,11 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 	}
 	var attVales [][]interface{}
 	for _, rig := range rigs {
+		attVales = append(
+			attVales,
+			goqu.Vals{rig.ID, "text", "VIN", rig.VIN},
+			goqu.Vals{rig.ID, "number", "% Original", rig.PercentOriginal90 * 100},
+		)
 		if rig.Original {
 			if len(rig.Parts) == 0 {
 				return "", errors.New("no parts for getting original rig color and original")
@@ -99,11 +104,6 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 				goqu.Vals{rig.ID, "text", "Color", color},
 			)
 		}
-		// TODO: Update this to inserting a number once we switch to SQLite.
-		attVales = append(
-			attVales,
-			goqu.Vals{rig.ID, "number", "% Original", fmt.Sprintf("%f", rig.PercentOriginal)},
-		)
 		for _, part := range rig.Parts {
 			b := strings.Builder{}
 			if part.Color.Valid {

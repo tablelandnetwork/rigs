@@ -62,6 +62,7 @@ var renderCmd = &cobra.Command{
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Inf)
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
+		count := 1
 	Loop:
 		for {
 			select {
@@ -69,15 +70,17 @@ var renderCmd = &cobra.Command{
 				if !ok {
 					continue
 				}
+				fmt.Printf("%d/%d. ", count, len(jobs))
 				if r.Err != nil {
 					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
 					continue
 				}
 				rig := r.Value.(local.Rig)
-				fmt.Printf("%d. %s%s\n", rig.ID, rig.Gateway.String, rig.Image.String)
+				fmt.Printf("#%d %s%s\n", rig.ID, rig.Gateway.String, rig.Image.String)
 			case <-pool.Done:
 				break Loop
 			}
+			count++
 		}
 	},
 }

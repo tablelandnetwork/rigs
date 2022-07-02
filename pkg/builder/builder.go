@@ -124,9 +124,9 @@ func (b *Builder) Build(ctx context.Context, option BuildOption) (*local.Rig, er
 	}
 
 	if err := b.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
-		if strings.Contains(err.Error(), "UNIQUE constraint failed: rigs.fingerprint") {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: rigs.vin") {
 			// We happened to assemble a duplicate rig, so call this same func recursively.
-			log.Info().Msgf("assembled duplicate rig with fingerprint %s, discarding rig and re-assembling", rig.Fingerprint)
+			log.Info().Msgf("assembled duplicate rig with vin %s, discarding rig and re-assembling", rig.VIN)
 			return b.Build(ctx, option)
 		}
 		return nil, fmt.Errorf("inserting rig: %v", err)
@@ -284,7 +284,7 @@ func (b *Builder) Render(ctx context.Context, rig *local.Rig, opts ...RenderOpti
 	defer cancel()
 	go wp.Run(ctx)
 
-	var path ipfspath.Path
+	var path ipfspath.Resolved
 
 Loop:
 	for {
@@ -297,7 +297,7 @@ Loop:
 				return r.Err
 			}
 			if r.ID == wpool.JobID(3) {
-				path = r.Value.(ipfspath.Path)
+				path = r.Value.(ipfspath.Resolved)
 			}
 		case <-wp.Done:
 			break Loop
@@ -370,9 +370,9 @@ func (b *Builder) AssembleRig(ctx context.Context, opt AssembleRigOption) (local
 
 	layers, err := b.getLayers(ctx, rig, false)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting layers for fingerprint: %v", err)
+		return local.Rig{}, fmt.Errorf("getting layers for vin: %v", err)
 	}
-	rig.Fingerprint = asSha256(layers)
+	rig.VIN = asSha256(layers)
 	rig.PercentOriginal = percentOriginal(rig.Parts, 0)
 	rig.PercentOriginal50 = percentOriginal(rig.Parts, 0.5)
 	rig.PercentOriginal75 = percentOriginal(rig.Parts, 0.75)
