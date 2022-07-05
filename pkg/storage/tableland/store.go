@@ -15,7 +15,7 @@ type TableDefinition struct {
 var (
 	// PartsDefinition defines the parts table.
 	PartsDefinition = TableDefinition{
-		Prefix: "test_parts",
+		Prefix: "parts",
 		Schema: `(
 			id integer primary key,
 			fleet text,
@@ -23,11 +23,11 @@ var (
 			type text not null,
 			name text not null,
 			color text
-		) strict`,
+		)`,
 	}
 	// LayersDefinition defines the layers table.
 	LayersDefinition = TableDefinition{
-		Prefix: "test_layers",
+		Prefix: "layers",
 		Schema: `(
 			id integer primary key,
 			fleet text not null,
@@ -35,11 +35,11 @@ var (
 			position integer not null,
 			path text not null,
 			unique(fleet,rig_attributes_value,position)
-		) strict`,
+		)`,
 	}
 	// RigsDefinition defines the rigs table.
 	RigsDefinition = TableDefinition{
-		Prefix: "test_rigs",
+		Prefix: "rigs",
 		Schema: `(
 			id integer primary key,
 			image text,
@@ -47,18 +47,18 @@ var (
 			thumb text,
 			thumb_alpha text,
 			animation_url text
-		) strict`,
+		)`,
 	}
 	// RigAttributesDefinition defines the rig attribes table.
 	RigAttributesDefinition = TableDefinition{
-		Prefix: "test_rig_attributes",
+		Prefix: "rig_attributes",
 		Schema: `(
 			rig_id integer not null,
 			display_type text,
 			trait_type text not null,
 			value any not null,
 			unique(rig_id, trait_type)
-		) strict`,
+		)`,
 	}
 )
 

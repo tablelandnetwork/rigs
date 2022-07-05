@@ -33,7 +33,7 @@ func (s *SQLFactory) SQLForInsertingParts(table string, parts []local.Part) (str
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert parts: %v", err)
 	}
-	return sql, nil
+	return clean(sql), nil
 }
 
 // SQLForInsertingLayers returns the SQL statement.
@@ -48,7 +48,7 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert parts: %v", err)
 	}
-	return sql, nil
+	return clean(sql), nil
 }
 
 // SQLForInsertingRigs returns the SQL statement.
@@ -70,7 +70,7 @@ func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, gateway string, rigs 
 		return "", fmt.Errorf("creating sql to insert rigs: %v", err)
 	}
 
-	return sql, nil
+	return clean(sql), nil
 }
 
 // SQLForInsertingRigAttributes returns the SQL statement.
@@ -120,7 +120,7 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 		return "", fmt.Errorf("creating sql to insert rig attributes: %v", err)
 	}
 
-	return sql, nil
+	return clean(sql), nil
 }
 
 // SQLForClearingData returns the SQL statement.
@@ -131,5 +131,9 @@ func (s *SQLFactory) SQLForClearingData(tableName string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("creating delete sql: %v", err)
 	}
-	return sql, nil
+	return clean(sql), nil
+}
+
+func clean(sql string) string {
+	return strings.ReplaceAll(sql, "`", "")
 }
