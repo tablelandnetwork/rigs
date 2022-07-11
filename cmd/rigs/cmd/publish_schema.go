@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	storage "github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
 	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
 	"golang.org/x/time/rate"
@@ -13,6 +14,8 @@ import (
 
 func init() {
 	publishCmd.AddCommand(schemaCmd)
+
+	schemaCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push table schemas to tableland")
 }
 
 var schemaCmd = &cobra.Command{
@@ -36,7 +39,7 @@ var schemaCmd = &cobra.Command{
 			{ID: 4, ExecFn: createTableExecFcn(storage.LayersDefinition)},
 		}
 
-		pool := wpool.New(1, rate.Every(time.Millisecond*100))
+		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*100))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
 	Loop:
