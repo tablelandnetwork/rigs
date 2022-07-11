@@ -21,6 +21,7 @@ const (
 func init() {
 	publishCmd.AddCommand(dataCmd)
 
+	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
 	dataCmd.Flags().String("remote-ipfs-gateway-url", "", "url of the gateway to use for nft image metadata")
 }
 
@@ -46,7 +47,7 @@ var dataCmd = &cobra.Command{
 		jobs = append(jobs, layersJobs...)
 		jobs = append(jobs, rigsJobs...)
 
-		pool := wpool.New(1, rate.Every(time.Millisecond*200))
+		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
 	Loop:

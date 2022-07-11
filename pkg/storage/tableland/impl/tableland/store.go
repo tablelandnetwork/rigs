@@ -13,7 +13,7 @@ import (
 	"github.com/textileio/go-tableland/pkg/client"
 )
 
-const dialect = "postgres"
+const dialect = "sqlite3"
 
 // Store implements Store using the Tableland client.
 type Store struct {

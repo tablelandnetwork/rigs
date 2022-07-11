@@ -16,6 +16,7 @@ import (
 type Layers struct {
 	ipfs  iface.CoreAPI
 	store local.Store
+	locks sync.Map
 	cache sync.Map
 }
 
@@ -29,9 +30,14 @@ func NewLayers(ipfs iface.CoreAPI, store local.Store) *Layers {
 
 // GetLayer returns a layer image for the provided path.
 func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, error) {
-	if value, ok := l.cache.Load(ipfsPath); ok {
-		return value.(image.Image), nil
-	}
+	// value, _ := l.locks.LoadOrStore(ipfsPath, &sync.Mutex{})
+	// lock := value.(*sync.Mutex)
+	// lock.Lock()
+	// defer lock.Unlock()
+
+	// if value, ok := l.cache.Load(ipfsPath); ok {
+	// 	return value.(image.Image), nil
+	// }
 
 	p := ipfspath.New(ipfsPath)
 	n, err := l.ipfs.Unixfs().Get(ctx, p)
@@ -48,7 +54,7 @@ func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, er
 		return nil, fmt.Errorf("decoding image: %v", err)
 	}
 
-	l.cache.Store(ipfsPath, i)
+	// l.cache.Store(ipfsPath, i)
 
 	return i, nil
 }

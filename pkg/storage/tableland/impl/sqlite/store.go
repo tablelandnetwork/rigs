@@ -34,7 +34,7 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 	if _, err := s.db.Exec(drop); err != nil {
 		return "", fmt.Errorf("dropping table: %v", err)
 	}
-	statement := fmt.Sprintf("create table %s %s", definition.Prefix, definition.Schema)
+	statement := fmt.Sprintf("create table %s %s strict", definition.Prefix, definition.Schema)
 	if _, err := s.db.Exec(statement); err != nil {
 		return "", fmt.Errorf("creating table: %v", err)
 	}
