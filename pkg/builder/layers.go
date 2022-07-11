@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"image"
-	"sync"
 
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	iface "github.com/ipfs/interface-go-ipfs-core"
@@ -16,7 +15,6 @@ import (
 type Layers struct {
 	ipfs  iface.CoreAPI
 	store local.Store
-	cache sync.Map
 }
 
 // NewLayers creates a new Layers.
@@ -29,10 +27,6 @@ func NewLayers(ipfs iface.CoreAPI, store local.Store) *Layers {
 
 // GetLayer returns a layer image for the provided path.
 func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, error) {
-	if value, ok := l.cache.Load(ipfsPath); ok {
-		return value.(image.Image), nil
-	}
-
 	p := ipfspath.New(ipfsPath)
 	n, err := l.ipfs.Unixfs().Get(ctx, p)
 	if err != nil {
@@ -47,8 +41,5 @@ func (l *Layers) GetLayer(ctx context.Context, ipfsPath string) (image.Image, er
 	if err != nil {
 		return nil, fmt.Errorf("decoding image: %v", err)
 	}
-
-	l.cache.Store(ipfsPath, i)
-
 	return i, nil
 }
