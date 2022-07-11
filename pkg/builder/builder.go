@@ -305,11 +305,11 @@ Loop:
 	}
 
 	rig.Gateway = nullable.FromString(c.gatewayURL, nullable.EmptyIsNull())
-	rig.Images = nullable.FromString(path.String())
-	rig.Image = nullable.FromString(path.String() + "/image.png")
-	rig.ImageAlpha = nullable.FromString(path.String() + "/image_alpha.png")
-	rig.Thumb = nullable.FromString(path.String() + "/thumb.png")
-	rig.ThumbAlpha = nullable.FromString(path.String() + "/thumb_alpha.png")
+	rig.Images = nullable.FromString(path.Cid().String())
+	rig.Image = nullable.FromString(path.Cid().String() + "/image.png")
+	rig.ImageAlpha = nullable.FromString(path.Cid().String() + "/image_alpha.png")
+	rig.Thumb = nullable.FromString(path.Cid().String() + "/thumb.png")
+	rig.ThumbAlpha = nullable.FromString(path.Cid().String() + "/thumb_alpha.png")
 
 	if err := b.s.UpdateRigImages(ctx, *rig); err != nil {
 		b.unpinPath(ctx, path)

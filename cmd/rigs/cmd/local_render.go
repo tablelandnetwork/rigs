@@ -76,7 +76,7 @@ var renderCmd = &cobra.Command{
 					continue
 				}
 				rig := r.Value.(local.Rig)
-				fmt.Printf("#%d %s%s\n", rig.ID, rig.Gateway.String, rig.Image.String)
+				fmt.Printf("#%d %s/ipfs/%s\n", rig.ID, rig.Gateway.String, rig.Image.String)
 			case <-pool.Done:
 				break Loop
 			}
