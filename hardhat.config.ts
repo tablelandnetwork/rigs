@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 
 import { HardhatUserConfig, extendEnvironment } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import "@openzeppelin/hardhat-upgrades";
 import "@nomiclabs/hardhat-ethers";
 import "@nomiclabs/hardhat-etherscan";
 import "@nomiclabs/hardhat-waffle";
@@ -11,6 +10,8 @@ import "hardhat-dependency-compiler";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
+import { AllowList } from "./helpers/allowlist";
+import { ChainName } from "@tableland/sdk";
 
 dotenv.config();
 
@@ -25,7 +26,10 @@ const config: HardhatUserConfig = {
     },
   },
   dependencyCompiler: {
-    paths: ["@openzeppelin/contracts/finance/PaymentSplitter.sol"],
+    paths: [
+      "@tableland/evm/contracts/TablelandTables.sol",
+      "@openzeppelin/contracts/finance/PaymentSplitter.sol",
+    ],
   },
   contractSizer: {
     alphaSort: true,
@@ -39,7 +43,19 @@ const config: HardhatUserConfig = {
     currency: "USD",
   },
   etherscan: {
-    apiKey: process.env.ETHERSCAN_API_KEY || "",
+    apiKey: {
+      // ethereum
+      mainnet: process.env.ETHERSCAN_API_KEY || "",
+      goerli: process.env.ETHERSCAN_API_KEY || "",
+
+      // optimism
+      optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
+      optimisticKovan: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
+
+      // polygon
+      polygon: process.env.POLYSCAN_API_KEY || "",
+      polygonMumbai: process.env.POLYSCAN_API_KEY || "",
+    },
   },
   networks: {
     // mainnets
@@ -72,7 +88,7 @@ const config: HardhatUserConfig = {
           : [],
     },
     "ethereum-goerli": {
-      url: `https://eth-goerli.alchemyapi.io/v2/${
+      url: `https://eth-goerli.g.alchemy.com/v2/${
         process.env.ETHEREUM_GOERLI_API_KEY ?? ""
       }`,
       accounts:
@@ -89,25 +105,16 @@ const config: HardhatUserConfig = {
           ? [process.env.OPTIMISM_KOVAN_PRIVATE_KEY]
           : [],
     },
+    "polygon-mumbai": {
+      url: `https://polygon-mumbai.g.alchemy.com/v2/${
+        process.env.POLYGON_MUMBAI_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.POLYGON_MUMBAI_PRIVATE_KEY !== undefined
+          ? [process.env.POLYGON_MUMBAI_PRIVATE_KEY]
+          : [],
+    },
     // devnets
-    "ethereum-rinkeby-staging": {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${
-        process.env.ETHEREUM_RINKEBY_STAGING_API_KEY ?? ""
-      }`,
-      accounts:
-        process.env.ETHEREUM_RINKEBY_STAGING_PRIVATE_KEY !== undefined
-          ? [process.env.ETHEREUM_RINKEBY_STAGING_PRIVATE_KEY]
-          : [],
-    },
-    "optimism-kovan-staging": {
-      url: `https://opt-kovan.g.alchemy.com/v2/${
-        process.env.OPTIMISM_KOVAN_STAGING_API_KEY ?? ""
-      }`,
-      accounts:
-        process.env.OPTIMISM_KOVAN_STAGING_PRIVATE_KEY !== undefined
-          ? [process.env.OPTIMISM_KOVAN_STAGING_PRIVATE_KEY]
-          : [],
-    },
     hardhat: {
       mining: {
         auto: !(process.env.HARDHAT_DISABLE_AUTO_MINING === "true"),
@@ -116,158 +123,156 @@ const config: HardhatUserConfig = {
     },
   },
   config: {
+    args: {
+      name: "Tableland Rigs",
+      description:
+        "A 3k generative NFT built from 1,074 handcrafted works of art for the builders and creatives of cyberspace.",
+      image:
+        "https://bafybeidmvuy43bsfla4ewabfegdf6k3vqmjlapn7ojsv5fczpym3lpazzu.ipfs.dweb.link/rigs.png",
+      externalLink: "https://tableland.xyz/rigs",
+      sellerFeeBasisPoints: 500,
+      feeRecipient: "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe",
+      maxSupply: 3000,
+      etherPrice: "0.05",
+      tables: {
+        tablelandChain: "ethereum-goerli",
+        tablelandPrivateKey: process.env.ETHEREUM_GOERLI_PRIVATE_KEY,
+        tablelandProvider: process.env.ETHEREUM_GOERLI_API_KEY,
+        tablelandHost: "https://testnet.tableland.network",
+        tokensTable: "rigs_5_22",
+        attributesTable: "rig_attributes_5_20",
+      },
+      royaltyReceivers: [
+        "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F",
+        "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65",
+      ],
+      royaltyReceiverShares: [20, 80],
+      allowlist: {
+        "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe": {
+          freeAllowance: 1,
+          paidAllowance: 2,
+        },
+        "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F": {
+          freeAllowance: 2,
+          paidAllowance: 3,
+        },
+        "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65": {
+          freeAllowance: 0,
+          paidAllowance: 4,
+        },
+        "0x06A948303AA30b6870896C84E83Ba00Df5292950": {
+          freeAllowance: 1,
+          paidAllowance: 5,
+        },
+        "0x1f48aa5069bcdae06A0d009b42E20ccc33D1Ff51": {
+          freeAllowance: 1,
+          paidAllowance: 0,
+        },
+      },
+      waitlist: {
+        "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe": {
+          freeAllowance: 1,
+          paidAllowance: 2,
+        },
+      },
+    },
     // mainnets
     ethereum: {
-      maxSupply: 0,
-      etherPrice: "",
-      beneficiary: "",
-      uriTemplate: "",
-      royaltyReceivers: [],
-      royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
-      allowlist: new Map(),
-      autoMint: 0,
-    },
-    optimism: {
-      maxSupply: 0,
-      etherPrice: "",
-      beneficiary: "",
-      uriTemplate: "",
-      royaltyReceivers: [],
-      royaltyReceiverShares: [],
-      contractAddress: "",
-      royaltyContractAddress: "",
-      allowlist: new Map(),
-      autoMint: 0,
+      contractTable: "",
+      allowlistTable: "",
     },
     // testnets
     "ethereum-rinkeby": {
-      maxSupply: 0,
-      etherPrice: "",
-      beneficiary: "",
-      uriTemplate: "",
-      royaltyReceivers: [],
-      royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
-      allowlist: new Map(),
-      autoMint: 0,
+      contractTable: "",
+      allowlistTable: "",
     },
     "ethereum-goerli": {
-      maxSupply: 0,
-      etherPrice: "",
-      beneficiary: "",
-      uriTemplate: "",
-      royaltyReceivers: [],
-      royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
-      allowlist: new Map(),
-      autoMint: 0,
+      contractTable: "",
+      allowlistTable: "",
     },
     "optimism-kovan": {
-      maxSupply: 0,
-      etherPrice: "",
-      beneficiary: "",
-      uriTemplate: "",
-      royaltyReceivers: [],
-      royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
-      allowlist: new Map(),
-      autoMint: 0,
+      contractTable: "",
+      allowlistTable: "",
     },
-    // devnets
-    "ethereum-rinkeby-staging": {
-      maxSupply: 1000,
-      etherPrice: "0.05",
-      beneficiary: "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe",
-      uriTemplate:
-        "https://staging.tableland.network/query?s=select%20json_build_object(%27name%27%2C%20concat(%27%23%27%2C%20id)%2C%20%27external_url%27%2C%20concat(%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%2C%20id)%2C%20%27image%27%2C%20image%2C%20%27image_alpha%27%2C%20image_alpha%2C%20%27thumb%27%2C%20thumb%2C%20%27thumb_alpha%27%2C%20thumb_alpha%2C%20%27attributes%27%2C%20%20json_agg(json_build_object(%27display_type%27%2C%20display_type%2C%20%27trait_type%27%2C%20trait_type%2C%20%27value%27%2C%20value)))%20from%20test_rigs_69_5%20join%20test_rig_attributes_69_6%20on%20test_rigs_69_5.id%20%3D%20test_rig_attributes_69_6.rig_id%20where%20id%20%3D%20{id}%20group%20by%20id%3B&mode=list",
-      royaltyReceivers: [
-        "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F",
-        "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65",
-      ],
-      royaltyReceiverShares: [20, 80],
-      contractAddress: "0x879A53A8Ac46fc87Cfe6F7700f0624F50a750713",
-      royaltyContractAddress: "0x3f508A8a4c2Db38F5411C9A8CC169cac2AA2822a",
-      allowlist: new Map([
-        ["0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe", 3],
-        ["0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F", 4],
-        ["0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65", 5],
-        ["0x06A948303AA30b6870896C84E83Ba00Df5292950", 10],
-        ["0x1f48aa5069bcdae06A0d009b42E20ccc33D1Ff51", 20],
-      ]),
-      autoMint: 1,
-    },
-    "optimism-kovan-staging": {
-      maxSupply: 1000,
-      etherPrice: "0.05",
-      beneficiary: "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe",
-      uriTemplate:
-        "https://staging.tableland.network/query?s=select%20json_build_object(%27name%27%2C%20concat(%27%23%27%2C%20id)%2C%20%27external_url%27%2C%20concat(%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%2C%20id)%2C%20%27image%27%2C%20image%2C%20%27image_alpha%27%2C%20image_alpha%2C%20%27thumb%27%2C%20thumb%2C%20%27thumb_alpha%27%2C%20thumb_alpha%2C%20%27attributes%27%2C%20%20json_agg(json_build_object(%27display_type%27%2C%20display_type%2C%20%27trait_type%27%2C%20trait_type%2C%20%27value%27%2C%20value)))%20from%20test_rigs_69_5%20join%20test_rig_attributes_69_6%20on%20test_rigs_69_5.id%20%3D%20test_rig_attributes_69_6.rig_id%20where%20id%20%3D%20{id}%20group%20by%20id%3B&mode=list",
-      royaltyReceivers: [
-        "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F",
-        "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65",
-      ],
-      royaltyReceiverShares: [20, 80],
-      contractAddress: "0xA0C05329DD1100770076631472d0328381d590dB",
-      royaltyContractAddress: "0x9D54f454F040fC993924aea7aA6ADec282E280F0",
-      allowlist: new Map(),
-      autoMint: 1,
+    "polygon-mumbai": {
+      contractAddress: "0x3dcadCB82489bBF45a6bCBa5dae0373B7644114b",
+      royaltyContractAddress: "0xAd8Dd3fbeE6823cD0AA1A4a531D43F3dC3602e04",
+      contractTable: "rigs_contract_5_44",
+      allowlistTable: "rigs_allowlist_5_45",
     },
     localhost: {
-      maxSupply: 0,
-      etherPrice: "",
-      beneficiary: "",
-      uriTemplate: "",
-      royaltyReceivers: [],
-      royaltyReceiverShares: [],
       contractAddress: "",
       royaltyContractAddress: "",
-      allowlist: new Map(),
-      autoMint: 0,
+      contractTable: "",
+      allowlistTable: "",
     },
   },
 };
 
+interface RigsTables {
+  tablelandChain: ChainName;
+  tablelandPrivateKey: string | undefined;
+  tablelandProvider: string | undefined;
+  tablelandHost:
+    | "https://testnet.tableland.network"
+    | "https://staging.tableland.network";
+  tokensTable: string;
+  attributesTable: string;
+}
+
 interface RigsConfig {
+  // rigs info
+  name: string;
+  description: string;
+  image: string;
+  externalLink: string;
+  sellerFeeBasisPoints: number;
+  feeRecipient: string;
+
+  // rigs tables
+  tables: RigsTables;
+
   // rigs args
   maxSupply: number;
   etherPrice: string;
-  beneficiary: string;
-  uriTemplate: string;
 
   // royalty splitter args
   royaltyReceivers: string[];
   royaltyReceiverShares: number[];
 
-  // deployments
+  // whitelists
+  allowlist: AllowList;
+  waitlist: AllowList;
+}
+
+interface RigsDeployment {
   contractAddress: string;
   royaltyContractAddress: string;
-
-  // allowlist
-  allowlist: Map<string, number>;
-
-  // development helpers
-  autoMint: number;
+  contractTable: string;
+  allowlistTable: string;
 }
 
 interface RigsNetworkConfig {
+  args: RigsConfig;
+
   // mainnets
-  ethereum: RigsConfig;
-  optimism: RigsConfig;
+  ethereum: RigsDeployment;
 
   // testnets
-  "ethereum-rinkeby": RigsConfig;
-  "ethereum-goerli": RigsConfig;
-  "optimism-kovan": RigsConfig;
+  "ethereum-rinkeby": RigsDeployment;
+  "ethereum-goerli": RigsDeployment;
+  "optimism-kovan": RigsDeployment;
+  "polygon-mumbai": RigsDeployment;
 
-  // devnets
-  "ethereum-rinkeby-staging": RigsConfig;
-  "optimism-kovan-staging": RigsConfig;
-  localhost: RigsConfig; // hardhat
+  localhost: RigsDeployment; // hardhat
 }
 
 declare module "hardhat/types/config" {
@@ -281,13 +286,15 @@ declare module "hardhat/types/runtime" {
   // eslint-disable-next-line no-unused-vars
   interface HardhatRuntimeEnvironment {
     rigsConfig: RigsConfig;
+    rigsDeployment: RigsDeployment;
   }
 }
 
 extendEnvironment((hre: HardhatRuntimeEnvironment) => {
-  // Get config for user-selected network
-  const config = hre.userConfig.config as any;
-  hre.rigsConfig = config[hre.network.name];
+  // Get configs for user-selected network
+  const config = hre.userConfig.config;
+  hre.rigsConfig = config.args;
+  hre.rigsDeployment = (config as any)[hre.network.name];
 });
 
 export default config;

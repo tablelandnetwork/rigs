@@ -10,10 +10,8 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "./ITablelandRigs.sol";
 import "./utils/URITemplate.sol";
-
-import "hardhat/console.sol";
+import "./ITablelandRigs.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -37,67 +35,151 @@ contract TablelandRigs is
     // The address receiving mint revenue.
     address payable public beneficiary;
 
-    bytes32 public immutable root;
+    // The allowlist merkletree root.
+    bytes32 public immutable allowlistRoot;
 
-    bool public claimsOpen;
-    bool public mintsOpen;
+    // The waitlist merkletree root.
+    bytes32 public immutable waitlistRoot;
+
+    // Flag specifying whether or not claims
+    MintPhase public mintPhase = MintPhase.CLOSED;
+
+    // URI for contract info.
+    string private _contractInfoURI;
 
     constructor(
         uint256 _maxSupply,
         uint256 _mintPrice,
         address payable _beneficiary,
         address payable royaltyReceiver,
-        string memory uriTemplate,
-        bytes32 merkleroot
-    ) ERC721A("Tableland Rigs", "RIG") URITemplate(uriTemplate) {
+        bytes32 _allowlistRoot,
+        bytes32 _waitlistRoot
+    ) ERC721A("Tableland Rigs", "RIG") Ownable() Pausable() ReentrancyGuard() {
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         setBeneficiary(_beneficiary);
         _setDefaultRoyalty(royaltyReceiver, 500);
-        root = merkleroot;
+        allowlistRoot = _allowlistRoot;
+        waitlistRoot = _waitlistRoot;
+    }
+
+    // =============================
+    //        ITABLELANDRIGS
+    // =============================
+
+    /**
+     * @dev See {ITablelandRigs-mint}.
+     */
+    function mint(uint256 quantity) external payable override whenNotPaused {
+        bytes32[] memory proof;
+        _verify(quantity, 0, 0, proof);
+    }
+
+    function mint(
+        uint256 quantity,
+        uint256 freeAllowance,
+        uint256 paidAllowance,
+        bytes32[] calldata proof
+    ) external payable override whenNotPaused {
+        _verify(quantity, freeAllowance, paidAllowance, proof);
     }
 
     /**
      * @dev See {ITablelandRigs-mint}.
      */
-    function mint(uint256 quantity)
-        external
-        payable
-        override
-        whenNotPaused
-        whenMintsOpen
-    {
-        _mint(quantity);
-    }
-
-    function claim(
+    function _verify(
         uint256 quantity,
-        uint256 allowance,
-        bytes32[] calldata proof
-    ) external payable whenNotPaused whenClaimsOpen {
-        if (!_verify(_leaf(_msgSenderERC721A(), allowance), proof)) {
-            revert InvalidClaim();
+        uint256 freeAllowance,
+        uint256 paidAllowance,
+        bytes32[] memory proof
+    ) private {
+        // Ensure mint phase is not closed
+        if (mintPhase == MintPhase.CLOSED) {
+            revert MintingClosed();
         }
 
+        // Check quantity is non-zero
         if (quantity == 0) {
             revert ZeroQuantity();
         }
 
-        uint64 claimed = _getAux(_msgSenderERC721A());
-        quantity = Math.min(quantity, allowance - uint256(claimed));
-        if (quantity == 0) {
-            revert InsufficientAllowance();
+        if (mintPhase != MintPhase.PUBLIC) {
+            // Get merkletree root for mint phase
+            bytes32 root;
+            if (mintPhase == MintPhase.ALLOWLIST) {
+                root = allowlistRoot;
+            } else if (mintPhase == MintPhase.WAITLIST) {
+                root = waitlistRoot;
+            }
+
+            // Verify proof against mint phase root
+            if (
+                !_verify(
+                    proof,
+                    root,
+                    _leaf(_msgSenderERC721A(), freeAllowance, paidAllowance)
+                )
+            ) {
+                revert InvalidProof();
+            }
+
+            // Ensure allowance available
+            uint64 claimed = _getAux(_msgSenderERC721A());
+            quantity = Math.min(
+                quantity,
+                freeAllowance + paidAllowance - uint256(claimed)
+            );
+            if (quantity == 0) {
+                revert InsufficientAllowance();
+            }
+
+            // Update allowance claimed
+            claimed = claimed + uint64(quantity);
+            _setAux(_msgSenderERC721A(), claimed);
+
+            // Sanity check for tests
+            assert(freeAllowance + paidAllowance <= claimed);
         }
 
-        claimed = claimed + uint64(quantity);
-        _setAux(_msgSenderERC721A(), claimed);
-
         _mint(quantity);
-
-        // sanity check
-        assert(allowance <= claimed);
     }
 
+    /**
+     * @dev Returns merkletree leaf node for given params.
+     */
+    function _leaf(
+        address account,
+        uint256 freeAllowance,
+        uint256 paidAllowance
+    ) internal pure returns (bytes32) {
+        return
+            keccak256(abi.encodePacked(account, freeAllowance, paidAllowance));
+    }
+
+    /**
+     * @dev Verifies that `proof` is a valid path to `leaf` in `root`.
+     */
+    function _verify(
+        bytes32[] memory proof,
+        bytes32 root,
+        bytes32 leaf
+    ) internal pure returns (bool) {
+        return MerkleProof.verify(proof, root, leaf);
+    }
+
+    /**
+     * @dev Mints Rigs and send revenue to `beneficiary`, refunding surplus to `msg.sender`.
+     *
+     * Borrows logic from https://github.com/divergencetech/ethier/blob/main/contracts/sales/Seller.sol.
+     *
+     * quantity - the number of Rigs to mint
+     *
+     * Requirements:
+     *
+     * - quantity must not be zero
+     * - current supply must be less than `maxSupply`
+     * - `msg.value` must be sufficient
+     */
     function _mint(uint256 quantity) private nonReentrant {
         // Check quantity is non-zero and doesn't exceed remaining quota
         if (quantity == 0) {
@@ -134,84 +216,55 @@ contract TablelandRigs is
         }
     }
 
+    /**
+     * @dev Returns mint cost for `quantity`.
+     */
     function _cost(uint256 quantity) private view returns (uint256) {
         return quantity * mintPrice;
     }
 
-    function _leaf(address account, uint256 quantity)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encodePacked(account, quantity));
+    /**
+     * @dev See {ITablelandRigs-setMintPhase}.
+     */
+    function setMintPhase(uint256 _mintPhase) external override onlyOwner {
+        mintPhase = MintPhase(_mintPhase);
+        emit MintPhaseChanged(mintPhase);
     }
 
-    function _verify(bytes32 leaf, bytes32[] memory proof)
-        internal
-        view
-        returns (bool)
+    /**
+     * @dev See {ITablelandRigs-setBeneficiary}.
+     */
+    function setBeneficiary(address payable _beneficiary)
+        public
+        override
+        onlyOwner
     {
-        return MerkleProof.verify(proof, root, leaf);
-    }
-
-    function setBeneficiary(address payable _beneficiary) public onlyOwner {
         beneficiary = _beneficiary;
     }
 
     /**
      * @dev See {ITablelandRigs-setURITemplate}.
      */
-    function setURITemplate(string memory uriTemplate)
-        public
+    function setURITemplate(string[] memory uriTemplate)
+        external
         override
         onlyOwner
     {
         _setURITemplate(uriTemplate);
     }
 
-    function contractURI() public pure returns (string memory) {
-        return "fixme";
+    /**
+     * @dev See {ITablelandRigs-contractURI}.
+     */
+    function contractURI() public view override returns (string memory) {
+        return _contractInfoURI;
     }
 
     /**
-     * @dev See {IERC721Metadata-tokenURI}.
+     * @dev See {ITablelandRigs-setContractURI}.
      */
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        override(ERC721A, IERC721A)
-        returns (string memory)
-    {
-        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
-        return _getTokenURI(_toString(tokenId));
-    }
-
-    function openClaims() external onlyOwner {
-        claimsOpen = true;
-        emit ClaimsOpen();
-    }
-
-    function openMints() external onlyOwner {
-        mintsOpen = true;
-        emit MintsOpen();
-    }
-
-    error ClaimsNotOpen();
-
-    error MintsNotOpen();
-
-    modifier whenClaimsOpen() {
-        if (!claimsOpen) {
-            revert ClaimsNotOpen();
-        }
-        _;
-    }
-
-    modifier whenMintsOpen() {
-        if (!mintsOpen) {
-            revert MintsNotOpen();
-        }
-        _;
+    function setContractURI(string memory uri) external override onlyOwner {
+        _contractInfoURI = uri;
     }
 
     /**
@@ -228,6 +281,10 @@ contract TablelandRigs is
         _unpause();
     }
 
+    // =============================
+    //            ERC721A
+    // =============================
+
     /**
      * @dev See {ERC721A-_startTokenId}.
      */
@@ -235,6 +292,26 @@ contract TablelandRigs is
         return 1;
     }
 
+    /**
+     * @dev See {IERC721Metadata-tokenURI}.
+     */
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721A, IERC721A)
+        returns (string memory)
+    {
+        if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
+        return _getTokenURI(_toString(tokenId));
+    }
+
+    // =============================
+    //           IERC165
+    // =============================
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
     function supportsInterface(bytes4 interfaceId)
         public
         view
@@ -243,7 +320,6 @@ contract TablelandRigs is
     {
         return
             ERC721A.supportsInterface(interfaceId) ||
-            interfaceId == type(IERC2981).interfaceId ||
-            super.supportsInterface(interfaceId);
+            ERC2981.supportsInterface(interfaceId);
     }
 }

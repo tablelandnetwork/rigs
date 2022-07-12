@@ -1,30 +1,41 @@
-import { run, network, rigsConfig } from "hardhat";
+import { run, network, rigsConfig, rigsDeployment } from "hardhat";
 import { BigNumber, utils } from "ethers";
+import { buildTree } from "../helpers/allowlist";
 
 async function main() {
   console.log(`\nVerifying on '${network.name}'...`);
 
-  // Get URI template
-  if (rigsConfig.uriTemplate === undefined || rigsConfig.uriTemplate === "") {
-    throw Error(`missing uriTemplate entry for '${network.name}'`);
-  }
-
   // Ensure deployments
-  if (rigsConfig.contractAddress === "") {
+  if (rigsDeployment.contractAddress === "") {
     throw Error(`no contractAddress entry for '${network.name}'`);
   }
-  if (rigsConfig.royaltyContractAddress === "") {
+  if (rigsDeployment.royaltyContractAddress === "") {
     throw Error(`no royaltyContractAddress entry for '${network.name}'`);
   }
 
+  // Build merkle trees for allowlist
+  const allowlistTree = buildTree(rigsConfig.allowlist);
+  const waitlistTree = buildTree(rigsConfig.waitlist);
+
+  // Verify royalties contract
   await run("verify:verify", {
-    address: rigsConfig.contractAddress,
+    address: rigsDeployment.royaltyContractAddress,
+    constructorArguments: [
+      rigsConfig.royaltyReceivers,
+      rigsConfig.royaltyReceiverShares,
+    ],
+  });
+
+  // Verify rigs
+  await run("verify:verify", {
+    address: rigsDeployment.contractAddress,
     constructorArguments: [
       BigNumber.from(rigsConfig.maxSupply),
       utils.parseEther(rigsConfig.etherPrice),
-      rigsConfig.uriTemplate,
-      rigsConfig.beneficiary,
-      rigsConfig.royaltyContractAddress,
+      rigsConfig.feeRecipient,
+      rigsDeployment.royaltyContractAddress,
+      allowlistTree.getHexRoot(),
+      waitlistTree.getHexRoot(),
     ],
   });
 }
