@@ -24,7 +24,7 @@ type Layer struct {
 	PartName string `json:"part_name" db:"part_name"`
 	PartType string `json:"part_type" db:"part_type"`
 	Position uint   `json:"position"`
-	Path     string `json:"path"`
+	Cid      string `json:"cid"`
 }
 
 // Rig represents a generated rig.

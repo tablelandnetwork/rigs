@@ -596,12 +596,12 @@ func (b *Builder) AssembleImage(
 	defer r.Dispose()
 
 	for _, l := range layers {
-		i, err := b.layers.GetLayer(ctx, l.Path)
+		i, err := b.layers.GetLayer(ctx, l.Cid)
 		if err != nil {
 			return fmt.Errorf("getting layer: %v", err)
 		}
 
-		label := fmt.Sprintf("%d: %s: %s: %s", l.Position, l.Color, l.PartName, l.Path)
+		label := fmt.Sprintf("%d: %s: %s: %s", l.Position, l.Color, l.PartName, l.Cid)
 
 		if err := r.AddLayer(i, label); err != nil {
 			return fmt.Errorf("adding layer to renderer: %v", err)

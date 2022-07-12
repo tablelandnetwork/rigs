@@ -35,7 +35,7 @@ const (
 			part_name text not null,
 			part_type text not null,
 			position integer not null,
-			path text not null,
+			cid text not null,
 			unique(fleet,color,part_name,position)
 		);
 
@@ -110,10 +110,10 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	var vals [][]interface{}
 	for _, layer := range layers {
-		vals = append(vals, goqu.Vals{layer.Fleet, layer.Color, layer.PartName, layer.PartType, layer.Position, layer.Path})
+		vals = append(vals, goqu.Vals{layer.Fleet, layer.Color, layer.PartName, layer.PartType, layer.Position, layer.Cid})
 	}
 	insert := s.db.Insert("layers").
-		Cols("fleet", "color", "part_name", "part_type", "position", "path").
+		Cols("fleet", "color", "part_name", "part_type", "position", "cid").
 		Vals(vals...).
 		Executor()
 	if _, err := insert.ExecContext(ctx); err != nil {

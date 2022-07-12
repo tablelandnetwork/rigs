@@ -17,8 +17,10 @@ import (
 	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
 )
 
-var parts = []local.Part{}
-var layers = []local.Layer{}
+var (
+	parts  = []local.Part{}
+	layers = []local.Layer{}
+)
 
 func init() {
 	localCmd.AddCommand(inventoryCmd)
@@ -155,7 +157,7 @@ func processPartTypeNode(
 			PartName: name,
 			PartType: partTypeName,
 			Position: uint(pos),
-			Path:     l.Cid.String(),
+			Cid:      l.Cid.String(),
 		})
 	}
 	return processedParts, nil

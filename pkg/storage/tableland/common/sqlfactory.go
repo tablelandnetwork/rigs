@@ -3,6 +3,7 @@ package common
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
@@ -41,9 +42,9 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 	var vals [][]interface{}
 	for _, layer := range layers {
 		coloredPart := fmt.Sprintf("%s %s", layer.Color, layer.PartName)
-		vals = append(vals, goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, layer.Path})
+		vals = append(vals, goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, layer.Cid})
 	}
-	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "path").Vals(vals...)
+	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "cid").Vals(vals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert parts: %v", err)
@@ -88,7 +89,7 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 		attVales = append(
 			attVales,
 			goqu.Vals{rig.ID, "text", "VIN", rig.VIN},
-			goqu.Vals{rig.ID, "number", "% Original", rig.PercentOriginal90 * 100},
+			goqu.Vals{rig.ID, "number", "% Original", math.Round((rig.PercentOriginal90*100)*100) / 100},
 		)
 		if rig.Original {
 			if len(rig.Parts) == 0 {

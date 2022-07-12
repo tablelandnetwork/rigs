@@ -33,7 +33,7 @@ var (
 			fleet text not null,
 			rig_attributes_value text not null,
 			position integer not null,
-			path text not null,
+			cid text not null,
 			unique(fleet,rig_attributes_value,position)
 		)`,
 	}
