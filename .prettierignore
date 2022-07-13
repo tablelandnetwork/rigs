@@ -4,3 +4,5 @@ artifacts
 cache
 coverage*
 gasReporterOutput.json
+deployments.d.ts
+deployments.js

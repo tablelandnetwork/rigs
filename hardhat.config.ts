@@ -11,6 +11,7 @@ import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
 import { AllowList } from "./helpers/allowlist";
+import { deployments, RigsDeployment, RigsDeployments } from "./deployments";
 import { ChainName } from "@tableland/sdk";
 
 dotenv.config();
@@ -173,44 +174,7 @@ const config: HardhatUserConfig = {
         },
       },
     },
-    // mainnets
-    ethereum: {
-      contractAddress: "",
-      royaltyContractAddress: "",
-      contractTable: "",
-      allowlistTable: "",
-    },
-    // testnets
-    "ethereum-rinkeby": {
-      contractAddress: "",
-      royaltyContractAddress: "",
-      contractTable: "",
-      allowlistTable: "",
-    },
-    "ethereum-goerli": {
-      contractAddress: "",
-      royaltyContractAddress: "",
-      contractTable: "",
-      allowlistTable: "",
-    },
-    "optimism-kovan": {
-      contractAddress: "",
-      royaltyContractAddress: "",
-      contractTable: "",
-      allowlistTable: "",
-    },
-    "polygon-mumbai": {
-      contractAddress: "0xE65b7b6417533Df4d84751BD1AE76fF652D40460",
-      royaltyContractAddress: "0x0dd5C9D495d2D0723F05EF829ae74716ed39C774",
-      contractTable: "rigs_contract_5_46",
-      allowlistTable: "rigs_allowlist_5_47",
-    },
-    localhost: {
-      contractAddress: "",
-      royaltyContractAddress: "",
-      contractTable: "",
-      allowlistTable: "",
-    },
+    deployments,
   },
 };
 
@@ -250,26 +214,10 @@ interface RigsConfig {
   waitlist: AllowList;
 }
 
-interface RigsDeployment {
-  contractAddress: string;
-  royaltyContractAddress: string;
-  contractTable: string;
-  allowlistTable: string;
-}
-
 interface RigsNetworkConfig {
   args: RigsConfig;
 
-  // mainnets
-  ethereum: RigsDeployment;
-
-  // testnets
-  "ethereum-rinkeby": RigsDeployment;
-  "ethereum-goerli": RigsDeployment;
-  "optimism-kovan": RigsDeployment;
-  "polygon-mumbai": RigsDeployment;
-
-  localhost: RigsDeployment; // hardhat
+  deployments: RigsDeployments;
 }
 
 declare module "hardhat/types/config" {
@@ -291,7 +239,7 @@ extendEnvironment((hre: HardhatRuntimeEnvironment) => {
   // Get configs for user-selected network
   const config = hre.userConfig.config;
   hre.rigsConfig = config.args;
-  hre.rigsDeployment = (config as any)[hre.network.name];
+  hre.rigsDeployment = (config.deployments as any)[hre.network.name];
 });
 
 export default config;
