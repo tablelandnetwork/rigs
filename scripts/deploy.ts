@@ -4,6 +4,7 @@ import { AllowListEntry, buildTree } from "../helpers/allowlist";
 import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
 import { connect, ConnectOptions, SUPPORTED_CHAINS } from "@tableland/sdk";
 import fetch, { Headers, Request, Response } from "node-fetch";
+import { getContractURI, getURITemplate } from "../helpers/uris";
 
 if (!(globalThis as any).fetch) {
   (globalThis as any).fetch = fetch;
@@ -28,13 +29,11 @@ async function main() {
   ) {
     throw Error(`missing table names entries in config`);
   }
-  const uriTemplateStr =
-    rigsConfig.tables.tablelandHost +
-    "/query?mode=list&s=" +
-    encodeURIComponent(
-      `select json_object('name','#'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from ${rigsConfig.tables.tokensTable} join ${rigsConfig.tables.attributesTable} on ${rigsConfig.tables.tokensTable}.id=${rigsConfig.tables.attributesTable}.rig_id where id={id} group by id;`
-    );
-  const uriTemplate = uriTemplateStr.split("{id}");
+  const uriTemplate = getURITemplate(
+    rigsConfig.tables.tablelandHost,
+    rigsConfig.tables.tokensTable,
+    rigsConfig.tables.attributesTable
+  );
 
   // Don't allow multiple deployments per network
   if (rigsDeployment.contractAddress !== "") {
@@ -81,12 +80,10 @@ async function main() {
   );
 
   // Get contract URI
-  const contractURI =
-    rigsConfig.tables.tablelandHost +
-    "/query?mode=list&s=" +
-    encodeURIComponent(
-      `select json_object('name',name,'description',description,'image',image,'external_link',external_link,'seller_fee_basis_points',seller_fee_basis_points,'fee_recipient',fee_recipient) from ${contractTable} limit 1;`
-    );
+  const contractURI = getContractURI(
+    rigsConfig.tables.tablelandHost,
+    contractTable!
+  );
 
   // Create allow list table
   createRes = await tbl.create(
@@ -147,7 +144,7 @@ async function main() {
 
   tx = await rigs.setURITemplate(uriTemplate);
   await tx.wait();
-  console.log("Set URI template:", uriTemplateStr);
+  console.log("Set URI template:", uriTemplate.join("{id}"));
 
   // Warn that addresses need to be saved in config
   console.warn(

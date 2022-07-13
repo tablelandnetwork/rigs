@@ -1,4 +1,6 @@
-import { ethers, network, rigsConfig } from "hardhat";
+import { ethers, network, rigsConfig, rigsDeployment } from "hardhat";
+import { TablelandRigs } from "../typechain-types";
+import { getURITemplate } from "../helpers/uris";
 
 async function main() {
   console.log(`\nUpdating base URI on '${network.name}'...`);
@@ -10,26 +12,32 @@ async function main() {
   }
 
   // Get contract address
-  if (
-    rigsConfig.contractAddress === undefined ||
-    rigsConfig.contractAddress === ""
-  ) {
-    throw Error(`missing contractAddress entry for '${network.name}'`);
+  if (rigsDeployment.contractAddress === "") {
+    throw Error(`no contractAddress entry for '${network.name}'`);
   }
-  console.log(`Using address '${rigsConfig.contractAddress}'`);
+  console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
   // Get URI template
-  if (rigsConfig.uriTemplate === undefined || rigsConfig.uriTemplate === "") {
-    throw Error(`missing uriTemplate entry for '${network.name}'`);
+  if (
+    rigsConfig.tables.tokensTable === "" ||
+    rigsConfig.tables.attributesTable === ""
+  ) {
+    throw Error(`missing table names entries in config`);
   }
+
+  const uriTemplate = getURITemplate(
+    rigsConfig.tables.tablelandHost,
+    rigsConfig.tables.tokensTable,
+    rigsConfig.tables.attributesTable
+  );
 
   // Update base URI
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
-    rigsConfig.contractAddress
-  );
-  const tx = await rigs.setURITemplate(rigsConfig.uriTemplate);
+    rigsDeployment.contractAddress
+  ) as TablelandRigs;
+  const tx = await rigs.setURITemplate(uriTemplate);
   const receipt = await tx.wait();
-  console.log(`URI template set with tx '${receipt.transactionHash}'`);
+  console.log(`URI template set with txn '${receipt.transactionHash}'`);
 }
 
 main().catch((error) => {

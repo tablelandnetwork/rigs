@@ -1,7 +1,5 @@
-import { BigNumber, utils } from "ethers";
 import { ethers, network, rigsConfig } from "hardhat";
 import { buildTree, hashEntry } from "../helpers/allowlist";
-import { TablelandRigs } from "../typechain-types";
 
 async function main() {
   console.log(`\nClaiming on '${network.name}'...`);
@@ -23,23 +21,7 @@ async function main() {
   const proof = merkletree.getHexProof(
     hashEntry(account.address, rigsConfig.allowlist[account.address])
   );
-
-  const RigsFactory = await ethers.getContractFactory("TablelandRigs");
-  const rigs = RigsFactory.attach(rigsConfig.contractAddress) as TablelandRigs;
-
-  // const tx = await rigs.claim(
-  //   BigNumber.from(allowance),
-  //   BigNumber.from(allowance),
-  //   proof,
-  //   { value: utils.parseEther("0.05"), gasLimit: 10000000 }
-  // );
-  const tx = await rigs.claim(
-    BigNumber.from(allowance),
-    BigNumber.from(allowance),
-    { value: utils.parseEther("0.05") }
-  );
-  await tx.wait();
-  // console.log(receipt);
+  console.log("Proof:", proof);
 }
 
 main().catch((error) => {

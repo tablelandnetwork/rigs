@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 
+// import "hardhat/console.sol";
+
 /**
  * @dev Implementation of {ITablelandRigs}.
  */
@@ -72,22 +74,25 @@ contract TablelandRigs is
      */
     function mint(uint256 quantity) external payable override whenNotPaused {
         bytes32[] memory proof;
-        _verify(quantity, 0, 0, proof);
+        _verifyMint(quantity, 0, 0, proof);
     }
 
+    /**
+     * @dev See {ITablelandRigs-mint}.
+     */
     function mint(
         uint256 quantity,
         uint256 freeAllowance,
         uint256 paidAllowance,
         bytes32[] calldata proof
     ) external payable override whenNotPaused {
-        _verify(quantity, freeAllowance, paidAllowance, proof);
+        _verifyMint(quantity, freeAllowance, paidAllowance, proof);
     }
 
     /**
-     * @dev See {ITablelandRigs-mint}.
+     * @dev Verifies proof of allowances against current mint phase.
      */
-    function _verify(
+    function _verifyMint(
         uint256 quantity,
         uint256 freeAllowance,
         uint256 paidAllowance,
@@ -103,7 +108,9 @@ contract TablelandRigs is
             revert ZeroQuantity();
         }
 
-        if (mintPhase != MintPhase.PUBLIC) {
+        if (mintPhase == MintPhase.PUBLIC) {
+            _mint(quantity, quantity);
+        } else {
             // Get merkletree root for mint phase
             bytes32 root;
             if (mintPhase == MintPhase.ALLOWLIST) {
@@ -114,10 +121,10 @@ contract TablelandRigs is
 
             // Verify proof against mint phase root
             if (
-                !_verify(
+                !_verifyProof(
                     proof,
                     root,
-                    _leaf(_msgSenderERC721A(), freeAllowance, paidAllowance)
+                    _getLeaf(_msgSenderERC721A(), freeAllowance, paidAllowance)
                 )
             ) {
                 revert InvalidProof();
@@ -133,21 +140,25 @@ contract TablelandRigs is
                 revert InsufficientAllowance();
             }
 
+            // Get quantity that must be paid for
+            uint256 paidQuantity = quantity -
+                (freeAllowance - uint256(claimed));
+
             // Update allowance claimed
             claimed = claimed + uint64(quantity);
             _setAux(_msgSenderERC721A(), claimed);
 
-            // Sanity check for tests
-            assert(freeAllowance + paidAllowance <= claimed);
-        }
+            _mint(quantity, paidQuantity);
 
-        _mint(quantity);
+            // Sanity check for tests
+            assert(claimed <= freeAllowance + paidAllowance);
+        }
     }
 
     /**
      * @dev Returns merkletree leaf node for given params.
      */
-    function _leaf(
+    function _getLeaf(
         address account,
         uint256 freeAllowance,
         uint256 paidAllowance
@@ -159,7 +170,7 @@ contract TablelandRigs is
     /**
      * @dev Verifies that `proof` is a valid path to `leaf` in `root`.
      */
-    function _verify(
+    function _verifyProof(
         bytes32[] memory proof,
         bytes32 root,
         bytes32 leaf
@@ -173,6 +184,7 @@ contract TablelandRigs is
      * Borrows logic from https://github.com/divergencetech/ethier/blob/main/contracts/sales/Seller.sol.
      *
      * quantity - the number of Rigs to mint
+     * costQuantity - the number of Rigs that must be paid for
      *
      * Requirements:
      *
@@ -180,7 +192,10 @@ contract TablelandRigs is
      * - current supply must be less than `maxSupply`
      * - `msg.value` must be sufficient
      */
-    function _mint(uint256 quantity) private nonReentrant {
+    function _mint(uint256 quantity, uint256 costQuantity)
+        private
+        nonReentrant
+    {
         // Check quantity is non-zero and doesn't exceed remaining quota
         if (quantity == 0) {
             revert ZeroQuantity();
@@ -191,7 +206,7 @@ contract TablelandRigs is
         }
 
         // Check sufficient value
-        uint256 cost = _cost(quantity);
+        uint256 cost = _cost(costQuantity);
         if (msg.value < cost) {
             revert InsufficientValue(cost);
         }
@@ -202,7 +217,7 @@ contract TablelandRigs is
         // Handle funds
         if (cost > 0) {
             Address.sendValue(beneficiary, cost);
-            emit Revenue(beneficiary, quantity, cost);
+            emit Revenue(beneficiary, costQuantity, cost);
         }
         if (msg.value > cost) {
             address payable reimburse = payable(_msgSenderERC721A());
