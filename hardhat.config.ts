@@ -157,7 +157,7 @@ const config: HardhatUserConfig = {
           paidAllowance: 3,
         },
         "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65": {
-          freeAllowance: 0,
+          freeAllowance: 1,
           paidAllowance: 4,
         },
         "0x06A948303AA30b6870896C84E83Ba00Df5292950": {
@@ -165,8 +165,8 @@ const config: HardhatUserConfig = {
           paidAllowance: 5,
         },
         "0x1f48aa5069bcdae06A0d009b42E20ccc33D1Ff51": {
-          freeAllowance: 1,
-          paidAllowance: 0,
+          freeAllowance: 3,
+          paidAllowance: 10,
         },
       },
       waitlist: {
@@ -203,10 +203,10 @@ const config: HardhatUserConfig = {
       allowlistTable: "",
     },
     "polygon-mumbai": {
-      contractAddress: "0x3dcadCB82489bBF45a6bCBa5dae0373B7644114b",
-      royaltyContractAddress: "0xAd8Dd3fbeE6823cD0AA1A4a531D43F3dC3602e04",
-      contractTable: "rigs_contract_5_44",
-      allowlistTable: "rigs_allowlist_5_45",
+      contractAddress: "0xE65b7b6417533Df4d84751BD1AE76fF652D40460",
+      royaltyContractAddress: "0x0dd5C9D495d2D0723F05EF829ae74716ed39C774",
+      contractTable: "rigs_contract_5_46",
+      allowlistTable: "rigs_allowlist_5_47",
     },
     localhost: {
       contractAddress: "",
