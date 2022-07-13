@@ -27,7 +27,6 @@ You can build the Typescript client locally:
 
 ```shell
 npm install
-npx hardhat compile
 npm run build
 ```
 
@@ -53,7 +52,7 @@ Deployments are handled on a per-network basis:
 npx hardhat run scripts/deploy.ts --network optimism
 ```
 
-Refer to the `deployments` entry in `hardhat.config.js` for the list of current deployments.
+Refer to the `deployments.ts` for the list of current deployments.
 
 ## Extacting the ABI and Bytecode
 
@@ -82,4 +81,4 @@ abigen --abi ./abi.json --bin ./bytecode.bin --pkg contracts --out gobuild/Table
 
 # License
 
-MIT AND Apache-2.0, © 2021-2022 Tableland Network Contributors
+The Unlicense

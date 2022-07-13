@@ -11,6 +11,7 @@ gobuild
 # Hardhat files
 cache
 artifacts
+allowlists
 
 # Openzeppelin files
 .openzeppelin/unknown-*1337.json

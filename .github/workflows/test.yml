@@ -35,16 +35,8 @@ jobs:
       - name: Install 🔧
         run: npm install
 
-      - name: Compile 🛠
-        run: npx hardhat compile
-
       - name: Build ⚒️
         run: npm run build
 
       - name: Test 🧪
         run: npm test
-
-      - name: Deploy 🚀
-        run: |
-          npx hardhat node &
-          npx hardhat run scripts/deploy.ts --network localhost

@@ -1,105 +1,477 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { BigNumber } from "ethers";
+import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
-import { TablelandRigs } from "../typechain-types/index";
+import { PaymentSplitter, TablelandRigs } from "../typechain-types";
+import { MerkleTree } from "merkletreejs";
+import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
+const assert = chai.assert;
 
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+function getCost(quantity: number, price: number): BigNumber {
+  return utils.parseEther((quantity * price).toFixed(2));
+}
 
 describe("Rigs", function () {
   let rigs: TablelandRigs;
+  let splitter: PaymentSplitter;
   let accounts: SignerWithAddress[];
+  let beneficiary: SignerWithAddress;
+  const allowlist: AllowList = {};
+  const waitlist: AllowList = {};
+  let allowlistTree: MerkleTree;
+  let waitlistTree: MerkleTree;
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
-    const Factory = await ethers.getContractFactory("TablelandRigs");
-    rigs = await Factory.deploy("https://website.com/");
+    beneficiary = accounts[1];
+
+    accounts.slice(0, 5).forEach((a: SignerWithAddress, i: number) => {
+      allowlist[a.address] = {
+        freeAllowance: 1,
+        paidAllowance: i + 1,
+      };
+    });
+    allowlistTree = buildTree(allowlist);
+    accounts.slice(5, 10).forEach((a: SignerWithAddress, i: number) => {
+      waitlist[a.address] = {
+        freeAllowance: 1,
+        paidAllowance: i + 1,
+      };
+    });
+    waitlistTree = buildTree(waitlist);
+
+    const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");
+    splitter = (await SplitterFactory.deploy(
+      [accounts[2].address, accounts[3].address],
+      [20, 80]
+    )) as PaymentSplitter;
+    await splitter.deployed();
+
+    const RigsFactory = await ethers.getContractFactory("TablelandRigs");
+    rigs = await RigsFactory.deploy(
+      BigNumber.from(3000),
+      utils.parseEther("0.05"),
+      beneficiary.address,
+      splitter.address,
+      allowlistTree.getHexRoot(),
+      waitlistTree.getHexRoot()
+    );
     await rigs.deployed();
+
+    await rigs.setContractURI("https://foo.xyz");
+    await rigs.setURITemplate(["https://foo.xyz/", "/bar"]);
   });
 
-  it("Should mint a single rig", async function () {
-    const minter = accounts[4];
-    const tx = await rigs.connect(minter).mint(1);
-    const receipt = await tx.wait();
-    const [event] = receipt.events ?? [];
+  it("Should not mint during closed phase", async function () {
+    // try public minting
+    let minter = accounts[10];
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
+    ).to.be.revertedWith("MintingClosed");
 
-    // check transfer event
-    expect(event.args?.from).to.equal(ZERO_ADDRESS);
-    expect(event.args?.to).to.equal(minter.address);
-    expect(event.args?.tokenId).to.equal(BigNumber.from(1));
+    // try allowlist minting
+    minter = accounts[4];
+    const entry = allowlist[minter.address];
+    const proof = allowlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(1, 0.05),
+          }
+        )
+    ).to.be.revertedWith("MintingClosed");
+  });
+
+  it("Should not mint with zero quantity", async function () {
+    await rigs.setMintPhase(3);
+    const minter = accounts[10];
+    await expect(rigs.connect(minter)["mint(uint256)"](0)).to.be.revertedWith(
+      "ZeroQuantity"
+    );
+  });
+
+  it("Should mint with allowlist during allowlist phase", async function () {
+    await rigs.setMintPhase(1);
+
+    // try public minting
+    let minter = accounts[10];
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
+    ).to.be.revertedWith("InvalidProof");
+
+    // allowlist mint free allowance
+    minter = accounts[4];
+    let entry = allowlist[minter.address];
+    let proof = allowlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof
+        )
+    )
+      .to.emit(rigs, "Transfer")
+      .withArgs(
+        ethers.constants.AddressZero,
+        minter.address,
+        BigNumber.from(1)
+      );
 
     // check new balance
-    const balance = await rigs.balanceOf(minter.address);
-    expect(balance).to.equal(BigNumber.from(1));
+    expect(await rigs.balanceOf(minter.address)).to.equal(BigNumber.from(1));
 
     // check owned tokens
-    const tokens = await rigs.tokensOfOwner(minter.address);
+    let tokens = await rigs.tokensOfOwner(minter.address);
     expect(tokens.length).to.equal(1);
     expect(tokens[0]).to.equal(BigNumber.from(1));
 
     // check total supply
-    const totalSupply = await rigs.totalSupply();
-    expect(totalSupply).to.equal(BigNumber.from(1));
+    expect(await rigs.totalSupply()).to.equal(BigNumber.from(1));
+
+    // remaining mints should require ether
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof
+        )
+    ).to.be.revertedWith("InsufficientValue(50000000000000000)");
+
+    // allowlist mint paid allowance
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          5,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(5, 0.05),
+          }
+        )
+    )
+      .to.emit(rigs, "Transfer")
+      .withArgs(ethers.constants.AddressZero, minter.address, BigNumber.from(5))
+      .to.emit(rigs, "Revenue")
+      .withArgs(beneficiary.address, BigNumber.from(5), getCost(5, 0.05));
+
+    // re-check owned tokens
+    tokens = await rigs.tokensOfOwner(minter.address);
+    expect(tokens.length).to.equal(6);
+
+    // check allowance is now exhausted
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(1, 0.05),
+          }
+        )
+    ).to.be.revertedWith("InsufficientAllowance");
+
+    // try waitlist minting
+    minter = accounts[5];
+    entry = waitlist[minter.address];
+    proof = waitlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(1, 0.05),
+          }
+        )
+    ).to.be.revertedWith("InvalidProof");
   });
 
-  it("Should mint multiple rigs", async function () {
-    const minter = accounts[5];
-    const tx = await rigs.connect(minter).mint(3);
-    const receipt = await tx.wait();
-    const [event] = receipt.events ?? [];
+  it("Should mint with waitlist during waitlist phase", async function () {
+    await rigs.setMintPhase(2);
 
-    // check transfer event
-    expect(event.args?.from).to.equal(ZERO_ADDRESS);
-    expect(event.args?.to).to.equal(minter.address);
-    expect(event.args?.tokenId).to.equal(BigNumber.from(1));
+    // try public minting
+    let minter = accounts[10];
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
+    ).to.be.revertedWith("InvalidProof");
 
-    // check new balance
-    const balance = await rigs.balanceOf(minter.address);
-    expect(balance).to.equal(BigNumber.from(3));
+    // waitlist mint all allowance and send extra ether
+    minter = accounts[5];
+    const entry = waitlist[minter.address];
+    const proof = waitlistTree.getHexProof(hashEntry(minter.address, entry));
+    const quantity = entry.freeAllowance + entry.paidAllowance + 1;
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          quantity,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(quantity, 0.05),
+          }
+        )
+    )
+      .to.emit(rigs, "Transfer")
+      .to.emit(rigs, "Revenue")
+      .withArgs(
+        beneficiary.address,
+        BigNumber.from(entry.paidAllowance),
+        getCost(entry.paidAllowance, 0.05)
+      )
+      .to.emit(rigs, "Refund")
+      .withArgs(minter.address, getCost(quantity - entry.paidAllowance, 0.05));
 
-    // check owned tokens
-    const tokens = await rigs.tokensOfOwner(minter.address);
-    expect(tokens.length).to.equal(3);
-    expect(tokens[0]).to.equal(BigNumber.from(1));
+    // check allowance is now exhausted
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(1, 0.05),
+          }
+        )
+    ).to.be.revertedWith("InsufficientAllowance");
 
-    // check total supply
-    const totalSupply = await rigs.totalSupply();
-    expect(totalSupply).to.equal(BigNumber.from(3));
+    // try unused allowlist
+    minter = accounts[3];
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          {
+            value: getCost(1, 0.05),
+          }
+        )
+    ).to.be.revertedWith("InvalidProof");
   });
 
-  it("Should udpate the base URI", async function () {
-    let tx = await rigs.setBaseURI("https://fake.com/");
-    await tx.wait();
+  it("Should mint during public phase", async function () {
+    await rigs.setMintPhase(3);
 
-    const minter = accounts[6];
-    tx = await rigs.connect(minter).mint(1);
+    let minter = accounts[10];
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
+    ).to.emit(rigs, "Transfer");
+
+    // allowlist minting should not allow free minting
+    minter = accounts[4];
+    const entry = allowlist[minter.address];
+    const proof = allowlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof
+        )
+    ).to.be.rejectedWith("InsufficientValue");
+
+    // allowlist minting should still work with value
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          { value: getCost(1, 0.05) }
+        )
+    ).to.emit(rigs, "Transfer");
+  });
+
+  it("Should mint through phases until sold out", async function () {
+    const maxSupply = await rigs.maxSupply();
+
+    // allowlist
+    await rigs.setMintPhase(1);
+    let minter = accounts[4];
+    let entry = allowlist[minter.address];
+    let proof = allowlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          entry.freeAllowance + entry.paidAllowance,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          { value: getCost(entry.paidAllowance, 0.05) }
+        )
+    ).to.emit(rigs, "Transfer");
+    let minted = entry.freeAllowance + entry.paidAllowance;
+
+    // waitlist
+    await rigs.setMintPhase(2);
+    minter = accounts[5];
+    entry = waitlist[minter.address];
+    proof = waitlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          entry.freeAllowance + entry.paidAllowance,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          { value: getCost(entry.paidAllowance, 0.05) }
+        )
+    ).to.emit(rigs, "Transfer");
+    minted += entry.freeAllowance + entry.paidAllowance;
+
+    // public
+    await rigs.setMintPhase(3);
+    minter = accounts[10];
+    const remaining = maxSupply.toNumber() - minted;
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](remaining, {
+        value: getCost(remaining, 0.05),
+      })
+    ).to.emit(rigs, "Transfer");
+    minted += remaining;
+
+    // sold out
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](1, {
+        value: getCost(1, 0.05),
+      })
+    ).to.be.rejectedWith("SoldOut");
+
+    assert.equal(maxSupply.toNumber(), minted);
+  });
+
+  it("Should set URI template", async function () {
+    await rigs.setMintPhase(3);
+
+    const minter = accounts[10];
+    const tx = await rigs
+      .connect(minter)
+      ["mint(uint256)"](1, { value: getCost(1, 0.05) });
     const receipt = await tx.wait();
     const [event] = receipt.events ?? [];
+    const tokenId = event.args?.tokenId;
 
-    const uri = await rigs.tokenURI(event.args?.tokenId);
-    expect(uri).to.equal("https://fake.com/1");
+    await rigs.setURITemplate([]);
+    expect(await rigs.tokenURI(tokenId)).to.equal("");
+
+    await rigs.setURITemplate([""]);
+    expect(await rigs.tokenURI(tokenId)).to.equal("");
+
+    await rigs.setURITemplate(["https://fake.com/"]);
+    expect(await rigs.tokenURI(tokenId)).to.equal("https://fake.com/");
+
+    await rigs.setURITemplate(["https://fake.com/", "/boo"]);
+    expect(await rigs.tokenURI(tokenId)).to.equal("https://fake.com/1/boo");
+
+    await rigs.setURITemplate(["https://fake.com/", "/boo/", ""]);
+    expect(await rigs.tokenURI(tokenId)).to.equal("https://fake.com/1/boo/1");
+  });
+
+  it("Should not return token URI for non-existent token", async function () {
+    await expect(rigs.tokenURI(BigNumber.from(1))).to.be.rejectedWith(
+      "URIQueryForNonexistentToken"
+    );
+  });
+
+  it("Should set contract URI", async function () {
+    await rigs.setContractURI("https://fake.com");
+
+    expect(await rigs.contractURI()).to.equal("https://fake.com");
   });
 
   it("Should pause and unpause minting", async function () {
-    const minter = accounts[7];
-    let tx = await rigs.connect(minter).mint(1);
-    await tx.wait();
+    await rigs.setMintPhase(3);
 
-    tx = await rigs.pause();
-    await tx.wait();
+    await rigs.pause();
 
-    await expect(rigs.connect(minter).mint(1)).to.be.revertedWith(
-      "Pausable: paused"
+    const minter = accounts[10];
+    await expect(
+      rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
+    ).to.be.revertedWith("Pausable: paused");
+
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](1, 0, 0, [], {
+          value: getCost(1, 0.05),
+        })
+    ).to.be.revertedWith("Pausable: paused");
+
+    await rigs.unpause();
+  });
+
+  it("Should restrict owner-only methods to owners", async function () {
+    const _rigs = rigs.connect(accounts[2]);
+
+    await expect(_rigs.setMintPhase(1)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
     );
 
-    tx = await rigs.unpause();
-    await tx.wait();
+    await expect(_rigs.setBeneficiary(accounts[2].address)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
 
-    tx = await rigs.connect(minter).mint(1);
-    await tx.wait();
+    await expect(_rigs.setURITemplate(["foo"])).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    await expect(_rigs.setContractURI("bar")).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    await expect(_rigs.pause()).to.be.rejectedWith(
+      "Ownable: caller is not the owner"
+    );
+
+    await expect(_rigs.unpause()).to.be.rejectedWith(
+      "Ownable: caller is not the owner"
+    );
+  });
+
+  it("Should support required interfaces", async function () {
+    // ERC165 interface ID for ERC165
+    expect(await rigs.supportsInterface("0x01ffc9a7")).to.equal(true);
+    // ERC165 interface ID for ERC721
+    expect(await rigs.supportsInterface("0x80ac58cd")).to.equal(true);
+    // ERC165 interface ID for ERC721Metadata
+    expect(await rigs.supportsInterface("0x5b5e139f")).to.equal(true);
+    // ERC165 interface ID for ERC2981
+    expect(await rigs.supportsInterface("0x2a55205a")).to.equal(true);
   });
 });
