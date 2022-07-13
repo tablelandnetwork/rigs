@@ -26,10 +26,7 @@ const config: HardhatUserConfig = {
     },
   },
   dependencyCompiler: {
-    paths: [
-      "@tableland/evm/contracts/TablelandTables.sol",
-      "@openzeppelin/contracts/finance/PaymentSplitter.sol",
-    ],
+    paths: ["@openzeppelin/contracts/finance/PaymentSplitter.sol"],
   },
   contractSizer: {
     alphaSort: true,

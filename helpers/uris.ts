@@ -7,9 +7,9 @@ export function getURITemplate(
     tablelandHost +
     "/query?mode=list&s=" +
     encodeURIComponent(
-      `select json_object('name','#'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from ${tokensTable} join ${attributesTable} on ${tokensTable}.id=${attributesTable}.rig_id where id={id} group by id;`
+      `select json_object('name','#'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from ${tokensTable} join ${attributesTable} on ${tokensTable}.id=${attributesTable}.rig_id where id=ID group by id;`
     );
-  return uri.split("{id}");
+  return uri.split("ID");
 }
 
 export function getContractURI(
