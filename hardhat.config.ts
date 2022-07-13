@@ -131,6 +131,7 @@ const config: HardhatUserConfig = {
       feeRecipient: "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe",
       maxSupply: 3000,
       etherPrice: "0.05",
+      mintPhase: "closed",
       tables: {
         tablelandChain: "ethereum-goerli",
         tablelandPrivateKey: process.env.ETHEREUM_GOERLI_PRIVATE_KEY,
@@ -185,6 +186,9 @@ interface RigsConfig {
   externalLink: string;
   sellerFeeBasisPoints: number;
   feeRecipient: string;
+
+  // mint phase
+  mintPhase: "closed" | "allowlist" | "waitlist" | "public";
 
   // rigs tables
   tables: RigsTables;

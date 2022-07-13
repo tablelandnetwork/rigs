@@ -14,19 +14,10 @@ async function main() {
   }
 
   // Build merkle trees for allowlist
-  const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles, false);
+  const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles);
   const allowlistTree = buildTree(allowlist);
-  const waitlist = await getListFromCSVs(rigsConfig.waitlistFiles, true);
+  const waitlist = await getListFromCSVs(rigsConfig.waitlistFiles);
   const waitlistTree = buildTree(waitlist);
-
-  // Verify royalties contract
-  await run("verify:verify", {
-    address: rigsDeployment.royaltyContractAddress,
-    constructorArguments: [
-      rigsConfig.royaltyReceivers,
-      rigsConfig.royaltyReceiverShares,
-    ],
-  });
 
   // Verify rigs
   await run("verify:verify", {
@@ -38,6 +29,15 @@ async function main() {
       rigsDeployment.royaltyContractAddress,
       allowlistTree.getHexRoot(),
       waitlistTree.getHexRoot(),
+    ],
+  });
+
+  // Verify royalties contract
+  await run("verify:verify", {
+    address: rigsDeployment.royaltyContractAddress,
+    constructorArguments: [
+      rigsConfig.royaltyReceivers,
+      rigsConfig.royaltyReceiverShares,
     ],
   });
 }

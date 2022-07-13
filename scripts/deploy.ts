@@ -110,7 +110,7 @@ async function main() {
     const runStatement = `insert into ${contractTable} values ('${rigsConfig.name}', '${rigsConfig.description}', '${rigsConfig.image}', '${rigsConfig.externalLink}', ${rigsConfig.sellerFeeBasisPoints}, '${rigsConfig.feeRecipient}');`;
     const writeRes = await tbl!.write(runStatement);
     console.log(
-      `Inserted contract info with txn ${writeRes.hash}: `,
+      `Inserted contract info with txn '${writeRes.hash}': `,
       rigsConfig.name,
       rigsConfig.description,
       rigsConfig.image,
@@ -144,7 +144,7 @@ async function main() {
       waitlist: boolean
     ) {
       while (list.length > 0) {
-        const entries = list.splice(0, 100);
+        const entries = list.splice(0, 50);
         let runStatement = "";
         for (const [address, entry] of entries) {
           runStatement += `insert into ${allowlistTable} values ('${address}', ${
@@ -154,7 +154,7 @@ async function main() {
         const res = await tbl.write(runStatement);
 
         console.log(
-          `Inserted ${entries.length} allowlist entries with txn ${res.hash}`
+          `Inserted ${entries.length} allowlist entries with txn '${res.hash}'`
         );
       }
     }
