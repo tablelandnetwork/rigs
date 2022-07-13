@@ -159,43 +159,6 @@ async function main() {
   console.warn(
     `Save 'config.${network.name}.allowlistTable: "${allowlistTable}"' in the hardhat config!`
   );
-
-  //
-
-  // Get proof
-  // const allowance = rigsConfig.allowlist[account.address];
-  // if (allowance === undefined) {
-  //   throw Error("no allowance");
-  // }
-  // const proof = merkletree.getHexProof(
-  //   hashEntry(account.address, rigsConfig.allowlist[account.address])
-  // );
-
-  // // const tx = await rigs.claim(
-  // //   BigNumber.from(allowance),
-  // //   BigNumber.from(allowance),
-  // //   proof,
-  // //   { value: utils.parseEther("0.05"), gasLimit: 10000000 }
-  // // );
-  // const cost = parseFloat(rigsConfig.etherPrice) * allowance
-  // const tx = await rigs.claim(
-  //   BigNumber.from(allowance),
-  //   BigNumber.from(allowance),
-  //   proof,
-  //   { value: utils.parseEther(cost.toString()) }
-  // );
-  // await tx.wait();
-
-  // if (rigsConfig.autoMint > 0) {
-  //   const price = (
-  //     parseFloat(rigsConfig.etherPrice) * rigsConfig.autoMint
-  //   ).toString();
-  //   const tx = await rigs.mint(rigsConfig.autoMint, {
-  //     value: utils.parseEther(price),
-  //   });
-  //   await tx.wait();
-  // }
-  // console.log(`\nMinted ${rigsConfig.autoMint} rigs!`);
 }
 
 main().catch((error) => {

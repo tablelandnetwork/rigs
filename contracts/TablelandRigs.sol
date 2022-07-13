@@ -13,6 +13,8 @@ import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @dev Implementation of {ITablelandRigs}.
  */
@@ -106,9 +108,9 @@ contract TablelandRigs is
             _mint(quantity, quantity);
         } else {
             // Get merkletree root for mint phase
-            bytes32 root;
-            if (mintPhase == MintPhase.ALLOWLIST) root = allowlistRoot;
-            else if (mintPhase == MintPhase.WAITLIST) root = waitlistRoot;
+            bytes32 root = mintPhase == MintPhase.ALLOWLIST
+                ? allowlistRoot
+                : waitlistRoot;
 
             // Verify proof against mint phase root
             if (
@@ -183,8 +185,7 @@ contract TablelandRigs is
         private
         nonReentrant
     {
-        // Check quantity is non-zero and doesn't exceed remaining quota
-        if (quantity == 0) revert ZeroQuantity();
+        // Check quantity doesn't exceed remaining quota
         quantity = Math.min(quantity, maxSupply - totalSupply());
         if (quantity == 0) revert SoldOut();
 

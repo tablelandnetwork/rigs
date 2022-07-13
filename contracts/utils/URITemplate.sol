@@ -33,8 +33,6 @@ contract URITemplate {
     {
         if (_uriParts.length == 0) {
             return "";
-        } else if (_uriParts.length == 1) {
-            return string(abi.encodePacked(_uriParts[0], tokenIdStr));
         }
 
         bytes memory uri;
