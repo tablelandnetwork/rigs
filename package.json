@@ -62,6 +62,7 @@
     "@typescript-eslint/parser": "^5.30.5",
     "chai": "^4.3.6",
     "chai-as-promised": "^7.1.1",
+    "csv-parse": "^5.3.0",
     "dotenv": "^16.0.1",
     "erc721a": "^4.1.0",
     "erc721a-upgradeable": "^4.1.0",

@@ -1,6 +1,6 @@
 import { run, network, rigsConfig, rigsDeployment } from "hardhat";
 import { BigNumber, utils } from "ethers";
-import { buildTree } from "../helpers/allowlist";
+import { buildTree, getListFromCSVs } from "../helpers/allowlist";
 
 async function main() {
   console.log(`\nVerifying on '${network.name}'...`);
@@ -14,8 +14,10 @@ async function main() {
   }
 
   // Build merkle trees for allowlist
-  const allowlistTree = buildTree(rigsConfig.allowlist);
-  const waitlistTree = buildTree(rigsConfig.waitlist);
+  const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles, false);
+  const allowlistTree = buildTree(allowlist);
+  const waitlist = await getListFromCSVs(rigsConfig.waitlistFiles, true);
+  const waitlistTree = buildTree(waitlist);
 
   // Verify royalties contract
   await run("verify:verify", {

@@ -1,5 +1,5 @@
 import { ethers, network, rigsConfig } from "hardhat";
-import { buildTree, hashEntry } from "../helpers/allowlist";
+import { buildTree, getListFromCSVs, hashEntry } from "../helpers/allowlist";
 
 async function main() {
   console.log(`\nClaiming on '${network.name}'...`);
@@ -11,15 +11,16 @@ async function main() {
   }
 
   // Build merkle tree for allowlist
-  const merkletree = buildTree(rigsConfig.allowlist);
+  const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles);
+  const merkletree = buildTree(allowlist);
 
   // Get proof
-  const allowance = rigsConfig.allowlist[account.address];
+  const allowance = allowlist[account.address];
   if (allowance === undefined) {
     throw Error("no allowance");
   }
   const proof = merkletree.getHexProof(
-    hashEntry(account.address, rigsConfig.allowlist[account.address])
+    hashEntry(account.address, allowlist[account.address])
   );
   console.log("Proof:", proof);
 }

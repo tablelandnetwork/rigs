@@ -1,10 +1,16 @@
 import { ethers, network, rigsConfig, rigsDeployment } from "hardhat";
 import { Wallet, providers, BigNumber, utils } from "ethers";
-import { AllowListEntry, buildTree } from "../helpers/allowlist";
+import {
+  AllowListEntry,
+  buildTree,
+  countList,
+  getListFromCSVs,
+} from "../helpers/allowlist";
 import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
 import { connect, ConnectOptions, SUPPORTED_CHAINS } from "@tableland/sdk";
 import fetch, { Headers, Request, Response } from "node-fetch";
 import { getContractURI, getURITemplate } from "../helpers/uris";
+import assert from "assert";
 
 if (!(globalThis as any).fetch) {
   (globalThis as any).fetch = fetch;
@@ -41,10 +47,31 @@ async function main() {
   }
 
   // Build merkle trees for allowlist
-  const allowlistTree = buildTree(rigsConfig.allowlist);
-  const waitlistTree = buildTree(rigsConfig.waitlist);
-  console.log("Using merkleroot for allowlist:", allowlistTree.getHexRoot());
-  console.log("Using merkleroot for waitlist:", waitlistTree.getHexRoot());
+  const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles);
+  const allowlistTree = buildTree(allowlist);
+  const allowlistAllowances = countList(allowlist);
+  const waitlist = await getListFromCSVs(rigsConfig.waitlistFiles);
+  const waitlistTree = buildTree(waitlist);
+  const waitlistAllowances = countList(waitlist);
+
+  console.log(
+    `Allowlist has ${allowlistTree.getLeafCount()} entries and ${allowlistAllowances} total allowances with root:`,
+    allowlistTree.getHexRoot()
+  );
+  console.log(
+    `Waitlist has ${waitlistTree.getLeafCount()} entries and ${waitlistAllowances} total allowances with root:`,
+    waitlistTree.getHexRoot()
+  );
+
+  // Ensure we have correct allowances
+  assert(
+    allowlistAllowances === rigsConfig.maxSupply,
+    `allowlist total allowances does not equal max supply ${rigsConfig.maxSupply}`
+  );
+  assert(
+    waitlistAllowances === rigsConfig.waitlistSize,
+    `waitlist total allowances does not equal waitlist size ${rigsConfig.waitlistSize}`
+  );
 
   // Connect to tableland
   const wallet = new Wallet(rigsConfig.tables.tablelandPrivateKey!);
@@ -113,8 +140,8 @@ async function main() {
       );
     }
   }
-  await insertEntries(Object.entries(rigsConfig.allowlist), false);
-  await insertEntries(Object.entries(rigsConfig.waitlist), true);
+  await insertEntries(Object.entries(allowlist), false);
+  await insertEntries(Object.entries(waitlist), true);
 
   // Deploy a PaymentSplitter for rewards
   const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");

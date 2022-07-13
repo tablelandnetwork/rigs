@@ -10,7 +10,6 @@ import "hardhat-dependency-compiler";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
-import { AllowList } from "./helpers/allowlist";
 import { deployments, RigsDeployment, RigsDeployments } from "./deployments";
 import { ChainName } from "@tableland/sdk";
 
@@ -145,34 +144,23 @@ const config: HardhatUserConfig = {
         "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65",
       ],
       royaltyReceiverShares: [20, 80],
-      allowlist: {
-        "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe": {
-          freeAllowance: 1,
-          paidAllowance: 2,
-        },
-        "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F": {
-          freeAllowance: 2,
-          paidAllowance: 3,
-        },
-        "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65": {
-          freeAllowance: 1,
-          paidAllowance: 4,
-        },
-        "0x06A948303AA30b6870896C84E83Ba00Df5292950": {
-          freeAllowance: 1,
-          paidAllowance: 5,
-        },
-        "0x1f48aa5069bcdae06A0d009b42E20ccc33D1Ff51": {
-          freeAllowance: 3,
-          paidAllowance: 10,
-        },
-      },
-      waitlist: {
-        "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe": {
-          freeAllowance: 1,
-          paidAllowance: 2,
-        },
-      },
+      allowlistFiles: [
+        "../allowlists/textile_allowlist.csv",
+        "../allowlists/main_allowlist.csv",
+        "../allowlists/pioneer_allowlist.csv",
+        "../allowlists/partner_allowlist.csv",
+        "../allowlists/pl_allowlist.csv",
+        "../allowlists/toucan_allowlist.csv",
+        "../allowlists/proof_allowlist.csv",
+        "../allowlists/moonbirds_allowlist.csv",
+        "../allowlists/external_allowlist.csv",
+      ],
+      waitlistFiles: [
+        "../allowlists/main_waitlist.csv",
+        "../allowlists/moonbirds_waitlist.csv",
+        "../allowlists/proof_waitlist.csv",
+      ],
+      waitlistSize: 4608,
     },
     deployments,
   },
@@ -210,8 +198,9 @@ interface RigsConfig {
   royaltyReceiverShares: number[];
 
   // whitelists
-  allowlist: AllowList;
-  waitlist: AllowList;
+  allowlistFiles: string[];
+  waitlistFiles: string[];
+  waitlistSize: number;
 }
 
 interface RigsNetworkConfig {
