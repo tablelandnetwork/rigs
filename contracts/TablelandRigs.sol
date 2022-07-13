@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
 import "erc721a/contracts/ERC721A.sol";
@@ -12,8 +12,6 @@ import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
-
-// import "hardhat/console.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -99,25 +97,18 @@ contract TablelandRigs is
         bytes32[] memory proof
     ) private {
         // Ensure mint phase is not closed
-        if (mintPhase == MintPhase.CLOSED) {
-            revert MintingClosed();
-        }
+        if (mintPhase == MintPhase.CLOSED) revert MintingClosed();
 
         // Check quantity is non-zero
-        if (quantity == 0) {
-            revert ZeroQuantity();
-        }
+        if (quantity == 0) revert ZeroQuantity();
 
         if (mintPhase == MintPhase.PUBLIC) {
             _mint(quantity, quantity);
         } else {
             // Get merkletree root for mint phase
             bytes32 root;
-            if (mintPhase == MintPhase.ALLOWLIST) {
-                root = allowlistRoot;
-            } else if (mintPhase == MintPhase.WAITLIST) {
-                root = waitlistRoot;
-            }
+            if (mintPhase == MintPhase.ALLOWLIST) root = allowlistRoot;
+            else if (mintPhase == MintPhase.WAITLIST) root = waitlistRoot;
 
             // Verify proof against mint phase root
             if (
@@ -126,9 +117,7 @@ contract TablelandRigs is
                     root,
                     _getLeaf(_msgSenderERC721A(), freeAllowance, paidAllowance)
                 )
-            ) {
-                revert InvalidProof();
-            }
+            ) revert InvalidProof();
 
             // Ensure allowance available
             uint64 claimed = _getAux(_msgSenderERC721A());
@@ -136,9 +125,7 @@ contract TablelandRigs is
                 quantity,
                 freeAllowance + paidAllowance - uint256(claimed)
             );
-            if (quantity == 0) {
-                revert InsufficientAllowance();
-            }
+            if (quantity == 0) revert InsufficientAllowance();
 
             // Get quantity that must be paid for
             uint256 paidQuantity = quantity -
@@ -197,19 +184,13 @@ contract TablelandRigs is
         nonReentrant
     {
         // Check quantity is non-zero and doesn't exceed remaining quota
-        if (quantity == 0) {
-            revert ZeroQuantity();
-        }
+        if (quantity == 0) revert ZeroQuantity();
         quantity = Math.min(quantity, maxSupply - totalSupply());
-        if (quantity == 0) {
-            revert SoldOut();
-        }
+        if (quantity == 0) revert SoldOut();
 
         // Check sufficient value
         uint256 cost = _cost(costQuantity);
-        if (msg.value < cost) {
-            revert InsufficientValue(cost);
-        }
+        if (msg.value < cost) revert InsufficientValue(cost);
 
         // Mint effect and interaction
         _safeMint(_msgSenderERC721A(), quantity);
@@ -318,6 +299,19 @@ contract TablelandRigs is
     {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
         return _getTokenURI(_toString(tokenId));
+    }
+
+    /**
+     * @dev See {ERC721A-_beforeTokenTransfers}.
+     */
+    function _beforeTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal virtual override {
+        _requireNotPaused();
+        super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
 
     // =============================

@@ -21,7 +21,8 @@
     "lint:fix": "npm run lint -- --fix",
     "prettier": "prettier '**/*.{ts,json,sol,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
-    "format": "npm run prettier:fix && npm run lint:fix"
+    "format": "npm run prettier:fix && npm run lint:fix",
+    "prepublishOnly": "npm run build"
   },
   "publishConfig": {
     "access": "public"
@@ -35,7 +36,7 @@
     "rigs",
     "ethereum"
   ],
-  "license": "MIT AND Apache-2.0",
+  "license": "Unlicense",
   "bugs": {
     "url": "https://github.com/tablelandnetwork/rigs/issues"
   },
