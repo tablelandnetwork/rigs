@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	partsPageSize  uint = 500
-	layersPageSize uint = 360
-	rigsPageSize   uint = 70
+	partsPageSize         uint = 500
+	layersPageSize        uint = 360
+	rigsPageSize          uint = 80
+	rigAttributesPageSize uint = 70
 )
 
 func init() {
@@ -42,10 +43,14 @@ var dataCmd = &cobra.Command{
 		rigsJobs, err := rigsJobs(ctx, localStore, &jobID, viper.GetString("remote-ipfs-gateway-url"))
 		checkErr(err)
 
+		attsJobs, err := attrsJobs(ctx, localStore, &jobID)
+		checkErr(err)
+
 		var jobs []wpool.Job
 		jobs = append(jobs, partsJobs...)
 		jobs = append(jobs, layersJobs...)
 		jobs = append(jobs, rigsJobs...)
+		jobs = append(jobs, attsJobs...)
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
 		go pool.GenerateFrom(jobs)
@@ -139,14 +144,6 @@ func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway string) ([
 			return nil, nil
 		}
 	}
-	rigAttrsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
-		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertRigAttributes(ctx, rigs); err != nil {
-				return nil, fmt.Errorf("calling insert rig attrs: %v", err)
-			}
-			return nil, nil
-		}
-	}
 	for {
 		rigs, err := s.Rigs(ctx, local.RigsWithLimit(rigsPageSize), local.RigsWithOffset(offset))
 		if err != nil {
@@ -159,14 +156,43 @@ func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway string) ([
 		jobs = append(
 			jobs,
 			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: rigsExecFn(rigs), Desc: fmt.Sprintf("rigs with offset %d", offset)},
+		)
+		*jobID++
+		offset += rigsPageSize
+	}
+	return jobs, nil
+}
+
+func attrsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
+	var jobs []wpool.Job
+	var offset uint
+	rigAttrsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
+		return func(ctx context.Context) (interface{}, error) {
+			if err := store.InsertRigAttributes(ctx, rigs); err != nil {
+				return nil, fmt.Errorf("calling insert rig attrs: %v", err)
+			}
+			return nil, nil
+		}
+	}
+	for {
+		rigs, err := s.Rigs(ctx, local.RigsWithLimit(rigAttributesPageSize), local.RigsWithOffset(offset))
+		if err != nil {
+			return nil, fmt.Errorf("getting rigs: %v", err)
+		}
+		if len(rigs) == 0 {
+			break
+		}
+
+		jobs = append(
+			jobs,
 			wpool.Job{
-				ID:     wpool.JobID(*jobID + 1),
+				ID:     wpool.JobID(*jobID),
 				ExecFn: rigAttrsExecFn(rigs),
 				Desc:   fmt.Sprintf("rig attrs offset %d", offset),
 			},
 		)
-		*jobID += 2
-		offset += rigsPageSize
+		*jobID++
+		offset += rigAttributesPageSize
 	}
 	return jobs, nil
 }

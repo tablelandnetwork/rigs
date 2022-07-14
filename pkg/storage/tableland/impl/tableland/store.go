@@ -2,7 +2,6 @@ package tableland
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -147,13 +146,13 @@ func (s *Store) writeSQL(ctx context.Context, sql string) error {
 	}
 	receipt, found, err := s.tblClient.Receipt(ctx, hash, client.WaitFor(s.receiptTimeout))
 	if err != nil {
-		return fmt.Errorf("getting receipt: %v", err)
+		return fmt.Errorf("getting receipt for txn %s: %v", hash, err)
 	}
 	if !found {
-		return errors.New("timed out before getting receipt")
+		return fmt.Errorf("timed out before getting receipt for txn %s", hash)
 	}
 	if receipt.Error != nil {
-		return fmt.Errorf("error processing txn: %s", *receipt.Error)
+		return fmt.Errorf("error processing txn %s: %s", receipt.TxnHash, *receipt.Error)
 	}
 	return nil
 }

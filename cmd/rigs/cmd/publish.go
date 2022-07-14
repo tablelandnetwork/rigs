@@ -38,6 +38,11 @@ func init() {
 		false,
 		"whether or not to publish to tableland, if not, publish to local store",
 	)
+	publishCmd.PersistentFlags().Duration(
+		"receipt-timeout",
+		time.Minute*5,
+		"how long to wait for a txn receipt before failing",
+	)
 	publishCmd.PersistentFlags().String("parts-table", "", "name of the tableland parts table")
 	publishCmd.PersistentFlags().String("layers-table", "", "name of the tableland layers table")
 	publishCmd.PersistentFlags().String("rigs-table", "", "name of the tableland rigs table")
@@ -87,7 +92,7 @@ var publishCmd = &cobra.Command{
 		if viper.GetBool("to-tableland") {
 			store = tableland.NewStore(tableland.Config{
 				TblClient:              tblClient,
-				ReceiptTimeout:         time.Second * 10,
+				ReceiptTimeout:         viper.GetDuration("receipt-timeout"),
 				PartsTableName:         viper.GetString("parts-table"),
 				LayersTableName:        viper.GetString("layers-table"),
 				RigsTableName:          viper.GetString("rigs-table"),
