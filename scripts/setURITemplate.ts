@@ -18,10 +18,7 @@ async function main() {
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
   // Get URI template
-  if (
-    rigsConfig.tables.tokensTable === "" ||
-    rigsConfig.tables.attributesTable === ""
-  ) {
+  if (rigsConfig.tables.tokensTable === "") {
     throw Error(`missing table names entries in config`);
   }
 

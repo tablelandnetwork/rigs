@@ -234,12 +234,7 @@
           },
           "t_enum(MintPhase)2659": {
             "label": "enum ITablelandRigs.MintPhase",
-            "members": [
-              "CLOSED",
-              "ALLOWLIST",
-              "WAITLIST",
-              "PUBLIC"
-            ],
+            "members": ["CLOSED", "ALLOWLIST", "WAITLIST", "PUBLIC"],
             "numberOfBytes": "1"
           },
           "t_mapping(t_uint256,t_struct(RoyaltyInfo)1041_storage)": {
