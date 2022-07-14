@@ -6,8 +6,8 @@ exports.deployments = {
     ethereum: {
         contractAddress: "",
         royaltyContractAddress: "",
-        contractTable: "",
-        allowlistTable: "",
+        contractTable: "rigs_contract_5_57",
+        allowlistTable: "rigs_allowlist_5_59",
     },
     // testnets
     "ethereum-goerli": {
@@ -23,8 +23,8 @@ exports.deployments = {
         allowlistTable: "",
     },
     "polygon-mumbai": {
-        contractAddress: "0x0E1B53feac55716c5fdb2623ED719144A423cEEE",
-        royaltyContractAddress: "0xA51Ce9F6604925c16e88a6A0a017BB49573DC3cB",
+        contractAddress: "0x875fc1205Cb81A1F38fC4deEC44390c2aC5f5890",
+        royaltyContractAddress: "0x13287B498F61c735221e11eD2ED6808597d996f3",
         contractTable: "rigs_contract_5_57",
         allowlistTable: "rigs_allowlist_5_59",
     },

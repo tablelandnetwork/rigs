@@ -44,7 +44,7 @@ contract TablelandRigs is
     bytes32 public waitlistRoot;
 
     // Flag specifying whether or not claims
-    MintPhase public mintPhase = MintPhase.CLOSED;
+    MintPhase public mintPhase;
 
     // URI for contract info.
     string private _contractInfoURI;
@@ -71,6 +71,7 @@ contract TablelandRigs is
         _setDefaultRoyalty(royaltyReceiver, 500);
         allowlistRoot = _allowlistRoot;
         waitlistRoot = _waitlistRoot;
+        mintPhase = MintPhase.CLOSED;
     }
 
     // =============================

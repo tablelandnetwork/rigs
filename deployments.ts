@@ -31,8 +31,8 @@ export const deployments: RigsDeployments = {
     allowlistTable: "",
   },
   "polygon-mumbai": {
-    contractAddress: "",
-    royaltyContractAddress: "",
+    contractAddress: "0x875fc1205Cb81A1F38fC4deEC44390c2aC5f5890",
+    royaltyContractAddress: "0x13287B498F61c735221e11eD2ED6808597d996f3",
     contractTable: "rigs_contract_5_57",
     allowlistTable: "rigs_allowlist_5_59",
   },
