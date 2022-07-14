@@ -34,9 +34,7 @@ async function main() {
   }
 
   // Get URI template
-  if (
-    rigsConfig.tables.tokensTable === ""
-  ) {
+  if (rigsConfig.tables.tokensTable === "") {
     throw Error(`missing table names entries in config`);
   }
   const uriTemplate = getURITemplate(

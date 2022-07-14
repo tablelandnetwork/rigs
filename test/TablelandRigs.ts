@@ -73,23 +73,15 @@ describe("Rigs", function () {
     const tablelandHost = "tableland.xyz";
     const table1 = "table1";
     const uri = getURITemplate(tablelandHost, table1, "");
-    const result = tablelandHost +
+    const result =
+      tablelandHost +
       "/query?mode=list&s=" +
       encodeURIComponent(
         `select json_object('name','#'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type','text','trait_type','status','value','pre-reveal'))) from table1 where id=`
       );
-    await expect(
-      uri[0]
-    ).to.equal(
-      result
-    );
-    await expect(
-      uri[1]
-    ).to.equal(
-      "%3B"
-    );
-  })
-
+    await expect(uri[0]).to.equal(result);
+    await expect(uri[1]).to.equal("%3B");
+  });
 
   it("Should have final metadata if attributeTable", async function () {
     const tablelandHost = "tableland.xyz";
@@ -103,17 +95,9 @@ describe("Rigs", function () {
         `select json_object('name','#'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 on table1.id=table2.rig_id where id=`
       );
 
-    await expect(
-      uri[0]
-    ).to.equal(
-      result
-    );
-    await expect(
-      uri[1]
-    ).to.equal(
-      "%20group%20by%20id%3B"
-    )
-  })
+    await expect(uri[0]).to.equal(result);
+    await expect(uri[1]).to.equal("%20group%20by%20id%3B");
+  });
 
   it("Should not mint during closed phase", async function () {
     // try public minting
