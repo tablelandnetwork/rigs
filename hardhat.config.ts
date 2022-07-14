@@ -128,8 +128,8 @@ const config: HardhatUserConfig = {
         tablelandPrivateKey: process.env.ETHEREUM_GOERLI_PRIVATE_KEY,
         tablelandProvider: process.env.ETHEREUM_GOERLI_API_KEY,
         tablelandHost: "https://testnet.tableland.network",
-        tokensTable: "rigs_5_22",
-        attributesTable: "rig_attributes_5_20",
+        tokensTable: "rigs_5_28",
+        attributesTable: "rig_attributes_5_27",
       },
       royaltyReceivers: [
         "0x12fC004d3bA84dF22ebfdE93A7a0B87267b06ACb",
