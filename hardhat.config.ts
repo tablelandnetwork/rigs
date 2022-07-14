@@ -57,7 +57,7 @@ const config: HardhatUserConfig = {
   networks: {
     // mainnets
     ethereum: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${
+      url: `https://eth-mainnet.g.alchemy.com/v2/${
         process.env.ETHEREUM_API_KEY ?? ""
       }`,
       accounts:
@@ -75,15 +75,6 @@ const config: HardhatUserConfig = {
           : [],
     },
     // testnets
-    "ethereum-rinkeby": {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${
-        process.env.ETHEREUM_RINKEBY_API_KEY ?? ""
-      }`,
-      accounts:
-        process.env.ETHEREUM_RINKEBY_PRIVATE_KEY !== undefined
-          ? [process.env.ETHEREUM_RINKEBY_PRIVATE_KEY]
-          : [],
-    },
     "ethereum-goerli": {
       url: `https://eth-goerli.g.alchemy.com/v2/${
         process.env.ETHEREUM_GOERLI_API_KEY ?? ""
@@ -128,7 +119,7 @@ const config: HardhatUserConfig = {
         "https://bafybeidmvuy43bsfla4ewabfegdf6k3vqmjlapn7ojsv5fczpym3lpazzu.ipfs.dweb.link/rigs.png",
       externalLink: "https://tableland.xyz/rigs",
       sellerFeeBasisPoints: 500,
-      feeRecipient: "0x4D13f1C893b4CaFAF791501EDACA331468FEfeDe",
+      feeRecipient: "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
       maxSupply: 3000,
       etherPrice: "0.05",
       mintPhase: "closed",
@@ -141,8 +132,8 @@ const config: HardhatUserConfig = {
         attributesTable: "rig_attributes_5_20",
       },
       royaltyReceivers: [
-        "0xE2ECC1552111f9E78342F79b5f5e87877CF57b8F",
-        "0xF4A070a7Fe619cb1996De0cEaE45b806Eb5ceC65",
+        "0x12fC004d3bA84dF22ebfdE93A7a0B87267b06ACb",
+        "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
       ],
       royaltyReceiverShares: [20, 80],
       allowlistFiles: [
