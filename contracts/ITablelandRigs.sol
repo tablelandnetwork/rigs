@@ -67,8 +67,8 @@ interface ITablelandRigs {
      * @dev Mints Rigs from a whitelist.
      *
      * quantity - the number of Rigs to mint
-     * freeAllowance - the number of free mints allocated to minter address
-     * paidAllowance - the number of paid mints allocated to minter address
+     * freeAllowance - the number of free Rigs allocated to minter address
+     * paidAllowance - the number of paid Rigs allocated to minter address
      * proof - merkle proof proving minter address has said `freeAllowance` and `paidAllowance`
      *
      * Requirements:

@@ -90,7 +90,15 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev Verifies proof of allowances against current mint phase.
+     * @dev Verifies mint against current mint phase.
+     *
+     * Requirements:
+     *
+     * - `mintPhase` must not be `CLOSED`
+     * - quantity must not be zero
+     * - current supply must be less than `maxSupply`
+     * - if `mintPhase` is `ALLOWLIST` or `WAITLIST`, proof must be valid for `msg.sender`, `freeAllowance`, and `paidAllowance`
+     * - if `mintPhase` is `ALLOWLIST` or `WAITLIST`, `msg.sender` must have sufficient unused allowance
      */
     function _verifyMint(
         uint256 quantity,
@@ -103,6 +111,10 @@ contract TablelandRigs is
 
         // Check quantity is non-zero
         if (quantity == 0) revert ZeroQuantity();
+
+        // Check quantity doesn't exceed remaining quota
+        quantity = Math.min(quantity, maxSupply - totalSupply());
+        if (quantity == 0) revert SoldOut();
 
         if (mintPhase == MintPhase.PUBLIC) {
             _mint(quantity, quantity);
@@ -181,18 +193,12 @@ contract TablelandRigs is
      *
      * Requirements:
      *
-     * - quantity must not be zero
-     * - current supply must be less than `maxSupply`
-     * - `msg.value` must be sufficient
+     * - `msg.value` must be greater than or equal to `costQuantity`
      */
     function _mint(uint256 quantity, uint256 costQuantity)
         private
         nonReentrant
     {
-        // Check quantity doesn't exceed remaining quota
-        quantity = Math.min(quantity, maxSupply - totalSupply());
-        if (quantity == 0) revert SoldOut();
-
         // Check sufficient value
         uint256 cost = _cost(costQuantity);
         if (msg.value < cost) revert InsufficientValue(cost);
