@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "hardhat compile && npx tsc -p ./tsconfig.build.json",
-    "clean": "rm -rf artifacts && rm -rf typechain-types && rm -rf cache && rm -rf coverage && rm -f coverage.json",
+    "clean": "hardhat clean && rm -rf artifacts && rm -rf typechain-types && rm -rf cache && rm -rf coverage && rm -f coverage.json",
     "up": "npm install && hardhat compile && npm run build && hardhat node",
     "test": "hardhat coverage && istanbul check-coverage ./coverage.json --statements 100 --branches 95 --functions 100 --lines 100",
     "lint": "eslint '**/*.{js,ts}'",

@@ -15,13 +15,12 @@ async function main() {
   const merkletree = buildTree(allowlist);
 
   // Get proof
-  const allowance = allowlist[account.address];
+  const address = account.address;
+  const allowance = allowlist[address];
   if (allowance === undefined) {
     throw Error("no allowance");
   }
-  const proof = merkletree.getHexProof(
-    hashEntry(account.address, allowlist[account.address])
-  );
+  const proof = merkletree.getHexProof(hashEntry(address, allowlist[address]));
   console.log("Proof:", proof);
 }
 

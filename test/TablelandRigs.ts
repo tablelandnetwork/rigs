@@ -31,14 +31,14 @@ describe("Rigs", function () {
 
     accounts.slice(0, 5).forEach((a: SignerWithAddress, i: number) => {
       allowlist[a.address] = {
-        freeAllowance: 1,
+        freeAllowance: i + 1,
         paidAllowance: i + 1,
       };
     });
     allowlistTree = buildTree(allowlist);
     accounts.slice(5, 10).forEach((a: SignerWithAddress, i: number) => {
       waitlist[a.address] = {
-        freeAllowance: 1,
+        freeAllowance: i + 1,
         paidAllowance: i + 1,
       };
     });
@@ -109,7 +109,7 @@ describe("Rigs", function () {
       rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
     ).to.be.revertedWith("InvalidProof");
 
-    // allowlist mint free allowance
+    // mint one of free allowance
     minter = accounts[4];
     let entry = allowlist[minter.address];
     let proof = allowlistTree.getHexProof(hashEntry(minter.address, entry));
@@ -141,40 +141,56 @@ describe("Rigs", function () {
     // check total supply
     expect(await rigs.totalSupply()).to.equal(BigNumber.from(1));
 
-    // remaining mints should require ether
+    // minting over free allowance should require ether
     await expect(
       rigs
         .connect(minter)
         ["mint(uint256,uint256,uint256,bytes32[])"](
-          1,
+          entry.freeAllowance,
           entry.freeAllowance,
           entry.paidAllowance,
           proof
         )
     ).to.be.revertedWith("InsufficientValue(50000000000000000)");
 
-    // allowlist mint paid allowance
+    // mint remaining free allowance
     await expect(
       rigs
         .connect(minter)
         ["mint(uint256,uint256,uint256,bytes32[])"](
-          5,
+          entry.freeAllowance - 1,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof
+        )
+    ).to.emit(rigs, "Transfer");
+
+    // mint all paid allowance allowance
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          entry.paidAllowance,
           entry.freeAllowance,
           entry.paidAllowance,
           proof,
           {
-            value: getCost(5, 0.05),
+            value: getCost(entry.paidAllowance, 0.05),
           }
         )
     )
       .to.emit(rigs, "Transfer")
-      .withArgs(ethers.constants.AddressZero, minter.address, BigNumber.from(5))
       .to.emit(rigs, "Revenue")
-      .withArgs(beneficiary.address, BigNumber.from(5), getCost(5, 0.05));
+      .withArgs(
+        beneficiary.address,
+        BigNumber.from(entry.paidAllowance),
+        getCost(entry.paidAllowance, 0.05)
+      )
+      .to.not.emit(rigs, "Refund");
 
     // re-check owned tokens
     tokens = await rigs.tokensOfOwner(minter.address);
-    expect(tokens.length).to.equal(6);
+    expect(tokens.length).to.equal(10);
 
     // check allowance is now exhausted
     await expect(
@@ -219,7 +235,7 @@ describe("Rigs", function () {
       rigs.connect(minter)["mint(uint256)"](1, { value: getCost(1, 0.05) })
     ).to.be.revertedWith("InvalidProof");
 
-    // waitlist mint all allowance and send extra ether
+    // mint all allowance and send extra ether
     minter = accounts[5];
     const entry = waitlist[minter.address];
     const proof = waitlistTree.getHexProof(hashEntry(minter.address, entry));

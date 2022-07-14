@@ -122,25 +122,29 @@ contract TablelandRigs is
             ) revert InvalidProof();
 
             // Ensure allowance available
-            uint64 claimed = _getAux(_msgSenderERC721A());
+            uint256 claimed = uint256(_getAux(_msgSenderERC721A()));
             quantity = Math.min(
                 quantity,
-                freeAllowance + paidAllowance - uint256(claimed)
+                freeAllowance + paidAllowance - claimed
             );
             if (quantity == 0) revert InsufficientAllowance();
 
             // Get quantity that must be paid for
-            uint256 paidQuantity = quantity -
-                (freeAllowance - uint256(claimed));
+            uint256 freeSurplus = freeAllowance > claimed
+                ? freeAllowance - claimed
+                : 0;
+            uint256 costQuantity = quantity < freeSurplus
+                ? 0
+                : quantity - freeSurplus;
 
             // Update allowance claimed
-            claimed = claimed + uint64(quantity);
-            _setAux(_msgSenderERC721A(), claimed);
+            claimed = claimed + quantity;
+            _setAux(_msgSenderERC721A(), uint64(claimed));
 
-            _mint(quantity, paidQuantity);
+            _mint(quantity, costQuantity);
 
             // Sanity check for tests
-            assert(claimed <= freeAllowance + paidAllowance);
+            assert(uint256(claimed) <= freeAllowance + paidAllowance);
         }
     }
 
