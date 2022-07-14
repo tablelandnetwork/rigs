@@ -1,4 +1,4 @@
-import { ethers, network, rigsConfig, rigsDeployment } from "hardhat";
+import { ethers, upgrades, network, rigsConfig, rigsDeployment } from "hardhat";
 import { Wallet, providers, BigNumber, utils } from "ethers";
 import {
   AllowListEntry,
@@ -175,15 +175,22 @@ async function main() {
 
   // Deploy Rigs
   const RigsFactory = await ethers.getContractFactory("TablelandRigs");
-  const rigs = (await RigsFactory.deploy(
-    BigNumber.from(rigsConfig.maxSupply),
-    utils.parseEther(rigsConfig.etherPrice),
-    rigsConfig.feeRecipient,
-    splitter.address,
-    allowlistTree.getHexRoot(),
-    waitlistTree.getHexRoot()
-  )) as TablelandRigs;
-  await rigs.deployed();
+  const rigs = await (
+    (await upgrades.deployProxy(
+      RigsFactory,
+      [
+        BigNumber.from(rigsConfig.maxSupply),
+        utils.parseEther(rigsConfig.etherPrice),
+        rigsConfig.feeRecipient,
+        splitter.address,
+        allowlistTree.getHexRoot(),
+        waitlistTree.getHexRoot(),
+      ],
+      {
+        kind: "uups",
+      }
+    )) as TablelandRigs
+  ).deployed();
   console.log("Deployed Rigs:", rigs.address);
 
   let tx = await rigs.setContractURI(contractURI);

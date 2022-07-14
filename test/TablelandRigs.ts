@@ -52,15 +52,17 @@ describe("Rigs", function () {
     await splitter.deployed();
 
     const RigsFactory = await ethers.getContractFactory("TablelandRigs");
-    rigs = await RigsFactory.deploy(
-      BigNumber.from(3000),
-      utils.parseEther("0.05"),
-      beneficiary.address,
-      splitter.address,
-      allowlistTree.getHexRoot(),
-      waitlistTree.getHexRoot()
-    );
-    await rigs.deployed();
+    rigs = await (await RigsFactory.deploy()).deployed();
+    await (
+      await rigs.initialize(
+        BigNumber.from(3000),
+        utils.parseEther("0.05"),
+        beneficiary.address,
+        splitter.address,
+        allowlistTree.getHexRoot(),
+        waitlistTree.getHexRoot()
+      )
+    ).wait();
 
     await rigs.setContractURI("https://foo.xyz");
     await rigs.setURITemplate(["https://foo.xyz/", "/bar"]);

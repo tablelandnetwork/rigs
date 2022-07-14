@@ -1,6 +1,11 @@
-import { run, network, rigsConfig, rigsDeployment } from "hardhat";
-import { BigNumber, utils } from "ethers";
-import { buildTree, getListFromCSVs } from "../helpers/allowlist";
+import {
+  run,
+  ethers,
+  upgrades,
+  network,
+  rigsConfig,
+  rigsDeployment,
+} from "hardhat";
 
 async function main() {
   console.log(`\nVerifying on '${network.name}'...`);
@@ -13,23 +18,13 @@ async function main() {
     throw Error(`no royaltyContractAddress entry for '${network.name}'`);
   }
 
-  // Build merkle trees for allowlist
-  const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles);
-  const allowlistTree = buildTree(allowlist);
-  const waitlist = await getListFromCSVs(rigsConfig.waitlistFiles);
-  const waitlistTree = buildTree(waitlist);
-
   // Verify rigs
+  const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
+    rigsDeployment.contractAddress
+  );
+  const impl = await upgrades.erc1967.getImplementationAddress(rigs.address);
   await run("verify:verify", {
-    address: rigsDeployment.contractAddress,
-    constructorArguments: [
-      BigNumber.from(rigsConfig.maxSupply),
-      utils.parseEther(rigsConfig.etherPrice),
-      rigsConfig.feeRecipient,
-      rigsDeployment.royaltyContractAddress,
-      allowlistTree.getHexRoot(),
-      waitlistTree.getHexRoot(),
-    ],
+    address: impl,
   });
 
   // Verify royalties contract

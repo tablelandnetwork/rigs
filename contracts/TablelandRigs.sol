@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-import "erc721a/contracts/ERC721A.sol";
-import "erc721a/contracts/extensions/ERC721AQueryable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/Pausable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "erc721a-upgradeable/contracts/ERC721AUpgradeable.sol";
+import "erc721a-upgradeable/contracts/extensions/ERC721AQueryableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
-
-import "hardhat/console.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -21,27 +20,28 @@ import "hardhat/console.sol";
 contract TablelandRigs is
     ITablelandRigs,
     URITemplate,
-    ERC721A,
-    ERC721AQueryable,
-    Ownable,
-    Pausable,
-    ReentrancyGuard,
-    ERC2981
+    ERC721AUpgradeable,
+    ERC721AQueryableUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable,
+    ReentrancyGuardUpgradeable,
+    ERC2981Upgradeable,
+    UUPSUpgradeable
 {
     // The maximum number of tokens that can be minted.
-    uint256 public immutable maxSupply;
+    uint256 public maxSupply;
 
     // The price of minting a token.
-    uint256 public immutable mintPrice;
+    uint256 public mintPrice;
 
     // The address receiving mint revenue.
     address payable public beneficiary;
 
     // The allowlist merkletree root.
-    bytes32 public immutable allowlistRoot;
+    bytes32 public allowlistRoot;
 
     // The waitlist merkletree root.
-    bytes32 public immutable waitlistRoot;
+    bytes32 public waitlistRoot;
 
     // Flag specifying whether or not claims
     MintPhase public mintPhase = MintPhase.CLOSED;
@@ -49,14 +49,22 @@ contract TablelandRigs is
     // URI for contract info.
     string private _contractInfoURI;
 
-    constructor(
+    function initialize(
         uint256 _maxSupply,
         uint256 _mintPrice,
         address payable _beneficiary,
         address payable royaltyReceiver,
         bytes32 _allowlistRoot,
         bytes32 _waitlistRoot
-    ) ERC721A("Tableland Rigs", "RIG") Ownable() Pausable() ReentrancyGuard() {
+    ) public initializerERC721A initializer {
+        __ERC721A_init("Tableland Rigs", "RIG");
+        __ERC721AQueryable_init();
+        __Ownable_init();
+        __Pausable_init();
+        __ReentrancyGuard_init();
+        __ERC2981_init();
+        __UUPSUpgradeable_init();
+
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
         setBeneficiary(_beneficiary);
@@ -113,7 +121,7 @@ contract TablelandRigs is
         if (quantity == 0) revert ZeroQuantity();
 
         // Check quantity doesn't exceed remaining quota
-        quantity = Math.min(quantity, maxSupply - totalSupply());
+        quantity = MathUpgradeable.min(quantity, maxSupply - totalSupply());
         if (quantity == 0) revert SoldOut();
 
         if (mintPhase == MintPhase.PUBLIC) {
@@ -135,7 +143,7 @@ contract TablelandRigs is
 
             // Ensure allowance available
             uint256 claimed = uint256(_getAux(_msgSenderERC721A()));
-            quantity = Math.min(
+            quantity = MathUpgradeable.min(
                 quantity,
                 freeAllowance + paidAllowance - claimed
             );
@@ -180,7 +188,7 @@ contract TablelandRigs is
         bytes32 root,
         bytes32 leaf
     ) internal pure returns (bool) {
-        return MerkleProof.verify(proof, root, leaf);
+        return MerkleProofUpgradeable.verify(proof, root, leaf);
     }
 
     /**
@@ -208,7 +216,7 @@ contract TablelandRigs is
 
         // Handle funds
         if (cost > 0) {
-            Address.sendValue(beneficiary, cost);
+            AddressUpgradeable.sendValue(beneficiary, cost);
             emit Revenue(beneficiary, costQuantity, cost);
         }
         if (msg.value > cost) {
@@ -305,7 +313,7 @@ contract TablelandRigs is
     function tokenURI(uint256 tokenId)
         public
         view
-        override(ERC721A, IERC721A)
+        override(ERC721AUpgradeable, IERC721AUpgradeable)
         returns (string memory)
     {
         if (!_exists(tokenId)) revert URIQueryForNonexistentToken();
@@ -335,11 +343,20 @@ contract TablelandRigs is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721A, IERC721A, ERC2981)
+        override(ERC721AUpgradeable, IERC721AUpgradeable, ERC2981Upgradeable)
         returns (bool)
     {
         return
-            ERC721A.supportsInterface(interfaceId) ||
-            ERC2981.supportsInterface(interfaceId);
+            ERC721AUpgradeable.supportsInterface(interfaceId) ||
+            ERC2981Upgradeable.supportsInterface(interfaceId);
     }
+
+    // =============================
+    //       UUPSUpgradeable
+    // =============================
+
+    /**
+     * @dev See {UUPSUpgradeable-_authorizeUpgrade}.
+     */
+    function _authorizeUpgrade(address) internal view override onlyOwner {} // solhint-disable no-empty-blocks
 }

@@ -14,8 +14,8 @@ export const deployments: RigsDeployments = {
   ethereum: {
     contractAddress: "",
     royaltyContractAddress: "",
-    contractTable: "",
-    allowlistTable: "",
+    contractTable: "rigs_contract_5_57",
+    allowlistTable: "rigs_allowlist_5_59",
   },
   // testnets
   "ethereum-goerli": {
@@ -31,8 +31,8 @@ export const deployments: RigsDeployments = {
     allowlistTable: "",
   },
   "polygon-mumbai": {
-    contractAddress: "0x0E1B53feac55716c5fdb2623ED719144A423cEEE",
-    royaltyContractAddress: "0xA51Ce9F6604925c16e88a6A0a017BB49573DC3cB",
+    contractAddress: "",
+    royaltyContractAddress: "",
     contractTable: "rigs_contract_5_57",
     allowlistTable: "rigs_allowlist_5_59",
   },
