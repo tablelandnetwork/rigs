@@ -88,7 +88,7 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 	for _, rig := range rigs {
 		attVales = append(
 			attVales,
-			goqu.Vals{rig.ID, "text", "VIN", rig.VIN},
+			goqu.Vals{rig.ID, "string", "VIN", rig.VIN},
 			goqu.Vals{rig.ID, "number", "% Original", math.Round((rig.PercentOriginal90*100)*100) / 100},
 		)
 		if rig.Original {
@@ -101,8 +101,8 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 			}
 			attVales = append(
 				attVales,
-				goqu.Vals{rig.ID, "text", "Name", original},
-				goqu.Vals{rig.ID, "text", "Color", color},
+				goqu.Vals{rig.ID, "string", "Name", original},
+				goqu.Vals{rig.ID, "string", "Color", color},
 			)
 		}
 		for _, part := range rig.Parts {
@@ -111,7 +111,7 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 				b.WriteString(fmt.Sprintf("%s ", part.Color.String))
 			}
 			b.WriteString(part.Name)
-			attVales = append(attVales, goqu.Vals{rig.ID, "text", part.Type, b.String()})
+			attVales = append(attVales, goqu.Vals{rig.ID, "string", part.Type, b.String()})
 		}
 	}
 
