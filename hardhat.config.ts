@@ -123,14 +123,14 @@ const config: HardhatUserConfig = {
       feeRecipient: "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
       maxSupply: 3000,
       etherPrice: "0.05",
-      mintPhase: "closed",
+      mintPhase: "allowlist",
       tables: {
         tablelandChain: "ethereum-goerli",
         tablelandPrivateKey: process.env.ETHEREUM_GOERLI_PRIVATE_KEY,
         tablelandProvider: process.env.ETHEREUM_GOERLI_API_KEY,
         tablelandHost: "https://testnet.tableland.network",
         tokensTable: "rigs_5_28",
-        attributesTable: "rig_attributes_5_27",
+        attributesTable: "",
       },
       royaltyReceivers: [
         "0x12fC004d3bA84dF22ebfdE93A7a0B87267b06ACb",
