@@ -4,7 +4,7 @@ import { TablelandRigs } from "../typechain-types";
 async function main() {
   console.log(`\nSetting mint phase on '${network.name}'...`);
 
-  // Get proxy owner account
+  // Get owner account
   const [account] = await ethers.getSigners();
   if (account.provider === undefined) {
     throw Error("missing provider");

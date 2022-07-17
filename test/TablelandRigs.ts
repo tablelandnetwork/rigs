@@ -37,13 +37,17 @@ describe("Rigs", function () {
       };
     });
     allowlistTree = buildTree(allowlist);
-    accounts.slice(5, 10).forEach((a: SignerWithAddress, i: number) => {
+    expect(allowlistTree.getLeafCount()).to.equal(5);
+
+    // Include an address that is on allowlist and waitlist
+    accounts.slice(4, 10).forEach((a: SignerWithAddress, i: number) => {
       waitlist[a.address] = {
         freeAllowance: i + 1,
         paidAllowance: i + 1,
       };
     });
     waitlistTree = buildTree(waitlist);
+    expect(waitlistTree.getLeafCount()).to.equal(6);
 
     const SplitterFactory = await ethers.getContractFactory("PaymentSplitter");
     splitter = (await SplitterFactory.deploy(
@@ -67,36 +71,19 @@ describe("Rigs", function () {
 
     await rigs.setContractURI("https://foo.xyz");
     await rigs.setURITemplate(["https://foo.xyz/", "/bar"]);
-  });
 
-  it("Should have pending metadata if no attributeTable", async function () {
-    const tablelandHost = "tableland.xyz";
-    const table1 = "table1";
-    const uri = getURITemplate(tablelandHost, table1, "");
-    const result =
-      tablelandHost +
-      "/query?mode=list&s=" +
-      encodeURIComponent(
-        `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type','string','trait_type','status','value','pre-reveal'))) from table1 where id=`
-      );
-    await expect(uri[0]).to.equal(result);
-    await expect(uri[1]).to.equal("%3B");
-  });
-
-  it("Should have final metadata if attributeTable", async function () {
-    const tablelandHost = "tableland.xyz";
-    const table1 = "table1";
-    const table2 = "table2";
-    const uri = getURITemplate(tablelandHost, table1, table2);
-    const result =
-      tablelandHost +
-      "/query?mode=list&s=" +
-      encodeURIComponent(
-        `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 on table1.id=table2.rig_id where id=`
-      );
-
-    await expect(uri[0]).to.equal(result);
-    await expect(uri[1]).to.equal("%20group%20by%20id%3B");
+    await expect(
+      rigs.initialize(
+        BigNumber.from(3000),
+        utils.parseEther("0.05"),
+        beneficiary.address,
+        splitter.address,
+        allowlistTree.getHexRoot(),
+        waitlistTree.getHexRoot()
+      )
+    ).to.be.revertedWith(
+      "ERC721A__Initializable: contract is already initialized"
+    );
   });
 
   it("Should not mint during closed phase", async function () {
@@ -131,6 +118,10 @@ describe("Rigs", function () {
     await expect(rigs.connect(minter)["mint(uint256)"](0)).to.be.revertedWith(
       "ZeroQuantity"
     );
+  });
+
+  it("Should temp test packed aux", async function () {
+    await rigs.testPackAux(accounts[0].address);
   });
 
   it("Should mint with allowlist during allowlist phase", async function () {
@@ -386,9 +377,9 @@ describe("Rigs", function () {
     ).to.emit(rigs, "Transfer");
     let minted = entry.freeAllowance + entry.paidAllowance;
 
-    // waitlist
+    // waitlist, same address
     await rigs.setMintPhase(2);
-    minter = accounts[5];
+    minter = accounts[4];
     entry = waitlist[minter.address];
     proof = waitlistTree.getHexProof(hashEntry(minter.address, entry));
     await expect(
@@ -452,6 +443,36 @@ describe("Rigs", function () {
     expect(await rigs.tokenURI(tokenId)).to.equal("https://fake.com/1/boo/1");
   });
 
+  it("Should have pending metadata if no attributeTable", async function () {
+    const tablelandHost = "http://testnet.tableland.network";
+    const table1 = "table1";
+    const uri = getURITemplate(tablelandHost, table1, "");
+    const result =
+      tablelandHost +
+      "/query?mode=list&s=" +
+      encodeURIComponent(
+        `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('trait_type','status','value','pre-reveal'))) from table1 where id=`
+      );
+    expect(uri[0]).to.equal(result);
+    expect(uri[1]).to.equal("%3B");
+  });
+
+  it("Should have final metadata if attributeTable", async function () {
+    const tablelandHost = "http://testnet.tableland.network";
+    const table1 = "table1";
+    const table2 = "table2";
+    const uri = getURITemplate(tablelandHost, table1, table2);
+    const result =
+      tablelandHost +
+      "/query?mode=list&s=" +
+      encodeURIComponent(
+        `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 on table1.id=table2.rig_id where id=`
+      );
+
+    expect(uri[0]).to.equal(result);
+    expect(uri[1]).to.equal("%20group%20by%20id%3B");
+  });
+
   it("Should not return token URI for non-existent token", async function () {
     await expect(rigs.tokenURI(BigNumber.from(1))).to.be.rejectedWith(
       "URIQueryForNonexistentToken"
@@ -462,6 +483,15 @@ describe("Rigs", function () {
     await rigs.setContractURI("https://fake.com");
 
     expect(await rigs.contractURI()).to.equal("https://fake.com");
+  });
+
+  it("Should set default royalty", async function () {
+    const receiver = accounts[2].address;
+    await rigs.setDefaultRoyalty(receiver, 750);
+
+    const info = await rigs.royaltyInfo(1, utils.parseEther("1"));
+    expect(info[0]).to.equal(receiver);
+    expect(info[1]).to.equal(utils.parseEther("0.075"));
   });
 
   it("Should pause and unpause minting", async function () {
@@ -503,6 +533,10 @@ describe("Rigs", function () {
     await expect(_rigs.setContractURI("bar")).to.be.revertedWith(
       "Ownable: caller is not the owner"
     );
+
+    await expect(
+      _rigs.setDefaultRoyalty(accounts[2].address, 750)
+    ).to.be.revertedWith("Ownable: caller is not the owner");
 
     await expect(_rigs.pause()).to.be.rejectedWith(
       "Ownable: caller is not the owner"

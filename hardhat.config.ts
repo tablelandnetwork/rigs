@@ -12,7 +12,6 @@ import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
 import { deployments, RigsDeployment, RigsDeployments } from "./deployments";
-import { ChainName } from "@tableland/sdk";
 
 dotenv.config();
 
@@ -125,12 +124,8 @@ const config: HardhatUserConfig = {
       etherPrice: "0.05",
       mintPhase: "allowlist",
       tables: {
-        tablelandChain: "ethereum-goerli",
         tablelandPrivateKey: process.env.ETHEREUM_GOERLI_PRIVATE_KEY,
         tablelandProvider: process.env.ETHEREUM_GOERLI_API_KEY,
-        tablelandHost: "https://testnet.tableland.network",
-        tokensTable: "rigs_5_28",
-        attributesTable: "",
       },
       royaltyReceivers: [
         "0x12fC004d3bA84dF22ebfdE93A7a0B87267b06ACb",
@@ -159,15 +154,9 @@ const config: HardhatUserConfig = {
   },
 };
 
-interface RigsTables {
-  tablelandChain: ChainName;
+interface RigsTablesConfig {
   tablelandPrivateKey: string | undefined;
   tablelandProvider: string | undefined;
-  tablelandHost:
-    | "https://testnet.tableland.network"
-    | "https://staging.tableland.network";
-  tokensTable: string;
-  attributesTable: string;
 }
 
 interface RigsConfig {
@@ -183,7 +172,7 @@ interface RigsConfig {
   mintPhase: "closed" | "allowlist" | "waitlist" | "public";
 
   // rigs tables
-  tables: RigsTables;
+  tables: RigsTablesConfig;
 
   // rigs args
   maxSupply: number;

@@ -14,6 +14,8 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @dev Implementation of {ITablelandRigs}.
  */
@@ -37,10 +39,10 @@ contract TablelandRigs is
     // The address receiving mint revenue.
     address payable public beneficiary;
 
-    // The allowlist merkletree root.
+    // The allowClaims merkletree root.
     bytes32 public allowlistRoot;
 
-    // The waitlist merkletree root.
+    // The waitClaims merkletree root.
     bytes32 public waitlistRoot;
 
     // Flag specifying whether or not claims
@@ -101,6 +103,11 @@ contract TablelandRigs is
     /**
      * @dev Verifies mint against current mint phase.
      *
+     * quantity - the number of Rigs to mint
+     * freeAllowance - the number of free Rigs allocated to `msg.sender`
+     * paidAllowance - the number of paid Rigs allocated to `msg.sender`
+     * proof - merkle proof proving `msg.sender` has said `freeAllowance` and `paidAllowance`
+     *
      * Requirements:
      *
      * - `mintPhase` must not be `CLOSED`
@@ -143,7 +150,12 @@ contract TablelandRigs is
             ) revert InvalidProof();
 
             // Ensure allowance available
-            uint256 claimed = uint256(_getAux(_msgSenderERC721A()));
+            uint16 allowClaims;
+            uint16 waitClaims;
+            (allowClaims, waitClaims) = getClaimed(_msgSenderERC721A());
+            uint256 claimed = mintPhase == MintPhase.ALLOWLIST
+                ? allowClaims
+                : waitClaims;
             quantity = MathUpgradeable.min(
                 quantity,
                 freeAllowance + paidAllowance - claimed
@@ -160,17 +172,23 @@ contract TablelandRigs is
 
             // Update allowance claimed
             claimed = claimed + quantity;
-            _setAux(_msgSenderERC721A(), uint64(claimed));
+            if (mintPhase == MintPhase.ALLOWLIST) allowClaims = uint16(claimed);
+            else waitClaims = uint16(claimed);
+            _setClaimed(_msgSenderERC721A(), allowClaims, waitClaims);
 
             _mint(quantity, costQuantity);
 
             // Sanity check for tests
-            assert(uint256(claimed) <= freeAllowance + paidAllowance);
+            assert(claimed <= freeAllowance + paidAllowance);
         }
     }
 
     /**
      * @dev Returns merkletree leaf node for given params.
+     *
+     * account - address for leaf
+     * freeAllowance - free allowance for leaf
+     * paidAllowance - paid allowance for leaf
      */
     function _getLeaf(
         address account,
@@ -183,6 +201,10 @@ contract TablelandRigs is
 
     /**
      * @dev Verifies that `proof` is a valid path to `leaf` in `root`.
+     *
+     * proof - merkle proof proving `msg.sender` has said `freeAllowance` and `paidAllowance`
+     * root - merkletree root to verify against
+     * leaf - leaf node that must exist in `root` via `proof`
      */
     function _verifyProof(
         bytes32[] memory proof,
@@ -234,9 +256,75 @@ contract TablelandRigs is
 
     /**
      * @dev Returns mint cost for `quantity`.
+     *
+     * quantity - number of Rigs to calculate cost for
      */
     function _cost(uint256 quantity) private view returns (uint256) {
         return quantity * mintPrice;
+    }
+
+    /**
+     * @dev See {ITablelandRigs-getClaimed}.
+     */
+    function getClaimed(address by)
+        public
+        view
+        returns (uint16 allowClaims, uint16 waitClaims)
+    {
+        uint64 packed = _getAux(by);
+        allowClaims = uint16(packed);
+        waitClaims = uint16(packed >> 16);
+    }
+
+    /**
+     * @dev Sets allowlist and waitlist claims for `by` address.
+     */
+    function _setClaimed(
+        address by,
+        uint16 allowClaims,
+        uint16 waitClaims
+    ) private {
+        _setAux(by, (uint64(waitClaims) << 16) | uint64(allowClaims));
+    }
+
+    // TEMP
+    function testPackAux(address by) external {
+        uint64 existing = 132;
+        _setAux(by, existing);
+        existing = _getAux(by);
+        console.log("set unpacked 132 set and get unpacked", existing);
+        uint16 foo;
+        uint16 bar;
+        (foo, bar) = getClaimed(by);
+        console.log("set unpacked 132 and get packed", foo, bar);
+
+        _setClaimed(by, foo, bar);
+        (foo, bar) = getClaimed(by);
+        console.log("set packed 132 0 and get packed", foo, bar);
+
+        foo = 4;
+        bar = 1;
+        _setClaimed(by, foo, bar);
+        (foo, bar) = getClaimed(by);
+        console.log("set packed 4 1 and get packed", foo, bar);
+
+        foo = 3000;
+        bar = 3000;
+        _setClaimed(by, foo, bar);
+        (foo, bar) = getClaimed(by);
+        console.log("set packed 3000 3000 and get packed", foo, bar);
+
+        foo = 1;
+        bar = 0;
+        _setClaimed(by, foo, bar);
+        (foo, bar) = getClaimed(by);
+        console.log("set packed 1 0 and get packed", foo, bar);
+
+        foo = 0;
+        bar = 1;
+        _setClaimed(by, foo, bar);
+        (foo, bar) = getClaimed(by);
+        console.log("set packed 0 1 and get packed", foo, bar);
     }
 
     /**
@@ -281,6 +369,16 @@ contract TablelandRigs is
      */
     function setContractURI(string memory uri) external override onlyOwner {
         _contractInfoURI = uri;
+    }
+
+    /**
+     * @dev See {ITablelandRigs-setDefaultRoyalty}.
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator)
+        external
+        onlyOwner
+    {
+        _setDefaultRoyalty(receiver, feeNumerator);
     }
 
     /**

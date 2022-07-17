@@ -67,9 +67,9 @@ interface ITablelandRigs {
      * @dev Mints Rigs from a whitelist.
      *
      * quantity - the number of Rigs to mint
-     * freeAllowance - the number of free Rigs allocated to minter address
-     * paidAllowance - the number of paid Rigs allocated to minter address
-     * proof - merkle proof proving minter address has said `freeAllowance` and `paidAllowance`
+     * freeAllowance - the number of free Rigs allocated to `msg.sender`
+     * paidAllowance - the number of paid Rigs allocated to `msg.sender`
+     * proof - merkle proof proving `msg.sender` has said `freeAllowance` and `paidAllowance`
      *
      * Requirements:
      *
@@ -84,6 +84,15 @@ interface ITablelandRigs {
         uint256 paidAllowance,
         bytes32[] calldata proof
     ) external payable;
+
+    /**
+     * @dev Returns allowlist and waitlist claims for `by` address.
+     *
+     * by - the address to retrieve claims for
+     */
+    function getClaimed(address by)
+        external
+        returns (uint16 allowClaims, uint16 waitClaims);
 
     /**
      * @dev Sets mint phase.
@@ -134,6 +143,20 @@ interface ITablelandRigs {
      * - `msg.sender` must be contract owner
      */
     function setContractURI(string memory uri) external;
+
+    /**
+     * @dev Sets the default royalty information for ERC2981.
+     *
+     * receiver - the royalty receiver address
+     * feeNumerator - the denominator with which to interpret the fee as a fraction of sale price
+     *
+     * Requirements:
+     *
+     * - `msg.sender` must be contract owner
+     * - `receiver` cannot be the zero address
+     * - `feeNumerator` cannot be greater than 10000
+     */
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external;
 
     /**
      * @dev Pauses minting.

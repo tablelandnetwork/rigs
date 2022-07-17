@@ -2,7 +2,7 @@ import { ethers, network, rigsConfig } from "hardhat";
 import { buildTree, getListFromCSVs, hashEntry } from "../helpers/allowlist";
 
 async function main() {
-  console.log(`\nClaiming on '${network.name}'...`);
+  console.log(`\nGetting proof for '${network.name}'...`);
 
   // Get owner account
   const [account] = await ethers.getSigners();
@@ -12,16 +12,34 @@ async function main() {
 
   // Build merkle tree for allowlist
   const allowlist = await getListFromCSVs(rigsConfig.allowlistFiles);
-  const merkletree = buildTree(allowlist);
+  const allowlistTree = buildTree(allowlist);
+  const waitlist = await getListFromCSVs(rigsConfig.waitlistFiles);
+  const waitlistTree = buildTree(waitlist);
 
-  // Get proof
-  const address = account.address;
-  const allowance = allowlist[address];
-  if (allowance === undefined) {
-    throw Error("no allowance");
+  // Get address
+  let address = process.env.PROOF_ADDRESS;
+  if (!address) {
+    throw Error("no address found for proof (use env var PROOF_ADDRESS)");
   }
-  const proof = merkletree.getHexProof(hashEntry(address, allowlist[address]));
-  console.log("Proof:", proof);
+  address = address.toLowerCase();
+
+  // Check allowlist
+  let allowance = allowlist[address];
+  if (allowance === undefined) {
+    console.log("Allowlist: no allowance");
+  } else {
+    const proof = allowlistTree.getHexProof(hashEntry(address, allowance));
+    console.log("Allowlist:", proof);
+  }
+
+  // Check waitlist
+  allowance = waitlist[address];
+  if (allowance === undefined) {
+    console.log("Waitlist: no allowance");
+  } else {
+    const proof = waitlistTree.getHexProof(hashEntry(address, allowance));
+    console.log("Waitlist:", proof);
+  }
 }
 
 main().catch((error) => {
