@@ -372,13 +372,10 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-setDefaultRoyalty}.
+     * @dev See {ITablelandRigs-setRoyaltyReceiver}.
      */
-    function setDefaultRoyalty(address receiver, uint96 feeNumerator)
-        external
-        onlyOwner
-    {
-        _setDefaultRoyalty(receiver, feeNumerator);
+    function setRoyaltyReceiver(address receiver) external onlyOwner {
+        _setDefaultRoyalty(receiver, 500);
     }
 
     /**

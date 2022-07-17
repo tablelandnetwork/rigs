@@ -145,18 +145,16 @@ interface ITablelandRigs {
     function setContractURI(string memory uri) external;
 
     /**
-     * @dev Sets the default royalty information for ERC2981.
+     * @dev Sets the royalty receiver for ERC2981.
      *
      * receiver - the royalty receiver address
-     * feeNumerator - the denominator with which to interpret the fee as a fraction of sale price
      *
      * Requirements:
      *
      * - `msg.sender` must be contract owner
      * - `receiver` cannot be the zero address
-     * - `feeNumerator` cannot be greater than 10000
      */
-    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external;
+    function setRoyaltyReceiver(address receiver) external;
 
     /**
      * @dev Pauses minting.

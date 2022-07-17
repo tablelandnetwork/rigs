@@ -485,13 +485,13 @@ describe("Rigs", function () {
     expect(await rigs.contractURI()).to.equal("https://fake.com");
   });
 
-  it("Should set default royalty", async function () {
+  it("Should set royalty receiver", async function () {
     const receiver = accounts[2].address;
-    await rigs.setDefaultRoyalty(receiver, 750);
+    await rigs.setRoyaltyReceiver(receiver);
 
     const info = await rigs.royaltyInfo(1, utils.parseEther("1"));
     expect(info[0]).to.equal(receiver);
-    expect(info[1]).to.equal(utils.parseEther("0.075"));
+    expect(info[1]).to.equal(utils.parseEther("0.05"));
   });
 
   it("Should pause and unpause minting", async function () {
@@ -535,7 +535,7 @@ describe("Rigs", function () {
     );
 
     await expect(
-      _rigs.setDefaultRoyalty(accounts[2].address, 750)
+      _rigs.setRoyaltyReceiver(accounts[2].address)
     ).to.be.revertedWith("Ownable: caller is not the owner");
 
     await expect(_rigs.pause()).to.be.rejectedWith(

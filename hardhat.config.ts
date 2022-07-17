@@ -131,7 +131,7 @@ const config: HardhatUserConfig = {
         "0x12fC004d3bA84dF22ebfdE93A7a0B87267b06ACb",
         "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
       ],
-      royaltyReceiverShares: [20, 80],
+      royaltyReceiverShares: [2, 3],
       allowlistFiles: [
         "../allowlists/textile_allowlist.csv",
         "../allowlists/main_allowlist.csv",
