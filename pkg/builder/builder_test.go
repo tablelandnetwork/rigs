@@ -13,18 +13,18 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
-	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
-	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
+	"github.com/tablelandnetwork/rigs/pkg/builder/randomness/system"
+	"github.com/tablelandnetwork/rigs/pkg/nullable"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local/impl"
+	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 
 func TestBuild(t *testing.T) {
 	ctx := context.Background()
 
-	db, err := sql.Open("sqlite3", "/Users/aaron/Code/textile/nft-minter/local.db")
+	db, err := sql.Open("sqlite3", "/Users/aaron/Code/textile/rigs/local.db")
 	require.NoError(t, err)
 	defer func() {
 		_ = db.Close()

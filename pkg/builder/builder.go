@@ -21,10 +21,9 @@ import (
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/rs/zerolog/log"
-	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
-	"github.com/tablelandnetwork/nft-minter/pkg/renderer"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
+	"github.com/tablelandnetwork/rigs/pkg/renderer"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/image/draw"
 	"golang.org/x/time/rate"
 )

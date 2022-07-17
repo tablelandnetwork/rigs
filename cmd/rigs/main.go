@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/tablelandnetwork/nft-minter/cmd/rigs/cmd"
+	"github.com/tablelandnetwork/rigs/cmd/rigs/cmd"
 )
 
 func main() {

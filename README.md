@@ -1,8 +1,8 @@
-[![GitHub license](https://img.shields.io/github/license/tablelandnetwork/nft-minter.svg?style=popout-square)](./LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/tablelandnetwork/nft-minter?style=flat-square)](https://goreportcard.com/report/github.com/tablelandnetwork/nft-minter?style=flat-square)
+[![GitHub license](https://img.shields.io/github/license/tablelandnetwork/rigs.svg?style=popout-square)](./LICENSE)
+[![Go Report Card](https://goreportcard.com/badge/github.com/tablelandnetwork/rigs?style=flat-square)](https://goreportcard.com/report/github.com/tablelandnetwork/rigs?style=flat-square)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=popout-square)](https://github.com/RichardLitt/standard-readme)
 
-# nft-minter
+# rigs
 
 > Render NFT layers from Google Sheets and Drive
 

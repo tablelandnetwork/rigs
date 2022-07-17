@@ -10,8 +10,8 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local/impl"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local/impl"
 )
 
 var (

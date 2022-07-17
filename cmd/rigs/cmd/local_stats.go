@@ -8,7 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/nft-minter/pkg/builder"
+	"github.com/tablelandnetwork/rigs/pkg/builder"
 )
 
 func init() {

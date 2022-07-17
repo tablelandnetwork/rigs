@@ -8,7 +8,7 @@ import (
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	iface "github.com/ipfs/interface-go-ipfs-core"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 )
 
 // Layers provides access to the NFT layer images.

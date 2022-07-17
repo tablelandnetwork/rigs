@@ -9,7 +9,7 @@ import (
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/spf13/cobra"
-	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
+	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 

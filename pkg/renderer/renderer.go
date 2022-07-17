@@ -13,7 +13,7 @@ import (
 
 	"github.com/golang/freetype"
 	"github.com/golang/freetype/truetype"
-	"github.com/tablelandnetwork/nft-minter/pkg/renderer/fonts"
+	"github.com/tablelandnetwork/rigs/pkg/renderer/fonts"
 	"golang.org/x/image/draw"
 	"golang.org/x/image/math/fixed"
 )

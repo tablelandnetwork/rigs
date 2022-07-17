@@ -7,8 +7,8 @@ import (
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/require"
-	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/nullable"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 )
 
 func TestStore_Reset(t *testing.T) {

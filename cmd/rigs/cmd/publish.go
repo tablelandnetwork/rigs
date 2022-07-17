@@ -11,9 +11,9 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	storage "github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/sqlite"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/impl/tableland"
+	storage "github.com/tablelandnetwork/rigs/pkg/storage/tableland"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/sqlite"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/tableland"
 	"github.com/textileio/go-tableland/pkg/client"
 	"github.com/textileio/go-tableland/pkg/wallet"
 )
