@@ -120,10 +120,6 @@ describe("Rigs", function () {
     );
   });
 
-  it("Should temp test packed aux", async function () {
-    await rigs.testPackAux(accounts[0].address);
-  });
-
   it("Should mint with allowlist during allowlist phase", async function () {
     await rigs.setMintPhase(1);
 
@@ -231,6 +227,13 @@ describe("Rigs", function () {
         )
     ).to.be.revertedWith("InsufficientAllowance");
 
+    // Check claimed count
+    const claimed = await rigs.getClaimed(minter.address);
+    expect(claimed.allowClaims).to.equal(
+      entry.freeAllowance + entry.paidAllowance
+    );
+    expect(claimed.waitClaims).to.equal(0);
+
     // try waitlist minting
     minter = accounts[5];
     entry = waitlist[minter.address];
@@ -301,6 +304,13 @@ describe("Rigs", function () {
           }
         )
     ).to.be.revertedWith("InsufficientAllowance");
+
+    // Check claimed count
+    const claimed = await rigs.getClaimed(minter.address);
+    expect(claimed.allowClaims).to.equal(0);
+    expect(claimed.waitClaims).to.equal(
+      entry.freeAllowance + entry.paidAllowance
+    );
 
     // try unused allowlist
     minter = accounts[3];
@@ -377,6 +387,13 @@ describe("Rigs", function () {
     ).to.emit(rigs, "Transfer");
     let minted = entry.freeAllowance + entry.paidAllowance;
 
+    // Check claimed count
+    let claimed = await rigs.getClaimed(minter.address);
+    expect(claimed.allowClaims).to.equal(
+      entry.freeAllowance + entry.paidAllowance
+    );
+    expect(claimed.waitClaims).to.equal(0);
+
     // waitlist, same address
     await rigs.setMintPhase(2);
     minter = accounts[4];
@@ -392,8 +409,32 @@ describe("Rigs", function () {
           proof,
           { value: getCost(entry.paidAllowance, 0.05) }
         )
+    ).to.be.rejectedWith("InsufficientAllowance");
+
+    // waitlist
+    await rigs.setMintPhase(2);
+    minter = accounts[5];
+    entry = waitlist[minter.address];
+    proof = waitlistTree.getHexProof(hashEntry(minter.address, entry));
+    await expect(
+      rigs
+        .connect(minter)
+        ["mint(uint256,uint256,uint256,bytes32[])"](
+          entry.freeAllowance + entry.paidAllowance,
+          entry.freeAllowance,
+          entry.paidAllowance,
+          proof,
+          { value: getCost(entry.paidAllowance, 0.05) }
+        )
     ).to.emit(rigs, "Transfer");
     minted += entry.freeAllowance + entry.paidAllowance;
+
+    // Check claimed count
+    claimed = await rigs.getClaimed(minter.address);
+    expect(claimed.allowClaims).to.equal(0);
+    expect(claimed.waitClaims).to.equal(
+      entry.freeAllowance + entry.paidAllowance
+    );
 
     // public
     await rigs.setMintPhase(3);

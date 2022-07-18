@@ -160,7 +160,11 @@ contract TablelandRigs is
                 quantity,
                 freeAllowance + paidAllowance - claimed
             );
-            if (quantity == 0) revert InsufficientAllowance();
+            if (
+                quantity == 0 ||
+                // Disallow claims from waitlist if already claimed on allowlist
+                (mintPhase == MintPhase.WAITLIST && allowClaims > 0)
+            ) revert InsufficientAllowance();
 
             // Get quantity that must be paid for
             uint256 freeSurplus = freeAllowance > claimed
@@ -285,46 +289,6 @@ contract TablelandRigs is
         uint16 waitClaims
     ) private {
         _setAux(by, (uint64(waitClaims) << 16) | uint64(allowClaims));
-    }
-
-    // TEMP
-    function testPackAux(address by) external {
-        uint64 existing = 132;
-        _setAux(by, existing);
-        existing = _getAux(by);
-        console.log("set unpacked 132 set and get unpacked", existing);
-        uint16 foo;
-        uint16 bar;
-        (foo, bar) = getClaimed(by);
-        console.log("set unpacked 132 and get packed", foo, bar);
-
-        _setClaimed(by, foo, bar);
-        (foo, bar) = getClaimed(by);
-        console.log("set packed 132 0 and get packed", foo, bar);
-
-        foo = 4;
-        bar = 1;
-        _setClaimed(by, foo, bar);
-        (foo, bar) = getClaimed(by);
-        console.log("set packed 4 1 and get packed", foo, bar);
-
-        foo = 3000;
-        bar = 3000;
-        _setClaimed(by, foo, bar);
-        (foo, bar) = getClaimed(by);
-        console.log("set packed 3000 3000 and get packed", foo, bar);
-
-        foo = 1;
-        bar = 0;
-        _setClaimed(by, foo, bar);
-        (foo, bar) = getClaimed(by);
-        console.log("set packed 1 0 and get packed", foo, bar);
-
-        foo = 0;
-        bar = 1;
-        _setClaimed(by, foo, bar);
-        (foo, bar) = getClaimed(by);
-        console.log("set packed 0 1 and get packed", foo, bar);
     }
 
     /**
