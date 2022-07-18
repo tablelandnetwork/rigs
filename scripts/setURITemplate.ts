@@ -1,4 +1,4 @@
-import { ethers, network, rigsConfig, rigsDeployment } from "hardhat";
+import { ethers, network, rigsDeployment } from "hardhat";
 import { TablelandRigs } from "../typechain-types";
 import { getURITemplate } from "../helpers/uris";
 
@@ -18,14 +18,14 @@ async function main() {
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
   // Get URI template
-  if (rigsConfig.tables.tokensTable === "") {
+  if (rigsDeployment.tokensTable === "") {
     throw Error(`missing table names entries in config`);
   }
 
   const uriTemplate = getURITemplate(
-    rigsConfig.tables.tablelandHost,
-    rigsConfig.tables.tokensTable,
-    rigsConfig.tables.attributesTable
+    rigsDeployment.tablelandHost,
+    rigsDeployment.tokensTable,
+    rigsDeployment.attributesTable
   );
 
   // Update base URI

@@ -34,13 +34,13 @@ async function main() {
   }
 
   // Get URI template
-  if (rigsConfig.tables.tokensTable === "") {
-    throw Error(`missing table names entries in config`);
+  if (rigsDeployment.tokensTable === "") {
+    throw Error(`missing tokens table entry in deployments`);
   }
   const uriTemplate = getURITemplate(
-    rigsConfig.tables.tablelandHost,
-    rigsConfig.tables.tokensTable,
-    rigsConfig.tables.attributesTable
+    rigsDeployment.tablelandHost,
+    rigsDeployment.tokensTable,
+    rigsDeployment.attributesTable
   );
 
   // Don't allow multiple deployments per network
@@ -83,11 +83,11 @@ async function main() {
   ) {
     const wallet = new Wallet(rigsConfig.tables.tablelandPrivateKey!);
     const provider = new providers.AlchemyProvider(
-      SUPPORTED_CHAINS[rigsConfig.tables.tablelandChain],
+      SUPPORTED_CHAINS[rigsDeployment.tablelandChain],
       rigsConfig.tables.tablelandProvider
     );
     const options: ConnectOptions = {
-      chain: rigsConfig.tables.tablelandChain,
+      chain: rigsDeployment.tablelandChain,
       signer: wallet.connect(provider),
     };
     tbl = await connect(options);
@@ -121,7 +121,7 @@ async function main() {
 
   // Get contract URI
   const contractURI = getContractURI(
-    rigsConfig.tables.tablelandHost,
+    rigsDeployment.tablelandHost,
     contractTable
   );
 
@@ -198,18 +198,18 @@ async function main() {
   await tx.wait();
   console.log("Set URI template:", uriTemplate.join("{id}"));
 
-  // Warn that addresses need to be saved in config
+  // Warn that addresses need to be saved in deployments file
   console.warn(
-    `\nSave 'config.${network.name}.contractAddress: "${rigs.address}"' in the hardhat config!`
+    `\nSave 'deployments.${network.name}.contractAddress: "${rigs.address}"' in deployments.ts!`
   );
   console.warn(
-    `Save 'config.${network.name}.royaltyContractAddress: "${splitter.address}"' in the hardhat config!`
+    `Save 'deployments.${network.name}.royaltyContractAddress: "${splitter.address}"' in deployments.ts!`
   );
   console.warn(
-    `Save 'config.${network.name}.contractTable: "${contractTable}"' in the hardhat config!`
+    `Save 'deployments.${network.name}.contractTable: "${contractTable}"' in deployments.ts!`
   );
   console.warn(
-    `Save 'config.${network.name}.allowlistTable: "${allowlistTable}"' in the hardhat config!`
+    `Save 'deployments.${network.name}.allowlistTable: "${allowlistTable}"' in deployments.ts!`
   );
 }
 

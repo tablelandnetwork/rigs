@@ -63,10 +63,11 @@ async function loadCSV(filename: string): Promise<CSVRow[]> {
         columns: headers,
         fromLine: 2,
         cast: (columnValue, context) => {
-          if (context.column !== "address") {
+          if (context.column === "address") {
+            return columnValue.toLowerCase();
+          } else {
             return parseInt(columnValue);
           }
-          return columnValue;
         },
       },
       (error, result: CSVRow[]) => {
@@ -94,7 +95,7 @@ export function hashEntry(address: string, entry: AllowListEntry): Buffer {
     ethers.utils
       .solidityKeccak256(
         ["address", "uint256", "uint256"],
-        [address, entry.freeAllowance, entry.paidAllowance]
+        [address.toLowerCase(), entry.freeAllowance, entry.paidAllowance]
       )
       .slice(2),
     "hex"
