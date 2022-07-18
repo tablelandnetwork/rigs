@@ -37,7 +37,7 @@ export const deployments: RigsDeployments = {
     partsTable: "parts_5_30",
     layersTable: "layers_5_29",
     tokensTable: "rigs_5_28",
-    attributesTable: "",
+    attributesTable: "rig_attributes_5_27",
   },
   // testnets
   "polygon-mumbai": {

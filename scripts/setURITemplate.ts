@@ -34,7 +34,9 @@ async function main() {
   ) as TablelandRigs;
   const tx = await rigs.setURITemplate(uriTemplate);
   const receipt = await tx.wait();
-  console.log(`URI template set with txn '${receipt.transactionHash}'`);
+  console.log(
+    `URI template set to '${uriTemplate}' with txn '${receipt.transactionHash}'`
+  );
 }
 
 main().catch((error) => {
