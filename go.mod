@@ -1,4 +1,4 @@
-module github.com/tablelandnetwork/nft-minter
+module github.com/tablelandnetwork/rigs
 
 go 1.18
 

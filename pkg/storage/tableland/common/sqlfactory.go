@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 
 	// Import the SQLite driver.
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"

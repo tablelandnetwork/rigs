@@ -3,7 +3,7 @@ package local
 import (
 	"context"
 
-	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
+	"github.com/tablelandnetwork/rigs/pkg/nullable"
 )
 
 // Part describes a rig part.

@@ -9,10 +9,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/nft-minter/pkg/builder"
-	"github.com/tablelandnetwork/nft-minter/pkg/builder/randomness/system"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/wpool"
+	"github.com/tablelandnetwork/rigs/pkg/builder"
+	"github.com/tablelandnetwork/rigs/pkg/builder/randomness/system"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 

@@ -12,9 +12,9 @@ import (
 	core "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/nft-minter/pkg/builder"
-	"github.com/tablelandnetwork/nft-minter/pkg/nullable"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/builder"
+	"github.com/tablelandnetwork/rigs/pkg/nullable"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 )
 
 var (

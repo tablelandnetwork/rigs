@@ -3,7 +3,7 @@ package tableland
 import (
 	"context"
 
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 )
 
 // TableDefinition describes the definition of a table.

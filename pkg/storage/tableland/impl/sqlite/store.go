@@ -6,9 +6,9 @@ import (
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/local"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland"
-	"github.com/tablelandnetwork/nft-minter/pkg/storage/tableland/common"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/common"
 
 	// Importing the sqlite driver.
 	_ "github.com/mattn/go-sqlite3"
