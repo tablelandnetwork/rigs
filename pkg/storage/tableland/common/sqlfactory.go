@@ -53,15 +53,15 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 }
 
 // SQLForInsertingRigs returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, gateway string, rigs []local.Rig) (string, error) {
+func (s *SQLFactory) SQLForInsertingRigs(rigsTable, gateway, cid string, rigs []local.Rig) (string, error) {
 	var rigVals [][]interface{}
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{
 			rig.ID,
-			fmt.Sprintf("%s%s", gateway, rig.Image.String),
-			fmt.Sprintf("%s%s", gateway, rig.ImageAlpha.String),
-			fmt.Sprintf("%s%s", gateway, rig.Thumb.String),
-			fmt.Sprintf("%s%s", gateway, rig.ThumbAlpha.String),
+			fmt.Sprintf("%s/%s/%d/image.png", gateway, cid, rig.ID),
+			fmt.Sprintf("%s/%s/%d/image_alpha.png", gateway, cid, rig.ID),
+			fmt.Sprintf("%s/%s/%d/thumb.png", gateway, cid, rig.ID),
+			fmt.Sprintf("%s/%s/%d/thumb_alpha.png", gateway, cid, rig.ID),
 		})
 	}
 

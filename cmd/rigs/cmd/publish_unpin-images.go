@@ -20,6 +20,7 @@ func init() {
 		false,
 		"unpin ALL cids pinned to the remote ipfs, not just those in the local rigs table",
 	)
+	unpinImagesCmd.Flags().String("images-cid", "", "cid of the images folder on ipfs")
 }
 
 var unpinImagesCmd = &cobra.Command{
@@ -55,20 +56,16 @@ var unpinImagesCmd = &cobra.Command{
 				i++
 			}
 		} else {
-			rigs, err := localStore.Rigs(ctx)
-			checkErr(err)
-
-			for _, rig := range rigs {
-				path := ipfspath.New(rig.Images.String)
-				unpinJobs = append(
-					unpinJobs,
-					wpool.Job{
-						ID:     wpool.JobID(rig.ID),
-						ExecFn: execFcn(path),
-						Desc:   fmt.Sprintf("%d, %s", rig.ID, rig.Images.String),
-					},
-				)
-			}
+			cid := viper.GetString("images-cid")
+			path := ipfspath.New(cid)
+			unpinJobs = append(
+				unpinJobs,
+				wpool.Job{
+					ID:     wpool.JobID(1),
+					ExecFn: execFcn(path),
+					Desc:   fmt.Sprintf("%d, %s", 1, path.String()),
+				},
+			)
 		}
 
 		pool := wpool.New(30, rate.Inf)

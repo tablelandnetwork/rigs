@@ -24,6 +24,7 @@ func init() {
 
 	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
 	dataCmd.Flags().String("remote-ipfs-gateway-url", "", "url of the gateway to use for nft image metadata")
+	dataCmd.Flags().String("images-cid", "", "cid of the images folder on ipfs")
 }
 
 var dataCmd = &cobra.Command{
@@ -40,7 +41,13 @@ var dataCmd = &cobra.Command{
 		layersJobs, err := layersJobs(ctx, localStore, &jobID)
 		checkErr(err)
 
-		rigsJobs, err := rigsJobs(ctx, localStore, &jobID, viper.GetString("remote-ipfs-gateway-url"))
+		rigsJobs, err := rigsJobs(
+			ctx,
+			localStore,
+			&jobID,
+			viper.GetString("remote-ipfs-gateway-url"),
+			viper.GetString("images-cid"),
+		)
 		checkErr(err)
 
 		attsJobs, err := attrsJobs(ctx, localStore, &jobID)
@@ -133,12 +140,12 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, er
 	return jobs, nil
 }
 
-func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway string) ([]wpool.Job, error) {
+func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway, cid string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertRigs(ctx, gateway, rigs); err != nil {
+			if err := store.InsertRigs(ctx, gateway, cid, rigs); err != nil {
 				return nil, fmt.Errorf("calling insert rigs: %v", err)
 			}
 			return nil, nil

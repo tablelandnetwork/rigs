@@ -16,7 +16,6 @@ import (
 func init() {
 	localCmd.AddCommand(renderCmd)
 
-	renderCmd.Flags().String("ipfs-gateway-url", "http://127.0.0.1:8080", "address of the local ipfs gateway")
 	renderCmd.Flags().Int("size", 1200, "width and height of generated images")
 	renderCmd.Flags().Int("thumb-size", 600, "width and height of generated thumb images")
 	renderCmd.Flags().Bool("labels", false, "render metadata labels on generated images")
@@ -24,22 +23,21 @@ func init() {
 }
 
 var renderCmd = &cobra.Command{
-	Use:   "render",
+	Use:   "render <images-path>",
 	Short: "Renders rig imagery",
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
 		b := builder.NewBuilder(localStore, ipfsClient)
-
-		gatewayURL := viper.GetString("ipfs-gateway-url")
 
 		rigs, err := localStore.Rigs(ctx)
 		checkErr(err)
 
 		renderExecFcn := func(rig local.Rig, opts []builder.RenderOption) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
-				err := b.Render(ctx, &rig, opts...)
-				return rig, err
+				path, err := b.Render(ctx, &rig, args[0], opts...)
+				return path, err
 			}
 		}
 
@@ -51,7 +49,6 @@ var renderCmd = &cobra.Command{
 				builder.RenderLabels(viper.GetBool("lablels")),
 				builder.RenderSize(viper.GetInt("size")),
 				builder.RenderThumbSize(viper.GetInt("thumb-size")),
-				builder.RenderGatewayURL(gatewayURL),
 			}
 			jobs = append(jobs, wpool.Job{
 				ID:     wpool.JobID(rig.ID),
@@ -70,13 +67,8 @@ var renderCmd = &cobra.Command{
 				if !ok {
 					continue
 				}
-				fmt.Printf("%d/%d. ", count, len(jobs))
-				if r.Err != nil {
-					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
-					continue
-				}
-				rig := r.Value.(local.Rig)
-				fmt.Printf("#%d %s/ipfs/%s\n", rig.ID, rig.Gateway.String, rig.Image.String)
+				fmt.Printf("%d/%d. %v\n", count, len(jobs), r.Value)
+				checkErr(r.Err)
 			case <-pool.Done:
 				break Loop
 			}

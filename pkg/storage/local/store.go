@@ -29,20 +29,14 @@ type Layer struct {
 
 // Rig represents a generated rig.
 type Rig struct {
-	ID                int             `json:"id"`
-	Gateway           nullable.String `json:"gateway"`
-	Images            nullable.String `json:"images"`
-	Image             nullable.String `json:"image"`
-	ImageAlpha        nullable.String `json:"image_alpha" db:"image_alpha"`
-	Thumb             nullable.String `json:"thumb"`
-	ThumbAlpha        nullable.String `json:"thumb_alpha" db:"thumb_alpha"`
-	Original          bool            `json:"original"`
-	PercentOriginal   float64         `json:"percent_original" db:"percent_original"`
-	PercentOriginal50 float64         `json:"percent_original_50" db:"percent_original_50"`
-	PercentOriginal75 float64         `json:"percent_original_75" db:"percent_original_75"`
-	PercentOriginal90 float64         `json:"percent_original_90" db:"percent_original_90"`
-	VIN               string          `json:"vin"`
-	Parts             []Part          `json:"parts"`
+	ID                int     `json:"id"`
+	Original          bool    `json:"original"`
+	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
+	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
+	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
+	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
+	VIN               string  `json:"vin"`
+	Parts             []Part  `json:"parts"`
 }
 
 // OriginalRig represents an original rig.
@@ -222,9 +216,6 @@ type Store interface {
 
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
-
-	// UpdateRigImages updates Rig image-related fields.
-	UpdateRigImages(ctx context.Context, rig Rig) error
 
 	// GetOriginalRigs gets a list of all OriginalRigs.
 	GetOriginalRigs(ctx context.Context) ([]OriginalRig, error)

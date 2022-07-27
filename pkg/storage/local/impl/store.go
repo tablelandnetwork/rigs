@@ -41,12 +41,6 @@ const (
 
 		create table if not exists rigs (
 			id integer primary key,
-			gateway text,
-			images text,
-			image text,
-			image_alpha text,
-			thumb text,
-			thumb_alpha text,
 			original boolean,
 			percent_original float,
 			percent_original_50 float,
@@ -129,12 +123,6 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{
 			rig.ID,
-			rig.Gateway,
-			rig.Images,
-			rig.Image,
-			rig.ImageAlpha,
-			rig.Thumb,
-			rig.ThumbAlpha,
 			rig.Original,
 			rig.PercentOriginal,
 			rig.PercentOriginal50,
@@ -153,8 +141,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	}
 
 	insertRigs := tx.Insert("rigs").Cols(
-		"id", "gateway", "images", "image", "image_alpha", "thumb", "thumb_alpha", "original",
-		"percent_original", "percent_original_50", "percent_original_75", "percent_original_90", "vin",
+		"id", "original", "percent_original", "percent_original_50", "percent_original_75", "percent_original_90", "vin",
 	).Vals(rigVals...).Executor()
 	insertParts := tx.Insert("rig_parts").
 		Cols("rig_id", "part_id").
@@ -179,22 +166,6 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 		return fmt.Errorf("committing tx: %v", err)
 	}
 
-	return nil
-}
-
-// UpdateRigImages implements UpdateRigImages.
-func (s *Store) UpdateRigImages(ctx context.Context, rig local.Rig) error {
-	update := s.db.Update("rigs").Set(goqu.Record{
-		"gateway":     rig.Gateway,
-		"images":      rig.Images,
-		"image":       rig.Image,
-		"image_alpha": rig.ImageAlpha,
-		"thumb":       rig.Thumb,
-		"thumb_alpha": rig.ThumbAlpha,
-	}).Where(goqu.C("id").Eq(rig.ID)).Executor()
-	if _, err := update.ExecContext(ctx); err != nil {
-		return fmt.Errorf("executing update: %v", err)
-	}
 	return nil
 }
 

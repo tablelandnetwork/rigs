@@ -76,7 +76,7 @@ func TestBuild(t *testing.T) {
 			require.NoError(t, r.Err)
 			rig := r.Value.(*local.Rig)
 			require.Equal(t, int(r.ID), rig.ID)
-			fmt.Printf("%s%s\n", rig.Gateway.String, rig.Image.String)
+			fmt.Printf("%d\n", rig.ID)
 		case <-pool.Done:
 			return
 		}

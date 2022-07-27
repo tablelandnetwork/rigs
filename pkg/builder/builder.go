@@ -12,14 +12,13 @@ import (
 	_ "image/jpeg" // register format
 	"image/png"
 	"io"
+	"os"
+	"path"
 	"sort"
 	"strings"
 	"sync"
 
-	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	iface "github.com/ipfs/interface-go-ipfs-core"
-	"github.com/ipfs/interface-go-ipfs-core/options"
-	ipfspath "github.com/ipfs/interface-go-ipfs-core/path"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/rigs/pkg/renderer"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
@@ -139,7 +138,6 @@ type renderConfig struct {
 	thumbSize   int
 	compression png.CompressionLevel
 	drawLabels  bool
-	gatewayURL  string
 }
 
 // RenderOption is an item that controls the behavior of Render.
@@ -173,15 +171,8 @@ func RenderLabels(drawLabels bool) RenderOption {
 	}
 }
 
-// RenderGatewayURL sets the gateway field on the rig.
-func RenderGatewayURL(url string) RenderOption {
-	return func(rc *renderConfig) {
-		rc.gatewayURL = url
-	}
-}
-
 // Render renders the images for the provided rig and updates the store to reflect it.
-func (b *Builder) Render(ctx context.Context, rig *local.Rig, opts ...RenderOption) error {
+func (b *Builder) Render(ctx context.Context, rig *local.Rig, toPath string, opts ...RenderOption) (string, error) {
 	c := defaultRenderConfig
 	for _, opt := range opts {
 		opt(&c)
@@ -255,24 +246,74 @@ func (b *Builder) Render(ctx context.Context, rig *local.Rig, opts ...RenderOpti
 		},
 		{
 			ID:   3,
-			Desc: "add images to ipfs",
+			Desc: "writing images to disk",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				dir := ipfsfiles.NewMapDirectory(map[string]ipfsfiles.Node{
-					"image.png":       ipfsfiles.NewReaderFile(readerThrough),
-					"image_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThrough),
-					"thumb.png":       ipfsfiles.NewReaderFile(readerThumb),
-					"thumb_alpha.png": ipfsfiles.NewReaderFile(readerAlphaThumb),
-				})
-				path, err := b.ipfs.Unixfs().Add(
-					ctx,
-					dir,
-					options.Unixfs.Pin(true),
-					options.Unixfs.CidVersion(1),
-				)
-				if err != nil {
-					return nil, fmt.Errorf("adding image to ipfs: %v", err)
+				rigPath := path.Join(toPath, fmt.Sprint(rig.ID))
+				if err := os.RemoveAll(rigPath); err != nil {
+					return nil, fmt.Errorf("removing images dir: %v", err)
 				}
-				return path, nil
+				err := os.MkdirAll(rigPath, os.ModePerm)
+				if err != nil {
+					return nil, fmt.Errorf("creating directory: %v", err)
+				}
+				copyFn := func(name string, src io.Reader) wpool.ExecutionFn {
+					return func(ctx context.Context) (interface{}, error) {
+						file, err := os.Create(name)
+						if err != nil {
+							return nil, fmt.Errorf("creating image file: %v", err)
+						}
+						defer func() {
+							_ = file.Close()
+						}()
+						_, err = io.Copy(file, src)
+						if err != nil {
+							return nil, fmt.Errorf("copying image data: %v", err)
+						}
+						return nil, nil
+					}
+				}
+				jobs := []wpool.Job{
+					{
+						ID:     1,
+						ExecFn: copyFn(path.Join(rigPath, "image.png"), readerThrough),
+						Desc:   "image",
+					},
+					{
+						ID:     2,
+						ExecFn: copyFn(path.Join(rigPath, "image_alpha.png"), readerAlphaThrough),
+						Desc:   "image alpha",
+					},
+					{
+						ID:     3,
+						ExecFn: copyFn(path.Join(rigPath, "thumb.png"), readerThumb),
+						Desc:   "thumb",
+					},
+					{
+						ID:     4,
+						ExecFn: copyFn(path.Join(rigPath, "thumb_alpha.png"), readerAlphaThumb),
+						Desc:   "thumb alpha",
+					},
+				}
+				wp := wpool.New(4, rate.Inf)
+				go wp.GenerateFrom(jobs)
+				ctx, cancel := context.WithCancel(ctx)
+				defer cancel()
+				go wp.Run(ctx)
+			Loop:
+				for {
+					select {
+					case r, ok := <-wp.Results():
+						if !ok {
+							break
+						}
+						if r.Err != nil {
+							return nil, r.Err
+						}
+					case <-wp.Done:
+						break Loop
+					}
+				}
+				return rigPath, nil
 			},
 		},
 	}
@@ -282,9 +323,7 @@ func (b *Builder) Render(ctx context.Context, rig *local.Rig, opts ...RenderOpti
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go wp.Run(ctx)
-
-	var path ipfspath.Resolved
-
+	var path string
 Loop:
 	for {
 		select {
@@ -293,41 +332,16 @@ Loop:
 				break
 			}
 			if r.Err != nil {
-				return r.Err
+				return "", r.Err
 			}
-			if r.ID == wpool.JobID(3) {
-				path = r.Value.(ipfspath.Resolved)
+			if r.ID == 3 {
+				path = r.Value.(string)
 			}
 		case <-wp.Done:
 			break Loop
 		}
 	}
-
-	rig.Gateway = nullable.FromString(c.gatewayURL, nullable.EmptyIsNull())
-	// rig.Images = nullable.FromString(path.Cid().String())
-	// rig.Image = nullable.FromString(path.Cid().String() + "/image.png")
-	// rig.ImageAlpha = nullable.FromString(path.Cid().String() + "/image_alpha.png")
-	// rig.Thumb = nullable.FromString(path.Cid().String() + "/thumb.png")
-	// rig.ThumbAlpha = nullable.FromString(path.Cid().String() + "/thumb_alpha.png")
-
-	rig.Images = nullable.FromString(path.String())
-	rig.Image = nullable.FromString(path.String() + "/image.png")
-	rig.ImageAlpha = nullable.FromString(path.String() + "/image_alpha.png")
-	rig.Thumb = nullable.FromString(path.String() + "/thumb.png")
-	rig.ThumbAlpha = nullable.FromString(path.String() + "/thumb_alpha.png")
-
-	if err := b.s.UpdateRigImages(ctx, *rig); err != nil {
-		b.unpinPath(ctx, path)
-		return fmt.Errorf("updating rig: %v", err)
-	}
-
-	return nil
-}
-
-func (b *Builder) unpinPath(ctx context.Context, path ipfspath.Path) {
-	if err := b.ipfs.Pin().Rm(ctx, path); err != nil {
-		log.Error().Err(err).Msg("unpinning from local ipfs")
-	}
+	return path, nil
 }
 
 type assembleRigConfig struct {
