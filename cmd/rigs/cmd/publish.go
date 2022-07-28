@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	storage "github.com/tablelandnetwork/rigs/pkg/storage/tableland"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/files"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/sqlite"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/tableland"
 	"github.com/textileio/go-tableland/pkg/client"
@@ -37,6 +38,11 @@ func init() {
 		"to-tableland",
 		false,
 		"whether or not to publish to tableland, if not, publish to local store",
+	)
+	publishCmd.PersistentFlags().String(
+		"to-files",
+		"",
+		"write sql statements to files at the specified path",
 	)
 	publishCmd.PersistentFlags().Duration(
 		"receipt-timeout",
@@ -98,6 +104,15 @@ var publishCmd = &cobra.Command{
 				RigsTableName:          viper.GetString("rigs-table"),
 				RigAttributesTableName: viper.GetString("rig-attrs-table"),
 			})
+		} else if viper.GetString("to-files") != "" {
+			store, err = files.NewStore(files.Config{
+				PartsTableName:         viper.GetString("parts-table"),
+				LayersTableName:        viper.GetString("layers-table"),
+				RigsTableName:          viper.GetString("rigs-table"),
+				RigAttributesTableName: viper.GetString("rig-attrs-table"),
+				OutPath:                viper.GetString("to-files"),
+			})
+			checkErr(err)
 		} else {
 			_db, err = sql.Open("sqlite3", viper.GetString("tbl-db-path"))
 			checkErr(err)
