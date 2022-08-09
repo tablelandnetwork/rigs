@@ -14,8 +14,6 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @dev Implementation of {ITablelandRigs}.
  */

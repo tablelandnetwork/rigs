@@ -64,6 +64,9 @@ jobs:
   test-ethereum:
     name: Test Ethereum
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ethereum
     steps:
       - name: Checkout
         uses: actions/checkout@v2.3.1

@@ -4,9 +4,11 @@
 
 # Rigs
 
-> Generate, render, inspect and publish Rigs NFT data and imagery.
+> Tableland Rigs tooling and contract.
 
 ## Getting Started
+
+This repo contains tools to generate, render, inspect and publish Rigs NFT data and imagery. See the [ethereum](./ethereum/) directory for the Rigs smart contract and test suite.
 
 The main tool included here is the `rigs` CLI in the `cmd/rigs` directorory. It provides commands to randomly generate rigs data, render the imagery for that data, view the results in a web app, and publish both the data and imagery to Tableland and IPFS.
 
