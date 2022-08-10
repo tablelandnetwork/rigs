@@ -15,7 +15,7 @@ jobs:
     name: Test API
     strategy:
       matrix:
-        go-version: [1.18.x]
+        go-version: [1.16.x, v1.17.x, v1.18.x]
         os: [ubuntu-latest]
     runs-on: ${{ matrix.os }}
     steps:

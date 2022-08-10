@@ -151,8 +151,8 @@ func (s *Store) writeSQL(ctx context.Context, sql string) error {
 	if !found {
 		return fmt.Errorf("timed out before getting receipt for txn %s", hash)
 	}
-	if receipt.Error != nil {
-		return fmt.Errorf("error processing txn %s: %s", receipt.TxnHash, *receipt.Error)
+	if receipt.Error != "" {
+		return fmt.Errorf("error processing txn %s: %s", receipt.TxnHash, receipt.Error)
 	}
 	return nil
 }
