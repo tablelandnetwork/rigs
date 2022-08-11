@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# TablelandTables.sol
+cat artifacts/contracts/TablelandRigs.sol/TablelandRigs.json | jq -r '.deployedBytecode' > deployedBytecode.bin
+ls -l deployedBytecode.bin
+rm deployedBytecode.bin

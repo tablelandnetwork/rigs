@@ -2,27 +2,17 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/tablelandnetwork/rigs?style=flat-square)](https://goreportcard.com/report/github.com/tablelandnetwork/rigs?style=flat-square)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=popout-square)](https://github.com/RichardLitt/standard-readme)
 
-# rigs
+# Rigs
 
-> Render NFT layers from Google Sheets and Drive
-
-<img width="1570" alt="Screen Shot 2022-02-27 at 11 48 43 PM" src="https://user-images.githubusercontent.com/361000/155944700-ac752304-52d9-4c27-8caa-a29918ca1934.png">
+> Tableland Rigs tooling and contract.
 
 ## Getting Started
 
-### Run the renderer app
+This repo contains tools to generate, render, inspect and publish Rigs NFT data and imagery. See the [ethereum](./ethereum/) directory for the Rigs smart contract and test suite.
 
-```shell
-cd client
-npm install
-npm run dev
-````
+The main tool included here is the `rigs` CLI in the `cmd/rigs` directorory. It provides commands to randomly generate rigs data, render the imagery for that data, view the results in a web app, and publish both the data and imagery to Tableland and IPFS.
 
-Got to http://localhost:3000.
-
-### Mint with Tableland
-
-_Coming soon._
+Run `make build-rigs` to build the `rigs` executable and run `rigs --help` or provide the `--help` flag to any sub command to learn more about the commands available. All command flags can be set via environmant variables. Evnironmant variable names must be prepended with `RIGS_` and relate to the flag name this way: `--flag-name` -> `RIGS_FLAG_NAME`.
 
 ## License
 

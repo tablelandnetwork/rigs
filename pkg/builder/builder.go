@@ -20,6 +20,7 @@ import (
 
 	iface "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/rs/zerolog/log"
+	"github.com/tablelandnetwork/rigs/pkg/nullable"
 	"github.com/tablelandnetwork/rigs/pkg/renderer"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"

@@ -13,7 +13,7 @@ import (
 func init() {
 	localCmd.AddCommand(loadLayersCmd)
 
-	loadLayersCmd.Flags().String("layers-path", "", "local filesystem path to the layer images")
+	loadLayersCmd.Flags().String("layers-path", "./layers", "local filesystem path to the layer images")
 }
 
 var loadLayersCmd = &cobra.Command{

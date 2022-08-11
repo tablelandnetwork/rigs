@@ -54,3 +54,31 @@ jobs:
           github_token: ${{ secrets.github_token }}
           locale: "US"
           ignore: "optimise"
+  lint-ethereum:
+    name: Lint Ethereum
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./ethereum
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2.3.1
+        with:
+          persist-credentials: false
+      - name: Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/.npm # npm cache files are stored in `~/.npm` on Linux/macOS
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ env.cache-name }}-
+            ${{ runner.os }}-build-
+            ${{ runner.os }}-
+      - name: Setup Node Environment
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+      - name: Install
+        run: npm install
+      - name: Lint
+        run: npm run prettier && npm run lint
