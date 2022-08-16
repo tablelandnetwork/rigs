@@ -68,7 +68,7 @@
               dark:bg-opacity-20
             "
             :class="{ original: rig.original }"
-            :src="rig.gateway + rig.thumb"
+            :src="rig.thumb"
             @intersect="imageIntersect"
             @load="imageLoad"
           />
@@ -133,7 +133,14 @@ export default {
         alert(res.status + ' ' + res.statusText);
         this.setAuth('');
       } else {
-        this.rigs = await res.json();
+        const j = await res.json();
+        this.rigs = j.map((rig) => {
+          return {
+            ...rig,
+            image: this.api + '/images/' + rig.id + '/image.png',
+            thumb: this.api + '/images/' + rig.id + '/thumb.png'
+          };
+        });
         this.resizeImages();
       }
       this.loading = false;

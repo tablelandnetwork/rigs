@@ -20,7 +20,6 @@ import (
 
 	iface "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/rs/zerolog/log"
-	"github.com/tablelandnetwork/rigs/pkg/nullable"
 	"github.com/tablelandnetwork/rigs/pkg/renderer"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
@@ -56,9 +55,8 @@ type RandomnessSource interface {
 
 // Builder builds Rigs.
 type Builder struct {
-	s      local.Store
-	layers *Layers
-	ipfs   iface.CoreAPI
+	s    local.Store
+	ipfs iface.CoreAPI
 
 	fleetsCache             []local.Part
 	fleetPartTypesCache     map[string][]string
@@ -73,9 +71,8 @@ func NewBuilder(
 	ipfs iface.CoreAPI,
 ) *Builder {
 	return &Builder{
-		s:      s,
-		layers: NewLayers(ipfs, s),
-		ipfs:   ipfs,
+		s:    s,
+		ipfs: ipfs,
 	}
 }
 
@@ -173,7 +170,13 @@ func RenderLabels(drawLabels bool) RenderOption {
 }
 
 // Render renders the images for the provided rig and updates the store to reflect it.
-func (b *Builder) Render(ctx context.Context, rig *local.Rig, toPath string, opts ...RenderOption) (string, error) {
+func (b *Builder) Render(
+	ctx context.Context,
+	rig *local.Rig,
+	layersPath string,
+	toPath string,
+	opts ...RenderOption,
+) (string, error) {
 	c := defaultRenderConfig
 	for _, opt := range opts {
 		opt(&c)
@@ -212,7 +215,7 @@ func (b *Builder) Render(ctx context.Context, rig *local.Rig, toPath string, opt
 		background bool,
 	) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := b.AssembleImage(ctx, rig, writer,
+			if err := b.AssembleImage(ctx, rig, layersPath, writer,
 				AssembleImageBackground(background),
 				AssembleImageCompression(c.compression),
 				AssembleImageLabels(c.drawLabels),
@@ -588,6 +591,7 @@ func AssembleImageCompression(compression png.CompressionLevel) AssembleImageOpt
 func (b *Builder) AssembleImage(
 	ctx context.Context,
 	rig local.Rig,
+	layersPath string,
 	writer io.Writer,
 	opts ...AssembleImageOption,
 ) error {
@@ -616,12 +620,12 @@ func (b *Builder) AssembleImage(
 	defer r.Dispose()
 
 	for _, l := range layers {
-		i, err := b.layers.GetLayer(ctx, l.Cid)
+		i, err := getLayer(ctx, layersPath, l.Path)
 		if err != nil {
 			return fmt.Errorf("getting layer: %v", err)
 		}
 
-		label := fmt.Sprintf("%d: %s: %s: %s", l.Position, l.Color, l.PartName, l.Cid)
+		label := fmt.Sprintf("%d: %s: %s: %s", l.Position, l.Color, l.PartName, l.Path)
 
 		if err := r.AddLayer(i, label); err != nil {
 			return fmt.Errorf("adding layer to renderer: %v", err)
@@ -854,4 +858,16 @@ func (b *Builder) fleetPartTypeParts(ctx context.Context, fleet string, partType
 	}
 	b.fleetPartTypePartsCache[fleet][partType] = parts
 	return parts, nil
+}
+
+func getLayer(ctx context.Context, layersPath, imagePath string) (image.Image, error) {
+	f, err := os.Open(path.Join(layersPath, imagePath))
+	if err != nil {
+		return nil, err
+	}
+	i, _, err := image.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
 }

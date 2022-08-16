@@ -17,23 +17,19 @@ const dialect = "sqlite3"
 
 // Store implements Store using the Tableland client.
 type Store struct {
-	partsTableName         string
-	layersTableName        string
-	rigsTableName          string
-	rigAttributesTableName string
-	outPath                string
-	factory                *common.SQLFactory
-	lock                   sync.Mutex
-	count                  int
+	chainID    int64
+	localStore local.Store
+	outPath    string
+	factory    *common.SQLFactory
+	lock       sync.Mutex
+	count      int
 }
 
 // Config confitures a new Store.
 type Config struct {
-	PartsTableName         string
-	LayersTableName        string
-	RigsTableName          string
-	RigAttributesTableName string
-	OutPath                string
+	ChainID    int64
+	LocalStore local.Store
+	OutPath    string
 }
 
 // NewStore creates a new Store.
@@ -42,12 +38,10 @@ func NewStore(c Config) (tableland.Store, error) {
 		return nil, fmt.Errorf("creating files path: %v", err)
 	}
 	return &Store{
-		partsTableName:         c.PartsTableName,
-		layersTableName:        c.LayersTableName,
-		rigsTableName:          c.RigsTableName,
-		rigAttributesTableName: c.RigAttributesTableName,
-		outPath:                c.OutPath,
-		factory:                common.NewSQLFactory(goqu.Dialect(dialect)),
+		chainID:    c.ChainID,
+		localStore: c.LocalStore,
+		outPath:    c.OutPath,
+		factory:    common.NewSQLFactory(goqu.Dialect(dialect)),
 	}, nil
 }
 
@@ -58,7 +52,11 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 
 // InsertParts implements InsertParts.
 func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
-	sql, err := s.factory.SQLForInsertingParts(s.partsTableName, parts)
+	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingParts(tableName, parts)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert parts: %v", err)
 	}
@@ -66,8 +64,12 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 }
 
 // InsertLayers implements InsertLayers.
-func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	sql, err := s.factory.SQLForInsertingLayers(s.layersTableName, layers)
+func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Layer) error {
+	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingLayers(tableName, cid, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert layers: %v", err)
 	}
@@ -75,8 +77,12 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs(s.rigsTableName, gateway, rigs)
+func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) error {
+	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingRigs(tableName, cid, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rigs: %v", err)
 	}
@@ -85,7 +91,11 @@ func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig
 
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigAttributes(s.rigAttributesTableName, rigs)
+	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingRigAttributes(tableName, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rig attributes: %v", err)
 	}

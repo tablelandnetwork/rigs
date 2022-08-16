@@ -16,6 +16,8 @@ import (
 func init() {
 	localCmd.AddCommand(renderCmd)
 
+	renderCmd.Flags().String("to-path", "./renders", "path to write the images to")
+	renderCmd.Flags().String("layers-path", "./layers", "path to the rigs layer images")
 	renderCmd.Flags().Int("size", 1200, "width and height of generated images")
 	renderCmd.Flags().Int("thumb-size", 600, "width and height of generated thumb images")
 	renderCmd.Flags().Bool("labels", false, "render metadata labels on generated images")
@@ -23,9 +25,8 @@ func init() {
 }
 
 var renderCmd = &cobra.Command{
-	Use:   "render <images-path>",
-	Short: "Renders rig imagery",
-	Args:  cobra.ExactArgs(1),
+	Use:   "render",
+	Short: "Render rig imagery",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
@@ -36,7 +37,7 @@ var renderCmd = &cobra.Command{
 
 		renderExecFcn := func(rig local.Rig, opts []builder.RenderOption) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
-				path, err := b.Render(ctx, &rig, args[0], opts...)
+				path, err := b.Render(ctx, &rig, viper.GetString("layers-path"), viper.GetString("to-path"), opts...)
 				return path, err
 			}
 		}
@@ -46,7 +47,7 @@ var renderCmd = &cobra.Command{
 		for _, rig := range rigs {
 			opts := []builder.RenderOption{
 				builder.RenderCompression(png.DefaultCompression),
-				builder.RenderLabels(viper.GetBool("lablels")),
+				builder.RenderLabels(viper.GetBool("labels")),
 				builder.RenderSize(viper.GetInt("size")),
 				builder.RenderThumbSize(viper.GetInt("thumb-size")),
 			}

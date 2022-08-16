@@ -24,7 +24,7 @@ type Layer struct {
 	PartName string `json:"part_name" db:"part_name"`
 	PartType string `json:"part_type" db:"part_type"`
 	Position uint   `json:"position"`
-	Cid      string `json:"cid"`
+	Path     string `json:"path"`
 }
 
 // Rig represents a generated rig.
@@ -217,6 +217,12 @@ type Store interface {
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
 
+	// TrackCid stores the IPFS cid for a label.
+	TrackCid(ctx context.Context, label, cid string) error
+
+	// TrackTableName records the table name for a chain id and label.
+	TrackTableName(ctx context.Context, label string, chainID int64, name string) error
+
 	// GetOriginalRigs gets a list of all OriginalRigs.
 	GetOriginalRigs(ctx context.Context) ([]OriginalRig, error)
 
@@ -231,6 +237,12 @@ type Store interface {
 
 	// Rigs returns a list of Rigs.
 	Rigs(ctx context.Context, opts ...RigsOption) ([]Rig, error)
+
+	// Cid returns the stored layers cid.
+	Cid(ctx context.Context, label string) (string, error)
+
+	// TableName returns the table name for the specified label and chain id.
+	TableName(ctx context.Context, label string, chainID int64) (string, error)
 
 	// Counts returns the number of original rigs and random rigs.
 	Counts(ctx context.Context) (Counts, error)

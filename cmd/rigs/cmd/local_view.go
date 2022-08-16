@@ -22,6 +22,7 @@ func init() {
 		"specifies that the web server shouldn't host the client web app because it is being started separately",
 	)
 	viewCmd.Flags().Int("port", 5000, "port for the http server to listen on")
+	viewCmd.Flags().String("images-path", "./renders", "path to the rendered rig images")
 }
 
 var viewCmd = &cobra.Command{
@@ -30,6 +31,8 @@ var viewCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		r := mux.NewRouter()
 		r.HandleFunc("/rigs", rigsHandler)
+		r.PathPrefix("/images/").
+			Handler(http.StripPrefix("/images/", http.FileServer(http.Dir(viper.GetString("images-path")))))
 
 		port := viper.GetInt("port")
 		addr := fmt.Sprintf("localhost:%d", port)

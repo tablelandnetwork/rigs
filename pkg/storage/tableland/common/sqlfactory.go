@@ -38,11 +38,14 @@ func (s *SQLFactory) SQLForInsertingParts(table string, parts []local.Part) (str
 }
 
 // SQLForInsertingLayers returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (string, error) {
+func (s *SQLFactory) SQLForInsertingLayers(table string, cid string, layers []local.Layer) (string, error) {
 	var vals [][]interface{}
 	for _, layer := range layers {
 		coloredPart := fmt.Sprintf("%s %s", layer.Color, layer.PartName)
-		vals = append(vals, goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, layer.Cid})
+		vals = append(
+			vals,
+			goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, fmt.Sprintf("ipfs://%s/%s", cid, layer.Path)},
+		)
 	}
 	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "cid").Vals(vals...)
 	sql, _, err := ds.ToSQL()
@@ -53,15 +56,15 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 }
 
 // SQLForInsertingRigs returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingRigs(rigsTable, gateway, cid string, rigs []local.Rig) (string, error) {
+func (s *SQLFactory) SQLForInsertingRigs(rigsTable, cid string, rigs []local.Rig) (string, error) {
 	var rigVals [][]interface{}
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{
 			rig.ID,
-			fmt.Sprintf("%s/%s/%d/image.png", gateway, cid, rig.ID),
-			fmt.Sprintf("%s/%s/%d/image_alpha.png", gateway, cid, rig.ID),
-			fmt.Sprintf("%s/%s/%d/thumb.png", gateway, cid, rig.ID),
-			fmt.Sprintf("%s/%s/%d/thumb_alpha.png", gateway, cid, rig.ID),
+			fmt.Sprintf("ipfs://%s/%d/image.png", cid, rig.ID),
+			fmt.Sprintf("ipfs://%s/%d/image_alpha.png", cid, rig.ID),
+			fmt.Sprintf("ipfs://%s/%d/thumb.png", cid, rig.ID),
+			fmt.Sprintf("ipfs://%s/%d/thumb_alpha.png", cid, rig.ID),
 		})
 	}
 

@@ -23,8 +23,6 @@ func init() {
 	publishCmd.AddCommand(dataCmd)
 
 	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
-	dataCmd.Flags().String("remote-ipfs-gateway-url", "", "url of the gateway to use for nft image metadata")
-	dataCmd.Flags().String("images-cid", "", "cid of the images folder on ipfs")
 }
 
 var dataCmd = &cobra.Command{
@@ -38,15 +36,20 @@ var dataCmd = &cobra.Command{
 		partsJobs, err := partsJobs(ctx, localStore, &jobID)
 		checkErr(err)
 
-		layersJobs, err := layersJobs(ctx, localStore, &jobID)
+		layersCid, err := localStore.Cid(ctx, "layers")
+		checkErr(err)
+
+		layersJobs, err := layersJobs(ctx, localStore, &jobID, layersCid)
+		checkErr(err)
+
+		imagesCid, err := localStore.Cid(ctx, "images")
 		checkErr(err)
 
 		rigsJobs, err := rigsJobs(
 			ctx,
 			localStore,
 			&jobID,
-			viper.GetString("remote-ipfs-gateway-url"),
-			viper.GetString("images-cid"),
+			imagesCid,
 		)
 		checkErr(err)
 
@@ -111,12 +114,12 @@ func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 	return jobs, nil
 }
 
-func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
+func layersJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	execFn := func(layers []local.Layer) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertLayers(ctx, layers); err != nil {
+			if err := store.InsertLayers(ctx, cid, layers); err != nil {
 				return nil, fmt.Errorf("calling insert layers: %v", err)
 			}
 			return nil, nil
@@ -140,12 +143,12 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, er
 	return jobs, nil
 }
 
-func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway, cid string) ([]wpool.Job, error) {
+func rigsJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertRigs(ctx, gateway, cid, rigs); err != nil {
+			if err := store.InsertRigs(ctx, cid, rigs); err != nil {
 				return nil, fmt.Errorf("calling insert rigs: %v", err)
 			}
 			return nil, nil

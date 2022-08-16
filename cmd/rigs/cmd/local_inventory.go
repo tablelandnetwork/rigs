@@ -3,13 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
 	"github.com/fatih/camelcase"
-	"github.com/ipfs/go-cid"
-	ipld "github.com/ipfs/go-ipld-format"
-	core "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/rigs/pkg/builder"
@@ -25,46 +23,38 @@ var (
 func init() {
 	localCmd.AddCommand(inventoryCmd)
 
-	inventoryCmd.Flags().String("ipfs-layers-path", "", "ipfs path to the rigs layers images")
+	inventoryCmd.Flags().String("layers-path", "./layers", "path to the rigs layers images")
 }
 
 var inventoryCmd = &cobra.Command{
 	Use:   "inventory",
-	Short: "Populate the parts and layers tables from ipfs layers",
+	Short: "Populate the parts and layers tables from layers folder",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
-
 		checkErr(localStore.Reset(ctx))
-
-		lcid, err := cid.Parse(viper.GetString("ipfs-layers-path"))
-		checkErr(err)
-
-		rootNode, err := ipfsClient.Dag().Get(ctx, lcid)
-		checkErr(err)
-
-		checkErr(processRootNode(ctx, ipfsClient, rootNode))
-
+		checkErr(processRootNode(ctx, viper.GetString("layers-path")))
 		checkErr(localStore.InsertParts(ctx, parts))
-
 		checkErr(localStore.InsertLayers(ctx, layers))
 	},
 }
 
-func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) error {
-	entries := rootNode.Links()
+func processRootNode(ctx context.Context, rootPath string) error {
+	entries, err := os.ReadDir(rootPath)
+	if err != nil {
+		return err
+	}
 	// Process each fleet dir.
-	for _, l := range entries {
-		n, err := l.GetNode(ctx, api.Dag())
-		if err != nil {
-			return fmt.Errorf("getting node: %v", err)
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
 		}
-		fleetName := displayString(l.Name)
+		fleetName := displayString(e.Name())
 		parts = append(parts, local.Part{
 			Type: "Fleet",
 			Name: fleetName,
 		})
 
-		if err := processFleetNode(ctx, api, n, fleetName, l.Name); err != nil {
+		if err := processFleetNode(ctx, fleetName, rootPath, e.Name()); err != nil {
 			return fmt.Errorf("processing fleet node: %v", err)
 		}
 	}
@@ -73,32 +63,32 @@ func processRootNode(ctx context.Context, api core.CoreAPI, rootNode ipld.Node) 
 
 func processFleetNode(
 	ctx context.Context,
-	api core.CoreAPI,
-	fleetNode ipld.Node,
 	fleetName string,
-	dirName string,
+	rootPath string,
+	relativePath string,
 ) error {
 	processedParts := make(map[string]bool)
-	entries := fleetNode.Links()
-	for _, l := range entries {
-		n, err := l.GetNode(ctx, api.Dag())
-		if err != nil {
-			return fmt.Errorf("getting node: %v", err)
+	entries, err := os.ReadDir(path.Join(rootPath, relativePath))
+	if err != nil {
+		return err
+	}
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
 		}
-
-		parts := strings.Split(l.Name, "_")
+		parts := strings.Split(e.Name(), "_")
 		if len(parts) != 2 && len(parts) != 1 {
 			return fmt.Errorf("expected one or two folder name parts but found %d", len(parts))
 		}
 		partTypeName := displayString(parts[0])
 
 		processedParts, err = processPartTypeNode(
-			n,
 			fleetName,
 			partTypeName,
-			l.Name,
+			e.Name(),
 			processedParts,
-			path.Join(dirName, l.Name),
+			rootPath,
+			path.Join(relativePath, e.Name()),
 		)
 		if err != nil {
 			return fmt.Errorf("processing part type node: %v", err)
@@ -108,22 +98,25 @@ func processFleetNode(
 }
 
 func processPartTypeNode(
-	partTypeNode ipld.Node,
 	fleetName string,
 	partTypeName string,
 	layerName string,
 	processedParts map[string]bool,
-	dirName string,
+	rootPath string,
+	relativePath string,
 ) (map[string]bool, error) {
-	entries := partTypeNode.Links()
-	for _, l := range entries {
-		if l.Name == ".DS_Store" {
+	entries, err := os.ReadDir(path.Join(rootPath, relativePath))
+	if err != nil {
+		return nil, err
+	}
+	for _, e := range entries {
+		if e.Name() == ".DS_Store" {
 			continue
 		}
 
-		filenameParts := strings.Split(l.Name, ".")
+		filenameParts := strings.Split(e.Name(), ".")
 		if len(filenameParts) != 2 {
-			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), l.Name)
+			return nil, fmt.Errorf("expected two file name parts but found %d: %s", len(filenameParts), e.Name())
 		}
 		prefixParts := strings.Split(filenameParts[0], "_")
 		if len(prefixParts) != 3 {
@@ -157,7 +150,7 @@ func processPartTypeNode(
 			PartName: name,
 			PartType: partTypeName,
 			Position: uint(pos),
-			Cid:      l.Cid.String(),
+			Path:     path.Join(relativePath, e.Name()),
 		})
 	}
 	return processedParts, nil

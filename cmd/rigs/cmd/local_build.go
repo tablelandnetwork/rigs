@@ -24,8 +24,8 @@ func init() {
 }
 
 var buildCmd = &cobra.Command{
-	Use:   "build count",
-	Short: "Builds rig data and imagery",
+	Use:   "build <count>",
+	Short: "Build rig data",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()

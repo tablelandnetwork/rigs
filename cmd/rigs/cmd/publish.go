@@ -3,14 +3,14 @@ package cmd
 import (
 	"database/sql"
 	"encoding/base64"
-	"net/http"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
-	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/tablelandnetwork/rigs/pkg/dirpublisher"
+	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
 	storage "github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/files"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/sqlite"
@@ -23,17 +23,15 @@ var (
 	_db        *sql.DB
 	_ethClient *ethclient.Client
 
-	remoteIpfs *httpapi.HttpApi
-	store      storage.Store
-	tblClient  *client.Client
+	dirPublisher *dirpublisher.DirPublisher
+	store        storage.Store
+	tblClient    *client.Client
 )
 
 func init() {
 	rootCmd.AddCommand(publishCmd)
 
-	publishCmd.PersistentFlags().String("remote-ipfs-api-url", "", "ipfs api url used for remotely pinning data")
-	publishCmd.PersistentFlags().String("remote-ipfs-api-user", "", "auth user for remote ipfs api")
-	publishCmd.PersistentFlags().String("remote-ipfs-api-pass", "", "auth pass for remote ipfs api")
+	publishCmd.PersistentFlags().String("nft-storage-key", "", "api key for nft.storage")
 	publishCmd.PersistentFlags().Bool(
 		"to-tableland",
 		false,
@@ -49,10 +47,6 @@ func init() {
 		time.Minute*5,
 		"how long to wait for a txn receipt before failing",
 	)
-	publishCmd.PersistentFlags().String("parts-table", "", "name of the tableland parts table")
-	publishCmd.PersistentFlags().String("layers-table", "", "name of the tableland layers table")
-	publishCmd.PersistentFlags().String("rigs-table", "", "name of the tableland rigs table")
-	publishCmd.PersistentFlags().String("rig-attrs-table", "", "name of the tableland rig attributes table")
 	publishCmd.Flags().String("tbl-db-path", "", "path to the local tableland sqlite db file")
 
 	publishCmd.PersistentFlags().String("tbl-api-url", "http://localhost:8080", "tableland validator api url")
@@ -72,12 +66,8 @@ var publishCmd = &cobra.Command{
 
 		var err error
 
-		httpClient := &http.Client{}
-		remoteIpfs, err = httpapi.NewURLApiWithClient(viper.GetString("remote-ipfs-api-url"), httpClient)
-		checkErr(err)
-		user := viper.GetString("remote-ipfs-api-user")
-		pass := viper.GetString("remote-ipfs-api-pass")
-		remoteIpfs.Headers.Add("Authorization", basicAuthString(user, pass))
+		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
+		dirPublisher = dirpublisher.NewDirPublisher(ipfsClient, nftStorage)
 
 		_ethClient, err = ethclient.Dial(viper.GetString("eth-api-url"))
 		checkErr(err)
@@ -85,10 +75,12 @@ var publishCmd = &cobra.Command{
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)
 
+		chainID := viper.GetInt64("chain-id")
+
 		config := client.Config{
 			TblAPIURL:    viper.GetString("tbl-api-url"),
 			EthBackend:   _ethClient,
-			ChainID:      client.ChainID(viper.GetInt64("chain-id")),
+			ChainID:      client.ChainID(chainID),
 			ContractAddr: common.HexToAddress(viper.GetString("contract-addr")),
 			Wallet:       wallet,
 		}
@@ -97,20 +89,16 @@ var publishCmd = &cobra.Command{
 
 		if viper.GetBool("to-tableland") {
 			store = tableland.NewStore(tableland.Config{
-				TblClient:              tblClient,
-				ReceiptTimeout:         viper.GetDuration("receipt-timeout"),
-				PartsTableName:         viper.GetString("parts-table"),
-				LayersTableName:        viper.GetString("layers-table"),
-				RigsTableName:          viper.GetString("rigs-table"),
-				RigAttributesTableName: viper.GetString("rig-attrs-table"),
+				ChainID:        chainID,
+				TblClient:      tblClient,
+				LocalStore:     localStore,
+				ReceiptTimeout: viper.GetDuration("receipt-timeout"),
 			})
 		} else if viper.GetString("to-files") != "" {
 			store, err = files.NewStore(files.Config{
-				PartsTableName:         viper.GetString("parts-table"),
-				LayersTableName:        viper.GetString("layers-table"),
-				RigsTableName:          viper.GetString("rigs-table"),
-				RigAttributesTableName: viper.GetString("rig-attrs-table"),
-				OutPath:                viper.GetString("to-files"),
+				ChainID:    chainID,
+				LocalStore: localStore,
+				OutPath:    viper.GetString("to-files"),
 			})
 			checkErr(err)
 		} else {
