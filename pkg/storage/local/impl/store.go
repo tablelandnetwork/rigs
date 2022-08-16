@@ -370,6 +370,16 @@ func (s *Store) Cid(ctx context.Context, label string) (string, error) {
 	return res, nil
 }
 
+// Cids implements Cids.
+func (s *Store) Cids(ctx context.Context) ([]local.TrackedCid, error) {
+	q := s.db.Select("*").From("cids")
+	var cids []local.TrackedCid
+	if err := q.ScanStructsContext(ctx, &cids); err != nil {
+		return nil, fmt.Errorf("querying cids: %v", err)
+	}
+	return cids, nil
+}
+
 // TableName implements TableName.
 func (s *Store) TableName(ctx context.Context, label string, chainID int64) (string, error) {
 	sel := s.db.Select("name").
@@ -385,6 +395,16 @@ func (s *Store) TableName(ctx context.Context, label string, chainID int64) (str
 		return "", errors.New("not found")
 	}
 	return res, nil
+}
+
+// TableNames implements TableNames.
+func (s *Store) TableNames(ctx context.Context, chainID int64) ([]local.TrackedTableName, error) {
+	q := s.db.Select("*").From("table_names")
+	var tableNames []local.TrackedTableName
+	if err := q.ScanStructsContext(ctx, &tableNames); err != nil {
+		return nil, fmt.Errorf("querying table names: %v", err)
+	}
+	return tableNames, nil
 }
 
 // Counts implements Counts.

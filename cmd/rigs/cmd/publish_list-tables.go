@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
+	"os"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
@@ -13,12 +15,20 @@ func init() {
 
 var listTablesCmd = &cobra.Command{
 	Use:   "list-tables",
-	Short: "List existing tableland tables",
+	Short: "List most recently created tableland tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		res, err := tblClient.List(cmd.Context())
+		chainID := viper.GetInt64("chain-id")
+		res, err := localStore.TableNames(cmd.Context(), chainID)
 		checkErr(err)
-		json, err := json.MarshalIndent(res, "", "  ")
-		checkErr(err)
-		fmt.Println(string(json))
+		fmt.Printf("Tracked tables for chain id %d:\n", chainID)
+		tw := tabwriter.NewWriter(os.Stdout, 0, 8, 2, '\t', tabwriter.AlignRight)
+		for _, t := range res {
+			fmt.Fprintf(
+				tw,
+				"\t%s\t%s\t\n",
+				t.Label, t.Name,
+			)
+		}
+		checkErr(tw.Flush())
 	},
 }

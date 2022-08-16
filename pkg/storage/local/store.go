@@ -206,6 +206,19 @@ type Ranking struct {
 	Percentage float64
 }
 
+// TrackedCid is a tracked cid.
+type TrackedCid struct {
+	Label string `db:"label"`
+	Cid   string `db:"cid"`
+}
+
+// TrackedTableName is a tracked table.
+type TrackedTableName struct {
+	ChainID int64  `db:"chain_id"`
+	Label   string `db:"label"`
+	Name    string `db:"name"`
+}
+
 // Store describes the local data store API.
 type Store interface {
 	// InsertParts inserts the Parts.
@@ -241,8 +254,14 @@ type Store interface {
 	// Cid returns the stored layers cid.
 	Cid(ctx context.Context, label string) (string, error)
 
+	// Cids returns all tracked cids.
+	Cids(ctx context.Context) ([]TrackedCid, error)
+
 	// TableName returns the table name for the specified label and chain id.
 	TableName(ctx context.Context, label string, chainID int64) (string, error)
+
+	// TableNames returns all tracked tables for a chain id.
+	TableNames(ctx context.Context, chainID int64) ([]TrackedTableName, error)
 
 	// Counts returns the number of original rigs and random rigs.
 	Counts(ctx context.Context) (Counts, error)
