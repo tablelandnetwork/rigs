@@ -23,6 +23,11 @@ func init() {
 	publishCmd.AddCommand(dataCmd)
 
 	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
+	dataCmd.Flags().Bool("parts", false, "publish data for the parts table")
+	dataCmd.Flags().Bool("layers", false, "publish data for the layers table")
+	dataCmd.Flags().Bool("rigs", false, "publish data for the rigs table")
+	dataCmd.Flags().Bool("attrs", false, "publish data for the rig attributes table")
+	dataCmd.MarkFlagsMutuallyExclusive()
 }
 
 var dataCmd = &cobra.Command{
@@ -31,36 +36,43 @@ var dataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		jobID := 1
-
-		partsJobs, err := partsJobs(ctx, localStore, &jobID)
-		checkErr(err)
-
-		layersCid, err := localStore.Cid(ctx, "layers")
-		checkErr(err)
-
-		layersJobs, err := layersJobs(ctx, localStore, &jobID, layersCid)
-		checkErr(err)
-
-		imagesCid, err := localStore.Cid(ctx, "images")
-		checkErr(err)
-
-		rigsJobs, err := rigsJobs(
-			ctx,
-			localStore,
-			&jobID,
-			imagesCid,
-		)
-		checkErr(err)
-
-		attsJobs, err := attrsJobs(ctx, localStore, &jobID)
-		checkErr(err)
+		publishAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
 
 		var jobs []wpool.Job
-		jobs = append(jobs, partsJobs...)
-		jobs = append(jobs, layersJobs...)
-		jobs = append(jobs, rigsJobs...)
-		jobs = append(jobs, attsJobs...)
+		jobID := 1
+
+		if viper.GetBool("parts") || publishAll {
+			partsJobs, err := partsJobs(ctx, localStore, &jobID)
+			checkErr(err)
+			jobs = append(jobs, partsJobs...)
+		}
+
+		if viper.GetBool("layers") || publishAll {
+			layersCid, err := localStore.Cid(ctx, "layers")
+			checkErr(err)
+			layersJobs, err := layersJobs(ctx, localStore, &jobID, layersCid)
+			checkErr(err)
+			jobs = append(jobs, layersJobs...)
+		}
+
+		if viper.GetBool("rigs") || publishAll {
+			imagesCid, err := localStore.Cid(ctx, "images")
+			checkErr(err)
+			rigsJobs, err := rigsJobs(
+				ctx,
+				localStore,
+				&jobID,
+				imagesCid,
+			)
+			checkErr(err)
+			jobs = append(jobs, rigsJobs...)
+		}
+
+		if viper.GetBool("attrs") || publishAll {
+			attsJobs, err := attrsJobs(ctx, localStore, &jobID)
+			checkErr(err)
+			jobs = append(jobs, attsJobs...)
+		}
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
 		go pool.GenerateFrom(jobs)

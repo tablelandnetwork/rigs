@@ -6,12 +6,18 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 
 func init() {
 	publishCmd.AddCommand(clearDataCmd)
+
+	clearDataCmd.Flags().Bool("parts", false, "clear data for the parts table")
+	clearDataCmd.Flags().Bool("layers", false, "clear data for the layers table")
+	clearDataCmd.Flags().Bool("rigs", false, "clear data for the rigs table")
+	clearDataCmd.Flags().Bool("attrs", false, "clear data for the rig attributes table")
 }
 
 var clearDataCmd = &cobra.Command{
@@ -19,6 +25,8 @@ var clearDataCmd = &cobra.Command{
 	Short: "Delete all data from rigs tables",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
+
+		clearAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
 
 		clearDataExecFn := func(clearDataFn func(context.Context) error) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
@@ -29,11 +37,30 @@ var clearDataCmd = &cobra.Command{
 			}
 		}
 
-		jobs := []wpool.Job{
-			{ID: 1, ExecFn: clearDataExecFn(store.ClearPartsData), Desc: "parts"},
-			{ID: 2, ExecFn: clearDataExecFn(store.ClearLayersData), Desc: "layers"},
-			{ID: 3, ExecFn: clearDataExecFn(store.ClearRigsData), Desc: "rigs"},
-			{ID: 4, ExecFn: clearDataExecFn(store.ClearRigAttributesData), Desc: "rig attributes"},
+		var jobs []wpool.Job
+		var jobID int
+
+		if viper.GetBool("parts") || clearAll {
+			jobID++
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearPartsData), Desc: "parts"})
+		}
+		if viper.GetBool("layers") || clearAll {
+			jobID++
+			jobs = append(
+				jobs,
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearLayersData), Desc: "layers"},
+			)
+		}
+		if viper.GetBool("rigs") || clearAll {
+			jobID++
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigsData), Desc: "rigs"})
+		}
+		if viper.GetBool("attrs") || clearAll {
+			jobID++
+			jobs = append(
+				jobs,
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigAttributesData), Desc: "rig attributes"},
+			)
 		}
 
 		pool := wpool.New(4, rate.Every(time.Millisecond*100))

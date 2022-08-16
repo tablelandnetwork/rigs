@@ -399,7 +399,7 @@ func (s *Store) TableName(ctx context.Context, label string, chainID int64) (str
 
 // TableNames implements TableNames.
 func (s *Store) TableNames(ctx context.Context, chainID int64) ([]local.TrackedTableName, error) {
-	q := s.db.Select("*").From("table_names")
+	q := s.db.Select("*").From("table_names").Where(goqu.C("chain_id").Eq(chainID))
 	var tableNames []local.TrackedTableName
 	if err := q.ScanStructsContext(ctx, &tableNames); err != nil {
 		return nil, fmt.Errorf("querying table names: %v", err)
