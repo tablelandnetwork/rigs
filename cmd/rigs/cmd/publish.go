@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"database/sql"
-	"encoding/base64"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -116,9 +115,4 @@ var publishCmd = &cobra.Command{
 			_ = _db.Close()
 		}
 	},
-}
-
-func basicAuthString(user, pass string) string {
-	auth := user + ":" + pass
-	return "Basic " + base64.StdEncoding.EncodeToString([]byte(auth))
 }
