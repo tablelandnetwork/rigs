@@ -14,7 +14,7 @@ import (
 
 const (
 	partsPageSize         uint = 500
-	layersPageSize        uint = 360
+	layersPageSize        uint = 130
 	rigsPageSize          uint = 70
 	rigAttributesPageSize uint = 70
 )
