@@ -16,35 +16,29 @@ const dialect = "sqlite3"
 
 // Store implements Store using the Tableland client.
 type Store struct {
-	tblClient              *client.Client
-	receiptTimeout         time.Duration
-	partsTableName         string
-	layersTableName        string
-	rigsTableName          string
-	rigAttributesTableName string
-	factory                *common.SQLFactory
+	chainID        int64
+	tblClient      *client.Client
+	localStore     local.Store
+	receiptTimeout time.Duration
+	factory        *common.SQLFactory
 }
 
 // Config confitures a new Store.
 type Config struct {
-	TblClient              *client.Client
-	ReceiptTimeout         time.Duration
-	PartsTableName         string
-	LayersTableName        string
-	RigsTableName          string
-	RigAttributesTableName string
+	ChainID        int64
+	TblClient      *client.Client
+	LocalStore     local.Store
+	ReceiptTimeout time.Duration
 }
 
 // NewStore creates a new Store.
 func NewStore(c Config) tableland.Store {
 	return &Store{
-		tblClient:              c.TblClient,
-		receiptTimeout:         c.ReceiptTimeout,
-		partsTableName:         c.PartsTableName,
-		layersTableName:        c.LayersTableName,
-		rigsTableName:          c.RigsTableName,
-		rigAttributesTableName: c.RigAttributesTableName,
-		factory:                common.NewSQLFactory(goqu.Dialect(dialect)),
+		chainID:        c.ChainID,
+		tblClient:      c.TblClient,
+		localStore:     c.LocalStore,
+		receiptTimeout: c.ReceiptTimeout,
+		factory:        common.NewSQLFactory(goqu.Dialect(dialect)),
 	}
 }
 
@@ -59,12 +53,19 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 	if err != nil {
 		return "", fmt.Errorf("creating table with client: %v", err)
 	}
+	if err := s.localStore.TrackTableName(ctx, definition.Prefix, s.chainID, tableName); err != nil {
+		return "", fmt.Errorf("tracking table name: %v", err)
+	}
 	return tableName, nil
 }
 
 // InsertParts implements InsertParts.
 func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
-	sql, err := s.factory.SQLForInsertingParts(s.partsTableName, parts)
+	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingParts(tableName, parts)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert parts: %v", err)
 	}
@@ -72,8 +73,12 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 }
 
 // InsertLayers implements InsertLayers.
-func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	sql, err := s.factory.SQLForInsertingLayers(s.layersTableName, layers)
+func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Layer) error {
+	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingLayers(tableName, cid, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert layers: %v", err)
 	}
@@ -81,8 +86,12 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs(s.rigsTableName, gateway, rigs)
+func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) error {
+	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingRigs(tableName, cid, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rigs: %v", err)
 	}
@@ -91,7 +100,11 @@ func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig
 
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigAttributes(s.rigAttributesTableName, rigs)
+	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingRigAttributes(tableName, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rig attributes: %v", err)
 	}
@@ -100,7 +113,11 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 
 // ClearPartsData implements ClearPartsData.
 func (s *Store) ClearPartsData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData(s.partsTableName)
+	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing parts data: %v", err)
 	}
@@ -109,7 +126,11 @@ func (s *Store) ClearPartsData(ctx context.Context) error {
 
 // ClearLayersData implements ClearLayersData.
 func (s *Store) ClearLayersData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData(s.layersTableName)
+	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing layers data: %v", err)
 	}
@@ -118,7 +139,11 @@ func (s *Store) ClearLayersData(ctx context.Context) error {
 
 // ClearRigsData implements ClearRigsData.
 func (s *Store) ClearRigsData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData(s.rigsTableName)
+	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing rigs data: %v", err)
 	}
@@ -127,7 +152,11 @@ func (s *Store) ClearRigsData(ctx context.Context) error {
 
 // ClearRigAttributesData implements ClearRigAttributesData.
 func (s *Store) ClearRigAttributesData(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData(s.rigAttributesTableName)
+	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing rig attributes data: %v", err)
 	}

@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/doug-martin/goqu/v9"
@@ -35,18 +36,12 @@ const (
 			part_name text not null,
 			part_type text not null,
 			position integer not null,
-			cid text not null,
+			path text not null,
 			unique(fleet,color,part_name,position)
 		);
 
 		create table if not exists rigs (
 			id integer primary key,
-			gateway text,
-			images text,
-			image text,
-			image_alpha text,
-			thumb text,
-			thumb_alpha text,
 			original boolean,
 			percent_original float,
 			percent_original_50 float,
@@ -61,6 +56,18 @@ const (
 			primary key(rig_id,part_id),
 			foreign key (rig_id) references rigs (id)
 			foreign key (part_id) references parts (id)
+		);
+
+		create table if not exists cids (
+			label text primary key not null,
+			cid text not null
+		);
+
+		create table if not exists table_names (
+			label text not null,
+			chain_id integer not null,
+			name text not null,
+			primary key (label, chain_id)
 		);
 	`
 	clearInventorySQL = `
@@ -110,10 +117,10 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	var vals [][]interface{}
 	for _, layer := range layers {
-		vals = append(vals, goqu.Vals{layer.Fleet, layer.Color, layer.PartName, layer.PartType, layer.Position, layer.Cid})
+		vals = append(vals, goqu.Vals{layer.Fleet, layer.Color, layer.PartName, layer.PartType, layer.Position, layer.Path})
 	}
 	insert := s.db.Insert("layers").
-		Cols("fleet", "color", "part_name", "part_type", "position", "cid").
+		Cols("fleet", "color", "part_name", "part_type", "position", "Path").
 		Vals(vals...).
 		Executor()
 	if _, err := insert.ExecContext(ctx); err != nil {
@@ -129,12 +136,6 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{
 			rig.ID,
-			rig.Gateway,
-			rig.Images,
-			rig.Image,
-			rig.ImageAlpha,
-			rig.Thumb,
-			rig.ThumbAlpha,
 			rig.Original,
 			rig.PercentOriginal,
 			rig.PercentOriginal50,
@@ -153,8 +154,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	}
 
 	insertRigs := tx.Insert("rigs").Cols(
-		"id", "gateway", "images", "image", "image_alpha", "thumb", "thumb_alpha", "original",
-		"percent_original", "percent_original_50", "percent_original_75", "percent_original_90", "vin",
+		"id", "original", "percent_original", "percent_original_50", "percent_original_75", "percent_original_90", "vin",
 	).Vals(rigVals...).Executor()
 	insertParts := tx.Insert("rig_parts").
 		Cols("rig_id", "part_id").
@@ -182,18 +182,31 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	return nil
 }
 
-// UpdateRigImages implements UpdateRigImages.
-func (s *Store) UpdateRigImages(ctx context.Context, rig local.Rig) error {
-	update := s.db.Update("rigs").Set(goqu.Record{
-		"gateway":     rig.Gateway,
-		"images":      rig.Images,
-		"image":       rig.Image,
-		"image_alpha": rig.ImageAlpha,
-		"thumb":       rig.Thumb,
-		"thumb_alpha": rig.ThumbAlpha,
-	}).Where(goqu.C("id").Eq(rig.ID)).Executor()
-	if _, err := update.ExecContext(ctx); err != nil {
-		return fmt.Errorf("executing update: %v", err)
+// TrackCid implements TrackCid.
+func (s *Store) TrackCid(ctx context.Context, label, cid string) error {
+	if _, err := s.db.ExecContext(
+		ctx,
+		"insert into cids (label, cid) values (?, ?) on conflict(label) do update set cid = ?",
+		label,
+		cid,
+		cid,
+	); err != nil {
+		return fmt.Errorf("executing query: %v", err)
+	}
+	return nil
+}
+
+// TrackTableName implements TrackTableName.
+func (s *Store) TrackTableName(ctx context.Context, label string, chainID int64, name string) error {
+	if _, err := s.db.ExecContext(
+		ctx,
+		"insert into table_names (label, chain_id, name) values (?, ?, ?) on conflict (label, chain_id) do update set name = ?", // nolint
+		label,
+		chainID,
+		name,
+		name,
+	); err != nil {
+		return fmt.Errorf("executing query: %v", err)
 	}
 	return nil
 }
@@ -338,6 +351,60 @@ func (s *Store) Rigs(ctx context.Context, opts ...local.RigsOption) ([]local.Rig
 		rigs[i].Parts = parts
 	}
 	return rigs, nil
+}
+
+// Cid implements Cid.
+func (s *Store) Cid(ctx context.Context, label string) (string, error) {
+	sel := s.db.Select("cid").
+		From("cids").
+		Where(goqu.C("label").Eq(label)).
+		Executor()
+	var res string
+	found, err := sel.ScanValContext(ctx, &res)
+	if err != nil {
+		return "", fmt.Errorf("scanning cid result: %v", err)
+	}
+	if !found {
+		return "", errors.New("not found")
+	}
+	return res, nil
+}
+
+// Cids implements Cids.
+func (s *Store) Cids(ctx context.Context) ([]local.TrackedCid, error) {
+	q := s.db.Select("*").From("cids")
+	var cids []local.TrackedCid
+	if err := q.ScanStructsContext(ctx, &cids); err != nil {
+		return nil, fmt.Errorf("querying cids: %v", err)
+	}
+	return cids, nil
+}
+
+// TableName implements TableName.
+func (s *Store) TableName(ctx context.Context, label string, chainID int64) (string, error) {
+	sel := s.db.Select("name").
+		From("table_names").
+		Where(goqu.C("label").Eq(label), goqu.C("chain_id").Eq(chainID)).
+		Executor()
+	var res string
+	found, err := sel.ScanValContext(ctx, &res)
+	if err != nil {
+		return "", fmt.Errorf("scanning name result: %v", err)
+	}
+	if !found {
+		return "", errors.New("not found")
+	}
+	return res, nil
+}
+
+// TableNames implements TableNames.
+func (s *Store) TableNames(ctx context.Context, chainID int64) ([]local.TrackedTableName, error) {
+	q := s.db.Select("*").From("table_names").Where(goqu.C("chain_id").Eq(chainID))
+	var tableNames []local.TrackedTableName
+	if err := q.ScanStructsContext(ctx, &tableNames); err != nil {
+		return nil, fmt.Errorf("querying table names: %v", err)
+	}
+	return tableNames, nil
 }
 
 // Counts implements Counts.

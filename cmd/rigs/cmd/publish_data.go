@@ -14,7 +14,7 @@ import (
 
 const (
 	partsPageSize         uint = 500
-	layersPageSize        uint = 360
+	layersPageSize        uint = 130
 	rigsPageSize          uint = 70
 	rigAttributesPageSize uint = 70
 )
@@ -23,7 +23,11 @@ func init() {
 	publishCmd.AddCommand(dataCmd)
 
 	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
-	dataCmd.Flags().String("remote-ipfs-gateway-url", "", "url of the gateway to use for nft image metadata")
+	dataCmd.Flags().Bool("parts", false, "publish data for the parts table")
+	dataCmd.Flags().Bool("layers", false, "publish data for the layers table")
+	dataCmd.Flags().Bool("rigs", false, "publish data for the rigs table")
+	dataCmd.Flags().Bool("attrs", false, "publish data for the rig attributes table")
+	dataCmd.MarkFlagsMutuallyExclusive()
 }
 
 var dataCmd = &cobra.Command{
@@ -32,25 +36,43 @@ var dataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		jobID := 1
-
-		partsJobs, err := partsJobs(ctx, localStore, &jobID)
-		checkErr(err)
-
-		layersJobs, err := layersJobs(ctx, localStore, &jobID)
-		checkErr(err)
-
-		rigsJobs, err := rigsJobs(ctx, localStore, &jobID, viper.GetString("remote-ipfs-gateway-url"))
-		checkErr(err)
-
-		attsJobs, err := attrsJobs(ctx, localStore, &jobID)
-		checkErr(err)
+		publishAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
 
 		var jobs []wpool.Job
-		jobs = append(jobs, partsJobs...)
-		jobs = append(jobs, layersJobs...)
-		jobs = append(jobs, rigsJobs...)
-		jobs = append(jobs, attsJobs...)
+		jobID := 1
+
+		if viper.GetBool("parts") || publishAll {
+			partsJobs, err := partsJobs(ctx, localStore, &jobID)
+			checkErr(err)
+			jobs = append(jobs, partsJobs...)
+		}
+
+		if viper.GetBool("layers") || publishAll {
+			layersCid, err := localStore.Cid(ctx, "layers")
+			checkErr(err)
+			layersJobs, err := layersJobs(ctx, localStore, &jobID, layersCid)
+			checkErr(err)
+			jobs = append(jobs, layersJobs...)
+		}
+
+		if viper.GetBool("rigs") || publishAll {
+			imagesCid, err := localStore.Cid(ctx, "images")
+			checkErr(err)
+			rigsJobs, err := rigsJobs(
+				ctx,
+				localStore,
+				&jobID,
+				imagesCid,
+			)
+			checkErr(err)
+			jobs = append(jobs, rigsJobs...)
+		}
+
+		if viper.GetBool("attrs") || publishAll {
+			attsJobs, err := attrsJobs(ctx, localStore, &jobID)
+			checkErr(err)
+			jobs = append(jobs, attsJobs...)
+		}
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
 		go pool.GenerateFrom(jobs)
@@ -104,12 +126,12 @@ func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 	return jobs, nil
 }
 
-func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
+func layersJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	execFn := func(layers []local.Layer) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertLayers(ctx, layers); err != nil {
+			if err := store.InsertLayers(ctx, cid, layers); err != nil {
 				return nil, fmt.Errorf("calling insert layers: %v", err)
 			}
 			return nil, nil
@@ -133,12 +155,12 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, er
 	return jobs, nil
 }
 
-func rigsJobs(ctx context.Context, s local.Store, jobID *int, gateway string) ([]wpool.Job, error) {
+func rigsJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertRigs(ctx, gateway, rigs); err != nil {
+			if err := store.InsertRigs(ctx, cid, rigs); err != nil {
 				return nil, fmt.Errorf("calling insert rigs: %v", err)
 			}
 			return nil, nil

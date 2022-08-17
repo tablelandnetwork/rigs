@@ -54,8 +54,8 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 }
 
 // InsertLayers implements InsertLayers.
-func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	sql, err := s.factory.SQLForInsertingLayers(tableland.LayersDefinition.Prefix, layers)
+func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Layer) error {
+	sql, err := s.factory.SQLForInsertingLayers(tableland.LayersDefinition.Prefix, cid, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting layers: %v", err)
 	}
@@ -66,8 +66,8 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, gateway string, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, gateway, rigs)
+func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, cid, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rigs: %v", err)
 	}

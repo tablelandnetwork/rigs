@@ -66,7 +66,7 @@ var (
 type Store interface {
 	CreateTable(context.Context, TableDefinition) (string, error)
 	InsertParts(context.Context, []local.Part) error
-	InsertLayers(context.Context, []local.Layer) error
+	InsertLayers(context.Context, string, []local.Layer) error
 	InsertRigs(context.Context, string, []local.Rig) error
 	InsertRigAttributes(context.Context, []local.Rig) error
 	ClearPartsData(context.Context) error

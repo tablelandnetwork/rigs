@@ -45,7 +45,7 @@
       </div>
 
       <div>
-        <v-lazy-image :src="rig.gateway + rig.image" />
+        <v-lazy-image :src="rig.image" />
       </div>
       <div>
         <pre class="dark:text-white">{{ JSON.stringify(rig, null, 2) }}</pre>

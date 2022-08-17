@@ -24,25 +24,19 @@ type Layer struct {
 	PartName string `json:"part_name" db:"part_name"`
 	PartType string `json:"part_type" db:"part_type"`
 	Position uint   `json:"position"`
-	Cid      string `json:"cid"`
+	Path     string `json:"path"`
 }
 
 // Rig represents a generated rig.
 type Rig struct {
-	ID                int             `json:"id"`
-	Gateway           nullable.String `json:"gateway"`
-	Images            nullable.String `json:"images"`
-	Image             nullable.String `json:"image"`
-	ImageAlpha        nullable.String `json:"image_alpha" db:"image_alpha"`
-	Thumb             nullable.String `json:"thumb"`
-	ThumbAlpha        nullable.String `json:"thumb_alpha" db:"thumb_alpha"`
-	Original          bool            `json:"original"`
-	PercentOriginal   float64         `json:"percent_original" db:"percent_original"`
-	PercentOriginal50 float64         `json:"percent_original_50" db:"percent_original_50"`
-	PercentOriginal75 float64         `json:"percent_original_75" db:"percent_original_75"`
-	PercentOriginal90 float64         `json:"percent_original_90" db:"percent_original_90"`
-	VIN               string          `json:"vin"`
-	Parts             []Part          `json:"parts"`
+	ID                int     `json:"id"`
+	Original          bool    `json:"original"`
+	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
+	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
+	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
+	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
+	VIN               string  `json:"vin"`
+	Parts             []Part  `json:"parts"`
 }
 
 // OriginalRig represents an original rig.
@@ -212,6 +206,19 @@ type Ranking struct {
 	Percentage float64
 }
 
+// TrackedCid is a tracked cid.
+type TrackedCid struct {
+	Label string `db:"label"`
+	Cid   string `db:"cid"`
+}
+
+// TrackedTableName is a tracked table.
+type TrackedTableName struct {
+	ChainID int64  `db:"chain_id"`
+	Label   string `db:"label"`
+	Name    string `db:"name"`
+}
+
 // Store describes the local data store API.
 type Store interface {
 	// InsertParts inserts the Parts.
@@ -223,8 +230,11 @@ type Store interface {
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
 
-	// UpdateRigImages updates Rig image-related fields.
-	UpdateRigImages(ctx context.Context, rig Rig) error
+	// TrackCid stores the IPFS cid for a label.
+	TrackCid(ctx context.Context, label, cid string) error
+
+	// TrackTableName records the table name for a chain id and label.
+	TrackTableName(ctx context.Context, label string, chainID int64, name string) error
 
 	// GetOriginalRigs gets a list of all OriginalRigs.
 	GetOriginalRigs(ctx context.Context) ([]OriginalRig, error)
@@ -240,6 +250,18 @@ type Store interface {
 
 	// Rigs returns a list of Rigs.
 	Rigs(ctx context.Context, opts ...RigsOption) ([]Rig, error)
+
+	// Cid returns the stored layers cid.
+	Cid(ctx context.Context, label string) (string, error)
+
+	// Cids returns all tracked cids.
+	Cids(ctx context.Context) ([]TrackedCid, error)
+
+	// TableName returns the table name for the specified label and chain id.
+	TableName(ctx context.Context, label string, chainID int64) (string, error)
+
+	// TableNames returns all tracked tables for a chain id.
+	TableNames(ctx context.Context, chainID int64) ([]TrackedTableName, error)
 
 	// Counts returns the number of original rigs and random rigs.
 	Counts(ctx context.Context) (Counts, error)

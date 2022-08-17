@@ -2,6 +2,7 @@ images
 images.zip
 sql
 sql.zip
+renders
 
 # Binaries for programs and plugins
 *.exe
@@ -21,8 +22,7 @@ sql.zip
 .vscode/
 
 # Project
-.env
-.envrc
+.env*
 *.ignore
 
 #client
