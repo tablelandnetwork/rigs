@@ -17,7 +17,7 @@ func init() {
 	localCmd.AddCommand(renderCmd)
 
 	renderCmd.Flags().String("to-path", "./renders", "path to write the images to")
-	renderCmd.Flags().String("layers-path", "./layers", "path to the rigs layer images")
+	renderCmd.Flags().String("layers-path", "./artifacts/layers", "path to the rigs layer images")
 	renderCmd.Flags().Int("size", 1200, "width and height of generated images")
 	renderCmd.Flags().Int("thumb-size", 600, "width and height of generated thumb images")
 	renderCmd.Flags().Bool("labels", false, "render metadata labels on generated images")

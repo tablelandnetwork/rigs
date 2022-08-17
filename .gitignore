@@ -22,8 +22,7 @@ renders
 .vscode/
 
 # Project
-.env
-.envrc
+.env*
 *.ignore
 
 #client

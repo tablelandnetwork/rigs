@@ -10,7 +10,7 @@ import (
 func init() {
 	publishCmd.AddCommand(layersCmd)
 
-	layersCmd.Flags().String("layers-path", "./layers", "local filesystem path to the layer images")
+	layersCmd.Flags().String("layers-path", "./artifacts/layers", "local filesystem path to the layer images")
 }
 
 var layersCmd = &cobra.Command{

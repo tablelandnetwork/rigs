@@ -23,7 +23,7 @@ var (
 func init() {
 	localCmd.AddCommand(inventoryCmd)
 
-	inventoryCmd.Flags().String("layers-path", "./layers", "path to the rigs layers images")
+	inventoryCmd.Flags().String("layers-path", "./artifacts/layers", "path to the rigs layers images")
 }
 
 var inventoryCmd = &cobra.Command{
