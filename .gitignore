@@ -25,11 +25,11 @@ renders
 .env*
 *.ignore
 
-#client
-client/node_modules/
-client/.nuxt
-client/.eslintcache
-client/dist/
+# viewer
+viewer/node_modules/
+viewer/.nuxt
+viewer/.eslintcache
+viewer/dist/
 
 #ethereum
 ethereum/node_modules

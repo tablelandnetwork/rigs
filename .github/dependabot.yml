@@ -8,3 +8,7 @@ updates:
     directory: "/ethereum"
     schedule:
       interval: "daily"
+  - package-ecosystem: "npm"
+    directory: "/viewer"
+    schedule:
+      interval: "daily"
