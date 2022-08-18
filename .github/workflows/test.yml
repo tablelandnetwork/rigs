@@ -38,12 +38,12 @@ jobs:
       - name: Test
         run: make test
       - name: Install and generate frontend
-        working-directory: ./client
+        working-directory: ./viewer
         run: |
           npm install
           npm run generate
       - name: Test frontend
-        working-directory: ./client
+        working-directory: ./viewer
         run: |
           npm test
   test-app:
@@ -53,12 +53,12 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v2
     - name: Install and generate
-      working-directory: ./client
+      working-directory: ./viewer
       run: |
         npm install
         npm run generate
     - name: Test
-      working-directory: ./client
+      working-directory: ./viewer
       run: |
         npm test
   test-ethereum:
