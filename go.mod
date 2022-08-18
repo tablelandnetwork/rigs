@@ -14,7 +14,7 @@ require (
 	github.com/ipfs/go-ipfs-http-client v0.3.1
 	github.com/ipfs/interface-go-ipfs-core v0.7.0
 	github.com/ipld/go-car v0.4.0
-	github.com/mattn/go-sqlite3 v1.14.13
+	github.com/mattn/go-sqlite3 v1.14.15
 	github.com/rs/zerolog v1.27.0
 	github.com/stretchr/testify v1.8.0
 	github.com/textileio/go-tableland v0.0.0-20220809213012-9f5ec9b52289
