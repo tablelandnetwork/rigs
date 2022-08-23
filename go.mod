@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/alanshaw/go-carbites v0.5.0
 	github.com/doug-martin/goqu/v9 v9.18.0
-	github.com/ethereum/go-ethereum v1.10.21
+	github.com/ethereum/go-ethereum v1.10.22
 	github.com/fatih/camelcase v1.0.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/gorilla/mux v1.8.0
