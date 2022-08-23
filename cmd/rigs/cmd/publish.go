@@ -51,31 +51,29 @@ func init() {
 	publishCmd.PersistentFlags().String("private-key", "", "the private key of for the client to use")
 
 	publishCmd.PersistentFlags().String(
-		"network",
-		"testnet:polygon-mumbai",
-		`the tableland network to use, spported values are:
-	testnet:etherum
-	testnet:optimism
-	testnet:polygon
-	testnet:ethereum-goerli
-	testnet:optimism-kovan
-	testnet:optimism-goerli
-	testnet:arbitrum-goerli
-	testnet:polygon-mumbai
-	staging:optimism-kovan
-	staging:optimism-goerli
-	localhost:local
+		"chain",
+		"polygon-mumbai",
+		`the tableland/evm to use, spported values are:
+	etherum
+	optimism
+	polygon
+	ethereum-goerli
+	optimism-kovan
+	optimism-goerli
+	arbitrum-goerli
+	polygon-mumbai
+	localhost
     `,
 	)
 
-	publishCmd.PersistentFlags().String("tbl-api-url", "", "tableland validator api url if not providing --network")
-	publishCmd.PersistentFlags().Int64("chain-id", 0, "the chain id if not providing --network")
-	publishCmd.PersistentFlags().String("contract-addr", "", "the tableland contract address if not providing --network")
+	publishCmd.PersistentFlags().String("tbl-api-url", "", "tableland validator api url if not providing --chain")
+	publishCmd.PersistentFlags().Int64("chain-id", 0, "the chain id if not providing --chain")
+	publishCmd.PersistentFlags().String("contract-addr", "", "the tableland contract address if not providing --chain")
 
 	publishCmd.MarkFlagsRequiredTogether("tbl-api-url", "chain-id", "contract-addr")
-	publishCmd.MarkFlagsMutuallyExclusive("network", "tbl-api-url")
-	publishCmd.MarkFlagsMutuallyExclusive("network", "chain-id")
-	publishCmd.MarkFlagsMutuallyExclusive("network", "contract-addr")
+	publishCmd.MarkFlagsMutuallyExclusive("chain", "tbl-api-url")
+	publishCmd.MarkFlagsMutuallyExclusive("chain", "chain-id")
+	publishCmd.MarkFlagsMutuallyExclusive("chain", "contract-addr")
 
 	publishCmd.PersistentFlags().String("eth-api-url", "", "ethereum api url")
 	publishCmd.PersistentFlags().String("infura-key", "", "api key for Infura")
@@ -165,31 +163,27 @@ var publishCmd = &cobra.Command{
 }
 
 func getNetworkInfo() (client.NetworkInfo, error) {
-	network := viper.GetString("network")
-	switch network {
-	case "testnet:etherum":
+	chain := viper.GetString("chain")
+	switch chain {
+	case "etherum":
 		return client.TestnetEtherum, nil
-	case "testnet:optimism":
+	case "optimism":
 		return client.TestnetOptimism, nil
-	case "testnet:polygon":
+	case "polygon":
 		return client.TestnetPolygon, nil
-	case "testnet:ethereum-goerli":
+	case "ethereum-goerli":
 		return client.TestnetEthereumGoerli, nil
-	case "testnet:optimism-kovan":
+	case "optimism-kovan":
 		return client.TestnetOptimismKovan, nil
-	case "testnet:optimism-goerli":
+	case "optimism-goerli":
 		return client.TestnetOptimismGoerli, nil
-	case "testnet:arbitrum-goerli":
+	case "arbitrum-goerli":
 		return client.TestnetArbitrumGoerli, nil
-	case "testnet:polygon-mumbai":
+	case "polygon-mumbai":
 		return client.TestnetPolygonMumbai, nil
-	case "staging:optimism-kovan":
-		return client.StagingOptimismKovan, nil
-	case "staging:optimism-goerli":
-		return client.StagingOptimismGoerli, nil
-	case "localhost:local":
+	case "localhost":
 		return client.LocalhostLocal, nil
 	default:
-		return client.NetworkInfo{}, fmt.Errorf("%s is not a valid network", network)
+		return client.NetworkInfo{}, fmt.Errorf("%s is not a valid chain", chain)
 	}
 }
