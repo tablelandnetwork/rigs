@@ -24,7 +24,7 @@ var (
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCmd.PersistentFlags().String("local-db-path", "", "path the the sqlite local db file")
+	rootCmd.PersistentFlags().String("local-db-path", "./local.db", "path the the sqlite local db file")
 	rootCmd.PersistentFlags().String("ipfs-api-url", "http://127.0.0.1:5001", "address of the local ipfs api")
 }
 

@@ -68,7 +68,7 @@ var publishCmd = &cobra.Command{
 		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
 		dirPublisher = dirpublisher.NewDirPublisher(ipfsClient, nftStorage)
 
-		_ethClient, err = ethclient.Dial(viper.GetString("eth-api-url"))
+		_ethClient, err = ethclient.DialContext(ctx, viper.GetString("eth-api-url"))
 		checkErr(err)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
