@@ -62,7 +62,7 @@ func init() {
 	optimism-goerli
 	arbitrum-goerli
 	polygon-mumbai
-	localhost
+	local
     `,
 	)
 
@@ -98,20 +98,20 @@ var publishCmd = &cobra.Command{
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)
 
-		var network client.NetworkInfo
+		var chain client.Chain
 		if viper.GetString("tbl-api-url") != "" {
-			network = client.NetworkInfo{
-				Network:      client.Network(viper.GetString("tbl-api-url")),
-				ChainID:      client.ChainID(viper.GetInt64("chain-id")),
+			chain = client.Chain{
+				Endpoint:     viper.GetString("tbl-api-url"),
+				ID:           client.ChainID(viper.GetInt64("chain-id")),
 				ContractAddr: common.HexToAddress(viper.GetString("contract-addr")),
 			}
 		} else {
-			n, err := getNetworkInfo()
+			c, err := getChain()
 			checkErr(err)
-			network = n
+			chain = c
 		}
 
-		opts := []client.NewClientOption{client.NewClientNetworkInfo(network)}
+		opts := []client.NewClientOption{client.NewClientChain(chain)}
 
 		ethURL := viper.GetString("eth-api-url")
 		infuraKey := viper.GetString("infura-key")
@@ -131,14 +131,14 @@ var publishCmd = &cobra.Command{
 
 		if viper.GetBool("to-tableland") {
 			store = tableland.NewStore(tableland.Config{
-				ChainID:        int64(network.ChainID),
+				ChainID:        int64(chain.ID),
 				TblClient:      tblClient,
 				LocalStore:     localStore,
 				ReceiptTimeout: viper.GetDuration("receipt-timeout"),
 			})
 		} else if viper.GetString("to-files") != "" {
 			store, err = files.NewStore(files.Config{
-				ChainID:    int64(network.ChainID),
+				ChainID:    int64(chain.ID),
 				LocalStore: localStore,
 				OutPath:    viper.GetString("to-files"),
 			})
@@ -162,28 +162,28 @@ var publishCmd = &cobra.Command{
 	},
 }
 
-func getNetworkInfo() (client.NetworkInfo, error) {
+func getChain() (client.Chain, error) {
 	chain := viper.GetString("chain")
 	switch chain {
 	case "etherum":
-		return client.TestnetEtherum, nil
+		return client.Chains.Ethereum, nil
 	case "optimism":
-		return client.TestnetOptimism, nil
+		return client.Chains.Optimism, nil
 	case "polygon":
-		return client.TestnetPolygon, nil
+		return client.Chains.Polygon, nil
 	case "ethereum-goerli":
-		return client.TestnetEthereumGoerli, nil
+		return client.Chains.EthereumGoerli, nil
 	case "optimism-kovan":
-		return client.TestnetOptimismKovan, nil
+		return client.Chains.OptimismKovan, nil
 	case "optimism-goerli":
-		return client.TestnetOptimismGoerli, nil
+		return client.Chains.OptimismGoerli, nil
 	case "arbitrum-goerli":
-		return client.TestnetArbitrumGoerli, nil
+		return client.Chains.ArbitrumGoerli, nil
 	case "polygon-mumbai":
-		return client.TestnetPolygonMumbai, nil
-	case "localhost":
-		return client.LocalhostLocal, nil
+		return client.Chains.PolygonMumbai, nil
+	case "local":
+		return client.Chains.Local, nil
 	default:
-		return client.NetworkInfo{}, fmt.Errorf("%s is not a valid chain", chain)
+		return client.Chain{}, fmt.Errorf("%s is not a valid chain", chain)
 	}
 }
