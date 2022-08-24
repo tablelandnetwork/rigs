@@ -62,7 +62,7 @@ func init() {
 	optimism-goerli
 	arbitrum-goerli
 	polygon-mumbai
-	localhost
+	local
     `,
 	)
 
