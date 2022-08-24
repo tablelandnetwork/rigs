@@ -5,7 +5,7 @@ go 1.18
 require (
 	github.com/alanshaw/go-carbites v0.5.0
 	github.com/doug-martin/goqu/v9 v9.18.0
-	github.com/ethereum/go-ethereum v1.10.21
+	github.com/ethereum/go-ethereum v1.10.22
 	github.com/fatih/camelcase v1.0.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/gorilla/mux v1.8.0
@@ -17,7 +17,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.15
 	github.com/rs/zerolog v1.27.0
 	github.com/stretchr/testify v1.8.0
-	github.com/textileio/go-tableland v0.0.0-20220809213012-9f5ec9b52289
+	github.com/textileio/go-tableland v0.0.0-20220824015209-eb7088308ad5
 	golang.org/x/image v0.0.0-20220617043117-41969df76e82
 )
 
