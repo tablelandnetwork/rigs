@@ -41,7 +41,7 @@ See documentation for any command by calling the command with the `--help` flag.
 In order to build a rigs dataset from scratch, the first step is to build the Rigs "inventory". This is the raw data derived from `artifacts/layers`, stored by default in `local.db`, that serves as the building blocks for Rigs data and imagery.
 
 ```
-rigs local inventory
+> rigs local inventory
 ```
 
 This will create `local.db` and populate the `parts` and `layers` tables with data.
@@ -49,12 +49,56 @@ This will create `local.db` and populate the `parts` and `layers` tables with da
 The next step is to build some actual Rigs data:
 
 ```
-rigs local build 200 --no-originals
+> rigs local build 200 --no-originals
 ```
 
-This builds 200 random Rigs, storing the data in the `rigs` and `rig_parts` tables of `local.db`. Providing the `--no-orginials` flag means none of the 
+This builds 200 random Rigs, reading from the `parts` and `layers` tables, and storing the resulting data in the `rigs` and `rig_parts` tables of `local.db`. Providing the `--no-orginials` flag means none of the original Rigs (Rigs with all parts from the same original and of matching color).
+
+You can view some basic statistics about the built Rigs data using the `stats` command.
+
+```
+> rigs local stats
+
+...
+
+Fleet Distribution:
+        Foils           3       1.5% (2.8%) 
+        Hoppers         15      7.5% (8.3%) 
+        Edge Riders     18      9.0% (13.9%) 
+        Tracers         20      10.0% (11.1%) 
+        Airelights      25      12.5% (5.6%) ***
+        Sleds           33      16.5% (16.7%) 
+        Titans          41      20.5% (22.2%) 
+        Tumblers        45      22.5% (19.4%)
+
+...
+```
+
+Now that our Rigs data is built, we can render the corresponding images for all the Rigs.
+
+```
+> rigs local render
+```
+
+The resulting images will be written to a folder called `./renders`. Each subfolder name corresponds to a Rig id and inside each Rig id folder are the four images created for the Rig.
+
+```
+> ls ./renders/1/
+image.png        image_alpha.png  thumb.png        thumb_alpha.png
+```
+
+You can launch a simple local web app to view the results. 
+
+```
+> rigs local view
+```
+
+![The local Rigs viewer web app](artifacts/viewer.jpg)
+
+### Publish Mode
 
 
+# The Rigs Smart Contract
 
 
 
