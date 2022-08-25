@@ -100,7 +100,7 @@ You can launch a simple local web app to view the results.
 Now that we've built our Rigs data and imagery locally, we're ready to publish the imagery to IPFS (via [NFT.storage](https://nft.storage)) and data to Tableland.
 
 > **Note**
-> Pusing the Rig images to NFT.storage requires a local [IPFS](https://ipfs.tech) node to be running. The easiest way to do that is using [IPFS Desktop](https://github.com/ipfs/ipfs-desktop). The default settings for the CLI will use the locally running IPFS node's default settings, but you can always customize the connection infomation using the `--ipfs-api-url` flag.
+> Pusing the Rig images to NFT.storage requires a local [IPFS](https://ipfs.tech) node to be running. The easiest way to do that is using [IPFS Desktop](https://github.com/ipfs/ipfs-desktop). The default settings for the CLI will use the locally running IPFS node's default settings, but you can always customize the connection information using the `--ipfs-api-url` flag.
 
 We'll first push the Rigs images to NFT.storage.
 
@@ -143,7 +143,7 @@ done
 ```
 
 > **Note**
-> The above to commands to create and write to the Rigs tables include the `--to-tableland` flag. This flag directs the CLI to interact with the actual Tableland network, and if omitted, the CLI will instead execute the same SQL statement against a local SQLite database file called `tableland.db`. This is useful to perform a "dry run" of publishing the Rigs data and allows inspection of the local SQLite database.
+> The above commands to create and write to the Rigs tables include the `--to-tableland` flag. This flag directs the CLI to interact with the actual Tableland network, and if omitted, the CLI will instead execute the same SQL statement against a local SQLite database file called `tableland.db`. This is useful to perform a "dry run" of publishing the Rigs data and allows inspection of the local SQLite database.
 
 Now that all of our imagery is stored on IPFS and Rigs data written to Tableland, we can integrate it into the Rigs smart contract.
 
