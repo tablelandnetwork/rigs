@@ -143,7 +143,7 @@ done
 ```
 
 > **Note**
-> The above commands to create and write to the Rigs tables include the `--to-tableland` flag. This flag directs the CLI to interact with the actual Tableland network, and if omitted, the CLI will instead execute the same SQL statement against a local SQLite database file called `tableland.db`. This is useful to perform a dry run of publishing the Rigs data and allows inspection of the local SQLite database.
+> The above commands to create and write to the Rigs tables include the `--to-tableland` flag. This flag directs the CLI to interact with the actual Tableland network, and if omitted, the CLI will instead execute the same SQL statements against a local SQLite database file called `tableland.db`. This is useful to perform a dry run of publishing the Rigs data and allows inspection of the local SQLite database.
 
 Now that all of our imagery is stored on IPFS and Rigs data written to Tableland, we can integrate it into the Rigs smart contract.
 
