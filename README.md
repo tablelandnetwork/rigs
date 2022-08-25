@@ -124,7 +124,7 @@ created table rigs_80001_1217
 created table rig_attributes_80001_1218
 ```
 
-The `--attrs` and `--rigs` flags specify that we want to create the tables to hold the Rigs and their attributes. The names of the resulting tables are tracked in `local.db`'s table called `table_names`.
+The `--attrs` and `--rigs` flags specify that we want to create the tables to hold the Rigs and their attributes. The names of the resulting tables are tracked in `local.db`'s table called `table_names`. By default, the tables are created on Polygon Mumbai, but you can choose a different chain with the `--chain` flag.
 
 > **Note**
 > All write interactions with Tableland (creating and writing to tables) must provide a private key hex string using the `--private-key` flag as well as an EVM backend provider API key using the `--infura` or `--alchemy` flags. In these examples, you can assume the flags were set using the corresponding environment variables `RIGS_PRIVATE_KEY` and `RIGS_INFURA` or `RIGS_ALCHEMY`.
@@ -143,14 +143,25 @@ done
 ```
 
 > **Note**
-> The above commands to create and write to the Rigs tables include the `--to-tableland` flag. This flag directs the CLI to interact with the actual Tableland network, and if omitted, the CLI will instead execute the same SQL statement against a local SQLite database file called `tableland.db`. This is useful to perform a "dry run" of publishing the Rigs data and allows inspection of the local SQLite database.
+> The above commands to create and write to the Rigs tables include the `--to-tableland` flag. This flag directs the CLI to interact with the actual Tableland network, and if omitted, the CLI will instead execute the same SQL statement against a local SQLite database file called `tableland.db`. This is useful to perform a dry run of publishing the Rigs data and allows inspection of the local SQLite database.
 
 Now that all of our imagery is stored on IPFS and Rigs data written to Tableland, we can integrate it into the Rigs smart contract.
 
 # The Rigs Smart Contract
 
-Coming soon.
+The Rigs smart contract breaks new ground by utilizing Tableland for NFT metadata and by implementing allow list, wait list, and royalties in a new and powerful way.
 
+## Tableland Integration
+
+NFT metadata can be queried from Tableland by calling Tableland's `/query` endpoint with the appropriate SQL query string. For Rigs, this query is defined in [ethereum/helpers/uris.ts](ethereum/helpers/uris.ts). This query string is used by the contract function `tokenURI(uint256 tokenId)` to return the Tableland `/query` URL for the specified token ID. An example of this URL for Rig 2856 can be seen [here](https://testnet.tableland.network/query?mode=list&s=select%20json_object(%27name%27%2C%27Rig%20%23%27%7C%7Cid%2C%27external_url%27%2C%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%7C%7Cid%2C%27image%27%2Cimage%2C%27image_alpha%27%2Cimage_alpha%2C%27thumb%27%2Cthumb%2C%27thumb_alpha%27%2Cthumb_alpha%2C%27attributes%27%2Cjson_group_array(json_object(%27display_type%27%2Cdisplay_type%2C%27trait_type%27%2Ctrait_type%2C%27value%27%2Cvalue)))%20from%20rigs_5_28%20join%20rig_attributes_5_27%20on%20rigs_5_28.id%3Drig_attributes_5_27.rig_id%20where%20id%3D2856%20group%20by%20id%3B).
+
+That metadata URL is unique in that it requires the token ID be inserted into the middle of the URL string, something not typically supported by ERC721 implementations. Additionally, during the Rigs minting process, we chose to make visible the minted Rigs images and top-level metadata, while hiding the more detailed attribute metadata until after the mint period ended. This required being able to change the URI returned from `tokenURI(uint256 tokenId)` from the SQL query that hides attribute data to the one that returns it. 
+
+Both of these challenges were solved by a custom contract function we added called `setURITemplate(string[] memory uriTemplate)`. This allows the caller to provide the two parts of the URL string (the "template") to be wrapped around the token ID, the resulting URL string being returned from `tokenURI(uint256 tokenId)`. Since this function can be called repeatedly, we were able to update the URL template from the version that hides metadata attributes to the one that returns them.
+
+## Allow List and Waitlist Support
+
+Coming soon!
 ## License
 
 [MIT](LICENSE)
