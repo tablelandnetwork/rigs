@@ -52,7 +52,7 @@ The next step is to build some actual Rigs data:
 > rigs local build 200 --no-originals
 ```
 
-This builds 200 random Rigs, reading from the `parts` and `layers` tables, and storing the resulting data in the `rigs` and `rig_parts` tables of `local.db`. Providing the `--no-orginials` flag means none of the original Rigs (Rigs with all parts from the same original and of matching color).
+This builds 200 random Rigs, reading from the `parts` and `layers` tables, and storing the resulting data in the `rigs` and `rig_parts` tables of `local.db`. Providing the `--no-orginials` flag means none of the original Rigs (Rigs with all parts from the same original and of matching color) will be built.
 
 You can view some basic statistics about the built Rigs data using the `stats` command.
 
