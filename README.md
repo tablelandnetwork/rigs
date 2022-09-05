@@ -1,5 +1,7 @@
 [![GitHub license](https://img.shields.io/github/license/tablelandnetwork/rigs.svg?style=popout-square)](./LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/tablelandnetwork/rigs?style=flat-square)](https://goreportcard.com/report/github.com/tablelandnetwork/rigs?style=flat-square)
+[![Release](https://img.shields.io/github/release/tablelandnetwork/rigs.svg)](https://github.com/tablelandnetwork/rigs/releases/latest)
+![Tests](https://github.com/tablelandnetwork/rigs/workflows/Test/badge.svg)
 [![standard-readme compliant](https://img.shields.io/badge/readme%20style-standard-brightgreen.svg?style=popout-square)](https://github.com/RichardLitt/standard-readme)
 
 # Rigs
@@ -149,19 +151,128 @@ Now that all of our imagery is stored on IPFS and Rigs data written to Tableland
 
 # The Rigs Smart Contract
 
-The Rigs smart contract breaks new ground by utilizing Tableland for NFT metadata and by implementing allow list, wait list, and royalties in a new and powerful way.
+The Rigs smart contract breaks new ground by utilizing Tableland for NFT metadata and mint allowlists.
 
-## Tableland Integration
+[`TablelandRigs.sol`](./ethereum/contracts/TablelandRigs.sol) is the main contract. The following is a high-level overview of the contract features. See [`ITablelandRigs.sol`](./ethereum/contracts/ITablelandRigs.sol) for a detailed overview.
+
+## Overview
+
+Rigs inherits from [ERC721A](https://chiru-labs.github.io/ERC721A). Rigs is an important component of the Tableland protocol. To ensure the contract is able to evolve as Tableland matures, we chose to use [the upgradable version](https://github.com/chiru-labs/ERC721A-Upgradeable) of [ERC721A](https://chiru-labs.github.io/ERC721A). Once Rigs role in Tableland is stable, upgradability will be permanently removed.
+
+## Configuration
+
+Configuration is managed from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts). These files include information needed for [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata), the ERC2981 NFT Royalty Standard, royalty recievers for a payment splitter, max supply, mint price, mint revenue receiver, mint phase, allowlist files, and Tableland tables used for Rig parts, layers, tokens, and attributes that were covered in the Rigs CLI section above.
+
+The [scripts](./ethereum/scripts/) folder contains a number of helpful scripts covered below. The input to these scripts comes from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts).
+
+## Deploying
+
+Deployments are handled on a per-network basis:
+
+```
+npx hardhat run scripts/deploy.ts --network ethereum
+```
+
+Refer to the `deployments.ts` for the list of current deployments.
+
+The [`deploy.ts`](./ethereum/scripts/deploy.ts) script takes care of the following:
+1. Loads the owner account from environment variables. See [.env.example](./ethereum/.env.example) for details.
+2. Checks to ensure that a deployment doesn't already exist for the target network.
+3. Generates the URI template components. See the `getURITemplate` method from [`helpers/uris.ts`](./ethereum/helpers/uris.ts) for more details.
+4. Generated the contract metadata URI. See the `getContractURI` method from [`helpers/uris.ts`](./ethereum/helpers/uris.ts) for more details.
+5. Deploys an OpenZeppelin [PaymentSplitter.sol](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/finance/PaymentSplitter.sol) with the share holders specified in the [Hardhat config file](./ethereum/hardhat.config.ts). The address of this contract is used with ERC2981 NFT Royalty Standard and in the [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata) to ensure maximum marketplace compatability.
+6. Creates a Tableland table to store [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata) and writes values specified in the [Hardhat config file](./ethereum/hardhat.config.ts) and from prior steps.
+7. Builds the allowlist and waitlist merkle trees and checks that the allowlist size doesn't exceed the max supply and that the waitlist is the expected size (as specified in [Hardhat config file](./ethereum/hardhat.config.ts)).
+8. Creates a Tableland table for the allowlist and waitlist and writes a row for each unique address with columns corresponding to allocations from each list.
+9. Deploys an instance of [`TablelandRigs.sol`](./ethereum/contracts/TablelandRigs.sol) with values from prior steps.
+10. Lastly, prompts the deployer to save outputs in [`deployments.ts`](./ethereum/deployments.ts) so that can be used in the bundled JS client and with other commands.
+
+You can verify the deployed contracts by running the [verify.ts](./ethereum/scripts/verify.ts) script. You'll need to have Etherscan credentials for the target network (see [.env.example](./ethereum/.env.example)).
+
+Upgrades are handled by the [upgrade.ts](./ethereum/scripts/upgrade.ts) script.
+
+## Mint Phases
+
+Rigs includes a four-phase mint process controlled by the contract owner via `setMintPhase`. The current mint phase is specified in the [Hardhat config file](./ethereum/hardhat.config.ts). The contract owner can run the [`setMintPhase.ts`](./ethereum/scripts/setMintPhase.ts) script, which simply reads the current phase and calls the contract. This makes managing the phases of a mint very easy.
+
+The four mint phases:
+  - `CLOSED`: This is the default phase after the contract is deployed. Minting is not allowed.
+  - `ALLOWLIST`: During this phase, addresses that are part of the allowlist (as generated during deployment from CSV files), are allowed to mint their allocation.
+  - `WAITLIST`: During this phase, addresses that are part of the waitlist (as generated during deployment from CSV files), are allowed to mint their allocation.
+  - `PUBLIC`: Anyone can mint during this phase, so long as the number of tokens doesn't exceed the max supply as specified during deployment.
+
+If an address has allocations on the allowist and the waitlist _and_ they minted during the `ALLOWLIST` phase, they will not be allowed to mint durnig the `WAITLIST` phase.
+
+During contract deployment, a merkle tree is created for both the allowlist and the waitlist by reading any number of CSV files specified in the [Hardhat config file](./ethereum/hardhat.config.ts). The format of these CSV files must be `address,free_allowance,paid_allowance`. The `free_allowance` column indicates their allocation of free mints, while the `paid_allowance` indicated their allocation of normal (paid) mints. The roots of these merkle trees are stored in the contract and used to verify client-generated proofs that must be supplied with calls to `mint` (unless the mint phase is `PUBLIC`). While not needed on their own, the scripts [allowist.ts](./ethereum/scripts/allowlist.ts) and [proof.ts](./ethereum/scripts/proof.ts) can be used to generate allowlist merkle trees and generate proofs. This can be helpful if you ever need to manually generate a merkle proof for minting.
+
+See [the tests](./ethereum/test/TablelandRigs.ts) to get a deeper view into the allowlist handling logic.
+
+## Tableland NFT Metadata
 
 NFT metadata can be queried from Tableland by calling Tableland's `/query` endpoint with the appropriate SQL query string. For Rigs, this query is defined in [ethereum/helpers/uris.ts](ethereum/helpers/uris.ts). This query string is used by the contract function `tokenURI(uint256 tokenId)` to return the Tableland `/query` URL for the specified token ID. An example of this URL for Rig 2856 can be seen [here](https://testnet.tableland.network/query?mode=list&s=select%20json_object(%27name%27%2C%27Rig%20%23%27%7C%7Cid%2C%27external_url%27%2C%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%7C%7Cid%2C%27image%27%2Cimage%2C%27image_alpha%27%2Cimage_alpha%2C%27thumb%27%2Cthumb%2C%27thumb_alpha%27%2Cthumb_alpha%2C%27attributes%27%2Cjson_group_array(json_object(%27display_type%27%2Cdisplay_type%2C%27trait_type%27%2Ctrait_type%2C%27value%27%2Cvalue)))%20from%20rigs_5_28%20join%20rig_attributes_5_27%20on%20rigs_5_28.id%3Drig_attributes_5_27.rig_id%20where%20id%3D2856%20group%20by%20id%3B).
 
 That metadata URL is unique in that it requires the token ID be inserted into the middle of the URL string, something not typically supported by ERC721 implementations. Additionally, during the Rigs minting process, we chose to make visible the minted Rigs images and top-level metadata, while hiding the more detailed attribute metadata until after the mint period ended. This required being able to change the URI returned from `tokenURI(uint256 tokenId)` from the SQL query that hides attribute data to the one that returns it. 
 
-Both of these challenges were solved by a custom contract function we added called `setURITemplate(string[] memory uriTemplate)`. This allows the caller to provide the two parts of the URL string (the "template") to be wrapped around the token ID, the resulting URL string being returned from `tokenURI(uint256 tokenId)`. Since this function can be called repeatedly, we were able to update the URL template from the version that hides metadata attributes to the one that returns them.
+Both of these challenges were solved by a custom `onlyOwner` contract function we added called `setURITemplate(string[] memory uriTemplate)`. This allows the caller to provide the two parts of the URL string (the "template") to be wrapped around the token ID, the resulting URL string being returned from `tokenURI(uint256 tokenId)`. Since this function can be called repeatedly, we were able to update the URL template from the version that hides metadata attributes to the one that returns them. As mentioned above, there's a script called [setURITemplate.ts](./ethereum/scripts/setURITemplate.ts) that builds the URI template query from Tableland tables specified in the [Hardhat config file](./ethereum/hardhat.config.ts).
 
-## Allow List and Waitlist Support
+## Development
 
-Coming soon!
-## License
+### Building the client
 
-[MIT](LICENSE)
+You can build the contracts and Typescript client locally:
+
+```shell
+npm install
+npm run build
+```
+
+### Install the client
+
+The Rigs client is used in the Garage.
+
+```
+npm install @tableland/rigs
+```
+
+### Testing
+
+Run the test suite:
+
+```shell
+npm test
+```
+
+Test with gas reporting:
+
+```shell
+REPORT_GAS=true npx hardhat test
+```
+
+### Extacting the ABI and Bytecode
+
+You can you grab the assets you need by compiling and then using some `jq` magic:
+
+#### ABI
+
+```shell
+cat artifacts/contracts/TablelandRigs.sol/TablelandRigs.json | jq '.abi' > abi.json
+```
+
+#### Bytecode
+
+```shell
+cat artifacts/contracts/TablelandRigs.sol/TablelandRigs.json | jq -r '.bytecode' > bytecode.bin
+```
+
+#### Generate the Go client
+
+You can use the above `abi.json` to build the Go client:
+
+```shell
+mkdir gobuild
+abigen --abi ./abi.json --bin ./bytecode.bin --pkg contracts --out gobuild/TablelandRigs.go
+```
+
+# License
+
+[The Unlicense](LICENSE)
