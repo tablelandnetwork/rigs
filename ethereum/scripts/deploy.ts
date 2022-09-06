@@ -98,7 +98,7 @@ async function main() {
   if (rigsDeployment.contractTable === "") {
     const createRes = await tbl!.create(
       "name text, description text, image text, external_link text, seller_fee_basis_points int, fee_recipient text",
-      "rigs_contract"
+      { prefix: "rigs_contract" }
     );
     contractTable = createRes.name!;
     console.log("Contract table created as:", contractTable);
@@ -130,7 +130,7 @@ async function main() {
   if (rigsDeployment.allowlistTable === "") {
     const createRes = await tbl!.create(
       `address text, freeAllowance int, paidAllowance int, waitlist int`,
-      "rigs_allowlist"
+      { prefix: "rigs_allowlist" }
     );
     allowlistTable = createRes.name!;
     console.log("Allowlist table created as:", allowlistTable);

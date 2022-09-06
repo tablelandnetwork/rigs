@@ -3,6 +3,8 @@ images.zip
 sql
 sql.zip
 renders
+local.db
+tableland.db
 
 # Binaries for programs and plugins
 *.exe

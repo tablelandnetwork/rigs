@@ -365,7 +365,7 @@ func (s *Store) Cid(ctx context.Context, label string) (string, error) {
 		return "", fmt.Errorf("scanning cid result: %v", err)
 	}
 	if !found {
-		return "", errors.New("not found")
+		return "", errors.New("layers cid not found")
 	}
 	return res, nil
 }
@@ -392,7 +392,7 @@ func (s *Store) TableName(ctx context.Context, label string, chainID int64) (str
 		return "", fmt.Errorf("scanning name result: %v", err)
 	}
 	if !found {
-		return "", errors.New("not found")
+		return "", errors.New("table name not found")
 	}
 	return res, nil
 }
