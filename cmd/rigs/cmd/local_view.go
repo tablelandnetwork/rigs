@@ -17,9 +17,9 @@ func init() {
 	localCmd.AddCommand(viewCmd)
 
 	viewCmd.Flags().Bool(
-		"no-client",
+		"no-viewer",
 		false,
-		"specifies that the web server shouldn't host the client web app because it is being started separately",
+		"specifies that the web server shouldn't host the viewer web app because it is being started separately",
 	)
 	viewCmd.Flags().Int("port", 5000, "port for the http server to listen on")
 	viewCmd.Flags().String("images-path", "./renders", "path to the rendered rig images")
@@ -38,11 +38,11 @@ var viewCmd = &cobra.Command{
 		addr := fmt.Sprintf("localhost:%d", port)
 		api := fmt.Sprintf("http://%s", addr)
 
-		if !viper.GetBool("no-client") {
-			r.PathPrefix("/").Handler(http.FileServer(http.Dir("client/dist")))
+		if !viper.GetBool("no-viewer") {
+			r.PathPrefix("/").Handler(http.FileServer(http.Dir("viewer/dist")))
 			checkErr(os.Setenv("API", api))
 			npmCmd := exec.Command("npm", "run", "generate")
-			npmCmd.Dir = "client"
+			npmCmd.Dir = "viewer"
 			stdout, err := npmCmd.Output()
 			checkErr(err)
 			fmt.Println(string(stdout))

@@ -26,6 +26,7 @@ var (
 	dirPublisher *dirpublisher.DirPublisher
 	store        storage.Store
 	tblClient    *client.Client
+	chain        client.Chain
 )
 
 func init() {
@@ -54,7 +55,7 @@ func init() {
 		"chain",
 		"polygon-mumbai",
 		`the tableland/evm to use, spported values are:
-	etherum
+	ethereum
 	optimism
 	polygon
 	ethereum-goerli
@@ -98,7 +99,6 @@ var publishCmd = &cobra.Command{
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)
 
-		var chain client.Chain
 		if viper.GetString("tbl-api-url") != "" {
 			chain = client.Chain{
 				Endpoint:     viper.GetString("tbl-api-url"),
@@ -165,7 +165,7 @@ var publishCmd = &cobra.Command{
 func getChain() (client.Chain, error) {
 	chain := viper.GetString("chain")
 	switch chain {
-	case "etherum":
+	case "ethereum":
 		return client.Chains.Ethereum, nil
 	case "optimism":
 		return client.Chains.Optimism, nil
