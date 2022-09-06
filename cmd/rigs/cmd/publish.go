@@ -26,6 +26,7 @@ var (
 	dirPublisher *dirpublisher.DirPublisher
 	store        storage.Store
 	tblClient    *client.Client
+	chain        client.Chain
 )
 
 func init() {
@@ -98,7 +99,6 @@ var publishCmd = &cobra.Command{
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)
 
-		var chain client.Chain
 		if viper.GetString("tbl-api-url") != "" {
 			chain = client.Chain{
 				Endpoint:     viper.GetString("tbl-api-url"),
