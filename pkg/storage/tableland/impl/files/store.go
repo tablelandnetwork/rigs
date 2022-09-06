@@ -46,7 +46,7 @@ func NewStore(c Config) (tableland.Store, error) {
 }
 
 // CreateTable implements CreateTable.
-func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefinition) (string, error) {
+func (s *Store) CreateTable(_ context.Context, _ tableland.TableDefinition) (string, error) {
 	return "", errors.New("CreateTable not implemented")
 }
 
@@ -60,7 +60,7 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 	if err != nil {
 		return fmt.Errorf("getting sql to insert parts: %v", err)
 	}
-	return s.writeSQL(ctx, "parts", sql)
+	return s.writeSQL("parts", sql)
 }
 
 // InsertLayers implements InsertLayers.
@@ -73,7 +73,7 @@ func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Lay
 	if err != nil {
 		return fmt.Errorf("getting sql to insert layers: %v", err)
 	}
-	return s.writeSQL(ctx, "layers", sql)
+	return s.writeSQL("layers", sql)
 }
 
 // InsertRigs implements InsertRigs.
@@ -86,7 +86,7 @@ func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) er
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rigs: %v", err)
 	}
-	return s.writeSQL(ctx, "rigs", sql)
+	return s.writeSQL("rigs", sql)
 }
 
 // InsertRigAttributes implements InsertRigAttributes.
@@ -99,26 +99,26 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rig attributes: %v", err)
 	}
-	return s.writeSQL(ctx, "rig-attributes", sql)
+	return s.writeSQL("rig-attributes", sql)
 }
 
 // ClearPartsData implements ClearPartsData.
-func (s *Store) ClearPartsData(ctx context.Context) error {
+func (s *Store) ClearPartsData(_ context.Context) error {
 	return errors.New("ClearPartsData not implemented")
 }
 
 // ClearLayersData implements ClearLayersData.
-func (s *Store) ClearLayersData(ctx context.Context) error {
+func (s *Store) ClearLayersData(_ context.Context) error {
 	return errors.New("ClearLayersData not implemented")
 }
 
 // ClearRigsData implements ClearRigsData.
-func (s *Store) ClearRigsData(ctx context.Context) error {
+func (s *Store) ClearRigsData(_ context.Context) error {
 	return errors.New("ClearRigsData not implemented")
 }
 
 // ClearRigAttributesData implements ClearRigAttributesData.
-func (s *Store) ClearRigAttributesData(ctx context.Context) error {
+func (s *Store) ClearRigAttributesData(_ context.Context) error {
 	return errors.New("ClearRigAttributesData not implemented")
 }
 
@@ -127,7 +127,7 @@ func (s *Store) Close() error {
 	return nil
 }
 
-func (s *Store) writeSQL(ctx context.Context, category, sql string) error {
+func (s *Store) writeSQL(category, sql string) error {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 

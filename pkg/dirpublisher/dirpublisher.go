@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -131,7 +130,7 @@ L0:
 			return "", fmt.Errorf("iterating splitter: %v", err)
 		}
 		log.Default().Printf("writing car chunk %d\n", c)
-		b, err := ioutil.ReadAll(car)
+		b, err := io.ReadAll(car)
 		if err != nil {
 			return "", fmt.Errorf("reading car chunk: %v", err)
 		}

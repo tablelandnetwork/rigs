@@ -161,14 +161,14 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 		Vals(partVals...).
 		Executor()
 
-	if _, err = insertRigs.Exec(); err != nil {
+	if _, err = insertRigs.ExecContext(ctx); err != nil {
 		if rErr := tx.Rollback(); rErr != nil {
 			return fmt.Errorf("rolling back tx: %v, inserting rigs: %v", rErr, err)
 		}
 		return fmt.Errorf("inserting rigs: %v", err)
 	}
 
-	if _, err = insertParts.Exec(); err != nil {
+	if _, err = insertParts.ExecContext(ctx); err != nil {
 		if rErr := tx.Rollback(); rErr != nil {
 			return fmt.Errorf("rolling back tx: %v, inserting parts: %v", rErr, err)
 		}
@@ -420,7 +420,7 @@ func (s *Store) Counts(ctx context.Context) (local.Counts, error) {
 		)
 	`
 	var counts local.Counts
-	if _, err := s.db.ScanStruct(&counts, q); err != nil {
+	if _, err := s.db.ScanStructContext(ctx, &counts, q); err != nil {
 		return local.Counts{}, fmt.Errorf("scanning structs: %v", err)
 	}
 	return counts, nil
@@ -446,7 +446,7 @@ func (s *Store) FleetRankings(ctx context.Context) ([]local.Ranking, error) {
 		order by percentage
 	`
 	var rankings []local.Ranking
-	if err := s.db.ScanStructs(&rankings, q); err != nil {
+	if err := s.db.ScanStructsContext(ctx, &rankings, q); err != nil {
 		return nil, fmt.Errorf("scanning structs: %v", err)
 	}
 	return rankings, nil
@@ -471,7 +471,7 @@ func (s *Store) BackgroundColorRankings(ctx context.Context) ([]local.Ranking, e
 	order by percentage
 	`
 	var rankings []local.Ranking
-	if err := s.db.ScanStructs(&rankings, q); err != nil {
+	if err := s.db.ScanStructsContext(ctx, &rankings, q); err != nil {
 		return nil, fmt.Errorf("scanning structs: %v", err)
 	}
 	return rankings, nil
@@ -496,7 +496,7 @@ func (s *Store) OriginalRankings(ctx context.Context, fleet string) ([]local.Ran
 		order by percentage
 	`
 	var rankings []local.Ranking
-	if err := s.db.ScanStructs(&rankings, q, fleet, fleet); err != nil {
+	if err := s.db.ScanStructsContext(ctx, &rankings, q, fleet, fleet); err != nil {
 		return nil, fmt.Errorf("scanning structs: %v", err)
 	}
 	return rankings, nil
