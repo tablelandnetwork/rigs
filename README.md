@@ -161,7 +161,7 @@ Rigs inherits from [ERC721A](https://chiru-labs.github.io/ERC721A). Rigs is an i
 
 ## Configuration
 
-Configuration is managed from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts). These files include information needed for [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata), the ERC2981 NFT Royalty Standard, royalty recievers for a payment splitter, max supply, mint price, mint revenue receiver, mint phase, allowlist files, and Tableland tables used for Rig parts, layers, tokens, and attributes that were covered in the Rigs CLI section above.
+Configuration is managed from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts). These files include information needed for [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata), the ERC2981 NFT Royalty Standard, royalty receivers for a payment splitter, max supply, mint price, mint revenue receiver, mint phase, allowlist files, and Tableland tables used for Rig parts, layers, tokens, and attributes that were covered in the Rigs CLI section above.
 
 The [scripts](./ethereum/scripts/) folder contains a number of helpful scripts covered below. The input to these scripts comes from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts).
 
@@ -180,7 +180,7 @@ The [`deploy.ts`](./ethereum/scripts/deploy.ts) script takes care of the followi
 2. Checks to ensure that a deployment doesn't already exist for the target network.
 3. Generates the URI template components. See the `getURITemplate` method from [`helpers/uris.ts`](./ethereum/helpers/uris.ts) for more details.
 4. Generated the contract metadata URI. See the `getContractURI` method from [`helpers/uris.ts`](./ethereum/helpers/uris.ts) for more details.
-5. Deploys an OpenZeppelin [PaymentSplitter.sol](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/finance/PaymentSplitter.sol) with the share holders specified in the [Hardhat config file](./ethereum/hardhat.config.ts). The address of this contract is used with ERC2981 NFT Royalty Standard and in the [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata) to ensure maximum marketplace compatability.
+5. Deploys an OpenZeppelin [PaymentSplitter.sol](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/finance/PaymentSplitter.sol) with the share holders specified in the [Hardhat config file](./ethereum/hardhat.config.ts). The address of this contract is used with ERC2981 NFT Royalty Standard and in the [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata) to ensure maximum marketplace compatibility.
 6. Creates a Tableland table to store [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata) and writes values specified in the [Hardhat config file](./ethereum/hardhat.config.ts) and from prior steps.
 7. Builds the allowlist and waitlist merkle trees and checks that the allowlist size doesn't exceed the max supply and that the waitlist is the expected size (as specified in [Hardhat config file](./ethereum/hardhat.config.ts)).
 8. Creates a Tableland table for the allowlist and waitlist and writes a row for each unique address with columns corresponding to allocations from each list.
