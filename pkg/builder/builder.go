@@ -620,7 +620,7 @@ func (b *Builder) AssembleImage(
 	defer r.Dispose()
 
 	for _, l := range layers {
-		i, err := getLayer(ctx, layersPath, l.Path)
+		i, err := getLayer(layersPath, l.Path)
 		if err != nil {
 			return fmt.Errorf("getting layer: %v", err)
 		}
@@ -795,10 +795,7 @@ func resizeImage(data io.Reader, size image.Rectangle, to io.Writer) error {
 	}
 	dst := image.NewRGBA(size)
 	draw.CatmullRom.Scale(dst, size, i, i.Bounds(), draw.Over, nil)
-	if err := png.Encode(to, dst); err != nil {
-		return err
-	}
-	return nil
+	return png.Encode(to, dst)
 }
 
 func (b *Builder) fleets(ctx context.Context) ([]local.Part, error) {
@@ -860,7 +857,7 @@ func (b *Builder) fleetPartTypeParts(ctx context.Context, fleet string, partType
 	return parts, nil
 }
 
-func getLayer(ctx context.Context, layersPath, imagePath string) (image.Image, error) {
+func getLayer(layersPath, imagePath string) (image.Image, error) {
 	f, err := os.Open(path.Join(layersPath, imagePath))
 	if err != nil {
 		return nil, err

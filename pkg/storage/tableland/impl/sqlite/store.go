@@ -31,11 +31,11 @@ func NewStore(db *sql.DB) (tableland.Store, error) {
 // CreateTable implements CreateTable.
 func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefinition) (string, error) {
 	drop := fmt.Sprintf("drop table if exists %s", definition.Prefix)
-	if _, err := s.db.Exec(drop); err != nil {
+	if _, err := s.db.ExecContext(ctx, drop); err != nil {
 		return "", fmt.Errorf("dropping table: %v", err)
 	}
 	statement := fmt.Sprintf("create table %s %s strict", definition.Prefix, definition.Schema)
-	if _, err := s.db.Exec(statement); err != nil {
+	if _, err := s.db.ExecContext(ctx, statement); err != nil {
 		return "", fmt.Errorf("creating table: %v", err)
 	}
 	return definition.Prefix, nil
