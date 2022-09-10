@@ -102,7 +102,7 @@ You can launch a simple local web app to view the results.
 Now that we've built our Rigs data and imagery locally, we're ready to publish the imagery to IPFS (via [NFT.storage](https://nft.storage)) and data to Tableland.
 
 > **Note**
-> Pusing the Rig images to NFT.storage requires a local [IPFS](https://ipfs.tech) node to be running. The easiest way to do that is using [IPFS Desktop](https://github.com/ipfs/ipfs-desktop). The default settings for the CLI will use the locally running IPFS node's default settings, but you can always customize the connection information using the `--ipfs-api-url` flag.
+> Pushing the Rig images to NFT.storage requires a local [IPFS](https://ipfs.tech) node to be running. The easiest way to do that is using [IPFS Desktop](https://github.com/ipfs/ipfs-desktop). The default settings for the CLI will use the locally running IPFS node's default settings, but you can always customize the connection information using the `--ipfs-api-url` flag.
 
 We'll first push the Rigs images to NFT.storage.
 
