@@ -45,6 +45,7 @@ func (c *Client) UploadCar(ctx context.Context, payload io.Reader) (string, erro
 	if err != nil {
 		return "", fmt.Errorf("creating request: %v", err)
 	}
+	req = req.WithContext(ctx)
 	c.setAuthHeader(req)
 	req.Header.Set("Content-Type", "application/car")
 

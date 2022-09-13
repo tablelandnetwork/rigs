@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"path"
@@ -32,13 +31,13 @@ var inventoryCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		checkErr(localStore.Reset(ctx))
-		checkErr(processRootNode(ctx, viper.GetString("layers-path")))
+		checkErr(processRootNode(viper.GetString("layers-path")))
 		checkErr(localStore.InsertParts(ctx, parts))
 		checkErr(localStore.InsertLayers(ctx, layers))
 	},
 }
 
-func processRootNode(ctx context.Context, rootPath string) error {
+func processRootNode(rootPath string) error {
 	entries, err := os.ReadDir(rootPath)
 	if err != nil {
 		return err
@@ -54,7 +53,7 @@ func processRootNode(ctx context.Context, rootPath string) error {
 			Name: fleetName,
 		})
 
-		if err := processFleetNode(ctx, fleetName, rootPath, e.Name()); err != nil {
+		if err := processFleetNode(fleetName, rootPath, e.Name()); err != nil {
 			return fmt.Errorf("processing fleet node: %v", err)
 		}
 	}
@@ -62,7 +61,6 @@ func processRootNode(ctx context.Context, rootPath string) error {
 }
 
 func processFleetNode(
-	ctx context.Context,
 	fleetName string,
 	rootPath string,
 	relativePath string,
