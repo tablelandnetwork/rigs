@@ -236,6 +236,17 @@ type Store interface {
 	// TrackTableName records the table name for a chain id and label.
 	TrackTableName(ctx context.Context, label string, chainID int64, name string) error
 
+	// TrackTxn records a transaction.
+	TrackTxn(
+		ctx context.Context,
+		hash string,
+		tableLabel string,
+		chainID int64,
+		action string,
+		sql string,
+		cost int64,
+	) error
+
 	// GetOriginalRigs gets a list of all OriginalRigs.
 	GetOriginalRigs(ctx context.Context) ([]OriginalRig, error)
 
@@ -280,6 +291,9 @@ type Store interface {
 
 	// ClearRigs empties the rigs records.
 	ClearRigs(ctx context.Context) error
+
+	// ClearTxns clears txn records.
+	ClearTxns(ctx context.Context, tableLabel string, chainID int64, action string) error
 
 	// Reset clears the db and starts fresh.
 	Reset(ctx context.Context) error

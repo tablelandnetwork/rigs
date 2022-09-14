@@ -20,9 +20,9 @@ import (
 )
 
 var (
-	_db        *sql.DB
-	_ethClient *ethclient.Client
+	_db *sql.DB
 
+	ethClient    *ethclient.Client
 	dirPublisher *dirpublisher.DirPublisher
 	store        storage.Store
 	tblClient    *client.Client
@@ -117,13 +117,20 @@ var publishCmd = &cobra.Command{
 		infuraKey := viper.GetString("infura-key")
 		alchemyKey := viper.GetString("alchemy-key")
 		if ethURL != "" {
-			_ethClient, err = ethclient.DialContext(ctx, ethURL)
+			ethClient, err = ethclient.DialContext(ctx, ethURL)
 			checkErr(err)
-			opts = append(opts, client.NewClientContractBackend(_ethClient))
+			opts = append(opts, client.NewClientContractBackend(ethClient))
 		} else if infuraKey != "" {
 			opts = append(opts, client.NewClientInfuraAPIKey(infuraKey))
+			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(infuraURLs[chain.ID], infuraKey))
+			checkErr(err)
 		} else if alchemyKey != "" {
 			opts = append(opts, client.NewClientAlchemyAPIKey(alchemyKey))
+			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(alchemyURLs[chain.ID], alchemyKey))
+			checkErr(err)
+		} else if chain.ID == client.ChainIDs.Local {
+			ethClient, err = ethclient.DialContext(ctx, localURLs[chain.ID])
+			checkErr(err)
 		}
 
 		tblClient, err = client.NewClient(ctx, wallet, opts...)
@@ -134,6 +141,7 @@ var publishCmd = &cobra.Command{
 				ChainID:        int64(chain.ID),
 				TblClient:      tblClient,
 				LocalStore:     localStore,
+				EthClient:      ethClient,
 				ReceiptTimeout: viper.GetDuration("receipt-timeout"),
 			})
 		} else if viper.GetString("to-files") != "" {
@@ -156,8 +164,8 @@ var publishCmd = &cobra.Command{
 		if _db != nil {
 			_ = _db.Close()
 		}
-		if _ethClient != nil {
-			_ethClient.Close()
+		if ethClient != nil {
+			ethClient.Close()
 		}
 	},
 }
@@ -186,4 +194,30 @@ func getChain() (client.Chain, error) {
 	default:
 		return client.Chain{}, fmt.Errorf("%s is not a valid chain", chain)
 	}
+}
+
+var infuraURLs = map[client.ChainID]string{
+	client.ChainIDs.EthereumGoerli: "https://goerli.infura.io/v3/%s",
+	client.ChainIDs.Ethereum:       "https://mainnet.infura.io/v3/%s",
+	client.ChainIDs.OptimismKovan:  "https://optimism-kovan.infura.io/v3/%s",
+	client.ChainIDs.OptimismGoerli: "https://optimism-goerli.infura.io/v3/%s",
+	client.ChainIDs.Optimism:       "https://optimism-mainnet.infura.io/v3/%s",
+	client.ChainIDs.ArbitrumGoerli: "https://arbitrim-goerli.infura.io/v3/%s", // TODO: Check this, requires upgrade.
+	client.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.infura.io/v3/%s",
+	client.ChainIDs.Polygon:        "https://polygon-mainnet.infura.io/v3/%s",
+}
+
+var alchemyURLs = map[client.ChainID]string{
+	client.ChainIDs.EthereumGoerli: "https://eth-goerli.g.alchemy.com/v2/%s",
+	client.ChainIDs.Ethereum:       "https://eth-mainnet.g.alchemy.com/v2/%s",
+	client.ChainIDs.OptimismKovan:  "https://opt-kovan.g.alchemy.com/v2/%s",
+	client.ChainIDs.OptimismGoerli: "https://opt-goerli.g.alchemy.com/v2/%s",
+	client.ChainIDs.Optimism:       "https://opt-mainnet.g.alchemy.com/v2/%s",
+	client.ChainIDs.ArbitrumGoerli: "https://arb-goerli.g.alchemy.com/v2/%s",
+	client.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.g.alchemy.com/v2/%s",
+	client.ChainIDs.Polygon:        "https://polygon-mainnet.g.alchemy.com/v2/%s",
+}
+
+var localURLs = map[client.ChainID]string{
+	client.ChainIDs.Local: "http://localhost:8545",
 }
