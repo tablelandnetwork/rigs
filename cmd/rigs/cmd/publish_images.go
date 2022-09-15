@@ -19,9 +19,8 @@ var imagesCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		path := viper.GetString("images-path")
-		cid, err := dirPublisher.PublishDir(ctx, path)
+		cid, err := dirPublisher.PublishDir(ctx, path, "images")
 		checkErr(err)
-		checkErr(localStore.TrackCid(ctx, "images", cid))
 		fmt.Printf("Images published with cid %s\n", cid)
 	},
 }

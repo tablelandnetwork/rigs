@@ -94,7 +94,7 @@ var publishCmd = &cobra.Command{
 		var err error
 
 		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
-		dirPublisher = dirpublisher.NewDirPublisher(ipfsClient, nftStorage)
+		dirPublisher = dirpublisher.NewDirPublisher(localStore, ipfsClient, nftStorage)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)

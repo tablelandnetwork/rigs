@@ -17,26 +17,33 @@ import (
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	"github.com/ipld/go-car"
 	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
 
 // DirPublisher publishes a directory to nft.storage.
 type DirPublisher struct {
+	localStore local.Store
 	ipfsClient *httpapi.HttpApi
 	nftStorage *nftstorage.Client
 }
 
 // NewDirPublisher creates a DirPublisher.
-func NewDirPublisher(ipfsClient *httpapi.HttpApi, nftStorage *nftstorage.Client) *DirPublisher {
+func NewDirPublisher(
+	localStore local.Store,
+	ipfsClient *httpapi.HttpApi,
+	nftStorage *nftstorage.Client,
+) *DirPublisher {
 	return &DirPublisher{
+		localStore: localStore,
 		ipfsClient: ipfsClient,
 		nftStorage: nftStorage,
 	}
 }
 
 // PublishDir publishes the specified dir to nft.storage.
-func (dp *DirPublisher) PublishDir(ctx context.Context, dir string) (string, error) {
+func (dp *DirPublisher) PublishDir(ctx context.Context, dir, label string) (string, error) {
 	fi, err := os.Stat(dir)
 	if err != nil {
 		return "", fmt.Errorf("stating dir: %v", err)
@@ -52,6 +59,10 @@ func (dp *DirPublisher) PublishDir(ctx context.Context, dir string) (string, err
 	ipfsPath, err := dp.ipfsClient.Unixfs().Add(ctx, node, options.Unixfs.CidVersion(1))
 	if err != nil {
 		return "", fmt.Errorf("adding dir to ipfs: %v", err)
+	}
+
+	if err := dp.localStore.TrackCid(ctx, label, ipfsPath.Cid().String()); err != nil {
+		return "", fmt.Errorf("tracking cid: %v", err)
 	}
 
 	log.Default().Printf("Folder added with cid %s\n", ipfsPath.Cid().String())

@@ -19,9 +19,8 @@ var layersCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		p := viper.GetString("layers-path")
-		cid, err := dirPublisher.PublishDir(ctx, p)
+		cid, err := dirPublisher.PublishDir(ctx, p, "layers")
 		checkErr(err)
-		checkErr(localStore.TrackCid(ctx, "layers", cid))
 		fmt.Printf("Layers published with cid %s\n", cid)
 	},
 }
