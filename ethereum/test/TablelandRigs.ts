@@ -490,7 +490,7 @@ describe("Rigs", function () {
     const uri = getURITemplate(tablelandHost, table1, "");
     const result =
       tablelandHost +
-      "/query?mode=list&s=" +
+      "/query?extract=true&unwrap=true&s=" +
       encodeURIComponent(
         `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('trait_type','status','value','pre-reveal'))) from table1 where id=`
       );
@@ -505,7 +505,7 @@ describe("Rigs", function () {
     const uri = getURITemplate(tablelandHost, table1, table2);
     const result =
       tablelandHost +
-      "/query?mode=list&s=" +
+      "/query?extract=true&unwrap=true&s=" +
       encodeURIComponent(
         `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 on table1.id=table2.rig_id where id=`
       );
