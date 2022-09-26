@@ -1,10 +1,19 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Heading, Flex, Stack, Text } from "@chakra-ui/react";
 import { Topbar } from "../Topbar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useNavigate } from "react-router-dom";
+import { useAccount } from "wagmi";
 import desert from "../assets/desert-bg.png";
 
 export const Enter = () => {
+  const { isConnected } = useAccount();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isConnected) navigate("/dashboard");
+  }, [isConnected, navigate]);
+
   return (
     <Flex
       direction="column"
