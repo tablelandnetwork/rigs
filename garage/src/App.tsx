@@ -4,11 +4,17 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ChakraProvider } from "@chakra-ui/react";
 import "@rainbow-me/rainbowkit/styles.css";
 
-import { getDefaultWallets, RainbowKitProvider, darkTheme } from "@rainbow-me/rainbowkit";
+import {
+  getDefaultWallets,
+  RainbowKitProvider,
+  darkTheme,
+} from "@rainbow-me/rainbowkit";
 import { chain, configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { Enter } from "./pages/Enter";
+import { Dashboard } from "./pages/Dashboard";
+import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 
 const { chains, provider } = configureChains(
   [chain.mainnet],
@@ -34,6 +40,14 @@ function App() {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Enter />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequiresWalletConnection>
+                    <Dashboard />
+                  </RequiresWalletConnection>
+                }
+              />
             </Routes>
           </BrowserRouter>
         </RainbowKitProvider>
