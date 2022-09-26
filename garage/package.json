@@ -12,10 +12,13 @@
     "@chakra-ui/react": "^2.3.4",
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.4",
+    "@rainbow-me/rainbowkit": "^0.6.1",
+    "ethers": "^5.7.1",
     "framer-motion": "^7.3.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.4.1"
+    "react-router-dom": "^6.4.1",
+    "wagmi": "^0.6.7"
   },
   "devDependencies": {
     "@types/react": "^18.0.17",
