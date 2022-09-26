@@ -1,6 +1,7 @@
 import React from "react";
-import { Button, Heading, Flex, Stack, Text } from "@chakra-ui/react";
+import { Heading, Flex, Stack, Text } from "@chakra-ui/react";
 import { Topbar } from "../Topbar";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 import desert from "../assets/desert-bg.png";
 
 export const Enter = () => {
@@ -17,7 +18,7 @@ export const Enter = () => {
     >
       <Topbar>
         <Flex justify="flex-end" width="100%">
-          <Button>Connect wallet</Button>
+          <ConnectButton />
         </Flex>
       </Topbar>
       <Flex
@@ -34,7 +35,7 @@ export const Enter = () => {
             with other Rig owners from across Tableland. Learn how to pilot your
             Rig to earn flight-time and badges in the Garage.
           </Text>
-          <Button color="black">Connect Wallet</Button>
+          <ConnectButton />
         </Stack>
       </Flex>
     </Flex>
