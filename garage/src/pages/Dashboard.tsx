@@ -2,6 +2,8 @@ import React from "react";
 import { Button, Heading, Flex, Stack, Text } from "@chakra-ui/react";
 import { Topbar } from "../Topbar";
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { Stats } from "../components/Stats";
+import { Activity } from "../components/Activity";
 
 export const Dashboard = () => {
   return (
@@ -12,13 +14,16 @@ export const Dashboard = () => {
         </Flex>
       </Topbar>
       <Flex
-        direction="column"
+        p={8}
+        direction="row"
+        gap={4}
         align="center"
         justify="center"
         width="100%"
         height="100%"
       >
-      YO
+        <Stats />
+        <Activity />
       </Flex>
     </Flex>
   );
