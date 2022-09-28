@@ -9,6 +9,7 @@ const contractABI = TablelandRigs__factory.abi;
 const alchemyApiKey = "2-splbb2E9wDI3v4pYwMB-TWqHu9Xhe2";
 
 const rigBadgesTableName = "rig_badges_5_todo";
+const rigPilotsTableName = "rig_pilots_5_todo";
 const ipfsGatewayUri = "https://ipfs.io/ipfs/";
 
 /** @type {import('./$types').PageLoad} */
@@ -37,6 +38,13 @@ export async function load({ url }) {
     "TableLand_Badges_Teaching.png"
   ];
 
+  /*await tableland.read(
+    `SELECT * FROM ${rigPilotsTableName} WHERE rig_id = ${rigId};`,
+    { output: "objects" }
+  );
+  */
+  const pilot = "moonbird_pilot.png";
+
   const rigUrl = await getTokenURI(rigId);
 
   const res = await fetch(rigUrl);
@@ -46,7 +54,8 @@ export async function load({ url }) {
 
   return {
     imageUrl: httpUri,
-    badges
+    badges,
+    pilot
   };
 }
 
