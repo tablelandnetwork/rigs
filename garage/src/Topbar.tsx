@@ -11,6 +11,7 @@ export const Topbar = ({ children, backgroundColor }: TopbarProps) => {
   return (
     <Flex
       height="80px"
+      width="100%"
       backgroundColor={backgroundColor ?? "#F4706B"}
       align="center"
       px={8}
