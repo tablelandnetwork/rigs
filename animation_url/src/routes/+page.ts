@@ -38,6 +38,7 @@ export async function load({ url }) {
   ];
 
   const rigUrl = await getTokenURI(rigId);
+
   const res = await fetch(rigUrl);
   const metadata = await res.json();
 
