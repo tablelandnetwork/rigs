@@ -30,12 +30,18 @@ export async function load({ url }) {
   );*/
   // TODO: get the badges via tableland
   const badges = [
-    "TableLand_Badges_Code.png",
-    "TableLand_Badges_Education.png",
-    "TableLand_Badges_Filecoin.png",
-    "TableLand_Badges_NetworkRewards.png",
-    "TableLand_Badges_SuccessfulProject.png",
-    "TableLand_Badges_Teaching.png"
+    "TableLand_Icons-01.svg",
+    "TableLand_Icons-02.svg",
+    "TableLand_Icons-03.svg",
+    "TableLand_Icons-04.svg",
+    "TableLand_Icons-05.svg",
+    "TableLand_Icons-06.svg"
+    //"TableLand_Badges_Code.png",
+    //"TableLand_Badges_Education.png",
+    //"TableLand_Badges_Filecoin.png",
+    //"TableLand_Badges_NetworkRewards.png",
+    //"TableLand_Badges_SuccessfulProject.png",
+    //"TableLand_Badges_Teaching.png"
   ];
 
   /*await tableland.read(
