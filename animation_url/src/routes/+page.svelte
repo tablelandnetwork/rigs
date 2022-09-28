@@ -19,12 +19,13 @@
 
   .badges-container {
     display: flex;
-    justify-content: right;
+    justify-content: left;
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
     width: 96%;
-    height: 15%;
+    height: 9.6%;
+    padding-top: 2%;
     padding-left: 2%;
     padding-right: 2%;
   }
