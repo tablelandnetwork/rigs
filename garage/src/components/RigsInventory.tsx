@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Button,
   Flex,
@@ -18,7 +19,7 @@ const RigDisplay = ({ rig }: { rig: Rig }) => {
     <VStack align="start" pb={2} flexShrink="0">
       <Image src={thumb} width="200px" />
       <Text>{`#${rig.id}`}</Text>
-      <Button sx={{ width: "100%" }}>Select</Button>
+      <Button as={Link} to={`/rigs/${rig.id}`} sx={{ width: "100%" }}>Details</Button>
     </VStack>
   );
 };
