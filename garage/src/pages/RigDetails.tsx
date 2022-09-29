@@ -51,7 +51,7 @@ const RigAttributes = ({ rig }: RigModuleProps) => {
 
   return (
     <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading as="h3" px={PAPER_TABLE_HEADING_PX}>
+      <Heading px={PAPER_TABLE_HEADING_PX}>
         Properties
       </Heading>
       <TableContainer>
@@ -85,7 +85,7 @@ const RigAttributes = ({ rig }: RigModuleProps) => {
 const Pilots = ({ rig }: RigModuleProps) => {
   return (
     <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading as="h3" px={PAPER_TABLE_HEADING_PX}>
+      <Heading px={PAPER_TABLE_HEADING_PX}>
         Rig {`#${rig.id}`}
       </Heading>
       <TableContainer>
@@ -118,7 +118,7 @@ const Pilots = ({ rig }: RigModuleProps) => {
 const Badges = ({ rig }: RigModuleProps) => {
   return (
     <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading as="h3" px={PAPER_TABLE_HEADING_PX}>
+      <Heading px={PAPER_TABLE_HEADING_PX}>
         Badges
       </Heading>
       <TableContainer>
@@ -151,7 +151,7 @@ const Badges = ({ rig }: RigModuleProps) => {
 const FlightLog = ({ rig }: RigModuleProps) => {
   return (
     <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading as="h3" px={PAPER_TABLE_HEADING_PX}>
+      <Heading px={PAPER_TABLE_HEADING_PX}>
         Flight log
       </Heading>
       <TableContainer>

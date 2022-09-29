@@ -1,7 +1,11 @@
 import React from "react";
 import "./polyfills";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ChakraProvider, extendTheme } from "@chakra-ui/react";
+import {
+  ChakraProvider,
+  extendTheme,
+  withDefaultProps,
+} from "@chakra-ui/react";
 import "@rainbow-me/rainbowkit/styles.css";
 import {
   getDefaultWallets,
@@ -38,46 +42,57 @@ const colors = {
   bg: "#162929",
 };
 
-const theme = extendTheme({
-  colors: {
-    ...colors,
-    paper: "#101E1E",
-    block: colors.bg,
-  },
-  fonts: {
-    heading: "'Andale Mono', sans-serif",
-    body: "'Andale Mono', sans-serif",
-  },
-  config: {
-    initialColorMode: "dark",
-    useSystemColorMode: false,
-  },
-  styles: {
-    global: {
-      body: {
-        bg: colors.bg,
-        color: colors.primary,
+const theme = extendTheme(
+  {
+    colors: {
+      ...colors,
+      paper: "#101E1E",
+      block: colors.bg,
+    },
+    fonts: {
+      heading: "'Andale Mono', sans-serif",
+      body: "'Andale Mono', sans-serif",
+    },
+    config: {
+      initialColorMode: "dark",
+      useSystemColorMode: false,
+    },
+    styles: {
+      global: {
+        html: {
+          fontSize: "14px",
+        },
+        body: {
+          bg: colors.bg,
+          color: colors.primary,
+        },
+        td: { borderColor: "#1E3535 !important" },
+        th: {
+          borderColor: "#1E3535 !important",
+          borderTop: "var(--chakra-borders-1px)",
+        },
       },
-      td: { borderColor: "#1E3535 !important" },
-      th: {
-        borderColor: "#1E3535 !important",
-        borderTop: "var(--chakra-borders-1px)",
+    },
+    components: {
+      Text: {
+        variants: {
+          orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
+        },
+      },
+      Heading: {
+        baseStyle: { fontWeight: "normal" },
+        sizes: { md: { fontSize: "1.5em" } },
+        variants: {
+          orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
+        },
       },
     },
   },
-  components: {
-    Text: {
-      variants: {
-        orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
-      },
-    },
-    Heading: {
-      variants: {
-        orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
-      },
-    },
-  },
-});
+  withDefaultProps({
+    defaultProps: { size: "md" },
+    components: ["Heading"],
+  })
+);
 
 function App() {
   return (

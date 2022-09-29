@@ -34,7 +34,7 @@ export const RigsInventory = () => {
       p={7}
       sx={{ height: "100%", width: "100%" }}
     >
-      <Heading as="h3">Rigs {rigs && ` (${rigs.length})`}</Heading>
+      <Heading>Rigs {rigs && ` (${rigs.length})`}</Heading>
 
       <Flex
         gap={4}

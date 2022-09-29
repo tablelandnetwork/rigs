@@ -13,7 +13,7 @@ export const Activity = () => {
       p={7}
       sx={{ height: "100%" }}
     >
-      <Heading as="h3">Activity</Heading>
+      <Heading>Activity</Heading>
       <Table>
         <Tbody>
           {events.map(({ rigId, thumb, action }, index) => {

@@ -23,7 +23,7 @@ export const Stats = () => {
       bgColor="paper"
       sx={{ height: "100%" }}
     >
-      <Heading as="h3">Stats</Heading>
+      <Heading>Stats</Heading>
       <Grid templateColumns="repeat(3, 1fr)" gap={3}>
         {stats.map(({ name, value }) => {
           return (
