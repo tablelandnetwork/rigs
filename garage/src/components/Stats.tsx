@@ -20,13 +20,14 @@ export const Stats = () => {
     <Flex
       direction="column"
       p={7}
-      sx={{ height: "100%", background: "#101E1E", color: "#75B6B5" }}
+      bgColor="paper"
+      sx={{ height: "100%" }}
     >
       <Heading as="h3">Stats</Heading>
       <Grid templateColumns="repeat(3, 1fr)" gap={3}>
         {stats.map(({ name, value }) => {
           return (
-            <GridItem key={name} backgroundColor="#162929">
+            <GridItem key={name} bgColor="block">
               <StatItem name={name} value={value} />
             </GridItem>
           );

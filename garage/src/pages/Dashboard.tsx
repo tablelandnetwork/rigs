@@ -14,9 +14,9 @@ export const Dashboard = () => {
       direction="column"
       align="center"
       justify="stretch"
-      sx={{ width: "100%", height: "100%", background: "#162929" }}
+      sx={{ width: "100%", height: "100%" }}
     >
-      <Topbar backgroundColor="#75B6B5">
+      <Topbar>
         <Flex justify="flex-end" width="100%">
           <ConnectButton />
         </Flex>

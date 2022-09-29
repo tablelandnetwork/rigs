@@ -9,8 +9,9 @@ export const Activity = () => {
   return (
     <Flex
       direction="column"
+      bgColor="paper"
       p={7}
-      sx={{ height: "100%", background: "#101E1E", color: "#75B6B5" }}
+      sx={{ height: "100%" }}
     >
       <Heading as="h3">Activity</Heading>
       <Table>

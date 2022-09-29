@@ -29,13 +29,9 @@ export const RigsInventory = () => {
   return (
     <VStack
       align="start"
+      bgColor="paper"
       p={7}
-      sx={{
-        height: "100%",
-        width: "100%",
-        background: "#101E1E",
-        color: "#75B6B5",
-      }}
+      sx={{ height: "100%", width: "100%" }}
     >
       <Heading as="h3">Rigs {rigs && ` (${rigs.length})`}</Heading>
 

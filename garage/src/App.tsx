@@ -1,9 +1,8 @@
 import React from "react";
 import "./polyfills";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ChakraProvider } from "@chakra-ui/react";
+import { ChakraProvider, extendTheme } from "@chakra-ui/react";
 import "@rainbow-me/rainbowkit/styles.css";
-
 import {
   getDefaultWallets,
   RainbowKitProvider,
@@ -32,9 +31,40 @@ const wagmiClient = createClient({
   provider,
 });
 
+const colors = {
+  primary: "#75B6B5",
+  primaryLight: "#F4706B",
+  bg: "#162929",
+};
+
+const theme = extendTheme({
+  colors: {
+    ...colors,
+    paper: "#101E1E",
+    block: colors.bg,
+  },
+  config: {
+    initialColorMode: "dark",
+    useSystemColorMode: false,
+  },
+  styles: {
+    global: {
+      body: {
+        bg: colors.bg,
+        color: colors.primary,
+      },
+      td: { borderColor: "#1E3535 !important" },
+      th: {
+        borderColor: "#1E3535 !important",
+        borderTop: "var(--chakra-borders-1px)",
+      },
+    },
+  },
+});
+
 function App() {
   return (
-    <ChakraProvider>
+    <ChakraProvider theme={theme}>
       <WagmiConfig client={wagmiClient}>
         <RainbowKitProvider chains={chains} theme={darkTheme()}>
           <BrowserRouter>

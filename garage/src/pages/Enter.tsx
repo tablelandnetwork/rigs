@@ -19,13 +19,13 @@ export const Enter = () => {
       direction="column"
       sx={{
         width: "100%",
-        height: "100%",
+        height: "100vh",
         backgroundImage: desert,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
-      <Topbar>
+      <Topbar mode="light">
         <Flex justify="flex-end" width="100%">
           <ConnectButton />
         </Flex>
