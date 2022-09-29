@@ -191,7 +191,7 @@ export const RigDetails = () => {
         templateColumns="repeat(2, 1fr)"
         pt={GRID_GAP}
         gap={GRID_GAP}
-        maxWidth="1200px"
+        maxWidth="1365px"
         height="100%"
       >
         {rig && (

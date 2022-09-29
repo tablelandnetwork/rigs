@@ -19,7 +19,9 @@ const RigDisplay = ({ rig }: { rig: Rig }) => {
     <VStack align="start" pb={2} flexShrink="0">
       <Image src={thumb} width="200px" />
       <Text>{`#${rig.id}`}</Text>
-      <Button as={Link} to={`/rigs/${rig.id}`} sx={{ width: "100%" }}>Details</Button>
+      <Button as={Link} to={`/rigs/${rig.id}`} sx={{ width: "100%" }}>
+        Details
+      </Button>
     </VStack>
   );
 };
@@ -31,23 +33,30 @@ export const RigsInventory = () => {
     <VStack
       align="start"
       bgColor="paper"
-      p={7}
+      p={8}
       sx={{ height: "100%", width: "100%" }}
     >
       <Heading>Rigs {rigs && ` (${rigs.length})`}</Heading>
 
-      <Flex
-        gap={4}
-        sx={{
-          overflowX: "scroll",
-        }}
-      >
-        {rigs &&
-          rigs.map((rig, index) => {
+      {rigs && (
+        <Flex
+          gap={4}
+          width="100%"
+          sx={{
+            overflowX: "scroll",
+          }}
+        >
+          {rigs.map((rig, index) => {
             return <RigDisplay rig={rig} key={`rig-${index}`} />;
           })}
-        {!rigs && <Spinner />}
-      </Flex>
+        </Flex>
+      )}
+
+      {!rigs && (
+        <Flex width="100%" height="200px" align="center" justify="center">
+          <Spinner />
+        </Flex>
+      )}
     </VStack>
   );
 };

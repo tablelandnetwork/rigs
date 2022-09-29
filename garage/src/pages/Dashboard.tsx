@@ -26,7 +26,8 @@ export const Dashboard = () => {
         pt={GRID_GAP}
         gap={GRID_GAP}
         align="stretch"
-        maxWidth="1200px"
+        maxWidth="1365px"
+        width="100%"
         height="100%"
       >
         <Flex
