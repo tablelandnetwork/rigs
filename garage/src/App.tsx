@@ -44,6 +44,10 @@ const theme = extendTheme({
     paper: "#101E1E",
     block: colors.bg,
   },
+  fonts: {
+    heading: "'Andale Mono', sans-serif",
+    body: "'Andale Mono', sans-serif",
+  },
   config: {
     initialColorMode: "dark",
     useSystemColorMode: false,
@@ -58,6 +62,18 @@ const theme = extendTheme({
       th: {
         borderColor: "#1E3535 !important",
         borderTop: "var(--chakra-borders-1px)",
+      },
+    },
+  },
+  components: {
+    Text: {
+      variants: {
+        orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
+      },
+    },
+    Heading: {
+      variants: {
+        orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
       },
     },
   },

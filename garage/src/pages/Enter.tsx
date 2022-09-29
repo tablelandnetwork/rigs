@@ -38,7 +38,7 @@ export const Enter = () => {
         height="100%"
       >
         <Stack maxWidth="650px" align="center" color="white">
-          <Heading as="h1">Enter the Garage</Heading>
+          <Heading as="h1" variant="orbitron" fontSize="64">Enter the Garage</Heading>
           <Text textAlign="center">
             Tired? Thirsty? Sunburned? Come take a break from the heat and hang
             with other Rig owners from across Tableland. Learn how to pilot your

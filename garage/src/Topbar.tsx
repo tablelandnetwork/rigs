@@ -1,5 +1,5 @@
 import React from "react";
-import { Flex, Image } from "@chakra-ui/react";
+import { Flex, Image, Text } from "@chakra-ui/react";
 import logo from "./assets/tableland.svg";
 
 interface TopbarProps {
@@ -20,7 +20,7 @@ export const Topbar = ({ children, mode = "dark" }: TopbarProps) => {
       px={8}
       py={4}
     >
-      <Image src={logo} /> Garage
+      <Image src={logo} /> <Text variant="orbitron" fontSize="20">Garage</Text>
       {children}
     </Flex>
   );
