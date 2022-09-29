@@ -13,6 +13,7 @@ import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { Enter } from "./pages/Enter";
 import { Dashboard } from "./pages/Dashboard";
+import { RigDetails } from "./pages/RigDetails";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 
 const { chains, provider } = configureChains(
@@ -75,6 +76,14 @@ function App() {
                 element={
                   <RequiresWalletConnection>
                     <Dashboard />
+                  </RequiresWalletConnection>
+                }
+              />
+              <Route
+                path="/rigs/:id"
+                element={
+                  <RequiresWalletConnection>
+                    <RigDetails />
                   </RequiresWalletConnection>
                 }
               />
