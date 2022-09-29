@@ -22,11 +22,12 @@ export const Dashboard = () => {
         </Flex>
       </Topbar>
       <Flex
-        direction="row"
+        direction={{ base: "column", lg: "row" }}
         pt={GRID_GAP}
         gap={GRID_GAP}
-        align="stretch"
-        maxWidth="1365px"
+        px={GRID_GAP}
+        align={{ base: "stretch", lg: "start" }}
+        maxWidth="1385px"
         width="100%"
         height="100%"
       >

@@ -7,7 +7,7 @@ export const Activity = () => {
   const { events } = useRigsActivity();
 
   return (
-    <Flex direction="column" bgColor="paper" pt={8} sx={{ height: "100%" }}>
+    <Flex direction="column" bgColor="paper" pt={8} mb={8} sx={{ height: "100%" }}>
       <Heading px={8}>Activity</Heading>
       <Table>
         <Tbody>
