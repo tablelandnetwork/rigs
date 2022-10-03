@@ -1,10 +1,10 @@
 import React from "react";
 import { Box, Flex } from "@chakra-ui/react";
-import { Topbar } from "../Topbar";
+import { Topbar } from "../../Topbar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { RigsInventory } from "../components/RigsInventory";
-import { Stats } from "../components/Stats";
-import { Activity } from "../components/Activity";
+import { RigsInventory } from "./modules/RigsInventory";
+import { Stats } from "./modules/Stats";
+import { Activity } from "./modules/Activity";
 
 const GRID_GAP = 4;
 

@@ -9,9 +9,9 @@ import {
   VStack,
   Text,
 } from "@chakra-ui/react";
-import { useOwnedRigs } from "../hooks/useOwnedRigs";
-import { useRigImageUrls } from "../hooks/useRigImageUrls";
-import { Rig } from "../types";
+import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
+import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
+import { Rig } from "../../../types";
 
 const RigDisplay = ({ rig }: { rig: Rig }) => {
   const { thumb } = useRigImageUrls(rig);

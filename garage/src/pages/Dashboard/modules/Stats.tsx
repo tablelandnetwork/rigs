@@ -1,6 +1,6 @@
 import React from "react";
 import { Heading, Flex, Grid, GridItem, SimpleGrid, Stack, Text } from "@chakra-ui/react";
-import { useStats } from "../hooks/useRigStats";
+import { useStats } from "../../../hooks/useRigStats";
 
 const StatItem = ({ name, value }: { name: string; value: string }) => {
   return (

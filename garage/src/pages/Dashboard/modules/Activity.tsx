@@ -1,7 +1,7 @@
 import React from "react";
 import { Heading, Flex, Image, Table, Tbody, Tr, Td } from "@chakra-ui/react";
-import { useRigImageUrls } from "../hooks/useRigImageUrls";
-import { useRigsActivity } from "../hooks/useRigsActivity";
+import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
+import { useRigsActivity } from "../../../hooks/useRigsActivity";
 
 export const Activity = () => {
   const { events } = useRigsActivity();
