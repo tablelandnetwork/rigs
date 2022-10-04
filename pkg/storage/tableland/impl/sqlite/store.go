@@ -54,8 +54,8 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 }
 
 // InsertLayers implements InsertLayers.
-func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Layer) error {
-	sql, err := s.factory.SQLForInsertingLayers(tableland.LayersDefinition.Prefix, cid, layers)
+func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
+	sql, err := s.factory.SQLForInsertingLayers(tableland.LayersDefinition.Prefix, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting layers: %v", err)
 	}
@@ -66,8 +66,8 @@ func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Lay
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, cid, rigs)
+func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting rigs: %v", err)
 	}
@@ -89,50 +89,86 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	return nil
 }
 
-// ClearPartsData implements ClearPartsData.
-func (s *Store) ClearPartsData(ctx context.Context) error {
+// InsertLookups implements InsertLookups.
+func (s *Store) InsertLookups(ctx context.Context, lookups []tableland.Lookup) error {
+	sql, err := s.factory.SQLForInsertingLookups(tableland.LookupsDefinition.Prefix, lookups)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting lookups: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("inserting lookups: %v", err)
+	}
+	return nil
+}
+
+// ClearParts implements ClearParts.
+func (s *Store) ClearParts(ctx context.Context) error {
 	sql, err := s.factory.SQLForClearingData(tableland.PartsDefinition.Prefix)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing parts data: %v", err)
+		return fmt.Errorf("getting sql for clearing parts: %v", err)
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("clearing parts data: %v", err)
+		return fmt.Errorf("clearing parts: %v", err)
 	}
 	return nil
 }
 
-// ClearLayersData implements ClearLayersData.
-func (s *Store) ClearLayersData(ctx context.Context) error {
+// ClearLayers implements ClearLayers.
+func (s *Store) ClearLayers(ctx context.Context) error {
 	sql, err := s.factory.SQLForClearingData(tableland.LayersDefinition.Prefix)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing layers data: %v", err)
+		return fmt.Errorf("getting sql for clearing layers: %v", err)
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("clearing layers data: %v", err)
+		return fmt.Errorf("clearing layers: %v", err)
 	}
 	return nil
 }
 
-// ClearRigsData implements ClearRigsData.
-func (s *Store) ClearRigsData(ctx context.Context) error {
+// ClearRigs implements ClearRigs.
+func (s *Store) ClearRigs(ctx context.Context) error {
 	sql, err := s.factory.SQLForClearingData(tableland.RigsDefinition.Prefix)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing rigs data: %v", err)
+		return fmt.Errorf("getting sql for clearing rigs: %v", err)
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("clearing rigs data: %v", err)
+		return fmt.Errorf("clearing rigs: %v", err)
 	}
 	return nil
 }
 
-// ClearRigAttributesData implements ClearRigAttributesData.
-func (s *Store) ClearRigAttributesData(ctx context.Context) error {
+// ClearRigAttributes implements ClearRigAttributes.
+func (s *Store) ClearRigAttributes(ctx context.Context) error {
 	sql, err := s.factory.SQLForClearingData(tableland.RigAttributesDefinition.Prefix)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing rig attributes data: %v", err)
+		return fmt.Errorf("getting sql for clearing rig attributes: %v", err)
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("clearing rig attributes data: %v", err)
+		return fmt.Errorf("clearing rig attributes: %v", err)
+	}
+	return nil
+}
+
+// ClearLookups implements ClearLookups.
+func (s *Store) ClearLookups(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData(tableland.LookupsDefinition.Prefix)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing lookups: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing lookups: %v", err)
+	}
+	return nil
+}
+
+// ClearPilotSessions implements ClearPilotSessions.
+func (s *Store) ClearPilotSessions(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData(tableland.PilotSessionsDefinition.Prefix)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing pilot sessions: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing pilot sessions: %v", err)
 	}
 	return nil
 }

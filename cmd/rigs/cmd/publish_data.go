@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
@@ -27,6 +28,7 @@ func init() {
 	dataCmd.Flags().Bool("layers", false, "publish data for the layers table")
 	dataCmd.Flags().Bool("rigs", false, "publish data for the rigs table")
 	dataCmd.Flags().Bool("attrs", false, "publish data for the rig attributes table")
+	dataCmd.Flags().Bool("lookups", false, "publish data for lookups table")
 	dataCmd.MarkFlagsMutuallyExclusive()
 }
 
@@ -36,7 +38,11 @@ var dataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		publishAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
+		publishAll := !viper.GetBool("parts") &&
+			!viper.GetBool("layers") &&
+			!viper.GetBool("rigs") &&
+			!viper.GetBool("attrs") &&
+			!viper.GetBool("lookups")
 
 		var jobs []wpool.Job
 		jobID := 1
@@ -48,21 +54,16 @@ var dataCmd = &cobra.Command{
 		}
 
 		if viper.GetBool("layers") || publishAll {
-			layersCid, err := localStore.Cid(ctx, "layers")
-			checkErr(err)
-			layersJobs, err := layersJobs(ctx, localStore, &jobID, layersCid)
+			layersJobs, err := layersJobs(ctx, localStore, &jobID)
 			checkErr(err)
 			jobs = append(jobs, layersJobs...)
 		}
 
 		if viper.GetBool("rigs") || publishAll {
-			imagesCid, err := localStore.Cid(ctx, "images")
-			checkErr(err)
 			rigsJobs, err := rigsJobs(
 				ctx,
 				localStore,
 				&jobID,
-				imagesCid,
 			)
 			checkErr(err)
 			jobs = append(jobs, rigsJobs...)
@@ -72,6 +73,10 @@ var dataCmd = &cobra.Command{
 			attsJobs, err := attrsJobs(ctx, localStore, &jobID)
 			checkErr(err)
 			jobs = append(jobs, attsJobs...)
+		}
+
+		if viper.GetBool("lookups") || publishAll {
+			jobs = append(jobs, lookupsJob(localStore, &jobID))
 		}
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
@@ -126,12 +131,12 @@ func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 	return jobs, nil
 }
 
-func layersJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
+func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	execFn := func(layers []local.Layer) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertLayers(ctx, cid, layers); err != nil {
+			if err := store.InsertLayers(ctx, layers); err != nil {
 				return nil, fmt.Errorf("calling insert layers: %v", err)
 			}
 			return nil, nil
@@ -155,12 +160,12 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]w
 	return jobs, nil
 }
 
-func rigsJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
+func rigsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertRigs(ctx, cid, rigs); err != nil {
+			if err := store.InsertRigs(ctx, rigs); err != nil {
 				return nil, fmt.Errorf("calling insert rigs: %v", err)
 			}
 			return nil, nil
@@ -217,4 +222,36 @@ func attrsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 		offset += rigAttributesPageSize
 	}
 	return jobs, nil
+}
+
+func lookupsJob(s local.Store, jobID *int) wpool.Job {
+	return wpool.Job{
+		ID: wpool.JobID(*jobID),
+		ExecFn: func(ctx context.Context) (interface{}, error) {
+			imagesCid, err := s.Cid(ctx, "images")
+			if err != nil {
+				return nil, fmt.Errorf("querying images cid: %v", err)
+			}
+			layersCid, err := s.Cid(ctx, "layers")
+			if err != nil {
+				return nil, fmt.Errorf("querying layers cid: %v", err)
+			}
+			lookups := []tableland.Lookup{
+				{Label: "imagesCid", Value: imagesCid},
+				{Label: "layersCid", Value: layersCid},
+				{Label: "imageFullName", Value: "image_full.png"},
+				{Label: "imageFullAlphaName", Value: "image_full_alpha.png"},
+				{Label: "imageMediumName", Value: "image_medium.png"},
+				{Label: "imageMediumAlphaName", Value: "image_medium_alpha.png"},
+				{Label: "imageThumbName", Value: "image_thumb.png"},
+				{Label: "imageThumbAlphaName", Value: "image_thumb_alpha.png"},
+				{Label: "baseAnimationUrl", Value: "https://tableland.xyz/rigs/animate?id="},
+			}
+			if err := store.InsertLookups(ctx, lookups); err != nil {
+				return nil, fmt.Errorf("calling insert lookups: %v", err)
+			}
+			return nil, nil
+		},
+		Desc: "lookups job",
+	}
 }

@@ -137,8 +137,8 @@ export default {
         this.rigs = j.map((rig) => {
           return {
             ...rig,
-            image: this.api + '/images/' + rig.id + '/image.png',
-            thumb: this.api + '/images/' + rig.id + '/thumb.png'
+            image: this.api + '/images/' + rig.id + '/image_full.png',
+            thumb: this.api + '/images/' + rig.id + '/image_thumb.png'
           };
         });
         this.resizeImages();

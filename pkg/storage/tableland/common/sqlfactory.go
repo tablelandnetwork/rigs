@@ -8,6 +8,7 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 
 	// Import the SQLite driver.
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
@@ -38,16 +39,16 @@ func (s *SQLFactory) SQLForInsertingParts(table string, parts []local.Part) (str
 }
 
 // SQLForInsertingLayers returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingLayers(table string, cid string, layers []local.Layer) (string, error) {
+func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (string, error) {
 	var vals [][]interface{}
 	for _, layer := range layers {
 		coloredPart := fmt.Sprintf("%s %s", layer.Color, layer.PartName)
 		vals = append(
 			vals,
-			goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, fmt.Sprintf("ipfs://%s/%s", cid, layer.Path)},
+			goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, layer.Path},
 		)
 	}
-	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "cid").Vals(vals...)
+	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "path").Vals(vals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert parts: %v", err)
@@ -56,19 +57,23 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, cid string, layers []lo
 }
 
 // SQLForInsertingRigs returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingRigs(rigsTable, cid string, rigs []local.Rig) (string, error) {
+func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, rigs []local.Rig) (string, error) {
 	var rigVals [][]interface{}
 	for _, rig := range rigs {
 		rigVals = append(rigVals, goqu.Vals{
 			rig.ID,
-			fmt.Sprintf("ipfs://%s/%d/image.png", cid, rig.ID),
-			fmt.Sprintf("ipfs://%s/%d/image_alpha.png", cid, rig.ID),
-			fmt.Sprintf("ipfs://%s/%d/thumb.png", cid, rig.ID),
-			fmt.Sprintf("ipfs://%s/%d/thumb_alpha.png", cid, rig.ID),
+			fmt.Sprintf("%d/image_full.png", rig.ID),
+			fmt.Sprintf("%d/image_full_alpha.png", rig.ID),
+			fmt.Sprintf("%d/image_medium.png", rig.ID),
+			fmt.Sprintf("%d/image_medium_alpha.png", rig.ID),
+			fmt.Sprintf("%d/image_thumb.png", rig.ID),
+			fmt.Sprintf("%d/image_thumb_alpha.png", rig.ID),
 		})
 	}
 
-	ds := s.d.Insert(rigsTable).Cols("id", "image", "image_alpha", "thumb", "thumb_alpha").Vals(rigVals...)
+	ds := s.d.Insert(rigsTable).
+		Cols("id", "path_full", "path_full_alpha", "path_medium", "path_medium_alpha", "path_thumb", "path_thumb_alpha").
+		Vals(rigVals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert rigs: %v", err)
@@ -124,6 +129,23 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 		return "", fmt.Errorf("creating sql to insert rig attributes: %v", err)
 	}
 
+	return clean(sql), nil
+}
+
+// SQLForInsertingLookups returns the SQL statement.
+func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups []tableland.Lookup) (string, error) {
+	var vals [][]interface{}
+	for _, lookup := range lookups {
+		vals = append(
+			vals,
+			goqu.Vals{lookup.Label, lookup.Value},
+		)
+	}
+	ds := s.d.Insert(lookupsTable).Cols("label", "value").Vals(vals...)
+	sql, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert lookups: %v", err)
+	}
 	return clean(sql), nil
 }
 

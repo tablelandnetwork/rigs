@@ -86,7 +86,7 @@ The resulting images will be written to a folder called `./renders`. Each subfol
 
 ```
 > ls ./renders/1/
-image.png        image_alpha.png  thumb.png        thumb_alpha.png
+image_full.png        image_full_alpha.png        image_medium.png        image_medium_alpha.png        image_thumb.png        image_thumb_alpha.png
 ```
 
 You can launch a simple local web app to view the results. 

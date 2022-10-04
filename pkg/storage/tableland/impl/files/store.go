@@ -64,12 +64,12 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 }
 
 // InsertLayers implements InsertLayers.
-func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Layer) error {
+func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
-	sql, err := s.factory.SQLForInsertingLayers(tableName, cid, layers)
+	sql, err := s.factory.SQLForInsertingLayers(tableName, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert layers: %v", err)
 	}
@@ -77,12 +77,12 @@ func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Lay
 }
 
 // InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) error {
+func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
-	sql, err := s.factory.SQLForInsertingRigs(tableName, cid, rigs)
+	sql, err := s.factory.SQLForInsertingRigs(tableName, rigs)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rigs: %v", err)
 	}
@@ -102,24 +102,47 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	return s.writeSQL("rig-attributes", sql)
 }
 
-// ClearPartsData implements ClearPartsData.
-func (s *Store) ClearPartsData(_ context.Context) error {
-	return errors.New("ClearPartsData not implemented")
+// InsertLookups implements InsertLookups.
+func (s *Store) InsertLookups(ctx context.Context, lookups []tableland.Lookup) error {
+	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingLookups(tableName, lookups)
+	if err != nil {
+		return fmt.Errorf("getting sql to insert lookups: %v", err)
+	}
+	return s.writeSQL("lookups", sql)
 }
 
-// ClearLayersData implements ClearLayersData.
-func (s *Store) ClearLayersData(_ context.Context) error {
-	return errors.New("ClearLayersData not implemented")
+// ClearParts implements ClearParts.
+func (s *Store) ClearParts(_ context.Context) error {
+	return errors.New("ClearParts not implemented")
 }
 
-// ClearRigsData implements ClearRigsData.
-func (s *Store) ClearRigsData(_ context.Context) error {
-	return errors.New("ClearRigsData not implemented")
+// ClearLayers implements ClearLayers.
+func (s *Store) ClearLayers(_ context.Context) error {
+	return errors.New("ClearLayers not implemented")
 }
 
-// ClearRigAttributesData implements ClearRigAttributesData.
-func (s *Store) ClearRigAttributesData(_ context.Context) error {
-	return errors.New("ClearRigAttributesData not implemented")
+// ClearRigs implements ClearRigs.
+func (s *Store) ClearRigs(_ context.Context) error {
+	return errors.New("ClearRigs not implemented")
+}
+
+// ClearRigAttributes implements ClearRigAttributes.
+func (s *Store) ClearRigAttributes(_ context.Context) error {
+	return errors.New("ClearRigAttributes not implemented")
+}
+
+// ClearLookups implements ClearLookups.
+func (s *Store) ClearLookups(_ context.Context) error {
+	return errors.New("ClearLookups not implemented")
+}
+
+// ClearPilotSessions implements ClearPilotSessions.
+func (s *Store) ClearPilotSessions(_ context.Context) error {
+	return errors.New("ClearPilotSessions not implemented")
 }
 
 // Close implements io.Closer.
