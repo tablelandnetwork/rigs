@@ -185,7 +185,7 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 	return wpool.Job{
 		ID: wpool.JobID(*jobID),
 		ExecFn: func(ctx context.Context) (interface{}, error) {
-			imagesCid, err := s.Cid(ctx, "images")
+			rendersCid, err := s.Cid(ctx, "renders")
 			if err != nil {
 				return nil, fmt.Errorf("querying images cid: %v", err)
 			}
@@ -194,7 +194,7 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 				return nil, fmt.Errorf("querying layers cid: %v", err)
 			}
 			lookups := []tableland.Lookup{
-				{Label: "imagesCid", Value: imagesCid},
+				{Label: "rendersCid", Value: rendersCid},
 				{Label: "layersCid", Value: layersCid},
 				{Label: "imageFullName", Value: "image_full.png"},
 				{Label: "imageFullAlphaName", Value: "image_full_alpha.png"},
