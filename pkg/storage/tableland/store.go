@@ -37,19 +37,6 @@ var (
 			unique(fleet,rig_attributes_value,position)
 		)`,
 	}
-	// RigsDefinition defines the rigs table.
-	RigsDefinition = TableDefinition{
-		Prefix: "rigs",
-		Schema: `(
-			id integer primary key,
-			path_full text,
-			path_full_alpha text,
-			path_medium text,
-			path_medium_alpha text,
-			path_thumb text,
-			path_thumb_alpha text
-		)`,
-	}
 	// RigAttributesDefinition defines the rig attribes table.
 	RigAttributesDefinition = TableDefinition{
 		Prefix: "rig_attributes",
@@ -94,12 +81,10 @@ type Store interface {
 	CreateTable(context.Context, TableDefinition) (string, error)
 	InsertParts(context.Context, []local.Part) error
 	InsertLayers(context.Context, []local.Layer) error
-	InsertRigs(context.Context, []local.Rig) error
 	InsertRigAttributes(context.Context, []local.Rig) error
 	InsertLookups(context.Context, []Lookup) error
 	ClearParts(context.Context) error
 	ClearLayers(context.Context) error
-	ClearRigs(context.Context) error
 	ClearRigAttributes(context.Context) error
 	ClearLookups(context.Context) error
 	ClearPilotSessions(context.Context) error

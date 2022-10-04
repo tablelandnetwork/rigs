@@ -65,18 +65,6 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	return nil
 }
 
-// InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
-	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, rigs)
-	if err != nil {
-		return fmt.Errorf("getting sql for inserting rigs: %v", err)
-	}
-	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("inserting rigs: %v", err)
-	}
-	return nil
-}
-
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
 	sql, err := s.factory.SQLForInsertingRigAttributes(tableland.RigAttributesDefinition.Prefix, rigs)
@@ -121,18 +109,6 @@ func (s *Store) ClearLayers(ctx context.Context) error {
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("clearing layers: %v", err)
-	}
-	return nil
-}
-
-// ClearRigs implements ClearRigs.
-func (s *Store) ClearRigs(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData(tableland.RigsDefinition.Prefix)
-	if err != nil {
-		return fmt.Errorf("getting sql for clearing rigs: %v", err)
-	}
-	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("clearing rigs: %v", err)
 	}
 	return nil
 }

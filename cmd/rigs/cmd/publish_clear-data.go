@@ -16,7 +16,6 @@ func init() {
 
 	clearDataCmd.Flags().Bool("parts", false, "clear data for the parts table")
 	clearDataCmd.Flags().Bool("layers", false, "clear data for the layers table")
-	clearDataCmd.Flags().Bool("rigs", false, "clear data for the rigs table")
 	clearDataCmd.Flags().Bool("attrs", false, "clear data for the rig attributes table")
 	clearDataCmd.Flags().Bool("lookups", false, "clear data for the lookups table")
 	clearDataCmd.Flags().Bool("pilots", false, "clear data for the pilots sessions table")
@@ -30,7 +29,6 @@ var clearDataCmd = &cobra.Command{
 
 		clearAll := !viper.GetBool("parts") &&
 			!viper.GetBool("layers") &&
-			!viper.GetBool("rigs") &&
 			!viper.GetBool("attrs") &&
 			!viper.GetBool("lookups") &&
 			!viper.GetBool("pilots")
@@ -57,10 +55,6 @@ var clearDataCmd = &cobra.Command{
 				jobs,
 				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearLayers), Desc: "layers"},
 			)
-		}
-		if viper.GetBool("rigs") || clearAll {
-			jobID++
-			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigs), Desc: "rigs"})
 		}
 		if viper.GetBool("attrs") || clearAll {
 			jobID++

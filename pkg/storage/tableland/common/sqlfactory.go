@@ -56,32 +56,6 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 	return clean(sql), nil
 }
 
-// SQLForInsertingRigs returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingRigs(rigsTable string, rigs []local.Rig) (string, error) {
-	var rigVals [][]interface{}
-	for _, rig := range rigs {
-		rigVals = append(rigVals, goqu.Vals{
-			rig.ID,
-			fmt.Sprintf("%d/image_full.png", rig.ID),
-			fmt.Sprintf("%d/image_full_alpha.png", rig.ID),
-			fmt.Sprintf("%d/image_medium.png", rig.ID),
-			fmt.Sprintf("%d/image_medium_alpha.png", rig.ID),
-			fmt.Sprintf("%d/image_thumb.png", rig.ID),
-			fmt.Sprintf("%d/image_thumb_alpha.png", rig.ID),
-		})
-	}
-
-	ds := s.d.Insert(rigsTable).
-		Cols("id", "path_full", "path_full_alpha", "path_medium", "path_medium_alpha", "path_thumb", "path_thumb_alpha").
-		Vals(rigVals...)
-	sql, _, err := ds.ToSQL()
-	if err != nil {
-		return "", fmt.Errorf("creating sql to insert rigs: %v", err)
-	}
-
-	return clean(sql), nil
-}
-
 // SQLForInsertingRigAttributes returns the SQL statement.
 func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []local.Rig) (string, error) {
 	firstOriginalAndColor := func(parts []local.Part) (string, string, error) {

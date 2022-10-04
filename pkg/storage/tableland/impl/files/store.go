@@ -76,19 +76,6 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	return s.writeSQL("layers", sql)
 }
 
-// InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
-	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
-	if err != nil {
-		return fmt.Errorf("getting table name: %v", err)
-	}
-	sql, err := s.factory.SQLForInsertingRigs(tableName, rigs)
-	if err != nil {
-		return fmt.Errorf("getting sql to insert rigs: %v", err)
-	}
-	return s.writeSQL("rigs", sql)
-}
-
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
 	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
@@ -123,11 +110,6 @@ func (s *Store) ClearParts(_ context.Context) error {
 // ClearLayers implements ClearLayers.
 func (s *Store) ClearLayers(_ context.Context) error {
 	return errors.New("ClearLayers not implemented")
-}
-
-// ClearRigs implements ClearRigs.
-func (s *Store) ClearRigs(_ context.Context) error {
-	return errors.New("ClearRigs not implemented")
 }
 
 // ClearRigAttributes implements ClearRigAttributes.

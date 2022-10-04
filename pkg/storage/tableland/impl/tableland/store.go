@@ -85,19 +85,6 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	return s.writeSQL(ctx, sql)
 }
 
-// InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
-	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
-	if err != nil {
-		return fmt.Errorf("getting table name: %v", err)
-	}
-	sql, err := s.factory.SQLForInsertingRigs(tableName, rigs)
-	if err != nil {
-		return fmt.Errorf("getting sql to insert rigs: %v", err)
-	}
-	return s.writeSQL(ctx, sql)
-}
-
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
 	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
@@ -146,19 +133,6 @@ func (s *Store) ClearLayers(ctx context.Context) error {
 	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing layers: %v", err)
-	}
-	return s.writeSQL(ctx, sql)
-}
-
-// ClearRigs implements ClearRigs.
-func (s *Store) ClearRigs(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
-	if err != nil {
-		return fmt.Errorf("getting table name: %v", err)
-	}
-	sql, err := s.factory.SQLForClearingData(tableName)
-	if err != nil {
-		return fmt.Errorf("getting sql for clearing rigs: %v", err)
 	}
 	return s.writeSQL(ctx, sql)
 }
