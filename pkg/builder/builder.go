@@ -330,16 +330,16 @@ func (b *Builder) Render(
 						ExecFn: copyFn(path.Join(rigPath, "image_medium_alpha.png"), readerAlphaMedium),
 						Desc:   "image medium alpha",
 					},
-					// {
-					// 	ID:     5,
-					// 	ExecFn: copyFn(path.Join(rigPath, "image_thumb.png"), readerThumb),
-					// 	Desc:   "image thumb",
-					// },
-					// {
-					// 	ID:     6,
-					// 	ExecFn: copyFn(path.Join(rigPath, "image_thumb_alpha.png"), readerAlphaThumb),
-					// 	Desc:   "image thumb alpha",
-					// },
+					{
+						ID:     5,
+						ExecFn: copyFn(path.Join(rigPath, "image_thumb.png"), readerThumb),
+						Desc:   "image thumb",
+					},
+					{
+						ID:     6,
+						ExecFn: copyFn(path.Join(rigPath, "image_thumb_alpha.png"), readerAlphaThumb),
+						Desc:   "image thumb alpha",
+					},
 				}
 				wp := wpool.New(4, rate.Inf)
 				go wp.GenerateFrom(jobs)
