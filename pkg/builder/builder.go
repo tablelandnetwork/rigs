@@ -34,7 +34,8 @@ const (
 
 var (
 	defaultRenderConfig = renderConfig{
-		size:        1200,
+		size:        4000,
+		mediumSize:  2000,
 		thumbSize:   400,
 		compression: png.DefaultCompression,
 		drawLabels:  false,
@@ -133,6 +134,7 @@ func (b *Builder) Build(ctx context.Context, option BuildOption) (*local.Rig, er
 
 type renderConfig struct {
 	size        int
+	mediumSize  int
 	thumbSize   int
 	compression png.CompressionLevel
 	drawLabels  bool
@@ -145,6 +147,13 @@ type RenderOption func(*renderConfig)
 func RenderSize(size int) RenderOption {
 	return func(c *renderConfig) {
 		c.size = size
+	}
+}
+
+// RenderMediumSize controls the size of the created medium image.
+func RenderMediumSize(size int) RenderOption {
+	return func(c *renderConfig) {
+		c.mediumSize = size
 	}
 }
 
@@ -182,25 +191,33 @@ func (b *Builder) Render(
 		opt(&c)
 	}
 
-	reader, writer := io.Pipe()
-	var readerData bytes.Buffer
-	readerThrough := io.TeeReader(reader, &readerData)
+	readerFullSrc, writerFull := io.Pipe()
+	var fullBuffer bytes.Buffer
+	readerFull := io.TeeReader(readerFullSrc, &fullBuffer)
+	readerMedium, writerMedium := io.Pipe()
 	readerThumb, writerThumb := io.Pipe()
 
-	readerAlpha, writerAlpha := io.Pipe()
-	var readerAlphaData bytes.Buffer
-	readerAlphaThrough := io.TeeReader(readerAlpha, &readerAlphaData)
+	readerFullAlphaSrc, writerFullAlpha := io.Pipe()
+	var fullAlphaBuffer bytes.Buffer
+	readerAlphaFull := io.TeeReader(readerFullAlphaSrc, &fullAlphaBuffer)
+	readerAlphaMedium, writerAlphaMedium := io.Pipe()
 	readerAlphaThumb, writerAlphaThumb := io.Pipe()
 
 	defer func() {
-		if err := reader.Close(); err != nil {
+		if err := readerFullSrc.Close(); err != nil {
 			log.Error().Err(err).Msg("closing reader")
+		}
+		if err := readerMedium.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader medium")
 		}
 		if err := readerThumb.Close(); err != nil {
 			log.Error().Err(err).Msg("closing reader thumb")
 		}
-		if err := readerAlpha.Close(); err != nil {
+		if err := readerFullAlphaSrc.Close(); err != nil {
 			log.Error().Err(err).Msg("closing reader alpha")
+		}
+		if err := readerAlphaMedium.Close(); err != nil {
+			log.Error().Err(err).Msg("closing reader alpha medium")
 		}
 		if err := readerAlphaThumb.Close(); err != nil {
 			log.Error().Err(err).Msg("closing reader alpha thumb")
@@ -209,13 +226,14 @@ func (b *Builder) Render(
 
 	execFunc := func(
 		rig local.Rig,
-		writer *io.PipeWriter,
-		readerData io.Reader,
+		writerFull *io.PipeWriter,
+		fullBuffer *bytes.Buffer,
+		writerMedium *io.PipeWriter,
 		writerThumb *io.PipeWriter,
 		background bool,
 	) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := b.AssembleImage(ctx, rig, layersPath, writer,
+			if err := b.AssembleImage(ctx, rig, layersPath, writerFull,
 				AssembleImageBackground(background),
 				AssembleImageCompression(c.compression),
 				AssembleImageLabels(c.drawLabels),
@@ -223,12 +241,27 @@ func (b *Builder) Render(
 			); err != nil {
 				return nil, fmt.Errorf("assembling image: %v", err)
 			}
-			if err := writer.Close(); err != nil {
+			if err := writerFull.Close(); err != nil {
 				return nil, fmt.Errorf("closing writer: %v", err)
 			}
+
+			readerFullCopy := bytes.NewReader(fullBuffer.Bytes())
+
+			mediumRect := image.Rect(0, 0, c.mediumSize, c.mediumSize)
+			if err := resizeImage(readerFullCopy, mediumRect, writerMedium); err != nil {
+				return nil, fmt.Errorf("resizing to medium image: %v", err)
+			}
+			if err := writerMedium.Close(); err != nil {
+				return nil, fmt.Errorf("closing medium writer: %v", err)
+			}
+
+			if _, err := readerFullCopy.Seek(0, 0); err != nil {
+				return nil, fmt.Errorf("seeking buffer to 0: %v", err)
+			}
+
 			thumbRect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
-			if err := resizeImage(readerData, thumbRect, writerThumb); err != nil {
-				return nil, fmt.Errorf("resizing image: %v", err)
+			if err := resizeImage(readerFullCopy, thumbRect, writerThumb); err != nil {
+				return nil, fmt.Errorf("resizing to thumb image: %v", err)
 			}
 			if err := writerThumb.Close(); err != nil {
 				return nil, fmt.Errorf("closing thumb writer: %v", err)
@@ -241,12 +274,12 @@ func (b *Builder) Render(
 		{
 			ID:     1,
 			Desc:   "render images with background",
-			ExecFn: execFunc(*rig, writer, &readerData, writerThumb, true),
+			ExecFn: execFunc(*rig, writerFull, &fullBuffer, writerMedium, writerThumb, true),
 		},
 		{
 			ID:     2,
 			Desc:   "render images without backgrounds",
-			ExecFn: execFunc(*rig, writerAlpha, &readerAlphaData, writerAlphaThumb, false),
+			ExecFn: execFunc(*rig, writerFullAlpha, &fullAlphaBuffer, writerAlphaMedium, writerAlphaThumb, false),
 		},
 		{
 			ID:   3,
@@ -279,24 +312,34 @@ func (b *Builder) Render(
 				jobs := []wpool.Job{
 					{
 						ID:     1,
-						ExecFn: copyFn(path.Join(rigPath, "image.png"), readerThrough),
-						Desc:   "image",
+						ExecFn: copyFn(path.Join(rigPath, "image_full.png"), readerFull),
+						Desc:   "image full",
 					},
 					{
 						ID:     2,
-						ExecFn: copyFn(path.Join(rigPath, "image_alpha.png"), readerAlphaThrough),
-						Desc:   "image alpha",
+						ExecFn: copyFn(path.Join(rigPath, "image_full_alpha.png"), readerAlphaFull),
+						Desc:   "image full alpha",
 					},
 					{
 						ID:     3,
-						ExecFn: copyFn(path.Join(rigPath, "thumb.png"), readerThumb),
-						Desc:   "thumb",
+						ExecFn: copyFn(path.Join(rigPath, "image_medium.png"), readerMedium),
+						Desc:   "image medium",
 					},
 					{
 						ID:     4,
-						ExecFn: copyFn(path.Join(rigPath, "thumb_alpha.png"), readerAlphaThumb),
-						Desc:   "thumb alpha",
+						ExecFn: copyFn(path.Join(rigPath, "image_medium_alpha.png"), readerAlphaMedium),
+						Desc:   "image medium alpha",
 					},
+					// {
+					// 	ID:     5,
+					// 	ExecFn: copyFn(path.Join(rigPath, "image_thumb.png"), readerThumb),
+					// 	Desc:   "image thumb",
+					// },
+					// {
+					// 	ID:     6,
+					// 	ExecFn: copyFn(path.Join(rigPath, "image_thumb_alpha.png"), readerAlphaThumb),
+					// 	Desc:   "image thumb alpha",
+					// },
 				}
 				wp := wpool.New(4, rate.Inf)
 				go wp.GenerateFrom(jobs)
