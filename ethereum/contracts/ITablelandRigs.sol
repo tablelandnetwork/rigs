@@ -11,7 +11,7 @@ interface ITablelandRigs {
     // Thrown when minting with quantity of zero.
     error ZeroQuantity();
 
-    // Thrownn when minting when mint quantity exceeds remaining allowance.
+    // Thrown when minting when mint quantity exceeds remaining allowance.
     error InsufficientAllowance();
 
     // Thrown when minting when an allowance proof is invalid.
@@ -22,6 +22,27 @@ interface ITablelandRigs {
 
     // Thrown when minting when there are no more Rigs.
     error SoldOut();
+
+    // Thrown when attempting to interact with non-owned Rigs.
+    error InvalidRigOwnership();
+
+    // Thrown if a Pilot's contract is not ERC721-compliant.
+    error InvalidPilotContract();
+
+    // Thrown if an address does not own the token at a specified Pilot contract.
+    error InvalidPilotOwnership();
+
+    // Thrown when a Rig has already completed its training but `trainRig` is called.
+    error RigIsTrained(uint256 tokenId);
+
+    // Thrown when a Rig is trying to be piloted but hasn't completed its training.
+    error RigIsNotTrained(uint256 tokenId);
+
+    // Thrown if there is an attempt to park a Rig that's already parked.
+    error RigIsParked(uint256 tokenId);
+
+    // Thrown if there is an attempt to transfer a Rig that's currently in-flight.
+    error RigIsPiloted(uint256 tokenId);
 
     // Values describing mint phases.
     enum MintPhase {
@@ -49,6 +70,22 @@ interface ITablelandRigs {
         uint256 numPurchased,
         uint256 amount
     );
+
+    // TODO check if making these `indexed` is worthwhile; it adds a little gas but makes em more easily queryable
+    /**
+     * @dev Emitted when a Rig starts its training.
+     */
+    event Training(uint256 tokenId);
+
+    /**
+     * @dev Emitted when a Rig is piloted.
+     */
+    event Piloted(uint256 tokenId);
+
+    /**
+     * @dev Emitted when a Rig is parked.
+     */
+    event Parked(uint256 tokenId);
 
     /**
      * @dev Mints Rigs.
@@ -175,4 +212,51 @@ interface ITablelandRigs {
      * - contract must be paused
      */
     function unpause() external;
+
+    /**
+     * @dev Retrieves pilot info for a Rig.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - `msg.sender` must own the Rig
+     * - `RigPilot` of the Rig must have an index of `0`
+     */
+    function trainRig(uint256 tokenId) external;
+
+    /**
+     * @dev Sets the `RigPilot` for a Rig in `_pilots` and the Tableland `rig_pilots` table.
+     *
+     * tokenId - the unique Rig token identifier
+     * pilotContract - ERC721 contract address of a desired Rig's Pilot
+     * pilotTokenId - the unique token identifier at the target `pilotContract`
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - `msg.sender` must own the Rig
+     * - `RigPilot` of the Rig must *not* have an index of `0`
+     * - `pilotContract` must be an ERC721 contract
+     * - `pilotTokenId` must be owned by `msg.sender` at `pilotContract`
+     */
+    function pilotRig(
+        uint256 tokenId,
+        address pilotContract,
+        uint256 pilotTokenId
+    ) external;
+
+    /**
+     * @dev Updates the `RigPilot` for a Rig in `_pilots` and the Tableland `rig_pilots` table.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - `msg.sender` must own the Rig
+     * - `startBlockNumber` of the current `RigPilot` should not be zero (0 == parked)
+     */
+    function parkRig(uint256 tokenId) external;
 }
