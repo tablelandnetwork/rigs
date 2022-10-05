@@ -3,7 +3,7 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { BigNumber, utils } from "ethers";
 import { ethers } from "hardhat";
-import { PaymentSplitter, TablelandRigs } from "../typechain-types";
+import { PaymentSplitter, SQLHelpers, TablelandRigs } from "../typechain-types";
 import { MerkleTree } from "merkletreejs";
 import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
 import { getURITemplate } from "../helpers/uris";
@@ -25,6 +25,7 @@ describe("Rigs", function () {
   const waitlist: AllowList = {};
   let allowlistTree: MerkleTree;
   let waitlistTree: MerkleTree;
+  let sqlHelpers: SQLHelpers;
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
@@ -56,7 +57,15 @@ describe("Rigs", function () {
     )) as PaymentSplitter;
     await splitter.deployed();
 
-    const RigsFactory = await ethers.getContractFactory("TablelandRigs");
+    const SQLHelpersFactory = await ethers.getContractFactory("SQLHelpers");
+    sqlHelpers = (await SQLHelpersFactory.deploy()) as SQLHelpers;
+    await sqlHelpers.deployed();
+
+    const RigsFactory = await ethers.getContractFactory("TablelandRigs", {
+      libraries: {
+        SQLHelpers: sqlHelpers.address,
+      },
+    });
     rigs = await (await RigsFactory.deploy()).deployed();
     await (
       await rigs.initialize(
