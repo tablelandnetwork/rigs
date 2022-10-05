@@ -10,7 +10,7 @@ const alchemyApiKey = "2-splbb2E9wDI3v4pYwMB-TWqHu9Xhe2";
 
 const rigBadgesTableName = "rig_badges_5_todo";
 const rigPilotsTableName = "rig_pilots_5_todo";
-const ipfsGatewayUri = "https://ipfs.io/ipfs/";
+const ipfsGatewayUri = "https://gateway.pinata.cloud/ipfs/";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ url }) {
@@ -29,26 +29,82 @@ export async function load({ url }) {
     { output: "objects" }
   );*/
   // TODO: get the badges via tableland
-  const badges = [
+  const allBadges = [
     "TableLand_Icons-01.svg",
     "TableLand_Icons-02.svg",
     "TableLand_Icons-03.svg",
     "TableLand_Icons-04.svg",
     "TableLand_Icons-05.svg",
     "TableLand_Icons-06.svg"
-    //"TableLand_Badges_Code.png",
-    //"TableLand_Badges_Education.png",
-    //"TableLand_Badges_Filecoin.png",
-    //"TableLand_Badges_NetworkRewards.png",
-    //"TableLand_Badges_SuccessfulProject.png",
-    //"TableLand_Badges_Teaching.png"
   ];
+
+  // TODO: remove this when we are rendering real badge data
+  //       until then you can choose a number of badges to show for manual testing,
+  //       the max visible as of 2022/10/05 is 118
+  const showBadges = 117;
+  const badges = [];
+  for (let i = 0; i < showBadges; i++) {
+    // TODO: pick a random image until we have a way to query for badges
+    const nextBadge = allBadges[Math.floor(Math.random() * 100) % allBadges.length];
+
+    const row = Math.ceil((badges.length + 1) / 11);
+    // depending on the row we want to limit the number of
+    // badges so that you can still see the rig and the pilot
+    if (row < 3) {
+      badges.push(nextBadge);
+      continue;
+    }
+
+    if (row === 3) {
+      if (badges.length % 11 < 4) {
+        badges.push(nextBadge);
+      } else {
+        badges.push("");
+      }
+      continue;
+    }
+
+    if (row === 4) {
+      if (badges.length % 11 < 3) {
+        badges.push(nextBadge);
+      } else {
+        badges.push("");
+      }
+      continue;
+    }
+
+    if (row < 10) {
+      if (badges.length % 11 < 2) {
+        badges.push(nextBadge);
+      } else {
+        badges.push("");
+      }
+      continue;
+    }
+
+    if (row < 12) {
+      if (badges.length % 11 < 8) {
+        badges.push(nextBadge);
+      } else {
+        badges.push("");
+      }
+      continue;
+    }
+
+    break;
+  }
 
   /*await tableland.read(
     `SELECT * FROM ${rigPilotsTableName} WHERE rig_id = ${rigId};`,
     { output: "objects" }
   );
   */
+
+  // TODO: comment+uncomment to see different aspects
+  //const pilot = "moonbird_pilot_1x2.png";
+  //const pilot = "moonbird_pilot_1x5.png";
+  //const pilot = "moonbird_pilot_2x1.png";
+  //const pilot = "moonbird_pilot_5x1.png";
   const pilot = "moonbird_pilot.png";
 
   const rigUrl = await getTokenURI(rigId);
