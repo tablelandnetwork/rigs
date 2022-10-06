@@ -2,7 +2,7 @@ import { Rig } from "../types";
 
 const ipfsUriToGatewayUrl = (ipfsUri: string): string => {
   const cidAndPath = ipfsUri.match(/^ipfs:\/\/(.*)$/)![1];
-  return `https://nftstorage.link/ipfs/${cidAndPath}`;
+  return `https://tableland.mypinata.cloud/ipfs/${cidAndPath}`;
 };
 
 interface RigImageUrls {
