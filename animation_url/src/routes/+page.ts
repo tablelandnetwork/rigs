@@ -40,58 +40,22 @@ export async function load({ url }) {
 
   // TODO: remove this when we are rendering real badge data
   //       until then you can choose a number of badges to show for manual testing,
-  //       the max visible as of 2022/10/05 is 118
-  const showBadges = 117;
+  //       the max visible as of 2022/10/06 is 11
+  const totalRigBadgesLength = 117;
+  const totalRigBadges = [];
+  for (let i = 0; i < totalRigBadgesLength; i++) {
+    totalRigBadges.push(allBadges[Math.floor(Math.random() * 100) % allBadges.length]);
+  }
+
+
+  const maxBadges = 11;
   const badges = [];
-  for (let i = 0; i < showBadges; i++) {
+  for (let i = 0; i < maxBadges; i++) {
     // TODO: pick a random image until we have a way to query for badges
-    const nextBadge = allBadges[Math.floor(Math.random() * 100) % allBadges.length];
+    const nextBadge = totalRigBadges[i];
+    if (!nextBadge) break;
 
-    const row = Math.ceil((badges.length + 1) / 11);
-    // depending on the row we want to limit the number of
-    // badges so that you can still see the rig and the pilot
-    if (row < 3) {
-      badges.push(nextBadge);
-      continue;
-    }
-
-    if (row === 3) {
-      if (badges.length % 11 < 4) {
-        badges.push(nextBadge);
-      } else {
-        badges.push("");
-      }
-      continue;
-    }
-
-    if (row === 4) {
-      if (badges.length % 11 < 3) {
-        badges.push(nextBadge);
-      } else {
-        badges.push("");
-      }
-      continue;
-    }
-
-    if (row < 10) {
-      if (badges.length % 11 < 2) {
-        badges.push(nextBadge);
-      } else {
-        badges.push("");
-      }
-      continue;
-    }
-
-    if (row < 12) {
-      if (badges.length % 11 < 8) {
-        badges.push(nextBadge);
-      } else {
-        badges.push("");
-      }
-      continue;
-    }
-
-    break;
+    badges.push(nextBadge);
   }
 
   /*await tableland.read(

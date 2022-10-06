@@ -20,21 +20,21 @@
 
   .badges-container {
     display: flex;
-    flex-wrap: wrap;
+    flex-flow: column;
     justify-content: left;
     position: absolute;
     top: 0;
     left: 0;
-    width: 100%;
+    height: 99%;
+    width: 10%;
     padding-left: 0.7%;
     padding-top: 0.7%;
   }
 
   .badge {
-    flex: 0 1 auto;
-    margin: 0.7%;
-    height: 7.6%;
-    width: 7.6%;
+    flex-direction: column;
+    margin: 5%;
+    width: 80%;
   }
 
   .pilot {
