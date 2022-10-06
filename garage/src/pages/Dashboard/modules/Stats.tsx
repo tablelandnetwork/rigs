@@ -22,13 +22,14 @@ export const Stats = () => {
     <Flex direction="column" p={8} bgColor="paper" sx={{ height: "100%" }}>
       <Heading mb={4}>Stats</Heading>
       <SimpleGrid minChildWidth="260px" gap={3}>
-        {stats.map(({ name, value }) => {
-          return (
-            <GridItem key={name} bgColor="block">
-              <StatItem name={name} value={value} />
-            </GridItem>
-          );
-        })}
+        {stats &&
+          stats.map(({ name, value }) => {
+            return (
+              <GridItem key={name} bgColor="block">
+                <StatItem name={name} value={value} />
+              </GridItem>
+            );
+          })}
       </SimpleGrid>
     </Flex>
   );
