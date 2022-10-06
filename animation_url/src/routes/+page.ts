@@ -10,7 +10,7 @@ const alchemyApiKey = "2-splbb2E9wDI3v4pYwMB-TWqHu9Xhe2";
 
 const rigBadgesTableName = "rig_badges_5_todo";
 const rigPilotsTableName = "rig_pilots_5_todo";
-const ipfsGatewayUri = "https://gateway.pinata.cloud/ipfs/";
+const ipfsGatewayUri = "https://tableland.mypinata.cloud/ipfs/";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ url }) {
