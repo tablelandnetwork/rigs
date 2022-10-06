@@ -1,14 +1,21 @@
 import React from "react";
-import { Heading, Flex, Grid, GridItem, SimpleGrid, Stack, Text } from "@chakra-ui/react";
+import {
+  Heading,
+  Flex,
+  GridItem,
+  SimpleGrid,
+  Stack,
+  Text,
+} from "@chakra-ui/react";
 import { useStats } from "../../../hooks/useRigStats";
 
-const StatItem = ({ name, value }: { name: string; value: string }) => {
+const StatItem = ({ name, value }: { name: string; value: number }) => {
   return (
     <Stack p={3}>
       <Text noOfLines={1}>{name}</Text>
       <Flex align="center" justify="center">
         <Text fontSize="4xl" lineHeight="100%" py={8} noOfLines={1}>
-          {value}
+          {value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
         </Text>
       </Flex>
     </Stack>
