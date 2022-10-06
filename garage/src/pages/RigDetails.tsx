@@ -1,5 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import { ethers } from "ethers";
 import {
   Box,
   Button,
@@ -8,6 +9,13 @@ import {
   GridItem,
   Heading,
   Image,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
   Spinner,
   Table,
   Tbody,
@@ -16,20 +24,23 @@ import {
   Th,
   Tr,
   VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { Rig } from "../types";
 import { Topbar } from "../Topbar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useRig } from "../hooks/useRig";
+import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import { useRig, RigWithGarageStatus } from "../hooks/useRig";
 import { useRigImageUrls } from "../hooks/useRigImageUrls";
+import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
 
 const GRID_GAP = 4;
 const PAPER_TABLE_PT = 8;
 const PAPER_TABLE_HEADING_PX = 8;
 
 interface RigModuleProps {
-  rig: Rig;
+  rig: RigWithGarageStatus;
 }
 
 const RigViewer = ({ rig }: RigModuleProps) => {
@@ -77,36 +88,94 @@ const RigAttributes = ({ rig }: RigModuleProps) => {
   );
 };
 
+interface ModalProps {
+  rig: RigWithGarageStatus;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
+  const { config } = usePrepareContractWrite({
+    addressOrName: CONTRACT_ADDRESS,
+    contractInterface: CONTRACT_INTERFACE,
+    functionName: "trainRig",
+    args: ethers.BigNumber.from(rig.id),
+  });
+
+  const { data, isLoading, isSuccess, isError, error, write } = useContractWrite(config);
+
+  // TODO include information about the tx like the hash in loading & success messages
+  // TODO show better error messages
+  // TODO prevent the user from closing the modal while the tx is loading?
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Train Rig</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          Before your Rig can handle any pilot it needs to go through training
+          for 30 days with the training pilot.
+          <i>
+            Training your rig requires an on-chain transaction. When you click
+            the Train button below your wallet will request that you sign a
+            transaction that will cost a small gas fee.
+          </i>
+          {isLoading && <Spinner />}
+          {isSuccess && "You did it!"}
+          {isError && "Uh oh, got an error"}
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            colorScheme="blue"
+            mr={3}
+            onClick={() => (write ? write() : undefined)}
+            isDisabled={isLoading || isSuccess}
+          >
+            Train rig
+          </Button>
+          <Button variant="ghost">Cancel</Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 const Pilots = ({ rig }: RigModuleProps) => {
-  const data = [
+  const pilots = [
     { pilot: "Moonbird #8969", flightTime: "17,280", status: "Active" },
     { pilot: "Trainer", flightTime: "123,456", status: "Garaged" },
   ];
 
+  const { isOpen, onOpen, onClose } = useDisclosure();
   return (
-    <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading px={PAPER_TABLE_HEADING_PX}>Rig {`#${rig.id}`}</Heading>
-      <Table>
-        <Thead>
-          <Tr>
-            <Th pl={8}>Pilot</Th>
-            <Th>Flight time (FT)</Th>
-            <Th pr={8}>Status</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {data.map(({ pilot, flightTime, status }, index) => {
-            return (
-              <Tr key={`pilots-${index}`}>
-                <Td pl={8}>{pilot}</Td>
-                <Td>{flightTime}</Td>
-                <Td pr={8}>{status}</Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </VStack>
+    <>
+      <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
+        <Heading px={PAPER_TABLE_HEADING_PX}>Rig {`#${rig.id}`}</Heading>
+        <Table>
+          <Thead>
+            <Tr>
+              <Th pl={8}>Pilot</Th>
+              <Th>Flight time (FT)</Th>
+              <Th pr={8}>Status</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {pilots.map(({ pilot, flightTime, status }, index) => {
+              return (
+                <Tr key={`pilots-${index}`}>
+                  <Td pl={8}>{pilot}</Td>
+                  <Td>{flightTime}</Td>
+                  <Td pr={8}>{status}</Td>
+                </Tr>
+              );
+            })}
+          </Tbody>
+        </Table>
+        {rig.garageStatus.state === "PARKED" && <Button onClick={onOpen}>Train</Button>}
+      </VStack>
+      <TrainRigModal rig={rig} isOpen={isOpen} onClose={onClose} />
+    </>
   );
 };
 
