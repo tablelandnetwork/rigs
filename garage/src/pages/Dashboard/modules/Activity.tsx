@@ -11,7 +11,7 @@ export const Activity = () => {
       <Heading px={8}>Activity</Heading>
       <Table>
         <Tbody>
-          {events.map(({ rigId, thumb, action }, index) => {
+          {events && events.map(({ rigId, thumb, action }, index) => {
             const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
             return (
               <Tr key={`activity-row-${index}`}>
