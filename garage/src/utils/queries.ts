@@ -21,6 +21,38 @@ export const selectRigs = (ids: string[]): string => {
   GROUP BY id`;
 };
 
+
+// TODO(daniel):
+// we want to include both parked and piloted events in the activity log, how do we do that when we don't support unions? we would ideally want to select from the table twice, like this:
+//  SELECT *
+//  FROM (
+//    SELECT rig_id, thumb, image, pilot_contract, pilot_it, start_time as "timestamp", 'piloted' as "type" FROM rig_pilot_sessions_5_787 WHERE end_time IS NULL
+//    UNION
+//    SELECT rig_id, thumb, image, pilot_contract, pilot_it, end_time as "timestamp", 'parked' as "type" FROM rig_pilot_sessions_5_787 WHERE end_time IS NOT NULL
+//  ) AS sessions
+//  JOIN rigs_5_28 as rigs ON sessions.rig_id = rigs.id
+//  ...
+export const selectRigsActivity = (rigIds: string[], first: number = 20, offset: number = 0): string => {
+  const whereClause = rigIds.length ? `WHERE rig_id IN (${rigIds.join(",")})` : "";
+
+  return `
+  SELECT
+    rig_id,
+    thumb,
+    image,
+    pilot_contract,
+    pilot_id,
+    start_time,
+    end_time,
+    max(start_time, coalesce(end_time, 0)) as "timestamp"
+  FROM ${RIG_PILOT_SESSIONS} AS sessions
+  JOIN ${RIGS} AS rigs ON sessions.rig_id = rigs.id
+  ${whereClause}
+  ORDER BY timestamp DESC
+  LIMIT ${first}
+  OFFSET ${offset}`;
+};
+
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
 export const selectStats = (): string => {
