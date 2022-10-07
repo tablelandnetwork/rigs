@@ -253,8 +253,8 @@ export const RigDetails = () => {
       sx={{ width: "100%", height: "100%" }}
     >
       <Topbar>
-        <Flex justify="space-between" align="center" width="100%" ml={4}>
-          <Button as={Link} to="/dashboard">
+        <Flex justify="space-between" align="center" width="100%" ml={8}>
+          <Button variant="solid" as={Link} to="/dashboard">
             Dashboard
           </Button>
           <ConnectButton />
