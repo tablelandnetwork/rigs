@@ -40,13 +40,13 @@ const colors = {
   primary: "#75B6B5",
   primaryLight: "#F4706B",
   bg: "#162929",
+  paper: "#101E1E",
 };
 
 const theme = extendTheme(
   {
     colors: {
       ...colors,
-      paper: "#101E1E",
       block: colors.bg,
     },
     fonts: {
@@ -84,6 +84,33 @@ const theme = extendTheme(
         sizes: { md: { fontSize: "1.5em" } },
         variants: {
           orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
+        },
+      },
+      Button: {
+        baseStyle: {
+          textTransform: "uppercase",
+        },
+        variants: {
+          "outlined-background": {
+            bg: "bg",
+            borderColor: "primary",
+            border: "1px solid",
+            _hover: { bg: "#264646" },
+          },
+          "outlined": {
+            bg: "paper",
+            borderColor: "primary",
+            border: "1px solid",
+            _hover: { bg: "#203c3c" },
+          },
+          "solid": {
+            bg: "bg",
+            color: "primary",
+            _hover: { bg: "#264646" },
+          },
+          "ghost": {
+            _hover: { bg: "#203c3c" },
+          },
         },
       },
     },
