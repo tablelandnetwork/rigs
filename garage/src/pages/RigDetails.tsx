@@ -103,7 +103,14 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
     args: ethers.BigNumber.from(rig.id),
   });
 
-  const { data, isLoading, isSuccess, isError, error, write } = useContractWrite(config);
+  const {
+    data,
+    isLoading,
+    isSuccess,
+    isError,
+    error,
+    write,
+  } = useContractWrite(config);
 
   // TODO include information about the tx like the hash in loading & success messages
   // TODO show better error messages
@@ -135,7 +142,60 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           >
             Train rig
           </Button>
-          <Button variant="ghost">Cancel</Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+        </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
+  const { config } = usePrepareContractWrite({
+    addressOrName: CONTRACT_ADDRESS,
+    contractInterface: CONTRACT_INTERFACE,
+    functionName: "parkRig",
+    args: ethers.BigNumber.from(rig.id),
+  });
+
+  const {
+    data,
+    isLoading,
+    isSuccess,
+    isError,
+    error,
+    write,
+  } = useContractWrite(config);
+
+  // TODO include information about the tx like the hash in loading & success messages
+  // TODO show better error messages
+  // TODO prevent the user from closing the modal while the tx is loading?
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Park Rig</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          Parking your rig will let you do things like change pilot, chosing
+          what badges you want to display, etc.
+          {isLoading && <Spinner />}
+          {isSuccess && "You did it!"}
+          {isError && "Uh oh, got an error"}
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            variant="outlined-background"
+            mr={3}
+            onClick={() => (write ? write() : undefined)}
+            isDisabled={isLoading || isSuccess}
+          >
+            Park rig
+          </Button>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
         </ModalFooter>
       </ModalContent>
     </Modal>
@@ -148,7 +208,17 @@ const Pilots = ({ rig }: RigModuleProps) => {
     { pilot: "Trainer", flightTime: "123,456", status: "Garaged" },
   ];
 
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const {
+    isOpen: trainModalOpen,
+    onOpen: onOpenTrainModal,
+    onClose: onCloseTrainModal,
+  } = useDisclosure();
+  const {
+    isOpen: parkModalOpen,
+    onOpen: onOpenParkModal,
+    onClose: onCloseParkModal,
+  } = useDisclosure();
+
   return (
     <>
       <VStack align="stretch" bg="paper" spacing={GRID_GAP} pt={PAPER_TABLE_PT}>
@@ -179,9 +249,23 @@ const Pilots = ({ rig }: RigModuleProps) => {
               Train
             </Button>
           )}
+          {rig.garageStatus.state === "FLYING" && (
+            <Button variant="outlined" onClick={onOpenParkModal} width="100%">
+              Park
+            </Button>
+          )}
       </StackItem>
       </VStack>
-      <TrainRigModal rig={rig} isOpen={isOpen} onClose={onClose} />
+      <TrainRigModal
+        rig={rig}
+        isOpen={trainModalOpen}
+        onClose={onCloseTrainModal}
+      />
+      <ParkRigModal
+        rig={rig}
+        isOpen={parkModalOpen}
+        onClose={onCloseParkModal}
+      />
     </>
   );
 };
