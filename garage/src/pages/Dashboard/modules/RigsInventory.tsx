@@ -19,7 +19,12 @@ const RigDisplay = ({ rig }: { rig: Rig }) => {
     <VStack align="start" pb={2} flexShrink="0">
       <Image src={thumb} width="200px" />
       <Text>{`#${rig.id}`}</Text>
-      <Button as={Link} to={`/rigs/${rig.id}`} sx={{ width: "100%" }}>
+      <Button
+        as={Link}
+        variant="outlined-background"
+        to={`/rigs/${rig.id}`}
+        sx={{ width: "100%" }}
+      >
         Details
       </Button>
     </VStack>
