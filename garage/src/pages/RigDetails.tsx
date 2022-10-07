@@ -17,6 +17,7 @@ import {
   ModalBody,
   ModalCloseButton,
   Spinner,
+  StackItem,
   Table,
   Tbody,
   Thead,
@@ -150,7 +151,7 @@ const Pilots = ({ rig }: RigModuleProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
-      <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
+      <VStack align="stretch" bg="paper" spacing={GRID_GAP} pt={PAPER_TABLE_PT}>
         <Heading px={PAPER_TABLE_HEADING_PX}>Rig {`#${rig.id}`}</Heading>
         <Table>
           <Thead>
@@ -172,7 +173,13 @@ const Pilots = ({ rig }: RigModuleProps) => {
             })}
           </Tbody>
         </Table>
-        {rig.garageStatus.state === "PARKED" && <Button onClick={onOpen}>Train</Button>}
+        <StackItem px={GRID_GAP} pb={GRID_GAP}>
+          {rig.garageStatus.state === "PARKED" && (
+            <Button variant="outlined" onClick={onOpenTrainModal} width="100%">
+              Train
+            </Button>
+          )}
+      </StackItem>
       </VStack>
       <TrainRigModal rig={rig} isOpen={isOpen} onClose={onClose} />
     </>
