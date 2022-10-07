@@ -74,6 +74,9 @@ const theme = extendTheme(
       },
     },
     components: {
+      Modal: {
+        baseStyle: { dialog: {  bg: "paper" } },
+      },
       Text: {
         variants: {
           orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
