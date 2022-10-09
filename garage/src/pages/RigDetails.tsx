@@ -39,6 +39,7 @@ import {
 } from "wagmi";
 import { useRig, RigWithGarageStatus } from "../hooks/useRig";
 import { useRigImageUrls } from "../hooks/useRigImageUrls";
+import { useNFTs, NFT } from "../hooks/useNFTs";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
 import { prettyNumber } from "../utils/fmt";
 
@@ -48,6 +49,7 @@ const PAPER_TABLE_HEADING_PX = 8;
 
 interface RigModuleProps {
   rig: RigWithGarageStatus;
+  nfts: NFT[];
 }
 
 const RigViewer = ({ rig }: RigModuleProps) => {
@@ -208,7 +210,7 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   );
 };
 
-const getPilots = (rig: RigWithPilots, blockNumber: number | undefined) => {
+const getPilots = (rig: RigWithPilots, nfts: NFT[], blockNumber: number | undefined) => {
   const accumulator: { [key: string]: PilotSession[] } = {};
 
   const pilots = rig.pilotSessions.reduce((acc, session) => {
@@ -222,6 +224,14 @@ const getPilots = (rig: RigWithPilots, blockNumber: number | undefined) => {
 
     const status = sessions.find((v) => !v.endTime) ? "Active" : "Garaged";
 
+    const nft = nfts.find((v) => v.token.tokenId === tokenId && v.token.collectionAddress.toLowerCase() === contract.toLowerCase())
+
+    const name = nft?.token.name;
+    const fallbackName = `${nft?.token?.tokenContract?.name} #${nft?.token?.tokenId}`;
+    const pilot = name || fallbackName || "Unknown";
+    const media = nft?.token.image?.mediaEncoding as { thumbnail: string }
+    const imageUrl = media?.thumbnail || "err";
+
     const flightTime = sessions.reduce((acc, { startTime, endTime }) => {
       return acc + ((endTime ?? blockNumber ?? startTime) - startTime);
     }, 0);
@@ -231,13 +241,15 @@ const getPilots = (rig: RigWithPilots, blockNumber: number | undefined) => {
       tokenId,
       flightTime,
       status,
+      imageUrl,
+      pilot,
     };
   });
 };
 
-const Pilots = ({ rig }: RigModuleProps) => {
+const Pilots = ({ rig, nfts }: RigModuleProps) => {
   const { data: blockNumber } = useBlockNumber();
-  const pilots = getPilots(rig, blockNumber);
+  const pilots = getPilots(rig, nfts, blockNumber);
 
   const {
     isOpen: trainModalOpen,
@@ -272,16 +284,21 @@ const Pilots = ({ rig }: RigModuleProps) => {
         <Table>
           <Thead>
             <Tr>
-              <Th pl={8}>Pilot</Th>
+              <Th pl={8} colSpan={2}>
+                Pilot
+              </Th>
               <Th>Flight time (FT)</Th>
               <Th pr={8}>Status</Th>
             </Tr>
           </Thead>
           <Tbody>
-            {pilots.map(({ contract, tokenId, flightTime, status }, index) => {
+            {pilots.map(({ pilot, imageUrl, flightTime, status }, index) => {
               return (
                 <Tr key={`pilots-${index}`}>
-                  <Td pl={8}>{`${contract} #${tokenId}`}</Td>
+                  <Td pl={8} pr={0}>
+                    <Image src={imageUrl} width="30px" height="30px" />
+                  </Td>
+                  <Td pl={0}>{pilot}</Td>
                   <Td>{prettyNumber(flightTime)}</Td>
                   <Td pr={8}>{status}</Td>
                 </Tr>
@@ -381,6 +398,7 @@ const FlightLog = ({ rig }: RigModuleProps) => {
 export const RigDetails = () => {
   const { id } = useParams();
   const { rig } = useRig(id || "");
+  const { nfts } = useNFTs(rig?.pilotSessions || []);
 
   return (
     <Flex
@@ -405,19 +423,19 @@ export const RigDetails = () => {
         maxWidth="1385px"
         height="100%"
       >
-        {rig && (
+        {rig && nfts && (
           <>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <RigViewer rig={rig} />
-                <RigAttributes rig={rig} />
+                <RigViewer rig={rig} nfts={nfts} />
+                <RigAttributes rig={rig} nfts={nfts} />
               </VStack>
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <Pilots rig={rig} />
-                <Badges rig={rig} />
-                <FlightLog rig={rig} />
+                <Pilots rig={rig} nfts={nfts} />
+                <Badges rig={rig} nfts={nfts} />
+                <FlightLog rig={rig} nfts={nfts} />
               </VStack>
             </GridItem>
           </>
