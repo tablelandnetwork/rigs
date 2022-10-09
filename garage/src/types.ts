@@ -4,13 +4,24 @@ export interface Attribute {
   value: any;
 }
 
+export interface PilotSession {
+  contract: string;
+  tokenId: string;
+  startTime: number;
+  endTime?: number;
+}
+
 export interface Rig {
   id: string;
-  image?: string;
-  imageAlpha?: string;
-  thumb?: string;
-  thumbAlpha?: string;
-  attributes?: Attribute[];
+  image: string;
+  imageAlpha: string;
+  thumb: string;
+  thumbAlpha: string;
+  attributes: Attribute[];
+}
+
+export interface RigWithPilots extends Rig {
+  pilotSessions: PilotSession[];
 }
 
 export enum EventAction {
