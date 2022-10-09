@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { selectStats } from "../utils/queries";
+import { useBlockNumber } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 
 interface Stat {
@@ -9,13 +10,16 @@ interface Stat {
 
 export const useStats = () => {
   const { connection: tableland } = useTablelandConnection();
+  const { data: blockNumber } = useBlockNumber();
 
   const [stats, setStats] = useState<Stat[]>();
 
   useEffect(() => {
+    if (!blockNumber) return;
+
     let isCancelled = false;
 
-    tableland.read(selectStats()).then((result) => {
+    tableland.read(selectStats(blockNumber)).then((result) => {
       if (isCancelled) return;
 
       const [
@@ -40,7 +44,7 @@ export const useStats = () => {
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [blockNumber]);
 
   return { stats };
 };

@@ -55,7 +55,7 @@ export const selectRigsActivity = (rigIds: string[], first: number = 20, offset:
 
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
-export const selectStats = (): string => {
+export const selectStats = (blockNumber: number): string => {
   return `
   SELECT
   (
@@ -76,14 +76,12 @@ export const selectStats = (): string => {
     )
   ) AS num_pilots,
   (
-    SELECT sum(end_time - start_time)
+    SELECT sum(coalesce(end_time, ${blockNumber}) - start_time)
     FROM ${RIG_PILOT_SESSIONS}
-    WHERE end_time IS NOT NULL
   ) AS total_flight_time,
   (
-    SELECT avg(end_time - start_time)
+    SELECT avg(coalesce(end_time, ${blockNumber}) - start_time)
     FROM ${RIG_PILOT_SESSIONS}
-    WHERE end_time IS NOT NULL
   ) AS avg_flight_time
   FROM ${RIGS}
   LIMIT 1;`;
