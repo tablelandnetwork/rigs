@@ -8,6 +8,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useStats } from "../../../hooks/useRigStats";
+import { prettyNumber } from "../../../utils/fmt";
 
 const StatItem = ({ name, value }: { name: string; value: number }) => {
   return (
@@ -15,7 +16,7 @@ const StatItem = ({ name, value }: { name: string; value: number }) => {
       <Text noOfLines={1}>{name}</Text>
       <Flex align="center" justify="center">
         <Text fontSize="4xl" lineHeight="100%" py={8} noOfLines={1}>
-          {value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+          {prettyNumber(value)}
         </Text>
       </Flex>
     </Stack>
