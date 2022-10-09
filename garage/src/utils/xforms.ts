@@ -1,4 +1,11 @@
-import { Rig, Attribute, Event, EventAction } from "../types";
+import {
+  Rig,
+  RigWithPilots,
+  Attribute,
+  PilotSession,
+  Event,
+  EventAction,
+} from "../types";
 
 type RigRow = [string, string, string, string, string, object];
 
@@ -18,7 +25,44 @@ export const rigFromRow = ([
   attributes: attributes as Attribute[],
 });
 
-type EventRow = [string, string, string, string, string, string, string, string];
+type RigWithPilotsRow = [
+  string,
+  string,
+  string,
+  string,
+  string,
+  object,
+  object
+];
+
+export const rigWithPilotsFromRow = ([
+  id,
+  image,
+  imageAlpha,
+  thumb,
+  thumbAlpha,
+  attributes,
+  pilotSessions,
+]: RigWithPilotsRow): RigWithPilots => ({
+  id,
+  image,
+  imageAlpha,
+  thumb,
+  thumbAlpha,
+  attributes: attributes as Attribute[],
+  pilotSessions: pilotSessions as PilotSession[],
+});
+
+type EventRow = [
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string
+];
 
 export const eventFromRow = ([
   rigId,

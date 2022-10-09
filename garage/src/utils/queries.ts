@@ -21,6 +21,38 @@ export const selectRigs = (ids: string[]): string => {
   GROUP BY id`;
 };
 
+export const selectRigWithPilots = (id: string): string => {
+  return `
+  SELECT
+    rigs.id,
+    image,
+    image_alpha,
+    thumb,
+    thumb_alpha,
+    (
+      SELECT
+        json_group_array(json_object(
+          'displayType', display_type,
+          'traitType', trait_type,
+          'value', value
+        ))
+      FROM ${RIGS_ATTRIBUTES}
+      WHERE rig_id = ${id}
+    ) AS attributes,
+    (
+      SELECT
+        json_group_array(json_object(
+          'contract', pilot_contract,
+          'tokenId', pilot_id,
+          'startTime', start_time,
+          'endTime', end_time
+        ))
+      FROM ${RIG_PILOT_SESSIONS}
+      WHERE rig_id = ${id}
+    ) AS piloting_sessions
+  FROM ${RIGS} AS rigs
+  WHERE rigs.id = ${id}`;
+};
 
 // TODO(daniel):
 // we want to include both parked and piloted events in the activity log, how do we do that when we don't support unions? we would ideally want to select from the table twice, like this:
@@ -32,8 +64,14 @@ export const selectRigs = (ids: string[]): string => {
 //  ) AS sessions
 //  JOIN rigs_5_28 as rigs ON sessions.rig_id = rigs.id
 //  ...
-export const selectRigsActivity = (rigIds: string[], first: number = 20, offset: number = 0): string => {
-  const whereClause = rigIds.length ? `WHERE rig_id IN (${rigIds.join(",")})` : "";
+export const selectRigsActivity = (
+  rigIds: string[],
+  first: number = 20,
+  offset: number = 0
+): string => {
+  const whereClause = rigIds.length
+    ? `WHERE rig_id IN (${rigIds.join(",")})`
+    : "";
 
   return `
   SELECT
