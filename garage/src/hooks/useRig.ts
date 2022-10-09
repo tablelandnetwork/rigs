@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Rig } from "../types";
+import { RigWithPilots } from "../types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { selectRigs } from "../utils/queries";
-import { rigFromRow } from "../utils/xforms";
+import { selectRigWithPilots } from "../utils/queries";
+import { rigWithPilotsFromRow } from "../utils/xforms";
 
 interface ParkedGarageStatus {
   state: "PARKED";
@@ -20,17 +20,19 @@ interface FlyingGarageStatus {
 
 type GarageStatus = ParkedGarageStatus | FlyingGarageStatus;
 
-export interface RigWithGarageStatus extends Rig {
+export interface RigWithGarageStatus extends RigWithPilots {
   garageStatus: GarageStatus;
 }
 
-const withFakeGarageStatus = (rig: Rig): RigWithGarageStatus => {
+const withGarageStatus = (rig: RigWithPilots): RigWithGarageStatus => {
+  const activeSession = rig.pilotSessions.find(({ endTime }) => !endTime)
+
   return {
     ...rig,
-    garageStatus: {
+    garageStatus: activeSession ? {
       state: "FLYING",
-      pilot: { contract: "0x....", tokenId: "1" },
-    },
+      pilot: activeSession.contract ? activeSession : "training",
+    } : { state: "PARKED" },
   };
 };
 
@@ -42,9 +44,9 @@ export const useRig = (id: string) => {
   useEffect(() => {
     let isCancelled = false;
 
-    tableland.read(selectRigs([id])).then((result) => {
-      const rigs = result.rows.map(rigFromRow);
-      if (!isCancelled && rigs.length) setRig(withFakeGarageStatus(rigs[0]));
+    tableland.read(selectRigWithPilots(id)).then((result) => {
+      const rigs = result.rows.map(rigWithPilotsFromRow);
+      if (!isCancelled && rigs.length) setRig(withGarageStatus(rigs[0]));
     });
 
     return () => {
