@@ -43,7 +43,7 @@ export const selectRigWithPilots = (id: string): string => {
       SELECT
         json_group_array(json_object(
           'contract', pilot_contract,
-          'tokenId', pilot_id,
+          'tokenId', cast(pilot_id as text),
           'startTime', start_time,
           'endTime', end_time
         ))
