@@ -43,6 +43,7 @@ import { useRigImageUrls } from "../hooks/useRigImageUrls";
 import { useNFTs, NFT } from "../hooks/useNFTs";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
 import { prettyNumber } from "../utils/fmt";
+import { education, code } from "../assets/badges/";
 
 const GRID_GAP = 4;
 const PAPER_TABLE_PT = 8;
@@ -360,8 +361,18 @@ const Pilots = ({ rig, nfts }: RigModuleProps) => {
 
 const Badges = ({ rig }: RigModuleProps) => {
   const data = [
-    { badge: "Coding", pilot: "Moonbird #8969", visibility: "Visible" },
-    { badge: "Education", pilot: "Trainer", visibility: "Hidden" },
+    {
+      badge: "Coding",
+      badgeImageUrl: code,
+      pilot: "Moonbird #8969",
+      visibility: "Visible",
+    },
+    {
+      badge: "Education",
+      badgeImageUrl: education,
+      pilot: "Trainer",
+      visibility: "Hidden",
+    },
   ];
   return (
     <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
@@ -369,16 +380,21 @@ const Badges = ({ rig }: RigModuleProps) => {
       <Table>
         <Thead>
           <Tr>
-            <Th pl={8}>Name</Th>
+            <Th pl={8} colSpan={2}>
+              Name
+            </Th>
             <Th>Earned by</Th>
             <Th pr={8}>Visibility</Th>
           </Tr>
         </Thead>
         <Tbody>
-          {data.map(({ badge, pilot, visibility }, index) => {
+          {data.map(({ badge, pilot, visibility, badgeImageUrl }, index) => {
             return (
               <Tr key={`badges-${index}`}>
-                <Td pl={8}>{badge}</Td>
+                <Td pl={8} pr={0}>
+                  <Image src={badgeImageUrl} width="30px" height="30px" />
+                </Td>
+                <Td pl={0}>{badge}</Td>
                 <Td>{pilot}</Td>
                 <Td pr={8}>{visibility}</Td>
               </Tr>
