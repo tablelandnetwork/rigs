@@ -210,7 +210,26 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   );
 };
 
-const getPilots = (rig: RigWithPilots, nfts: NFT[], blockNumber: number | undefined) => {
+const findNFT = (nfts: NFT[], contract: string, tokenId: string) => {
+  const nft = nfts.find(
+    (v) =>
+      v.token.tokenId === tokenId &&
+      v.token.collectionAddress.toLowerCase() === contract.toLowerCase()
+  );
+
+  const tokenName = nft?.token.name;
+  const fallbackName = `${nft?.token?.tokenContract?.name} #${nft?.token?.tokenId}`;
+  const media = nft?.token.image?.mediaEncoding as { thumbnail: string };
+  const imageUrl = media?.thumbnail || "err";
+
+  return { name: tokenName || fallbackName, imageUrl };
+};
+
+const getPilots = (
+  rig: RigWithPilots,
+  nfts: NFT[],
+  blockNumber: number | undefined
+) => {
   const accumulator: { [key: string]: PilotSession[] } = {};
 
   const pilots = rig.pilotSessions.reduce((acc, session) => {
@@ -224,13 +243,7 @@ const getPilots = (rig: RigWithPilots, nfts: NFT[], blockNumber: number | undefi
 
     const status = sessions.find((v) => !v.endTime) ? "Active" : "Garaged";
 
-    const nft = nfts.find((v) => v.token.tokenId === tokenId && v.token.collectionAddress.toLowerCase() === contract.toLowerCase())
-
-    const name = nft?.token.name;
-    const fallbackName = `${nft?.token?.tokenContract?.name} #${nft?.token?.tokenId}`;
-    const pilot = name || fallbackName || "Unknown";
-    const media = nft?.token.image?.mediaEncoding as { thumbnail: string }
-    const imageUrl = media?.thumbnail || "err";
+    const { name, imageUrl } = findNFT(nfts, contract, tokenId);
 
     const flightTime = sessions.reduce((acc, { startTime, endTime }) => {
       return acc + ((endTime ?? blockNumber ?? startTime) - startTime);
@@ -242,7 +255,7 @@ const getPilots = (rig: RigWithPilots, nfts: NFT[], blockNumber: number | undefi
       flightTime,
       status,
       imageUrl,
-      pilot,
+      pilot: name,
     };
   });
 };
@@ -365,26 +378,32 @@ const Badges = ({ rig }: RigModuleProps) => {
   );
 };
 
-const FlightLog = ({ rig }: RigModuleProps) => {
-  const data = [
-    { event: "Earned Coding Badge", wallet: "0x96ff...4651" },
-    { event: "Piloted Moonbird #8979", wallet: "0x96ff...4651" },
-    { event: "Parked", wallet: "0x96ff...4651" },
-    { event: "Earned Education Badge", wallet: "0x96ff...4651" },
-    { event: "Piloted Trainer", wallet: "0x96ff...4651" },
-  ];
+const FlightLog = ({ rig, nfts }: RigModuleProps) => {
+  const events = rig.pilotSessions
+    .flatMap(({ startTime, endTime, contract, tokenId }) => {
+      const { name } = findNFT(nfts, contract, tokenId);
+
+      let events = [{ type: `Piloted ${name}`, timestamp: startTime }];
+
+      if (endTime) {
+        events = [...events, { type: "Parked", timestamp: endTime }];
+      }
+
+      return events;
+    })
+    .sort((a, b) => b.timestamp - a.timestamp);
 
   return (
     <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
       <Heading px={PAPER_TABLE_HEADING_PX}>Flight log</Heading>
       <Table>
         <Tbody>
-          {data.map(({ event, wallet }, index) => {
+          {events.map(({ type }, index) => {
             return (
               <Tr key={`flight-log-${index}`}>
-                <Td pl={8}>{event}</Td>
+                <Td pl={8}>{type}</Td>
                 <Td pr={8} isNumeric>
-                  {wallet}
+                  0x96ff...4651
                 </Td>
               </Tr>
             );
