@@ -64,7 +64,7 @@ const RigAttributes = ({ rig }: RigModuleProps) => {
       <Table variant="simple">
         <Tbody>
           {rig.attributes
-            .filter(({ trait_type }) => trait_type !== "VIN")
+            .filter(({ traitType }) => traitType !== "VIN")
             .map((attribute, index) => {
               const tdProps =
                 index === rig.attributes!.length - 1
@@ -73,9 +73,9 @@ const RigAttributes = ({ rig }: RigModuleProps) => {
                   ? { borderTop: "var(--chakra-borders-1px)" }
                   : {};
               return (
-                <Tr key={`rig-${rig.id}-attribute-${attribute.trait_type}`}>
+                <Tr key={`rig-${rig.id}-attribute-${attribute.traitType}`}>
                   <Td pl={8} {...tdProps}>
-                    {attribute.trait_type}
+                    {attribute.traitType}
                   </Td>
                   <Td pr={8} {...tdProps} textAlign="right">
                     {attribute.value}

@@ -11,8 +11,8 @@ export const selectRigs = (ids: string[]): string => {
     thumb,
     thumb_alpha,
     json_group_array(json_object(
-      'display_type', display_type,
-      'trait_type', trait_type,
+      'displayType', display_type,
+      'traitType', trait_type,
       'value', value
     )) AS attributes
   FROM ${RIGS} AS rigs
