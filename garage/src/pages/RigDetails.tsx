@@ -31,6 +31,7 @@ import {
 import { useParams } from "react-router-dom";
 import { RigWithPilots, PilotSession } from "../types";
 import { Topbar } from "../Topbar";
+import { TrainerPilot } from "../components/TrainerPilot";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   useBlockNumber,
@@ -218,9 +219,11 @@ const findNFT = (nfts: NFT[], contract: string, tokenId: string) => {
   );
 
   const tokenName = nft?.token.name;
-  const fallbackName = `${nft?.token?.tokenContract?.name} #${nft?.token?.tokenId}`;
+  const fallbackName = nft
+    ? `${nft?.token?.tokenContract?.name} #${nft?.token?.tokenId}`
+    : undefined;
   const media = nft?.token.image?.mediaEncoding as { thumbnail: string };
-  const imageUrl = media?.thumbnail || "err";
+  const imageUrl = media?.thumbnail;
 
   return { name: tokenName || fallbackName, imageUrl };
 };
@@ -254,8 +257,8 @@ const getPilots = (
       tokenId,
       flightTime,
       status,
-      imageUrl,
-      pilot: name,
+      imageUrl: imageUrl,
+      pilot: name || "Trainer",
     };
   });
 };
@@ -309,7 +312,16 @@ const Pilots = ({ rig, nfts }: RigModuleProps) => {
               return (
                 <Tr key={`pilots-${index}`}>
                   <Td pl={8} pr={0}>
-                    <Image src={imageUrl} width="30px" height="30px" />
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        width="30px"
+                        height="30px"
+                        backgroundColor="primary"
+                      />
+                    ) : (
+                      <TrainerPilot width="30px" height="30px" />
+                    )}
                   </Td>
                   <Td pl={0}>{pilot}</Td>
                   <Td>{prettyNumber(flightTime)}</Td>
