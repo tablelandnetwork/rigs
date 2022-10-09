@@ -8,6 +8,7 @@ import {
   Grid,
   GridItem,
   Heading,
+  HStack,
   Image,
   Modal,
   ModalOverlay,
@@ -249,10 +250,25 @@ const Pilots = ({ rig }: RigModuleProps) => {
     onClose: onCloseParkModal,
   } = useDisclosure();
 
+  const totalFlightTime = pilots.reduce(
+    (acc, { flightTime }) => acc + flightTime,
+    0
+  );
+
   return (
     <>
       <VStack align="stretch" bg="paper" spacing={GRID_GAP} pt={PAPER_TABLE_PT}>
-        <Heading px={PAPER_TABLE_HEADING_PX}>Rig {`#${rig.id}`}</Heading>
+        <HStack
+          px={PAPER_TABLE_HEADING_PX}
+          justify="space-between"
+          sx={{ width: "100%" }}
+        >
+          <Heading>Rig {`#${rig.id}`}</Heading>
+          <Heading size="sm">
+            {rig.garageStatus.state === "FLYING" ? "In-flight" : "Parked"}
+            {` (${prettyNumber(totalFlightTime)} FT)`}
+          </Heading>
+        </HStack>
         <Table>
           <Thead>
             <Tr>
