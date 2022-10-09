@@ -28,13 +28,18 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { Rig } from "../types";
+import { RigWithPilots, PilotSession } from "../types";
 import { Topbar } from "../Topbar";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import {
+  useBlockNumber,
+  useContractWrite,
+  usePrepareContractWrite,
+} from "wagmi";
 import { useRig, RigWithGarageStatus } from "../hooks/useRig";
 import { useRigImageUrls } from "../hooks/useRigImageUrls";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
+import { prettyNumber } from "../utils/fmt";
 
 const GRID_GAP = 4;
 const PAPER_TABLE_PT = 8;
@@ -202,11 +207,36 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   );
 };
 
+const getPilots = (rig: RigWithPilots, blockNumber: number | undefined) => {
+  const accumulator: { [key: string]: PilotSession[] } = {};
+
+  const pilots = rig.pilotSessions.reduce((acc, session) => {
+    const key = session.contract + session.tokenId;
+    (acc[key] = acc[key] || []).push(session);
+    return acc;
+  }, accumulator);
+
+  return Object.values(pilots).map((sessions) => {
+    const { contract, tokenId } = sessions[0];
+
+    const status = sessions.find((v) => !v.endTime) ? "Active" : "Garaged";
+
+    const flightTime = sessions.reduce((acc, { startTime, endTime }) => {
+      return acc + ((endTime ?? blockNumber ?? startTime) - startTime);
+    }, 0);
+
+    return {
+      contract,
+      tokenId,
+      flightTime,
+      status,
+    };
+  });
+};
+
 const Pilots = ({ rig }: RigModuleProps) => {
-  const pilots = [
-    { pilot: "Moonbird #8969", flightTime: "17,280", status: "Active" },
-    { pilot: "Trainer", flightTime: "123,456", status: "Garaged" },
-  ];
+  const { data: blockNumber } = useBlockNumber();
+  const pilots = getPilots(rig, blockNumber);
 
   const {
     isOpen: trainModalOpen,
@@ -232,11 +262,11 @@ const Pilots = ({ rig }: RigModuleProps) => {
             </Tr>
           </Thead>
           <Tbody>
-            {pilots.map(({ pilot, flightTime, status }, index) => {
+            {pilots.map(({ contract, tokenId, flightTime, status }, index) => {
               return (
                 <Tr key={`pilots-${index}`}>
-                  <Td pl={8}>{pilot}</Td>
-                  <Td>{flightTime}</Td>
+                  <Td pl={8}>{`${contract} #${tokenId}`}</Td>
+                  <Td>{prettyNumber(flightTime)}</Td>
                   <Td pr={8}>{status}</Td>
                 </Tr>
               );
@@ -254,7 +284,7 @@ const Pilots = ({ rig }: RigModuleProps) => {
               Park
             </Button>
           )}
-      </StackItem>
+        </StackItem>
       </VStack>
       <TrainRigModal
         rig={rig}
