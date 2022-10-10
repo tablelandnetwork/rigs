@@ -33,6 +33,7 @@ import { useParams } from "react-router-dom";
 import { RigWithPilots, PilotSession } from "../types";
 import { Topbar } from "../Topbar";
 import { TrainerPilot } from "../components/TrainerPilot";
+import { RigDisplay } from "../components/RigDisplay";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   useBlockNumber,
@@ -40,7 +41,6 @@ import {
   usePrepareContractWrite,
 } from "wagmi";
 import { useRig } from "../hooks/useRig";
-import { useRigImageUrls } from "../hooks/useRigImageUrls";
 import { useNFTs, NFT } from "../hooks/useNFTs";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
 import { prettyNumber } from "../utils/fmt";
@@ -54,17 +54,6 @@ interface RigModuleProps {
   rig: RigWithPilots;
   nfts: NFT[];
 }
-
-const RigViewer = ({ rig }: RigModuleProps) => {
-  const { image: imageUrl } = useRigImageUrls(rig);
-
-  // TODO: render pilot & badges
-  return (
-    <Box bg="paper" p={2}>
-      <Image src={imageUrl} />
-    </Box>
-  );
-};
 
 const RigAttributes = ({ rig }: RigModuleProps) => {
   if (!rig.attributes) return null;
@@ -450,6 +439,11 @@ export const RigDetails = () => {
   const { rig } = useRig(id || "");
   const { nfts } = useNFTs(rig?.pilotSessions || []);
 
+  const currentNFT =
+    rig?.currentPilot && rig.currentPilot.contract && nfts
+      ? findNFT(nfts, rig.currentPilot.contract, rig.currentPilot.tokenId)
+      : undefined;
+
   return (
     <Flex
       direction="column"
@@ -477,7 +471,16 @@ export const RigDetails = () => {
           <>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <RigViewer rig={rig} nfts={nfts} />
+                <Box p={4} bgColor="paper">
+                  <RigDisplay
+                    border={1}
+                    borderStyle="solid"
+                    borderColor="black"
+                    rig={rig}
+                    pilotNFT={currentNFT}
+                    pilotBorderWidth="3px"
+                  />
+                </Box>
                 <RigAttributes rig={rig} nfts={nfts} />
               </VStack>
             </GridItem>
