@@ -24,16 +24,19 @@ interface ITablelandRigs {
     error SoldOut();
 
     // Thrown when attempting to interact with non-owned Rigs.
-    error InvalidRigOwnership();
+    error InvalidRigOwnership(uint256 tokenId);
 
     // Thrown if a Pilot's contract is not ERC721-compliant.
-    error InvalidPilotContract();
+    error InvalidPilotContract(address pilotContract);
 
     // Thrown if an address does not own the token at a specified Pilot contract.
-    error InvalidPilotOwnership();
+    error InvalidPilotOwnership(uint256 pilotId);
 
-    // Thrown when a Rig has already completed its training but `trainRig` is called.
-    error RigIsTrained(uint256 tokenId);
+    // Thrown if a Rig tries to be piloted with an existing `RigPilot`.
+    error SpecifiedPilotIsActive(address pilotContract, uint256 pilotId);
+
+    // Thrown when a Rig has is training or has already completed its training.
+    error RigIsTrainingOrTrained(uint256 tokenId);
 
     // Thrown when a Rig is trying to be piloted but hasn't completed its training.
     error RigIsNotTrained(uint256 tokenId);
@@ -42,7 +45,7 @@ interface ITablelandRigs {
     error RigIsParked(uint256 tokenId);
 
     // Thrown if there is an attempt to transfer a Rig that's currently in-flight.
-    error RigIsPiloted(uint256 tokenId);
+    error RigIsNotParked(uint256 tokenId);
 
     // Values describing mint phases.
     enum MintPhase {
@@ -50,6 +53,20 @@ interface ITablelandRigs {
         ALLOWLIST,
         WAITLIST,
         PUBLIC
+    }
+
+    // A Rig's pilot
+    // TODO alterted this to align with the table column definitions
+    struct RigPilot {
+        // Index of the current pilot, for tracking the history of a Rig's pilots.
+        uint16 index;
+        // Keep track of the pilot's starting `block.timestamp` for flight time tracking.
+        uint64 startTime;
+        // Address of the ERC721 pilot contract.
+        address pilotContract;
+        // TODO we have 160 + 64 + 16 = 240 bits in this tighly packed group, so room for 16 bits of extra data, if needed
+        // Token ID of the ERC721 pilot.
+        uint256 pilotId;
     }
 
     /**
@@ -221,25 +238,49 @@ interface ITablelandRigs {
      * Requirements:
      *
      * - `tokenId` must exist
+     */
+    function pilotInfo(uint256 tokenId) external view returns (RigPilot memory);
+
+    /**
+     * @dev Retrieves Rig status for piloted (`1`) or parked (`0`).
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     */
+    function rigStatus(uint256 tokenId) external view returns (uint8);
+
+    /**
+     * @dev Trains a Rig for a period of 30 days, putting it in flight.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
      * - `msg.sender` must own the Rig
-     * - `RigPilot` of the Rig must have an index of `0`
+     * - `RigPilot.index` must be `0` (untrained)
      */
     function trainRig(uint256 tokenId) external;
 
     /**
-     * @dev Sets the `RigPilot` for a Rig in `_pilots` and the Tableland `rig_pilots` table.
+     * @dev Puts a Rig in flight while setting a custom `RigPilot`.
      *
      * tokenId - the unique Rig token identifier
-     * pilotContract - ERC721 contract address of a desired Rig's Pilot
+     * pilotContract - ERC721 contract address of a desired Rig's pilot
      * pilotTokenId - the unique token identifier at the target `pilotContract`
      *
      * Requirements:
      *
      * - `tokenId` must exist
      * - `msg.sender` must own the Rig
-     * - `RigPilot` of the Rig must *not* have an index of `0`
-     * - `pilotContract` must be an ERC721 contract
+     * - `RigPilot.index` cannot be `0`; must haved completed training (see `parkRig`)
+     * - `RigPilot.startTime` must be `0` (parked)
+     * - `pilotContract` must be an ERC721 contract; cannot be the Rigs contract
      * - `pilotTokenId` must be owned by `msg.sender` at `pilotContract`
+     * - `RigPilot` can only be associated with one Rig at a time; parks on conflict
      */
     function pilotRig(
         uint256 tokenId,
@@ -248,15 +289,16 @@ interface ITablelandRigs {
     ) external;
 
     /**
-     * @dev Updates the `RigPilot` for a Rig in `_pilots` and the Tableland `rig_pilots` table.
+     * @dev Parks a Rig and ends the current `RigPilot` session.
      *
      * tokenId - the unique Rig token identifier
      *
      * Requirements:
      *
      * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
-     * - `startBlockNumber` of the current `RigPilot` should not be zero (0 == parked)
+     * - `msg.sender` must own the Rig, or is the Rigs contract (for calls from `pilotRig`)
+     * - `RigPilot.startTime` should not be zero (0 == parked)
+     * - `RigPilot` must have completed 30 days of training
      */
     function parkRig(uint256 tokenId) external;
 }

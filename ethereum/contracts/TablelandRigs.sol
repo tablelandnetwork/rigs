@@ -5,8 +5,7 @@ import "erc721a-upgradeable/contracts/ERC721AUpgradeable.sol";
 import "erc721a-upgradeable/contracts/extensions/ERC721AQueryableUpgradeable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
-// TODO use to `StringsUpgradeable`
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
@@ -15,9 +14,8 @@ import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@tableland/evm/contracts/utils/SQLHelpers.sol"; // TODO Currently using @tableland/evm@next; also, this lib is not upgradeable since it uses `Strings`, not `StringsUpgradeable`
 import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
-// TODO Hardhat can't find `SQLHelpers`, and it doesn't support https imports?? Temporary workaround local import.
-import "./utils/SQLHelpers.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 
@@ -56,50 +54,32 @@ contract TablelandRigs is
     // URI for contract info.
     string private _contractInfoURI;
 
-    // TODO Remove the following, but for context, some comments on the table schema:
+    // TODO Remove the following, but for context, the table schema:
     /**
-        create table rig_pilots(
+        create table rig_pilot_sessions(
             id integer primary key, 
-            rig_id int not null,
+            rig_id integer not null, 
+            owner text not null,
             pilot_contract text, 
-            pilot_id int,
-            start_time int not null,
-            total_flight_time int
-            // ^Altered this to be nullable since each row == session, so the flight time isn't always known, and
-            // could also rename to just `flight_time` since it's no longer cumulative, with this approach.
-            // unique(rig_id, pilot_contract, pilot_id) 
-            // ^removed this constraint since rows == sessions; can have duplicate pilot rows per rig
-            // E.g., Pilot A -> Park -> Pilot B -> Park -> Pilot A
-
-            // Is this the right approach?
-        );
+            pilot_id integer, 
+            start_time integer not null, 
+            end_time integer
+        )
      */
 
-    // Table prefix for the Rigs Pilots table.
-    string private constant RIG_PILOTS_PREFIX = "rig_pilots";
+    // Table prefix for the Rigs pilot sessions table.
+    string private constant RIG_PILOT_SESSIONS_PREFIX = "rig_pilot_sessions";
 
-    // Table ID for the Rigs Pilots table.
-    uint256 private _rigPilotsTableId;
+    // Table ID for the Rigs pilot sessions table.
+    // TODO do we want to have a method for updating this value?
+    uint256 private _rigPilotSessionsTableId;
 
     // Tracks the Rig `tokenId` to its current `RigPilot`.
     mapping(uint256 => RigPilot) internal _pilots;
 
-    // Captures a Rig's starting flight time and Pilot's ERC721 info.
-    struct RigPilot {
-        // Keep track of the Pilot's starting block number for flight time tracking.
-        // TODO check this should be a block number, not timestamp (Notion comments & intuition seems to prefer block.number)
-        uint64 startBlockNumber;
-        // Address of the ERC721 Pilot contract.
-        address erc721;
-        // Token ID of the ERC721 Pilot.
-        uint256 tokenId;
-        // Index of the current Pilot, for tracking the history of a Rig's Pilots.
-        // TODO is this the right way to track this? The index indicates unique pilot sessions,
-        // which is useful in the subsequent logic in `trainRig`, `pilotRig`, and `parkRig`.
-        // But, a single pilot could appear more than once with a different index. Meaning,
-        // there would be duplicates here. E.g., Pilot A -> Park -> Pilot B -> Park -> Pilot A
-        uint16 index;
-    }
+    // Track piloted vs. parked Rigs as a bitlist.
+    // TODO this was implemented for gas reduction purposes while iterating/checking for duplicates in `_pilots`
+    uint8[] internal _rigStatus;
 
     function initialize(
         uint256 _maxSupply,
@@ -107,7 +87,8 @@ contract TablelandRigs is
         address payable _beneficiary,
         address payable royaltyReceiver,
         bytes32 _allowlistRoot,
-        bytes32 _waitlistRoot // TODO add: uint256 rigPilotsTableId
+        bytes32 _waitlistRoot,
+        uint256 rigPilotSessionsTableId
     ) public initializerERC721A initializer {
         __ERC721A_init("Tableland Rigs", "RIG");
         __ERC721AQueryable_init();
@@ -124,7 +105,8 @@ contract TablelandRigs is
         allowlistRoot = _allowlistRoot;
         waitlistRoot = _waitlistRoot;
         mintPhase = MintPhase.CLOSED;
-        // _rigPilotsTableId = rigPilotsTableId;
+        _rigPilotSessionsTableId = rigPilotSessionsTableId;
+        _rigStatus = new uint8[](_maxSupply);
     }
 
     // =============================
@@ -407,205 +389,221 @@ contract TablelandRigs is
         _unpause();
     }
 
-    // TODO I've left the method descriptions for ease of reviewing them but will remove these, once ready.
     /**
-     * @dev Retrieves pilot info for a Rig.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
+     * @dev See {ITablelandRigs-pilotInfo}.
      */
     function pilotInfo(uint256 tokenId) public view returns (RigPilot memory) {
-        // Check the Rig `tokenId` exists.
+        // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         return _pilots[tokenId];
     }
 
     /**
-     * @dev Retrieves pilot info for a Rig.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
-     * - `RigPilot` of the Rig must have an index of `0`
+     * @dev See {ITablelandRigs-rigStatus}.
+     */
+    // TODO this was created for testing purposes, but it isn't "required" if deemed redundant with `pilotInfo`
+    function rigStatus(uint256 tokenId) public view returns (uint8) {
+        // Check the Rig `tokenId` exists
+        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+        return _rigStatus[tokenId - 1];
+    }
+
+    /**
+     * @dev See {ITablelandRigs-trainRig}.
      */
     function trainRig(uint256 tokenId) external {
-        // Check the Rig `tokenId` exists.
+        // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to train the specified Rig.
-        // TODO is it worth including this in the if statement below?: getApproved(tokenId) != _msgSenderERC721A()
-        // See: https://github.com/divergencetech/ethier/blob/a678bad65cf0215f04cce0dc3c41552cde0ee74c/contracts/erc721/ERC721ACommon.sol#L30
-        if (_ownershipOf(tokenId).addr != _msgSenderERC721A())
-            revert InvalidRigOwnership();
-        // Check if the Rig has gone through training yet, where `index` 1 or greater represents piloting is or has occurred.
-        if (_pilots[tokenId].index > 0) revert RigIsTrained(tokenId);
-        // Assign a trainer Pilot to the Rig.
-        _pilots[tokenId] = RigPilot(uint64(block.number), address(0), 0, 1);
-        // Insert the pilot into the rig_pilots table.
-        // TODO assumption: `total_flight_time` is only updated upon parking? Thus, not included here?
+        // Verify `msg.sender` is authorized to train the specified Rig
+        if (ownerOf(tokenId) != _msgSenderERC721A())
+            revert InvalidRigOwnership(tokenId);
+        // Check if the Rig has gone through training yet
+        // An `index` of `1` represents training is happening; the Rig is "locked" into training for 30 days
+        if (_pilots[tokenId].index > 0) revert RigIsTrainingOrTrained(tokenId);
+        // Assign a trainer pilot to the Rig
+        // TODO is it worth using `SafeCastUpgradeable.toUint64`? Also impacts `_setClaimed` and some methods below
+        _pilots[tokenId] = RigPilot(1, uint64(block.timestamp), address(0), 0);
+        _rigStatus[tokenId - 1] = 1;
+        // Insert the training pilot into the Tableland `rig_pilot_sessions` table
+        // TODO Remove the following, but for context, the statement
+        /**
+            INSERT INTO rigs_pilots (
+                rig_id, owner, start_time
+            ) 
+            VALUES 
+            (
+                tokenId, ownerOf(tokenId), block.timestamp
+            )
+         */
         TablelandDeployments.get().runSQL(
             address(this),
-            _rigPilotsTableId,
+            _rigPilotSessionsTableId,
             SQLHelpers.toInsert(
-                RIG_PILOTS_PREFIX,
-                _rigPilotsTableId,
-                "rig_id, start_time",
+                RIG_PILOT_SESSIONS_PREFIX,
+                _rigPilotSessionsTableId,
+                "rig_id,owner,start_time",
                 string.concat(
-                    Strings.toString(tokenId),
+                    StringsUpgradeable.toString(uint64(tokenId)),
                     ",",
-                    Strings.toString(block.number)
+                    StringsUpgradeable.toHexString(ownerOf(tokenId)),
+                    ",",
+                    StringsUpgradeable.toString(uint64(block.timestamp))
                 )
             )
         );
         emit Training(tokenId);
     }
 
-    /**
-     * @dev Sets the `RigPilot` for a Rig in `_pilots` and the Tableland `rig_pilots` table.
-     *
-     * tokenId - the unique Rig token identifier
-     * pilotContract - ERC721 contract address of a desired Rig's Pilot
-     * pilotTokenId - the unique token identifier at the target `pilotContract`
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
-     * - `RigPilot` of the Rig must *not* have an index of `0`
-     * - `pilotContract` must be an ERC721 contract
-     * - `pilotTokenId` must be owned by `msg.sender` at `pilotContract`
-     */
-    // TODO should this `ERC165Checker` go here, or at the top of the contract?
     using ERC165Checker for address;
 
+    /**
+     * @dev See {ITablelandRigs-pilotRig}.
+     */
     function pilotRig(
         uint256 tokenId,
         address pilotContract,
         uint256 pilotTokenId
     ) external {
-        // Check the Rig `tokenId` exists.
+        // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to pilot the specified Rig.
-        if (_ownershipOf(tokenId).addr != _msgSenderERC721A())
-            revert InvalidRigOwnership();
-        // Ensure Pilot is not the first Pilot, where `index` 1 or greater represents training is or has occurred.
-        // TODO is the assumption `pilotRig` will be called only when the required training flight time has elapsed?
-        // Or, does there need to exist a "training lock" mapping, sort of similar to the registry's `_locks`? Or, does SQL to handle this?
-        uint16 currentPilotIndex = _pilots[tokenId].index;
-        if (currentPilotIndex == 0) revert RigIsNotTrained(tokenId);
-        // Check if `pilotContract` is an ERC721.
-        // TODO should we allow ERC1155s as well? (previously noted by asutula)
-        if (!pilotContract.supportsInterface(type(IERC721).interfaceId))
-            revert InvalidPilotContract();
-        // Check ownership of `pilotTokenId` at target `pilotContract`.
-        // TODO what happens if the pilot gets sold? i.e., the Rig will still show its being piloted by the non-owned pilot NFT.
+        // Verify `msg.sender` is authorized to pilot the specified Rig
+        if (ownerOf(tokenId) != _msgSenderERC721A())
+            revert InvalidRigOwnership(tokenId);
+        // Validate if pilot training is completed
+        // Once training begins, the Rig is prevented from being parked until
+        // training has been completed; thus, only need to check if the Rig has
+        // been ungaraged yet since parking handles training logic (see `parkRig` for more details)
+        if (_pilots[tokenId].index == 0) revert RigIsNotTrained(tokenId);
+        // Check if Rig is currently in-flight (not parked)
+        if (_pilots[tokenId].startTime > 0) revert RigIsNotParked(tokenId);
+        // Check if `pilotContract` is an ERC721; cannot be the Rigs contract
+        // TODO is this the right way to handle checking if the ERC721 is the Rigs contract? Or, is there a different way w/upgradeable contracts
+        if (
+            !pilotContract.supportsInterface(type(IERC721).interfaceId) ||
+            (pilotContract.supportsInterface(type(IERC721).interfaceId) &&
+                pilotContract == address(this))
+        ) revert InvalidPilotContract(pilotContract);
+        // Check ownership of `pilotTokenId` at target `pilotContract`
         if (IERC721(pilotContract).ownerOf(pilotTokenId) != _msgSenderERC721A())
-            revert InvalidPilotOwnership();
-        // Assign a new Pilot to the Rig, incrementing the previous Pilot's `index` by 1.
-        // TODO should `SafeMath` be used here?
-        uint16 newPilotIndex = currentPilotIndex + 1;
+            revert InvalidPilotOwnership(pilotTokenId);
+        // Check if the pilot is actively piloting another Rig, and if so, park the other Rig
+        for (uint256 i = 1; i <= maxSupply; i++) {
+            if (
+                // `_rigStatus` starts at index `0`, while `tokenId` in `_pilots` starts at `1`
+                _rigStatus[i - 1] == 1 &&
+                (_pilots[i].pilotContract == pilotContract &&
+                    _pilots[i].pilotId == pilotTokenId)
+            ) {
+                parkRig(i);
+            }
+        }
+        // Assign a new pilot to the Rig, incrementing the previous pilot's `index` by `1`
         _pilots[tokenId] = RigPilot(
-            uint64(block.number),
+            _pilots[tokenId].index + 1,
+            uint64(block.timestamp),
             pilotContract,
-            pilotTokenId,
-            newPilotIndex
+            pilotTokenId
         );
-        // Insert the pilot into the rig_pilots table.
-        // TODO assumption: `total_flight_time` is only updated upon parking? Thus, not included here?
+        _rigStatus[tokenId - 1] = 1;
+        // Insert the pilot into the Tableland `rig_pilot_sessions` table
+        // TODO Remove the following, but for context, the statement
         /**
             INSERT INTO rigs_pilots (
-                rig_id, pilot_contract, pilot_id, 
-                start_time
+                rig_id, owner, pilot_contract, 
+                pilot_id, start_time
             ) 
             VALUES 
             (
-                tokenId, pilotContract, pilotTokenId, 
-                block.number
+                tokenId, ownerOf(tokenId), pilotContract,
+                pilotTokenId, block.timestamp
             )
          */
         TablelandDeployments.get().runSQL(
             address(this),
-            _rigPilotsTableId,
+            _rigPilotSessionsTableId,
             SQLHelpers.toInsert(
-                RIG_PILOTS_PREFIX,
-                _rigPilotsTableId,
-                "rig_id, pilot_contract, pilot_id, start_time",
+                RIG_PILOT_SESSIONS_PREFIX,
+                _rigPilotSessionsTableId,
+                "rig_id,owner,pilot_contract,pilot_id,start_time",
                 string.concat(
-                    Strings.toString(tokenId),
+                    StringsUpgradeable.toString(uint64(tokenId)),
+                    ",",
+                    StringsUpgradeable.toHexString(ownerOf(tokenId)),
                     ",",
                     Strings.toHexString(pilotContract),
                     ",",
-                    Strings.toString(pilotTokenId),
+                    StringsUpgradeable.toString(uint64(pilotTokenId)),
                     ",",
-                    Strings.toString(block.number)
+                    StringsUpgradeable.toString(uint64(block.timestamp))
                 )
             )
         );
         emit Piloted(tokenId);
     }
 
-    // TODO This wasn't spec'd out -- I think it's needed, right?
     /**
-     * @dev Updates the `RigPilot` for a Rig in `_pilots` and the Tableland `rig_pilots` table.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
-     * - `startBlockNumber` of the current `RigPilot` should not be zero (0 == parked)
+     * @dev See {ITablelandRigs-parkRig}.
      */
-    function parkRig(uint256 tokenId) external {
+    function parkRig(uint256 tokenId) public {
         // Check the Rig `tokenId` exists.
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to park the specified Rig.
-        if (_ownershipOf(tokenId).addr != _msgSenderERC721A())
-            revert InvalidRigOwnership();
-        // Ensure Rig is currently being piloted.
-        uint64 startBlockNumber = _pilots[tokenId].startBlockNumber;
-        if (startBlockNumber == 0) revert RigIsParked(tokenId);
-        // Update the Pilot, resetting the `startBlockNumber` to `0` to indicate it's now parked.
-        _pilots[tokenId].startBlockNumber = 0;
-        // Update the row in the rig_pilots table with its `total_flight_time`.
+        // Verify `msg.sender` is authorized to park the specified Rig
+        if (ownerOf(tokenId) != _msgSenderERC721A()) {
+            if (address(this) != _msgSenderERC721A()) {
+                revert InvalidRigOwnership(tokenId);
+            }
+        }
+        // Ensure Rig is currently being piloted
+        uint64 startTime = _pilots[tokenId].startTime;
+        if (startTime == 0) revert RigIsParked(tokenId);
+        // Ensure the Rig has trained; `index` of `1` indicates training is occurring
+        // If the Rig is training, check if 30 days has elapsed (the required training time)
+        if (
+            _pilots[tokenId].index == 0 ||
+            (_pilots[tokenId].index == 1 &&
+                !(block.timestamp - 2592000 > _pilots[tokenId].startTime))
+        ) {
+            revert RigIsNotTrained(tokenId);
+        }
+        // Update the pilot, resetting values (except `index`) to `0` to indicate it's now parked
+        _pilots[tokenId].startTime = 0;
+        _pilots[tokenId].pilotContract = address(0);
+        _pilots[tokenId].pilotId = 0;
+        _rigStatus[tokenId - 1] = 0;
+        // Update the row in the `rig_pilot_sessions` table with its `end_time`
         string memory setters = string.concat(
-            "start_time=0,total_flight_time=(",
-            Strings.toString(block.number),
+            "start_time=0,end_time=(",
+            StringsUpgradeable.toString(uint64(block.timestamp)),
             "-",
-            Strings.toString(startBlockNumber),
+            StringsUpgradeable.toString(startTime),
             ")"
-            // TODO or, this could subtract the `start_time` value; they should be the same, but is there a better practice?
         );
-        // Only update the row with the matching `rig_id` and `start_time`.
+        // Only update the row with the matching `rig_id` and `start_time`
         string memory filters = string.concat(
             "rig_id=",
-            Strings.toString(tokenId),
+            StringsUpgradeable.toString(uint64(tokenId)),
             " and ",
             "start_time=",
-            Strings.toString(startBlockNumber)
+            StringsUpgradeable.toString(startTime)
         );
-        // Update the pilot information in the rig_pilots table.
+        // Update the pilot information in the Tableland `rig_pilot_sessions` table
+        // TODO Remove the following, but for context, the statement
         /**
             UPDATE 
-                rig_pilots 
+                rig_pilot_sessions 
             SET 
                 start_time=0, 
-                total_flight_time=(block.number-startBlockNumber) 
+                end_time=(block.timestamp-startTime) 
             WHERE 
                 rig_id=tokenId 
-                and start_time=startBlockNumber
+                and start_time=startTime
          */
         TablelandDeployments.get().runSQL(
             address(this),
-            _rigPilotsTableId,
+            _rigPilotSessionsTableId,
             SQLHelpers.toUpdate(
-                RIG_PILOTS_PREFIX,
-                _rigPilotsTableId,
+                RIG_PILOT_SESSIONS_PREFIX,
+                _rigPilotSessionsTableId,
                 setters,
                 filters
             )
@@ -650,9 +648,8 @@ contract TablelandRigs is
         _requireNotPaused();
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
-            // If `startBlockNumber` is not zero, then the Rig is in-flight.
-            if (_pilots[tokenId].startBlockNumber > 0)
-                revert RigIsPiloted(tokenId);
+            // If `RigPilot.startTime` is not zero, then the Rig is in-flight
+            if (_pilots[tokenId].startTime > 0) revert RigIsNotParked(tokenId);
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
