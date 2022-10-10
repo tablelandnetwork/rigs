@@ -23,7 +23,10 @@ const RigListItem = ({ rig, nfts }: { rig: Rig; nfts: NFT[] }) => {
     <GridItem>
       <VStack align="start" pb={2} flexShrink="0">
         <RigDisplay rig={rig} pilotNFT={currentNFT} />
-        <Text>{`#${rig.id}`}</Text>
+        <Flex width="100%" justify="space-between">
+          <Text>{`#${rig.id}`}</Text>
+          <Text>{rig.currentPilot && "In-flight"}</Text>
+        </Flex>
         <Button
           as={Link}
           variant="outlined-background"
