@@ -1,23 +1,18 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import {
-  Button,
-  Flex,
-  Heading,
-  Image,
-  Spinner,
-  VStack,
-  Text,
-} from "@chakra-ui/react";
+import { Button, Flex, Heading, Spinner, VStack, Text } from "@chakra-ui/react";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
-import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
-import { Rig } from "../../../types";
+import { useNFTs, NFT } from "../../../hooks/useNFTs";
+import { Rig, Pilot } from "../../../types";
+import { RigDisplay } from "../../../components/RigDisplay";
+import { findNFT } from "../../../utils/nfts";
 
-const RigDisplay = ({ rig }: { rig: Rig }) => {
-  const { thumb } = useRigImageUrls(rig);
+const RigListItem = ({ rig, nfts }: { rig: Rig; nfts: NFT[] }) => {
+  const currentNFT = rig.currentPilot && findNFT(rig.currentPilot, nfts);
+
   return (
     <VStack align="start" pb={2} flexShrink="0">
-      <Image src={thumb} width="200px" />
+      <RigDisplay rig={rig} width="200px" pilotNFT={currentNFT} />
       <Text>{`#${rig.id}`}</Text>
       <Button
         as={Link}
@@ -33,6 +28,12 @@ const RigDisplay = ({ rig }: { rig: Rig }) => {
 
 export const RigsInventory = () => {
   const { rigs } = useOwnedRigs();
+  const pilots = useMemo<Pilot[]>(() => {
+    if (!rigs) return [];
+
+    return rigs.map((v) => v.currentPilot).filter((v) => v) as Pilot[];
+  }, [rigs]);
+  const { nfts } = useNFTs(pilots);
 
   return (
     <VStack
@@ -43,7 +44,7 @@ export const RigsInventory = () => {
     >
       <Heading>Rigs {rigs && ` (${rigs.length})`}</Heading>
 
-      {rigs && (
+      {rigs && nfts && (
         <Flex
           gap={4}
           width="100%"
@@ -52,7 +53,7 @@ export const RigsInventory = () => {
           }}
         >
           {rigs.map((rig, index) => {
-            return <RigDisplay rig={rig} key={`rig-${index}`} />;
+            return <RigListItem rig={rig} key={`rig-${index}`} nfts={nfts} />;
           })}
         </Flex>
       )}
