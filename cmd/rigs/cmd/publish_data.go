@@ -193,16 +193,16 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 			if err != nil {
 				return nil, fmt.Errorf("querying layers cid: %v", err)
 			}
-			lookups := []tableland.Lookup{
-				{Label: "rendersCid", Value: rendersCid},
-				{Label: "layersCid", Value: layersCid},
-				{Label: "imageFullName", Value: "image_full.png"},
-				{Label: "imageFullAlphaName", Value: "image_full_alpha.png"},
-				{Label: "imageMediumName", Value: "image_medium.png"},
-				{Label: "imageMediumAlphaName", Value: "image_medium_alpha.png"},
-				{Label: "imageThumbName", Value: "image_thumb.png"},
-				{Label: "imageThumbAlphaName", Value: "image_thumb_alpha.png"},
-				{Label: "baseAnimationUrl", Value: "https://tableland.xyz/rigs/animate?id="},
+			lookups := tableland.Lookups{
+				RendersCid:           rendersCid,
+				LayersCid:            layersCid,
+				ImageFullName:        "image_full.png",
+				ImageFullAlphaName:   "image_full_alpha.png",
+				ImageMediumName:      "image_medium.png",
+				ImageMediumAlphaName: "image_medium_alpha.png",
+				ImageThumbName:       "image_thumb.png",
+				ImageThumbAlphaName:  "image_thumb_alpha.png",
+				AnimationBaseURL:     "https://tableland.xyz/rigs/animate?id=",
 			}
 			if err := store.InsertLookups(ctx, lookups); err != nil {
 				return nil, fmt.Errorf("calling insert lookups: %v", err)

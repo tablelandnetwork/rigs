@@ -78,7 +78,7 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 }
 
 // InsertLookups implements InsertLookups.
-func (s *Store) InsertLookups(ctx context.Context, lookups []tableland.Lookup) error {
+func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) error {
 	sql, err := s.factory.SQLForInsertingLookups(tableland.LookupsDefinition.Prefix, lookups)
 	if err != nil {
 		return fmt.Errorf("getting sql for inserting lookups: %v", err)

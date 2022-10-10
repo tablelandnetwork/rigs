@@ -48,12 +48,19 @@ var (
 			unique(rig_id, trait_type)
 		)`,
 	}
-	// LookupsDefinition defines the cids table.
+	// LookupsDefinition defines the lookups table.
 	LookupsDefinition = TableDefinition{
 		Prefix: "lookups",
 		Schema: `(
-			label text primary key not null,
-			value any not null
+			remders_cid text,
+			layers_cid text,
+			image_full_name text,
+			image_full_alpha_name text,
+			image_medium_name text,
+			image_medium_alpha_name text,
+			image_thumb_name text,
+			image_thumb_alpha_name text,
+			animation_base_url text
 		)`,
 	}
 	// PilotSessionsDefinition defines the pilot sessions table.
@@ -70,10 +77,17 @@ var (
 	}
 )
 
-// Lookup holds a label and value.
-type Lookup struct {
-	Label string
-	Value interface{}
+// Lookups holds values to be referenced in queries.
+type Lookups struct {
+	RendersCid           string
+	LayersCid            string
+	ImageFullName        string
+	ImageFullAlphaName   string
+	ImageMediumName      string
+	ImageMediumAlphaName string
+	ImageThumbName       string
+	ImageThumbAlphaName  string
+	AnimationBaseURL     string
 }
 
 // Store defines a data store interface for rigs.
@@ -82,7 +96,7 @@ type Store interface {
 	InsertParts(context.Context, []local.Part) error
 	InsertLayers(context.Context, []local.Layer) error
 	InsertRigAttributes(context.Context, []local.Rig) error
-	InsertLookups(context.Context, []Lookup) error
+	InsertLookups(context.Context, Lookups) error
 	ClearParts(context.Context) error
 	ClearLayers(context.Context) error
 	ClearRigAttributes(context.Context) error

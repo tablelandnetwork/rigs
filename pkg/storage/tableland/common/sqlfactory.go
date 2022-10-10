@@ -107,15 +107,30 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 }
 
 // SQLForInsertingLookups returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups []tableland.Lookup) (string, error) {
-	var vals [][]interface{}
-	for _, lookup := range lookups {
-		vals = append(
-			vals,
-			goqu.Vals{lookup.Label, lookup.Value},
-		)
-	}
-	ds := s.d.Insert(lookupsTable).Cols("label", "value").Vals(vals...)
+func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tableland.Lookups) (string, error) {
+	ds := s.d.Insert(lookupsTable).Cols(
+		"remders_cid",
+		"layers_cid",
+		"image_full_name",
+		"image_full_alpha_name",
+		"image_medium_name",
+		"image_medium_alpha_name",
+		"image_thumb_name",
+		"image_thumb_alpha_name",
+		"animation_base_url",
+	).Vals(
+		[]interface{}{
+			lookups.RendersCid,
+			lookups.LayersCid,
+			lookups.ImageFullName,
+			lookups.ImageFullAlphaName,
+			lookups.ImageMediumName,
+			lookups.ImageMediumAlphaName,
+			lookups.ImageThumbName,
+			lookups.ImageThumbAlphaName,
+			lookups.AnimationBaseURL,
+		},
+	)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert lookups: %v", err)

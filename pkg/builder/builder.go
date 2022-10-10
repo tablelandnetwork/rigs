@@ -215,7 +215,7 @@ func (b *Builder) Render(
 	if err != nil {
 		return "", fmt.Errorf("creating file: %v", err)
 	}
-	imageThumbAlphaFile, err := os.Create(path.Join(rigPath, "image_thumb_aplha.png"))
+	imageThumbAlphaFile, err := os.Create(path.Join(rigPath, "image_thumb_alpha.png"))
 	if err != nil {
 		return "", fmt.Errorf("creating file: %v", err)
 	}
@@ -316,7 +316,7 @@ func (b *Builder) Render(
 		},
 		{
 			ID:   5,
-			Desc: "resize medium aplha",
+			Desc: "resize medium alpha",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
 				rect := image.Rect(0, 0, c.mediumSize, c.mediumSize)
 				if err := resizeImage(prMediumAlpha, rect, imageMediumAlphaFile); err != nil {

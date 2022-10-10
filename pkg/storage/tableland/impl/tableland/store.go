@@ -99,7 +99,7 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 }
 
 // InsertLookups implements InsertLookups.
-func (s *Store) InsertLookups(ctx context.Context, lookups []tableland.Lookup) error {
+func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) error {
 	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
