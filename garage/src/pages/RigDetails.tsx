@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { ethers } from "ethers";
 import {
@@ -40,6 +40,7 @@ import {
   useContractWrite,
   usePrepareContractWrite,
 } from "wagmi";
+import { useOwnedRigs } from "../hooks/useOwnedRigs";
 import { useRig } from "../hooks/useRig";
 import { useNFTs, NFT } from "../hooks/useNFTs";
 import { findNFT } from "../utils/nfts";
@@ -237,7 +238,11 @@ const getPilots = (
   });
 };
 
-const Pilots = ({ rig, nfts }: RigModuleProps) => {
+const Pilots = ({
+  rig,
+  nfts,
+  isOwner,
+}: RigModuleProps & { isOwner: boolean }) => {
   const { data: blockNumber } = useBlockNumber();
   const pilots = getPilots(rig, nfts, blockNumber);
 
@@ -306,18 +311,24 @@ const Pilots = ({ rig, nfts }: RigModuleProps) => {
             })}
           </Tbody>
         </Table>
-        <StackItem px={GRID_GAP} pb={GRID_GAP}>
-          {!rig.currentPilot && (
-            <Button variant="outlined" onClick={onOpenTrainModal} width="100%">
-              Train
-            </Button>
-          )}
-          {rig.currentPilot && (
-            <Button variant="outlined" onClick={onOpenParkModal} width="100%">
-              Park
-            </Button>
-          )}
-        </StackItem>
+        {isOwner && (
+          <StackItem px={GRID_GAP} pb={GRID_GAP}>
+            {!rig.currentPilot && (
+              <Button
+                variant="outlined"
+                onClick={onOpenTrainModal}
+                width="100%"
+              >
+                Train
+              </Button>
+            )}
+            {rig.currentPilot && (
+              <Button variant="outlined" onClick={onOpenParkModal} width="100%">
+                Park
+              </Button>
+            )}
+          </StackItem>
+        )}
       </VStack>
       <TrainRigModal
         rig={rig}
@@ -419,7 +430,12 @@ const FlightLog = ({ rig, nfts }: RigModuleProps) => {
 export const RigDetails = () => {
   const { id } = useParams();
   const { rig } = useRig(id || "");
+  const { rigs } = useOwnedRigs();
   const { nfts } = useNFTs(rig?.pilotSessions || []);
+
+  const userOwnsRig = useMemo(() => {
+    return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));
+  }, [rig, rigs]);
 
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
@@ -466,7 +482,7 @@ export const RigDetails = () => {
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <Pilots rig={rig} nfts={nfts} />
+                <Pilots rig={rig} nfts={nfts} isOwner={userOwnsRig} />
                 <Badges rig={rig} nfts={nfts} />
                 <FlightLog rig={rig} nfts={nfts} />
               </VStack>
