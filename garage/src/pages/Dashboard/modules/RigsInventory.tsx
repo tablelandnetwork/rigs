@@ -1,6 +1,15 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { Button, Flex, Heading, Spinner, VStack, Text } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Heading,
+  Grid,
+  GridItem,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useNFTs, NFT } from "../../../hooks/useNFTs";
 import { Rig, Pilot } from "../../../types";
@@ -11,18 +20,20 @@ const RigListItem = ({ rig, nfts }: { rig: Rig; nfts: NFT[] }) => {
   const currentNFT = rig.currentPilot && findNFT(rig.currentPilot, nfts);
 
   return (
-    <VStack align="start" pb={2} flexShrink="0">
-      <RigDisplay rig={rig} width="200px" pilotNFT={currentNFT} />
-      <Text>{`#${rig.id}`}</Text>
-      <Button
-        as={Link}
-        variant="outlined-background"
-        to={`/rigs/${rig.id}`}
-        sx={{ width: "100%" }}
-      >
-        Details
-      </Button>
-    </VStack>
+    <GridItem>
+      <VStack align="start" pb={2} flexShrink="0">
+        <RigDisplay rig={rig} pilotNFT={currentNFT} />
+        <Text>{`#${rig.id}`}</Text>
+        <Button
+          as={Link}
+          variant="outlined-background"
+          to={`/rigs/${rig.id}`}
+          sx={{ width: "100%" }}
+        >
+          Details
+        </Button>
+      </VStack>
+    </GridItem>
   );
 };
 
@@ -45,17 +56,19 @@ export const RigsInventory = () => {
       <Heading>Rigs {rigs && ` (${rigs.length})`}</Heading>
 
       {rigs && nfts && (
-        <Flex
+        <Grid
           gap={4}
-          width="100%"
-          sx={{
-            overflowX: "scroll",
+          templateColumns={{
+            base: "repeat(1, 1fr)",
+            sm: "repeat(2, 1fr)",
+            md: "repeat(3, 1fr)",
+            xl: "repeat(4, 1fr)",
           }}
         >
           {rigs.map((rig, index) => {
             return <RigListItem rig={rig} key={`rig-${index}`} nfts={nfts} />;
           })}
-        </Flex>
+        </Grid>
       )}
 
       {!rigs && (
