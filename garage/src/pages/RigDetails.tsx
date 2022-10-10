@@ -34,6 +34,7 @@ import { RigWithPilots, PilotSession } from "../types";
 import { Topbar } from "../Topbar";
 import { TrainerPilot } from "../components/TrainerPilot";
 import { RigDisplay } from "../components/RigDisplay";
+import { TransactionStateAlert } from "../components/TransactionStateAlert";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import {
   useBlockNumber,
@@ -105,17 +106,9 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
     args: ethers.BigNumber.from(rig.id),
   });
 
-  const {
-    data,
-    isLoading,
-    isSuccess,
-    isError,
-    error,
-    write,
-  } = useContractWrite(config);
+  const contractWrite = useContractWrite(config);
+  const { isLoading, isSuccess, write } = contractWrite;
 
-  // TODO include information about the tx like the hash in loading & success messages
-  // TODO show better error messages
   // TODO prevent the user from closing the modal while the tx is loading?
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -133,9 +126,7 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
             the Train button below your wallet will request that you sign a
             transaction that will cost a small gas fee.
           </Text>
-          {isLoading && <Spinner />}
-          {isSuccess && "You did it!"}
-          {isError && "Uh oh, got an error"}
+          <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
           <Button
@@ -163,17 +154,9 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
     args: ethers.BigNumber.from(rig.id),
   });
 
-  const {
-    data,
-    isLoading,
-    isSuccess,
-    isError,
-    error,
-    write,
-  } = useContractWrite(config);
+  const contractWrite = useContractWrite(config);
+  const { isLoading, isSuccess, write } = contractWrite;
 
-  // TODO include information about the tx like the hash in loading & success messages
-  // TODO show better error messages
   // TODO prevent the user from closing the modal while the tx is loading?
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -184,9 +167,7 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
         <ModalBody>
           Parking your rig will let you do things like change pilot, chosing
           what badges you want to display, etc.
-          {isLoading && <Spinner />}
-          {isSuccess && "You did it!"}
-          {isError && "Uh oh, got an error"}
+          <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
           <Button
