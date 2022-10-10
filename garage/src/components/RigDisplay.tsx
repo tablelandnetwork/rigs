@@ -3,12 +3,13 @@ import { Box, Image } from "@chakra-ui/react";
 import { TrainerPilot } from "./TrainerPilot";
 import { useRigImageUrls } from "../hooks/useRigImageUrls";
 import { Rig } from "../types";
+import { NFT } from "../hooks/useNFTs";
 
 type BorderWidth = React.ComponentProps<typeof Box>["borderWidth"];
 
 type Props = React.ComponentProps<typeof Box> & {
   rig: Rig;
-  pilotNFT?: { imageUrl: string };
+  pilotNFT?: NFT;
   pilotBorderWidth?: BorderWidth;
 };
 

@@ -42,6 +42,7 @@ import {
 } from "wagmi";
 import { useRig } from "../hooks/useRig";
 import { useNFTs, NFT } from "../hooks/useNFTs";
+import { findNFT } from "../utils/nfts";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
 import { prettyNumber } from "../utils/fmt";
 import { education, code } from "../assets/badges/";
@@ -204,23 +205,6 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   );
 };
 
-const findNFT = (nfts: NFT[], contract: string, tokenId: string) => {
-  const nft = nfts.find(
-    (v) =>
-      v.token.tokenId === tokenId &&
-      v.token.collectionAddress.toLowerCase() === contract.toLowerCase()
-  );
-
-  const tokenName = nft?.token.name;
-  const fallbackName = nft
-    ? `${nft?.token?.tokenContract?.name} #${nft?.token?.tokenId}`
-    : undefined;
-  const media = nft?.token.image?.mediaEncoding as { thumbnail: string };
-  const imageUrl = media?.thumbnail;
-
-  return { name: tokenName || fallbackName, imageUrl };
-};
-
 const getPilots = (
   rig: RigWithPilots,
   nfts: NFT[],
@@ -235,19 +219,16 @@ const getPilots = (
   }, accumulator);
 
   return Object.values(pilots).map((sessions) => {
-    const { contract, tokenId } = sessions[0];
-
     const status = sessions.find((v) => !v.endTime) ? "Active" : "Garaged";
 
-    const { name, imageUrl } = findNFT(nfts, contract, tokenId);
+    const nft = findNFT(sessions[0], nfts);
+    const { name = "Trainer", imageUrl = "" } = nft || {};
 
     const flightTime = sessions.reduce((acc, { startTime, endTime }) => {
       return acc + ((endTime ?? blockNumber ?? startTime) - startTime);
     }, 0);
 
     return {
-      contract,
-      tokenId,
       flightTime,
       status,
       imageUrl: imageUrl,
@@ -401,7 +382,7 @@ const Badges = ({ rig }: RigModuleProps) => {
 const FlightLog = ({ rig, nfts }: RigModuleProps) => {
   const events = rig.pilotSessions
     .flatMap(({ startTime, endTime, contract, tokenId }) => {
-      const { name } = findNFT(nfts, contract, tokenId);
+      const { name = "Trainer" } = findNFT({ tokenId, contract }, nfts) || {};
 
       let events = [{ type: `Piloted ${name}`, timestamp: startTime }];
 
@@ -440,9 +421,7 @@ export const RigDetails = () => {
   const { nfts } = useNFTs(rig?.pilotSessions || []);
 
   const currentNFT =
-    rig?.currentPilot && rig.currentPilot.contract && nfts
-      ? findNFT(nfts, rig.currentPilot.contract, rig.currentPilot.tokenId)
-      : undefined;
+    rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
   return (
     <Flex
