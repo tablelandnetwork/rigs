@@ -52,7 +52,7 @@ var (
 	LookupsDefinition = TableDefinition{
 		Prefix: "lookups",
 		Schema: `(
-			remders_cid text,
+			renders_cid text,
 			layers_cid text,
 			image_full_name text,
 			image_full_alpha_name text,

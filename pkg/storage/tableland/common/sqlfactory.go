@@ -109,7 +109,7 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 // SQLForInsertingLookups returns the SQL statement.
 func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tableland.Lookups) (string, error) {
 	ds := s.d.Insert(lookupsTable).Cols(
-		"remders_cid",
+		"renders_cid",
 		"layers_cid",
 		"image_full_name",
 		"image_full_alpha_name",
