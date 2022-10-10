@@ -263,9 +263,10 @@ const Pilots = ({ rig, nfts }: RigModuleProps) => {
         <HStack
           px={PAPER_TABLE_HEADING_PX}
           justify="space-between"
+          align="baseline"
           sx={{ width: "100%" }}
         >
-          <Heading>Rig {`#${rig.id}`}</Heading>
+          <Heading size="xl">Rig {`#${rig.id}`}</Heading>
           <Heading size="sm">
             {rig.currentPilot ? "In-flight" : "Parked"}
             {` (${prettyNumber(totalFlightTime)} FT)`}
