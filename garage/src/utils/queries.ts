@@ -5,7 +5,7 @@ const RIG_PILOT_SESSIONS = "rig_pilot_sessions_5_787";
 export const selectRigs = (ids: string[]): string => {
   return `
   SELECT
-    id,
+    rigs.id,
     image,
     image_alpha,
     thumb,
@@ -14,11 +14,15 @@ export const selectRigs = (ids: string[]): string => {
       'displayType', display_type,
       'traitType', trait_type,
       'value', value
-    )) AS attributes
+    )) AS attributes,
+    (SELECT json_object(
+      'contract', pilot_contract,
+      'tokenId', cast(pilot_id as text)
+    ) FROM ${RIG_PILOT_SESSIONS} WHERE rig_id = rigs.id AND end_time IS NULL) AS pilot
   FROM ${RIGS} AS rigs
   JOIN ${RIGS_ATTRIBUTES} AS attributes ON rigs.id = attributes.rig_id
   WHERE rigs.id IN ('${ids.join("', '")}')
-  GROUP BY id`;
+  GROUP BY rigs.id`;
 };
 
 export const selectRigWithPilots = (id: string): string => {

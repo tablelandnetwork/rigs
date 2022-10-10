@@ -14,7 +14,6 @@ export const useNFTs = (input: { contract: string; tokenId: string }[]) => {
   const [nfts, setNFTs] = useState<NFT[]>();
 
   useEffect(() => {
-    console.log("useNFTs effect", { input, zdk });
     let isCancelled = false;
     if (input.length) {
       const tokens = input.map(({ contract, tokenId }) => ({

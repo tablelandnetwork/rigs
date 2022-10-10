@@ -8,7 +8,7 @@ import {
   EventAction,
 } from "../types";
 
-type RigRow = [string, string, string, string, string, object];
+type RigRow = [string, string, string, string, string, object, object];
 
 export const rigFromRow = ([
   id,
@@ -17,6 +17,7 @@ export const rigFromRow = ([
   thumb,
   thumbAlpha,
   attributes,
+  currentPilot,
 ]: RigRow): Rig => ({
   id,
   image,
@@ -24,6 +25,7 @@ export const rigFromRow = ([
   thumb,
   thumbAlpha,
   attributes: attributes as Attribute[],
+  currentPilot: currentPilot as Pilot,
 });
 
 type RigWithPilotsRow = [
