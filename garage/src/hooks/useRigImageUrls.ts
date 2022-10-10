@@ -12,7 +12,7 @@ interface RigImageUrls {
   thumbAlpha?: string;
 }
 
-export const useRigImageUrls = (rig: Rig): RigImageUrls => {
+export const useRigImageUrls = (rig: Partial<Rig>): RigImageUrls => {
   let result: RigImageUrls = {};
 
   if (rig.image) {
