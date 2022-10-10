@@ -7,28 +7,44 @@ export const Activity = () => {
   const { events } = useRigsActivity();
 
   return (
-    <Flex direction="column" bgColor="paper" pt={8} mb={8} sx={{ height: "100%" }}>
+    <Flex
+      direction="column"
+      bgColor="paper"
+      pt={8}
+      mb={8}
+      sx={{ height: "100%", minWidth: { xl: "400px" } }}
+    >
       <Heading px={8}>Activity</Heading>
       <Table>
         <Tbody>
-          {events && events.map(({ rigId, thumb, action }, index) => {
-            const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
-            return (
-              <Tr key={`activity-row-${index}`}>
-                <Td pl={8} pr={0}>
-                  <Image
-                    src={thumbUrl}
-                    alt={`Rig ${rigId}`}
-                    sx={{ width: "20px", height: "20px" }}
-                  />
-                </Td>
-                <Td textAlign="start">{`#${rigId}`}</Td>
-                <Td textAlign="end" pr={8}>
-                  {action}
-                </Td>
-              </Tr>
-            );
-          })}
+          {events &&
+            events.map(({ rigId, thumb, action }, index) => {
+              const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
+              return (
+                <Tr key={`activity-row-${index}`}>
+                  <Td pl={8} pr={0}>
+                    <Image
+                      src={thumbUrl}
+                      alt={`Rig ${rigId}`}
+                      sx={{ width: "20px", height: "20px" }}
+                    />
+                  </Td>
+                  <Td textAlign="start">{`#${rigId}`}</Td>
+                  <Td
+                    textAlign="end"
+                    pr={8}
+                    sx={{
+                      maxWidth: { base: "200px", md: "300px" },
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {action}
+                  </Td>
+                </Tr>
+              );
+            })}
         </Tbody>
       </Table>
     </Flex>
