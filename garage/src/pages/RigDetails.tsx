@@ -21,6 +21,7 @@ import {
   StackItem,
   Table,
   Tbody,
+  Text,
   Thead,
   Td,
   Th,
@@ -132,13 +133,15 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
         <ModalHeader>Train Rig</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          Before your Rig can handle any pilot it needs to go through training
-          for 30 days with the training pilot.
-          <i>
+          <Text>
+            Before your Rig can handle any pilot it needs to go through training
+            for 30 days with the training pilot.
+          </Text>
+          <Text mt={4} sx={{ fontStyle: "italic" }}>
             Training your rig requires an on-chain transaction. When you click
             the Train button below your wallet will request that you sign a
             transaction that will cost a small gas fee.
-          </i>
+          </Text>
           {isLoading && <Spinner />}
           {isSuccess && "You did it!"}
           {isError && "Uh oh, got an error"}
