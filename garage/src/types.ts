@@ -4,9 +4,12 @@ export interface Attribute {
   value: any;
 }
 
-export interface PilotSession {
+export interface Pilot {
   contract: string;
   tokenId: string;
+}
+
+export interface PilotSession extends Pilot {
   startTime: number;
   endTime?: number;
 }
@@ -18,6 +21,7 @@ export interface Rig {
   thumb: string;
   thumbAlpha: string;
   attributes: Attribute[];
+  currentPilot?: Pilot;
 }
 
 export interface RigWithPilots extends Rig {
@@ -34,6 +38,6 @@ export interface Event {
   thumb: string;
   image: string;
   action: EventAction;
-  pilot?: { contract: string; id: string };
+  pilot?: Pilot;
   timestamp: string;
 }

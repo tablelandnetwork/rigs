@@ -39,7 +39,7 @@ import {
   useContractWrite,
   usePrepareContractWrite,
 } from "wagmi";
-import { useRig, RigWithGarageStatus } from "../hooks/useRig";
+import { useRig } from "../hooks/useRig";
 import { useRigImageUrls } from "../hooks/useRigImageUrls";
 import { useNFTs, NFT } from "../hooks/useNFTs";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
@@ -51,7 +51,7 @@ const PAPER_TABLE_PT = 8;
 const PAPER_TABLE_HEADING_PX = 8;
 
 interface RigModuleProps {
-  rig: RigWithGarageStatus;
+  rig: RigWithPilots;
   nfts: NFT[];
 }
 
@@ -101,7 +101,7 @@ const RigAttributes = ({ rig }: RigModuleProps) => {
 };
 
 interface ModalProps {
-  rig: RigWithGarageStatus;
+  rig: RigWithPilots;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -297,7 +297,7 @@ const Pilots = ({ rig, nfts }: RigModuleProps) => {
         >
           <Heading>Rig {`#${rig.id}`}</Heading>
           <Heading size="sm">
-            {rig.garageStatus.state === "FLYING" ? "In-flight" : "Parked"}
+            {rig.currentPilot ? "In-flight" : "Parked"}
             {` (${prettyNumber(totalFlightTime)} FT)`}
           </Heading>
         </HStack>
@@ -336,12 +336,12 @@ const Pilots = ({ rig, nfts }: RigModuleProps) => {
           </Tbody>
         </Table>
         <StackItem px={GRID_GAP} pb={GRID_GAP}>
-          {rig.garageStatus.state === "PARKED" && (
+          {!rig.currentPilot && (
             <Button variant="outlined" onClick={onOpenTrainModal} width="100%">
               Train
             </Button>
           )}
-          {rig.garageStatus.state === "FLYING" && (
+          {rig.currentPilot && (
             <Button variant="outlined" onClick={onOpenParkModal} width="100%">
               Park
             </Button>

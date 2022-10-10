@@ -2,6 +2,7 @@ import {
   Rig,
   RigWithPilots,
   Attribute,
+  Pilot,
   PilotSession,
   Event,
   EventAction,
@@ -50,6 +51,7 @@ export const rigWithPilotsFromRow = ([
   thumb,
   thumbAlpha,
   attributes: attributes as Attribute[],
+  currentPilot: (pilotSessions as PilotSession[]).find(v => !v.endTime),
   pilotSessions: pilotSessions as PilotSession[],
 });
 
@@ -77,7 +79,7 @@ export const eventFromRow = ([
   rigId,
   thumb,
   image,
-  pilot: { contract: pilotContract, id: pilotId },
+  pilot: { contract: pilotContract, tokenId: pilotId },
   action: endTime ? EventAction.Parked : EventAction.PilotedTrainer,
   timestamp,
 });
