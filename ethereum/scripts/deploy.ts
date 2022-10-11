@@ -34,13 +34,17 @@ async function main() {
   }
 
   // Get URI template
-  if (rigsDeployment.tokensTable === "") {
-    throw Error(`missing tokens table entry in deployments`);
+  if (rigsDeployment.attributesTable === "") {
+    throw Error(`missing attributes table entry in deployments`);
+  }
+  if (rigsDeployment.lookupsTable === "") {
+    throw Error(`missing lookups table entry in deployments`);
   }
   const uriTemplate = getURITemplate(
     rigsDeployment.tablelandHost,
-    rigsDeployment.tokensTable,
-    rigsDeployment.attributesTable
+    rigsDeployment.attributesTable,
+    rigsDeployment.lookupsTable,
+    rigsDeployment.displayAttributes,
   );
 
   // Don't allow multiple deployments per network

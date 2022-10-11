@@ -12,8 +12,10 @@ exports.deployments = {
         allowlistTable: "rigs_allowlist_5_59",
         partsTable: "parts_5_30",
         layersTable: "layers_5_29",
-        tokensTable: "rigs_5_28",
         attributesTable: "rig_attributes_5_27",
+        lookupsTable: "",
+        pilotSessionsTable: "",
+        displayAttributes: true,
     },
     // testnets
     "polygon-mumbai": {
@@ -25,8 +27,10 @@ exports.deployments = {
         allowlistTable: "rigs_allowlist_5_59",
         partsTable: "parts_5_21",
         layersTable: "layers_5_19",
-        tokensTable: "rigs_5_22",
         attributesTable: "rig_attributes_5_20",
+        lookupsTable: "",
+        pilotSessionsTable: "",
+        displayAttributes: true,
     },
     localhost: {
         contractAddress: "",
@@ -37,8 +41,10 @@ exports.deployments = {
         allowlistTable: "",
         partsTable: "",
         layersTable: "",
-        tokensTable: "",
         attributesTable: "",
+        lookupsTable: "",
+        pilotSessionsTable: "",
+        displayAttributes: true,
     },
 };
 //# sourceMappingURL=deployments.js.map

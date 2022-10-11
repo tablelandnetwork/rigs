@@ -8,8 +8,10 @@ export interface RigsDeployment {
     allowlistTable: string;
     partsTable: string;
     layersTable: string;
-    tokensTable: string;
     attributesTable: string;
+    lookupsTable: string;
+    pilotSessionsTable: string;
+    displayAttributes: boolean;
 }
 export interface RigsDeployments {
     [key: string]: RigsDeployment;
