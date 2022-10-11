@@ -1,14 +1,17 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers, upgrades } from "hardhat";
-import { SQLHelpers, TablelandTables } from "../typechain-types";
+import {
+  TestSQLHelpers,
+  TablelandTables,
+} from "@tableland/evm/typechain-types";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-// Deploy `TablelandTables` contract *once*, which is called by a fixture
+// Deploy `TablelandTables` contract *once*, which is used by a fixture
 // Required for `TablelandDeployments.sol` calls to work with `TablelandTables`
 export async function deployTablelandTables() {
   const TablelandTablesFactory = await ethers.getContractFactory(
@@ -25,9 +28,12 @@ export async function deployTablelandTables() {
 // Required for The Garage tests to work with `runSQL` (alternatively, could use Tableland SDK)
 export async function tableSetup(
   beneficiary: SignerWithAddress,
-  tables: TablelandTables,
-  sqlHelpers: SQLHelpers
+  tables: TablelandTables
 ) {
+  // Independently deploy the `SQLHelpers` to make it accessible below
+  const SQLHelpersFactory = await ethers.getContractFactory("TestSQLHelpers");
+  const sqlHelpers = (await SQLHelpersFactory.deploy()) as TestSQLHelpers;
+  await sqlHelpers.deployed();
   // Create the table, minted to the `beneficiary` address
   const tx = await tables
     .connect(beneficiary)

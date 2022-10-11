@@ -3,12 +3,8 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { BigNumber, utils } from "ethers";
 import { ethers, network } from "hardhat";
-import {
-  PaymentSplitter,
-  SQLHelpers,
-  TablelandRigs,
-  TablelandTables,
-} from "../typechain-types";
+import { PaymentSplitter, TablelandRigs } from "../typechain-types";
+import { TablelandTables } from "@tableland/evm/typechain-types";
 import { MerkleTree } from "merkletreejs";
 import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
 import { getURITemplate } from "../helpers/uris";
@@ -33,7 +29,6 @@ describe("Rigs", function () {
   const waitlist: AllowList = {};
   let allowlistTree: MerkleTree;
   let waitlistTree: MerkleTree;
-  let sqlHelpers: SQLHelpers;
   let rigPilotSessionsTableId: BigNumber;
   // Required during testing with The Garage methods that call `runSQL`
   let tables: TablelandTables;
@@ -73,18 +68,10 @@ describe("Rigs", function () {
     )) as PaymentSplitter;
     await splitter.deployed();
 
-    const SQLHelpersFactory = await ethers.getContractFactory("SQLHelpers");
-    sqlHelpers = (await SQLHelpersFactory.deploy()) as SQLHelpers;
-    await sqlHelpers.deployed();
-
     // Create a `rig_pilot_sessions` table using the `beneficiary` (i.e., not created by the Rigs contract)
-    rigPilotSessionsTableId = await tableSetup(beneficiary, tables, sqlHelpers);
+    rigPilotSessionsTableId = await tableSetup(beneficiary, tables);
 
-    const RigsFactory = await ethers.getContractFactory("TablelandRigs", {
-      libraries: {
-        SQLHelpers: sqlHelpers.address,
-      },
-    });
+    const RigsFactory = await ethers.getContractFactory("TablelandRigs");
     rigs = await (await RigsFactory.deploy()).deployed();
     await (
       await rigs.initialize(
@@ -641,7 +628,7 @@ describe("Rigs", function () {
 
   describe("The Garage", function () {
     it("Should not return pilot info for non-existent token", async function () {
-      // Try calling iwth an non-existent token
+      // Try calling with a non-existent token
       await expect(rigs.pilotInfo(BigNumber.from(0))).to.be.rejectedWith(
         "OwnerQueryForNonexistentToken"
       );
@@ -651,18 +638,21 @@ describe("Rigs", function () {
       // Mint a token and then get its pilot's default info (i.e., still in the garage)
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-      const pilotInfo = await rigs.pilotInfo(BigNumber.from(1));
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
+      const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
       expect(pilotInfo.startTime).to.equal(BigNumber.from(0));
       expect(pilotInfo.pilotContract).to.equal(ethers.constants.AddressZero);
       expect(pilotInfo.pilotId).to.equal(BigNumber.from(0));
-      expect(await rigs.rigStatus(BigNumber.from(1))).to.equal(0);
+      expect(await rigs.rigStatus(BigNumber.from(tokenId))).to.equal(0);
     });
 
     it("Should not return Rig status for non-existent token", async function () {
-      // Try calling iwth an non-existent token
+      // Try calling with a non-existent token
       await expect(rigs.pilotInfo(BigNumber.from(0))).to.be.rejectedWith(
         "OwnerQueryForNonexistentToken"
       );
@@ -672,23 +662,26 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Check that the Rig is inactive (`0`)
-      expect(await rigs.rigStatus(BigNumber.from(1))).to.equal(0);
+      expect(await rigs.rigStatus(BigNumber.from(tokenId))).to.equal(0);
       // Train the Rig, putting it in-flight, and advance 1 block
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       // Check the Rig is bow active (`1`)
-      expect(await rigs.rigStatus(BigNumber.from(1))).to.equal(1);
-      // Advance 2592000 blocks (30 days)
+      expect(await rigs.rigStatus(BigNumber.from(tokenId))).to.equal(1);
+      // Advance 172800 blocks (30 days)
       await network.provider.send("hardhat_mine", [
-        ethers.utils.hexValue(2592000),
+        ethers.utils.hexValue(172800),
       ]);
       // Park the Rig now that training has been completed
-      await rigs.connect(tokenOwner).parkRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId));
       // Get the Rig's status, which should now be inactive
-      expect(await rigs.rigStatus(BigNumber.from(1))).to.equal(0);
+      expect(await rigs.rigStatus(BigNumber.from(tokenId))).to.equal(0);
     });
 
     it("Should not train Rig for non-existent token", async function () {
@@ -701,13 +694,16 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Attempt to train the Rig with an address that doesn't own the token
       const sender = accounts[5];
       await expect(
-        rigs.connect(sender).trainRig(BigNumber.from(1))
+        rigs.connect(sender).trainRig(BigNumber.from(tokenId))
       ).to.be.rejectedWith("InvalidRigOwnership");
     });
 
@@ -715,11 +711,14 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Train the Rig
-      await expect(rigs.connect(tokenOwner).trainRig(BigNumber.from(1)))
+      await expect(rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId)))
         .to.emit(rigs, "Training")
         .withArgs(BigNumber.from(1));
     });
@@ -728,14 +727,17 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Train the Rig
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       // Try to train the Rig again
       await expect(
-        rigs.connect(tokenOwner).trainRig(BigNumber.from(1))
+        rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId))
       ).to.be.rejectedWith("RigIsTrainingOrTrained");
     });
 
@@ -749,15 +751,22 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Attempt to pilot the Rig with an address that doesn't own the token
       const sender = accounts[5];
       await expect(
         rigs
           .connect(sender)
-          .pilotRig(BigNumber.from(1), ethers.constants.AddressZero, 1)
+          .pilotRig(
+            BigNumber.from(tokenId),
+            ethers.constants.AddressZero,
+            BigNumber.from(1)
+          )
       ).to.be.rejectedWith("InvalidRigOwnership");
     });
 
@@ -765,14 +774,21 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Attempt to pilot the Rig while never have gone through training
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(BigNumber.from(1), ethers.constants.AddressZero, 1)
+          .pilotRig(
+            BigNumber.from(tokenId),
+            ethers.constants.AddressZero,
+            BigNumber.from(1)
+          )
       ).to.be.rejectedWith("RigIsNotTrained");
     });
 
@@ -780,22 +796,33 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Train the Rig, putting it in-flight
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       // Attempt to pilot the Rig while in-flight
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(BigNumber.from(1), ethers.constants.AddressZero, 1)
+          .pilotRig(
+            BigNumber.from(tokenId),
+            ethers.constants.AddressZero,
+            BigNumber.from(1)
+          )
       ).to.be.rejectedWith("RigIsNotParked");
       // Attempt to pilot the Rig before training has been completed, without parking
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(BigNumber.from(1), ethers.constants.AddressZero, 1)
+          .pilotRig(
+            BigNumber.from(tokenId),
+            ethers.constants.AddressZero,
+            BigNumber.from(1)
+          )
       ).to.be.rejectedWith("RigIsNotParked");
     });
 
@@ -809,13 +836,16 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Attempt to park the Rig with an address that doesn't own the token
       const sender = accounts[5];
       await expect(
-        rigs.connect(sender).parkRig(BigNumber.from(1))
+        rigs.connect(sender).parkRig(BigNumber.from(tokenId))
       ).to.be.rejectedWith("InvalidRigOwnership");
     });
 
@@ -823,177 +853,231 @@ describe("Rigs", function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Train the Rig, putting it in-flight, and advance 1 block
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       // Attempt to park the Rig before training has been completed
       await expect(
-        rigs.connect(tokenOwner).parkRig(BigNumber.from(1))
+        rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
       ).to.be.rejectedWith("RigIsNotTrained");
-      // Advance 2592000 blocks (30 days)
+      // Advance 172800 blocks (30 days)
       await network.provider.send("hardhat_mine", [
-        ethers.utils.hexValue(2592000),
+        ethers.utils.hexValue(172800),
       ]);
       // Park the Rig now that training has been completed
-      await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(1)))
+      await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId)))
         .to.emit(rigs, "Parked")
-        .withArgs(BigNumber.from(1));
+        .withArgs(BigNumber.from(tokenId));
     });
 
     it("Should not allow non-ERC721 / Rigs contract for pilots", async function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Train the Rig, putting it in-flight, and advance 1 block
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
-      // Advance 2592000 blocks (30 days)
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
+      // Advance 172800 blocks (30 days)
       await network.provider.send("hardhat_mine", [
-        ethers.utils.hexValue(2592000),
+        ethers.utils.hexValue(172800),
       ]);
       // Park the Rig, now that training has completed
-      await rigs.connect(tokenOwner).parkRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId));
       // Try to set the pilot to a non-ERC721 address
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(BigNumber.from(1), ethers.constants.AddressZero, 1)
+          .pilotRig(
+            BigNumber.from(tokenId),
+            ethers.constants.AddressZero,
+            BigNumber.from(1)
+          )
       ).to.be.rejectedWith("InvalidPilotContract");
       // Try to set the pilot to the Rigs contract address
       await expect(
-        rigs.connect(tokenOwner).pilotRig(BigNumber.from(1), rigs.address, 1)
+        rigs
+          .connect(tokenOwner)
+          .pilotRig(BigNumber.from(tokenId), rigs.address, BigNumber.from(1))
       ).to.be.rejectedWith("InvalidPilotContract");
     });
 
     it("Should allow ERC721-compliant contract & owned pilot usage", async function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
-      const tokenOwner = accounts[4];
-      await rigs
-        .connect(tokenOwner)
+      const rigTokenOwner = accounts[4];
+      let tx = await rigs
+        .connect(rigTokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      let receipt = await tx.wait();
+      let [event] = receipt.events ?? [];
+      const rigTokenId = event.args?.tokenId;
       // Train the Rig, putting it in-flight, and advance 1 block
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
-      // Advance 2592000 blocks (30 days)
+      await rigs.connect(rigTokenOwner).trainRig(BigNumber.from(rigTokenId));
+      // Advance 172800 blocks (30 days)
       await network.provider.send("hardhat_mine", [
-        ethers.utils.hexValue(2592000),
+        ethers.utils.hexValue(172800),
       ]);
       // Park the Rig now that training has been completed
-      await rigs.connect(tokenOwner).parkRig(BigNumber.from(1));
+      await rigs.connect(rigTokenOwner).parkRig(BigNumber.from(rigTokenId));
       // Deploy a faux ERC721 token but mint to an address *not* `tokenOwner`
       const FauxERC721Factory = await ethers.getContractFactory(
         "TestERC721Enumerable"
       );
       const fauxERC721 = await (await FauxERC721Factory.deploy()).deployed();
-      const holder = accounts[5];
-      let tx = await fauxERC721.connect(holder).mint();
-      let receipt = await tx.wait();
-      let [event] = receipt.events ?? [];
-      const tokenIdHolder = event.args?.tokenId;
+      const randomPilotTokenHolder = accounts[5];
+      tx = await fauxERC721.connect(randomPilotTokenHolder).mint();
+      receipt = await tx.wait();
+      [event] = receipt.events ?? [];
+      const pilotTokenIdRandomPilotTokenHolder = event.args?.tokenId;
       // Try to set the pilot to the Rigs contract address
       await expect(
         rigs
-          .connect(tokenOwner)
-          .pilotRig(BigNumber.from(1), fauxERC721.address, tokenIdHolder)
+          .connect(rigTokenOwner)
+          .pilotRig(
+            BigNumber.from(rigTokenId),
+            fauxERC721.address,
+            pilotTokenIdRandomPilotTokenHolder
+          )
       ).to.be.rejectedWith("InvalidPilotOwnership");
       // Mint a faux NFT and set the pilot to an ERC721 contract & pilot
-      tx = await fauxERC721.connect(tokenOwner).mint();
+      tx = await fauxERC721.connect(rigTokenOwner).mint();
       receipt = await tx.wait();
       [event] = receipt.events ?? [];
-      const tokenIdTokenOwner = event.args?.tokenId;
+      const pilotTokenIdRigOwner = event.args?.tokenId;
       await rigs
-        .connect(tokenOwner)
-        .pilotRig(BigNumber.from(1), fauxERC721.address, tokenIdTokenOwner);
+        .connect(rigTokenOwner)
+        .pilotRig(BigNumber.from(1), fauxERC721.address, pilotTokenIdRigOwner);
     });
 
     it("Should not allow the same pilot to operate multiple Rigs", async function () {
       // First, mint two Rigs to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      let tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-      await rigs
+      let receipt = await tx.wait();
+      let [event] = receipt.events ?? [];
+      const rigTokenId1 = event.args?.tokenId;
+      tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      receipt = await tx.wait();
+      [event] = receipt.events ?? [];
+      const rigTokenId2 = event.args?.tokenId;
       // Train both Rigs, putting them in-flight, and advance 1 block
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(2));
-      // Advance 2592000 blocks (30 days)
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(rigTokenId1));
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(rigTokenId2));
+      // Advance 172800 blocks (30 days)
       await network.provider.send("hardhat_mine", [
-        ethers.utils.hexValue(2592000),
+        ethers.utils.hexValue(172800),
       ]);
       // Park the Rigs now that training has been completed
-      await rigs.connect(tokenOwner).parkRig(BigNumber.from(1));
-      await rigs.connect(tokenOwner).parkRig(BigNumber.from(2));
+      await rigs.connect(tokenOwner).parkRig(BigNumber.from(rigTokenId1));
+      await rigs.connect(tokenOwner).parkRig(BigNumber.from(rigTokenId2));
       // Deploy a faux ERC721 token and mint a token to `tokenOwner`
       const FauxERC721Factory = await ethers.getContractFactory(
         "TestERC721Enumerable"
       );
       const fauxERC721 = await (await FauxERC721Factory.deploy()).deployed();
-      const tx = await fauxERC721.connect(tokenOwner).mint();
-      const receipt = await tx.wait();
-      const [event] = receipt.events ?? [];
-      const tokenId = event.args?.tokenId;
+      tx = await fauxERC721.connect(tokenOwner).mint();
+      receipt = await tx.wait();
+      [event] = receipt.events ?? [];
+      const pilotTokenId = event.args?.tokenId;
       // Set the pilot for the first Rig
       await rigs
         .connect(tokenOwner)
-        .pilotRig(BigNumber.from(1), fauxERC721.address, tokenId);
+        .pilotRig(
+          BigNumber.from(rigTokenId1),
+          fauxERC721.address,
+          pilotTokenId
+        );
       // Try to set the same pilot for the second Rig
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(BigNumber.from(2), fauxERC721.address, tokenId)
+          .pilotRig(
+            BigNumber.from(rigTokenId2),
+            fauxERC721.address,
+            pilotTokenId
+          )
       )
         .to.emit(rigs, "Parked")
-        .withArgs(BigNumber.from(1))
+        .withArgs(BigNumber.from(rigTokenId1))
         .to.emit(rigs, "Piloted")
-        .withArgs(BigNumber.from(2));
+        .withArgs(BigNumber.from(rigTokenId2));
     });
 
     it("Should not allow a token transfer while piloted", async function () {
       // First, mint two Rigs to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
-      await rigs
+      const tx = await rigs
         .connect(tokenOwner)
         ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
       // Train both Rigs, putting them in-flight, and advance 1 block
-      await rigs.connect(tokenOwner).trainRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       // Try to transfer the Rig to `receiver`
       const receiver = accounts[5];
       await expect(
         rigs
           .connect(tokenOwner)
-          .transferFrom(tokenOwner.address, receiver.address, BigNumber.from(1))
+          .transferFrom(
+            tokenOwner.address,
+            receiver.address,
+            BigNumber.from(tokenId)
+          )
       ).to.be.rejectedWith("RigIsNotParked");
       // Finish training the Rig and try again
       await network.provider.send("hardhat_mine", [
-        ethers.utils.hexValue(2592000),
+        ethers.utils.hexValue(172800),
       ]);
       await expect(
         rigs
           .connect(tokenOwner)
-          .transferFrom(tokenOwner.address, receiver.address, BigNumber.from(1))
+          .transferFrom(
+            tokenOwner.address,
+            receiver.address,
+            BigNumber.from(tokenId)
+          )
       ).to.be.rejectedWith("RigIsNotParked");
       // Park the Rig, and now successfully transfer
-      await rigs.connect(tokenOwner).parkRig(BigNumber.from(1));
+      await rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId));
       await expect(
         rigs
           .connect(tokenOwner)
-          .transferFrom(tokenOwner.address, receiver.address, BigNumber.from(1))
+          .transferFrom(
+            tokenOwner.address,
+            receiver.address,
+            BigNumber.from(tokenId)
+          )
       )
         .to.emit(rigs, "Transfer")
-        .withArgs(tokenOwner.address, receiver.address, BigNumber.from(1));
+        .withArgs(
+          tokenOwner.address,
+          receiver.address,
+          BigNumber.from(tokenId)
+        );
       // Check out the pilot & owner info, post-transfer, just for fun
-      const pilotInfo = await rigs.pilotInfo(BigNumber.from(1));
+      const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
       expect(pilotInfo.startTime).to.equal(BigNumber.from(0));
       expect(pilotInfo.index).to.equal(BigNumber.from(1));
-      expect(await rigs.ownerOf(BigNumber.from(1))).to.equal(receiver.address);
+      expect(await rigs.ownerOf(BigNumber.from(tokenId))).to.equal(
+        receiver.address
+      );
     });
   });
 });
