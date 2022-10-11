@@ -4,7 +4,6 @@ import chaiAsPromised from "chai-as-promised";
 import { ethers, upgrades } from "hardhat";
 import { utils, BigNumber, Contract, ContractFactory } from "ethers";
 import { buildTree } from "../helpers/allowlist";
-import { SQLHelpers } from "../typechain-types";
 import type { TablelandRigs } from "../typechain-types";
 
 chai.use(chaiAsPromised);
@@ -13,20 +12,10 @@ const expect = chai.expect;
 describe("TablelandRigsProxy", function () {
   let accounts: SignerWithAddress[];
   let Factory: ContractFactory;
-  let sqlHelpers: SQLHelpers;
 
   beforeEach(async function () {
     accounts = await ethers.getSigners();
-
-    const SQLHelpersFactory = await ethers.getContractFactory("SQLHelpers");
-    sqlHelpers = (await SQLHelpersFactory.deploy()) as SQLHelpers;
-    await sqlHelpers.deployed();
-
-    Factory = await ethers.getContractFactory("TablelandRigs", {
-      libraries: {
-        SQLHelpers: sqlHelpers.address,
-      },
-    });
+    Factory = await ethers.getContractFactory("TablelandRigs");
   });
 
   it("Should have set implementation owner to deployer address", async function () {
@@ -57,9 +46,6 @@ describe("TablelandRigsProxy", function () {
     );
     const BadFactory = await ethers.getContractFactory("TablelandRigs", {
       signer: accounts[1],
-      libraries: {
-        SQLHelpers: sqlHelpers.address,
-      },
     });
     await expect(update(rigs, BadFactory)).to.be.revertedWith(
       "Ownable: caller is not the owner"
@@ -104,7 +90,6 @@ async function deploy(
     ],
     {
       kind: "uups",
-      unsafeAllow: ["external-library-linking"], // See: https://docs.openzeppelin.com/upgrades-plugins/1.x/faq#why-cant-i-use-external-libraries
     }
   )) as TablelandRigs;
   return await rigs.deployed();
@@ -116,7 +101,6 @@ async function update(
 ): Promise<TablelandRigs> {
   const rigs = (await upgrades.upgradeProxy(proxy.address, Factory, {
     kind: "uups",
-    unsafeAllow: ["external-library-linking"], // See: https://docs.openzeppelin.com/upgrades-plugins/1.x/faq#why-cant-i-use-external-libraries
   })) as TablelandRigs;
   return await rigs.deployed();
 }

@@ -12,9 +12,10 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@tableland/evm/contracts/utils/SQLHelpers.sol"; // TODO Currently using @tableland/evm@next; also, this lib is not upgradeable since it uses `Strings`, not `StringsUpgradeable`
+import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
@@ -79,7 +80,7 @@ contract TablelandRigs is
 
     // Track piloted vs. parked Rigs as a bitlist.
     // TODO this was implemented for gas reduction purposes while iterating/checking for duplicates in `_pilots`
-    uint8[] internal _rigStatus;
+    uint8[] internal _rigsStatus;
 
     function initialize(
         uint256 _maxSupply,
@@ -106,7 +107,7 @@ contract TablelandRigs is
         waitlistRoot = _waitlistRoot;
         mintPhase = MintPhase.CLOSED;
         _rigPilotSessionsTableId = rigPilotSessionsTableId;
-        _rigStatus = new uint8[](_maxSupply);
+        _rigsStatus = new uint8[](_maxSupply);
     }
 
     // =============================
@@ -405,7 +406,7 @@ contract TablelandRigs is
     function rigStatus(uint256 tokenId) public view returns (uint8) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        return _rigStatus[tokenId - 1];
+        return _rigsStatus[tokenId - 1];
     }
 
     /**
@@ -422,8 +423,8 @@ contract TablelandRigs is
         if (_pilots[tokenId].index > 0) revert RigIsTrainingOrTrained(tokenId);
         // Assign a trainer pilot to the Rig
         // TODO is it worth using `SafeCastUpgradeable.toUint64`? Also impacts `_setClaimed` and some methods below
-        _pilots[tokenId] = RigPilot(1, uint64(block.timestamp), address(0), 0);
-        _rigStatus[tokenId - 1] = 1;
+        _pilots[tokenId] = RigPilot(1, uint64(block.number), address(0), 0);
+        _rigsStatus[tokenId - 1] = 1;
         // Insert the training pilot into the Tableland `rig_pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
@@ -432,7 +433,7 @@ contract TablelandRigs is
             ) 
             VALUES 
             (
-                tokenId, ownerOf(tokenId), block.timestamp
+                tokenId, ownerOf(tokenId), block.number
             )
          */
         TablelandDeployments.get().runSQL(
@@ -447,7 +448,7 @@ contract TablelandRigs is
                     ",",
                     StringsUpgradeable.toHexString(ownerOf(tokenId)),
                     ",",
-                    StringsUpgradeable.toString(uint64(block.timestamp))
+                    StringsUpgradeable.toString(uint64(block.number))
                 )
             )
         );
@@ -489,8 +490,8 @@ contract TablelandRigs is
         // Check if the pilot is actively piloting another Rig, and if so, park the other Rig
         for (uint256 i = 1; i <= maxSupply; i++) {
             if (
-                // `_rigStatus` starts at index `0`, while `tokenId` in `_pilots` starts at `1`
-                _rigStatus[i - 1] == 1 &&
+                // `_rigsStatus` starts at index `0`, while `tokenId` in `_pilots` starts at `1`
+                _rigsStatus[i - 1] == 1 &&
                 (_pilots[i].pilotContract == pilotContract &&
                     _pilots[i].pilotId == pilotTokenId)
             ) {
@@ -500,11 +501,11 @@ contract TablelandRigs is
         // Assign a new pilot to the Rig, incrementing the previous pilot's `index` by `1`
         _pilots[tokenId] = RigPilot(
             _pilots[tokenId].index + 1,
-            uint64(block.timestamp),
+            uint64(block.number),
             pilotContract,
             pilotTokenId
         );
-        _rigStatus[tokenId - 1] = 1;
+        _rigsStatus[tokenId - 1] = 1;
         // Insert the pilot into the Tableland `rig_pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
@@ -515,7 +516,7 @@ contract TablelandRigs is
             VALUES 
             (
                 tokenId, ownerOf(tokenId), pilotContract,
-                pilotTokenId, block.timestamp
+                pilotTokenId, block.number
             )
          */
         TablelandDeployments.get().runSQL(
@@ -534,7 +535,7 @@ contract TablelandRigs is
                     ",",
                     StringsUpgradeable.toString(uint64(pilotTokenId)),
                     ",",
-                    StringsUpgradeable.toString(uint64(block.timestamp))
+                    StringsUpgradeable.toString(uint64(block.number))
                 )
             )
         );
@@ -558,10 +559,13 @@ contract TablelandRigs is
         if (startTime == 0) revert RigIsParked(tokenId);
         // Ensure the Rig has trained; `index` of `1` indicates training is occurring
         // If the Rig is training, check if 30 days has elapsed (the required training time)
+        (bool isValidSubtraction, uint256 blockDifference) = SafeMathUpgradeable
+            .trySub(block.number, 172800);
         if (
+            !isValidSubtraction ||
             _pilots[tokenId].index == 0 ||
             (_pilots[tokenId].index == 1 &&
-                !(block.timestamp - 2592000 > _pilots[tokenId].startTime))
+                !(blockDifference > _pilots[tokenId].startTime))
         ) {
             revert RigIsNotTrained(tokenId);
         }
@@ -569,11 +573,11 @@ contract TablelandRigs is
         _pilots[tokenId].startTime = 0;
         _pilots[tokenId].pilotContract = address(0);
         _pilots[tokenId].pilotId = 0;
-        _rigStatus[tokenId - 1] = 0;
+        _rigsStatus[tokenId - 1] = 0;
         // Update the row in the `rig_pilot_sessions` table with its `end_time`
         string memory setters = string.concat(
             "start_time=0,end_time=(",
-            StringsUpgradeable.toString(uint64(block.timestamp)),
+            StringsUpgradeable.toString(uint64(block.number)),
             "-",
             StringsUpgradeable.toString(startTime),
             ")"
@@ -593,7 +597,7 @@ contract TablelandRigs is
                 rig_pilot_sessions 
             SET 
                 start_time=0, 
-                end_time=(block.timestamp-startTime) 
+                end_time=(block.number-startTime) 
             WHERE 
                 rig_id=tokenId 
                 and start_time=startTime

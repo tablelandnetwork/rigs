@@ -60,7 +60,7 @@ interface ITablelandRigs {
     struct RigPilot {
         // Index of the current pilot, for tracking the history of a Rig's pilots.
         uint16 index;
-        // Keep track of the pilot's starting `block.timestamp` for flight time tracking.
+        // Keep track of the pilot's starting `block.number` for flight time tracking.
         uint64 startTime;
         // Address of the ERC721 pilot contract.
         address pilotContract;
