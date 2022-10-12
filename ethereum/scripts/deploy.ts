@@ -44,7 +44,7 @@ async function main() {
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
     rigsDeployment.lookupsTable,
-    rigsDeployment.displayAttributes,
+    rigsDeployment.displayAttributes
   );
 
   // Don't allow multiple deployments per network
