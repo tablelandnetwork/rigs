@@ -69,10 +69,11 @@ var (
 		Schema: `(
 			id integer primary key,
   		rig_id integer not null,
+			owner text not null,
   		pilot_contract text,
   		pilot_id integer,
-  		start integer not null,
-  		end integer
+  		start_time integer not null,
+  		end_time integer
 		)`,
 	}
 )
