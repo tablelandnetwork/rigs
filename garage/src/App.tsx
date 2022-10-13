@@ -38,6 +38,7 @@ const wagmiClient = createClient({
 
 const colors = {
   primary: "#75B6B5",
+  inactive: "#326563",
   primaryLight: "#F4706B",
   bg: "#162929",
   paper: "#101E1E",

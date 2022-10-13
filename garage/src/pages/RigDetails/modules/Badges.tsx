@@ -58,7 +58,12 @@ export const Badges = ({ rig, p, ...props }: BadgesProps) => {
                 </Td>
                 <Td pl={0}>{badge}</Td>
                 <Td>{pilot}</Td>
-                <Td pr={p}>{visibility}</Td>
+                <Td
+                  pr={p}
+                  color={visibility == "Hidden" ? "inactive" : "inherit"}
+                >
+                  {visibility}
+                </Td>
               </Tr>
             );
           })}

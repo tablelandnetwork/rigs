@@ -234,7 +234,12 @@ export const Pilots = ({ rig, nfts, isOwner, p, ...props }: PilotProps) => {
                   </Td>
                   <Td pl={0}>{pilot}</Td>
                   <Td>{prettyNumber(flightTime)}</Td>
-                  <Td pr={p}>{status}</Td>
+                  <Td
+                    pr={p}
+                    color={status == "Garaged" ? "inactive" : "inherit"}
+                  >
+                    {status}
+                  </Td>
                 </Tr>
               );
             })}
