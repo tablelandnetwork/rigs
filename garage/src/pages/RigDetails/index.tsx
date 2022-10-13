@@ -35,7 +35,7 @@ export const RigDetails = () => {
   const { id } = useParams();
   const { rig } = useRig(id || "");
   const { rigs } = useOwnedRigs();
-  const { nfts } = useNFTs(rig?.pilotSessions || []);
+  const { nfts } = useNFTs(rig?.pilotSessions);
 
   const userOwnsRig = useMemo(() => {
     return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));

@@ -43,8 +43,8 @@ const RigListItem = ({ rig, nfts }: { rig: Rig; nfts: NFT[] }) => {
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { rigs } = useOwnedRigs();
-  const pilots = useMemo<Pilot[]>(() => {
-    if (!rigs) return [];
+  const pilots = useMemo(() => {
+    if (!rigs) return;
 
     return rigs.map((v) => v.currentPilot).filter((v) => v) as Pilot[];
   }, [rigs]);
