@@ -25,8 +25,10 @@ import { findNFT } from "../../utils/nfts";
 const GRID_GAP = 4;
 
 const MODULE_PROPS = {
+  borderRadius: "3px",
   p: 8,
   bgColor: "paper",
+  overflow: "hidden",
 };
 
 export const RigDetails = () => {
@@ -74,6 +76,7 @@ export const RigDetails = () => {
                     border={1}
                     borderStyle="solid"
                     borderColor="black"
+                    borderRadius="3px"
                     rig={rig}
                     pilotNFT={currentNFT}
                     pilotBorderWidth="3px"
