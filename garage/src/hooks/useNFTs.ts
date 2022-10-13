@@ -32,13 +32,16 @@ const queryNodeToNFT = (node: TokensQueryNode): NFT => {
   };
 };
 
-export const useNFTs = (input: { contract: string; tokenId: string }[]) => {
+export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
   const { zdk } = useZDK();
 
   const [nfts, setNFTs] = useState<NFT[]>();
 
   useEffect(() => {
     let isCancelled = false;
+
+    if (!input) return;
+
     if (input.length) {
       const tokens = input.map(({ contract, tokenId }) => ({
         address: contract,
