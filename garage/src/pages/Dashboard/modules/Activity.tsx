@@ -1,20 +1,30 @@
 import React from "react";
-import { Heading, Flex, Image, Table, Tbody, Tr, Td } from "@chakra-ui/react";
+import {
+  Box,
+  Heading,
+  Flex,
+  Image,
+  Table,
+  Tbody,
+  Tr,
+  Td,
+} from "@chakra-ui/react";
 import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
 import { useRigsActivity } from "../../../hooks/useRigsActivity";
 
-export const Activity = () => {
+export const Activity = (props: React.ComponentProps<typeof Box>) => {
   const { events } = useRigsActivity();
+  const { p = "8px", ...otherProps } = props;
 
   return (
     <Flex
       direction="column"
-      bgColor="paper"
-      pt={8}
+      pt={p}
       mb={8}
       sx={{ height: "100%", minWidth: { xl: "400px" } }}
+      {...otherProps}
     >
-      <Heading px={8}>Activity</Heading>
+      <Heading px={p}>Activity</Heading>
       <Table>
         <Tbody>
           {events &&
@@ -22,7 +32,7 @@ export const Activity = () => {
               const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
               return (
                 <Tr key={`activity-row-${index}`}>
-                  <Td pl={8} pr={0}>
+                  <Td pl={p} pr={0}>
                     <Image
                       src={thumbUrl}
                       alt={`Rig ${rigId}`}
@@ -32,7 +42,7 @@ export const Activity = () => {
                   <Td textAlign="start">{`#${rigId}`}</Td>
                   <Td
                     textAlign="end"
-                    pr={8}
+                    pr={p}
                     sx={{
                       maxWidth: { base: "200px", md: "300px" },
                       textOverflow: "ellipsis",

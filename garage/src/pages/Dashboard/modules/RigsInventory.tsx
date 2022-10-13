@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
+  Box,
   Button,
   Flex,
   Heading,
@@ -40,7 +41,7 @@ const RigListItem = ({ rig, nfts }: { rig: Rig; nfts: NFT[] }) => {
   );
 };
 
-export const RigsInventory = () => {
+export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { rigs } = useOwnedRigs();
   const pilots = useMemo<Pilot[]>(() => {
     if (!rigs) return [];
@@ -50,12 +51,8 @@ export const RigsInventory = () => {
   const { nfts } = useNFTs(pilots);
 
   return (
-    <VStack
-      align="start"
-      bgColor="paper"
-      p={8}
-      sx={{ height: "100%", width: "100%" }}
-    >
+    <VStack align="start" {...props} sx={{ height: "100%", width: "100%" }}>
+      <Flex />
       <Heading>Rigs {rigs && ` (${rigs.length})`}</Heading>
 
       {rigs && nfts && (

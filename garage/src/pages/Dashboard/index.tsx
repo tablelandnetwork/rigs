@@ -8,6 +8,11 @@ import { Activity } from "./modules/Activity";
 
 const GRID_GAP = 4;
 
+const MODULE_PROPS = {
+  p: 8,
+  bgColor: "paper",
+};
+
 export const Dashboard = () => {
   return (
     <Flex
@@ -39,11 +44,11 @@ export const Dashboard = () => {
           width="100%"
           height="100%"
         >
-          <RigsInventory />
-          <Stats />
+          <RigsInventory {...MODULE_PROPS} />
+          <Stats {...MODULE_PROPS} />
         </Flex>
         <Box flexGrow="1" flexShrink="0">
-          <Activity />
+          <Activity {...MODULE_PROPS} />
         </Box>
       </Flex>
     </Flex>

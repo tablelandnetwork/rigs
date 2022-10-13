@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Box,
   Heading,
   Flex,
   GridItem,
@@ -23,11 +24,11 @@ const StatItem = ({ name, value }: { name: string; value: number }) => {
   );
 };
 
-export const Stats = () => {
+export const Stats = (props: React.ComponentProps<typeof Box>) => {
   const { stats } = useStats();
 
   return (
-    <Flex direction="column" p={8} bgColor="paper" sx={{ height: "100%" }}>
+    <Flex direction="column" sx={{ height: "100%" }} {...props}>
       <Heading mb={4}>Stats</Heading>
       <SimpleGrid minChildWidth="260px" gap={3}>
         {stats &&
