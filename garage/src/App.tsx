@@ -75,7 +75,7 @@ const theme = extendTheme(
     },
     components: {
       Modal: {
-        baseStyle: { dialog: {  bg: "paper" } },
+        baseStyle: { dialog: { bg: "paper" } },
       },
       Text: {
         variants: {
@@ -89,6 +89,21 @@ const theme = extendTheme(
           orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
         },
       },
+      Table: {
+        variants: {
+          simple: {
+            tbody: {
+              tr: {
+                _last: {
+                  td: {
+                    borderBottom: "none",
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       Button: {
         baseStyle: {
           textTransform: "uppercase",
@@ -100,18 +115,18 @@ const theme = extendTheme(
             border: "1px solid",
             _hover: { bg: "#264646" },
           },
-          "outlined": {
+          outlined: {
             bg: "paper",
             borderColor: "primary",
             border: "1px solid",
             _hover: { bg: "#203c3c" },
           },
-          "solid": {
+          solid: {
             bg: "bg",
             color: "primary",
             _hover: { bg: "#264646" },
           },
-          "ghost": {
+          ghost: {
             _hover: { bg: "#203c3c" },
           },
         },
