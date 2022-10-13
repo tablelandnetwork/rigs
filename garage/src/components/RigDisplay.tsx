@@ -40,7 +40,7 @@ export const RigDisplay = ({
       <Box position="absolute" right="0" bottom="0" width="25%">
         {showPilot ? (
           imageUrl ? (
-            <Image src={pilotNFT.imageUrl} {...pilotProps} />
+            <Image src={pilotNFT.imageUrl} {...pilotProps} bgColor="paper" />
           ) : (
             <TrainerPilot {...pilotProps} />
           )
