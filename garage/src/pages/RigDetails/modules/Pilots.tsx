@@ -1,12 +1,7 @@
-import React, { useMemo } from "react";
-import { Link } from "react-router-dom";
+import React from "react";
 import { ethers } from "ethers";
 import {
-  Box,
   Button,
-  Flex,
-  Grid,
-  GridItem,
   Heading,
   HStack,
   Image,
@@ -29,68 +24,22 @@ import {
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
-import { useParams } from "react-router-dom";
-import { RigWithPilots, PilotSession } from "../types";
-import { Topbar } from "../Topbar";
-import { TrainerPilot } from "../components/TrainerPilot";
-import { RigDisplay } from "../components/RigDisplay";
-import { TransactionStateAlert } from "../components/TransactionStateAlert";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { RigWithPilots, PilotSession } from "../../../types";
+import { TrainerPilot } from "../../../components/TrainerPilot";
+import { TransactionStateAlert } from "../../../components/TransactionStateAlert";
 import {
   useBlockNumber,
   useContractWrite,
   usePrepareContractWrite,
 } from "wagmi";
-import { useOwnedRigs } from "../hooks/useOwnedRigs";
-import { useRig } from "../hooks/useRig";
-import { useNFTs, NFT } from "../hooks/useNFTs";
-import { findNFT } from "../utils/nfts";
-import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
-import { prettyNumber } from "../utils/fmt";
-import { education, code } from "../assets/badges/";
+import { NFT } from "../../../hooks/useNFTs";
+import { findNFT } from "../../../utils/nfts";
+import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../../../settings";
+import { prettyNumber } from "../../../utils/fmt";
 
 const GRID_GAP = 4;
 const PAPER_TABLE_PT = 8;
 const PAPER_TABLE_HEADING_PX = 8;
-
-interface RigModuleProps {
-  rig: RigWithPilots;
-  nfts: NFT[];
-}
-
-const RigAttributes = ({ rig }: RigModuleProps) => {
-  if (!rig.attributes) return null;
-
-  return (
-    <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading px={PAPER_TABLE_HEADING_PX}>Properties</Heading>
-      <Table variant="simple">
-        <Tbody>
-          {rig.attributes
-            .filter(({ traitType }) => traitType !== "VIN")
-            .map((attribute, index) => {
-              const tdProps =
-                index === rig.attributes!.length - 1
-                  ? { borderBottom: "none" }
-                  : index === 0
-                  ? { borderTop: "var(--chakra-borders-1px)" }
-                  : {};
-              return (
-                <Tr key={`rig-${rig.id}-attribute-${attribute.traitType}`}>
-                  <Td pl={8} {...tdProps}>
-                    {attribute.traitType}
-                  </Td>
-                  <Td pr={8} {...tdProps} textAlign="right">
-                    {attribute.value}
-                  </Td>
-                </Tr>
-              );
-            })}
-        </Tbody>
-      </Table>
-    </VStack>
-  );
-};
 
 interface ModalProps {
   rig: RigWithPilots;
@@ -219,11 +168,13 @@ const getPilots = (
   });
 };
 
-const Pilots = ({
-  rig,
-  nfts,
-  isOwner,
-}: RigModuleProps & { isOwner: boolean }) => {
+interface PilotProps {
+  rig: RigWithPilots;
+  nfts: NFT[];
+  isOwner: boolean;
+};
+
+export const Pilots = ({ rig, nfts, isOwner }: PilotProps) => {
   const { data: blockNumber } = useBlockNumber();
   const pilots = getPilots(rig, nfts, blockNumber);
 
@@ -322,157 +273,5 @@ const Pilots = ({
         onClose={onCloseParkModal}
       />
     </>
-  );
-};
-
-const Badges = ({ rig }: RigModuleProps) => {
-  const data = [
-    {
-      badge: "Coding",
-      badgeImageUrl: code,
-      pilot: "Moonbird #8969",
-      visibility: "Visible",
-    },
-    {
-      badge: "Education",
-      badgeImageUrl: education,
-      pilot: "Trainer",
-      visibility: "Hidden",
-    },
-  ];
-  return (
-    <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading px={PAPER_TABLE_HEADING_PX}>Badges</Heading>
-      <Table>
-        <Thead>
-          <Tr>
-            <Th pl={8} colSpan={2}>
-              Name
-            </Th>
-            <Th>Earned by</Th>
-            <Th pr={8}>Visibility</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {data.map(({ badge, pilot, visibility, badgeImageUrl }, index) => {
-            return (
-              <Tr key={`badges-${index}`}>
-                <Td pl={8} pr={0}>
-                  <Image src={badgeImageUrl} width="30px" height="30px" />
-                </Td>
-                <Td pl={0}>{badge}</Td>
-                <Td>{pilot}</Td>
-                <Td pr={8}>{visibility}</Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </VStack>
-  );
-};
-
-const FlightLog = ({ rig, nfts }: RigModuleProps) => {
-  const events = rig.pilotSessions
-    .flatMap(({ startTime, endTime, contract, tokenId }) => {
-      const { name = "Trainer" } = findNFT({ tokenId, contract }, nfts) || {};
-
-      let events = [{ type: `Piloted ${name}`, timestamp: startTime }];
-
-      if (endTime) {
-        events = [...events, { type: "Parked", timestamp: endTime }];
-      }
-
-      return events;
-    })
-    .sort((a, b) => b.timestamp - a.timestamp);
-
-  return (
-    <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading px={PAPER_TABLE_HEADING_PX}>Flight log</Heading>
-      <Table>
-        <Tbody>
-          {events.map(({ type }, index) => {
-            return (
-              <Tr key={`flight-log-${index}`}>
-                <Td pl={8}>{type}</Td>
-                <Td pr={8} isNumeric>
-                  0x96ff...4651
-                </Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </VStack>
-  );
-};
-
-export const RigDetails = () => {
-  const { id } = useParams();
-  const { rig } = useRig(id || "");
-  const { rigs } = useOwnedRigs();
-  const { nfts } = useNFTs(rig?.pilotSessions || []);
-
-  const userOwnsRig = useMemo(() => {
-    return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));
-  }, [rig, rigs]);
-
-  const currentNFT =
-    rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
-
-  return (
-    <Flex
-      direction="column"
-      align="center"
-      justify="stretch"
-      sx={{ width: "100%", height: "100%" }}
-    >
-      <Topbar>
-        <Flex justify="space-between" align="center" width="100%" ml={8}>
-          <Button variant="solid" as={Link} to="/dashboard">
-            Dashboard
-          </Button>
-          <ConnectButton />
-        </Flex>
-      </Topbar>
-      <Grid
-        templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(2, 1fr)" }}
-        pt={GRID_GAP}
-        gap={GRID_GAP}
-        px={GRID_GAP}
-        maxWidth="1385px"
-        height="100%"
-      >
-        {rig && nfts && (
-          <>
-            <GridItem>
-              <VStack align="stretch" spacing={GRID_GAP}>
-                <Box p={4} bgColor="paper">
-                  <RigDisplay
-                    border={1}
-                    borderStyle="solid"
-                    borderColor="black"
-                    rig={rig}
-                    pilotNFT={currentNFT}
-                    pilotBorderWidth="3px"
-                  />
-                </Box>
-                <RigAttributes rig={rig} nfts={nfts} />
-              </VStack>
-            </GridItem>
-            <GridItem>
-              <VStack align="stretch" spacing={GRID_GAP}>
-                <Pilots rig={rig} nfts={nfts} isOwner={userOwnsRig} />
-                <Badges rig={rig} nfts={nfts} />
-                <FlightLog rig={rig} nfts={nfts} />
-              </VStack>
-            </GridItem>
-          </>
-        )}
-
-        {!rig && <Spinner />}
-      </Grid>
-    </Flex>
   );
 };
