@@ -220,7 +220,11 @@ export const Pilots = ({ rig, nfts, isOwner, p, ...props }: PilotProps) => {
             {pilots.map(({ pilot, imageUrl, flightTime, status }, index) => {
               return (
                 <Tr key={`pilots-${index}`}>
-                  <Td pl={p} pr={0}>
+                  <Td
+                    pl={p}
+                    pr={0}
+                    width={`calc(var(--chakra-sizes-${p}) + 30px)`}
+                  >
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
@@ -232,7 +236,7 @@ export const Pilots = ({ rig, nfts, isOwner, p, ...props }: PilotProps) => {
                       <TrainerPilot width="30px" height="30px" />
                     )}
                   </Td>
-                  <Td pl={0}>{pilot}</Td>
+                  <Td pl={3}>{pilot}</Td>
                   <Td>{prettyNumber(flightTime)}</Td>
                   <Td
                     pr={p}
