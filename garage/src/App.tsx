@@ -93,6 +93,12 @@ const theme = extendTheme(
       Table: {
         variants: {
           simple: {
+            th: {
+              color: "primary",
+              textTransform: "none",
+              fontWeight: "normal",
+              fontSize: "0.85714286em",
+            },
             tbody: {
               tr: {
                 _last: {
