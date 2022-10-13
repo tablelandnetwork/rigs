@@ -98,6 +98,10 @@ const theme = extendTheme(
               textTransform: "none",
               fontWeight: "normal",
               fontSize: "0.85714286em",
+              px: 2,
+            },
+            td: {
+              px: 2,
             },
             tbody: {
               tr: {
