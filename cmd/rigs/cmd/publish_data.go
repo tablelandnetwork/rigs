@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"golang.org/x/time/rate"
 )
@@ -15,7 +16,6 @@ import (
 const (
 	partsPageSize         uint = 500
 	layersPageSize        uint = 130
-	rigsPageSize          uint = 70
 	rigAttributesPageSize uint = 70
 )
 
@@ -25,8 +25,8 @@ func init() {
 	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
 	dataCmd.Flags().Bool("parts", false, "publish data for the parts table")
 	dataCmd.Flags().Bool("layers", false, "publish data for the layers table")
-	dataCmd.Flags().Bool("rigs", false, "publish data for the rigs table")
 	dataCmd.Flags().Bool("attrs", false, "publish data for the rig attributes table")
+	dataCmd.Flags().Bool("lookups", false, "publish data for lookups table")
 	dataCmd.MarkFlagsMutuallyExclusive()
 }
 
@@ -36,7 +36,10 @@ var dataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		publishAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
+		publishAll := !viper.GetBool("parts") &&
+			!viper.GetBool("layers") &&
+			!viper.GetBool("attrs") &&
+			!viper.GetBool("lookups")
 
 		var jobs []wpool.Job
 		jobID := 1
@@ -48,30 +51,19 @@ var dataCmd = &cobra.Command{
 		}
 
 		if viper.GetBool("layers") || publishAll {
-			layersCid, err := localStore.Cid(ctx, "layers")
-			checkErr(err)
-			layersJobs, err := layersJobs(ctx, localStore, &jobID, layersCid)
+			layersJobs, err := layersJobs(ctx, localStore, &jobID)
 			checkErr(err)
 			jobs = append(jobs, layersJobs...)
-		}
-
-		if viper.GetBool("rigs") || publishAll {
-			imagesCid, err := localStore.Cid(ctx, "images")
-			checkErr(err)
-			rigsJobs, err := rigsJobs(
-				ctx,
-				localStore,
-				&jobID,
-				imagesCid,
-			)
-			checkErr(err)
-			jobs = append(jobs, rigsJobs...)
 		}
 
 		if viper.GetBool("attrs") || publishAll {
 			attsJobs, err := attrsJobs(ctx, localStore, &jobID)
 			checkErr(err)
 			jobs = append(jobs, attsJobs...)
+		}
+
+		if viper.GetBool("lookups") || publishAll {
+			jobs = append(jobs, lookupsJob(localStore, &jobID))
 		}
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
@@ -126,12 +118,12 @@ func partsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 	return jobs, nil
 }
 
-func layersJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
+func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
 	execFn := func(layers []local.Layer) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertLayers(ctx, cid, layers); err != nil {
+			if err := store.InsertLayers(ctx, layers); err != nil {
 				return nil, fmt.Errorf("calling insert layers: %v", err)
 			}
 			return nil, nil
@@ -151,36 +143,6 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]w
 		)
 		*jobID++
 		offset += layersPageSize
-	}
-	return jobs, nil
-}
-
-func rigsJobs(ctx context.Context, s local.Store, jobID *int, cid string) ([]wpool.Job, error) {
-	var jobs []wpool.Job
-	var offset uint
-	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
-		return func(ctx context.Context) (interface{}, error) {
-			if err := store.InsertRigs(ctx, cid, rigs); err != nil {
-				return nil, fmt.Errorf("calling insert rigs: %v", err)
-			}
-			return nil, nil
-		}
-	}
-	for {
-		rigs, err := s.Rigs(ctx, local.RigsWithLimit(rigsPageSize), local.RigsWithOffset(offset))
-		if err != nil {
-			return nil, fmt.Errorf("getting rigs: %v", err)
-		}
-		if len(rigs) == 0 {
-			break
-		}
-
-		jobs = append(
-			jobs,
-			wpool.Job{ID: wpool.JobID(*jobID), ExecFn: rigsExecFn(rigs), Desc: fmt.Sprintf("rigs with offset %d", offset)},
-		)
-		*jobID++
-		offset += rigsPageSize
 	}
 	return jobs, nil
 }
@@ -217,4 +179,36 @@ func attrsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 		offset += rigAttributesPageSize
 	}
 	return jobs, nil
+}
+
+func lookupsJob(s local.Store, jobID *int) wpool.Job {
+	return wpool.Job{
+		ID: wpool.JobID(*jobID),
+		ExecFn: func(ctx context.Context) (interface{}, error) {
+			rendersCid, err := s.Cid(ctx, "renders")
+			if err != nil {
+				return nil, fmt.Errorf("querying images cid: %v", err)
+			}
+			layersCid, err := s.Cid(ctx, "layers")
+			if err != nil {
+				return nil, fmt.Errorf("querying layers cid: %v", err)
+			}
+			lookups := tableland.Lookups{
+				RendersCid:           rendersCid,
+				LayersCid:            layersCid,
+				ImageFullName:        "image_full.png",
+				ImageFullAlphaName:   "image_full_alpha.png",
+				ImageMediumName:      "image_medium.png",
+				ImageMediumAlphaName: "image_medium_alpha.png",
+				ImageThumbName:       "image_thumb.png",
+				ImageThumbAlphaName:  "image_thumb_alpha.png",
+				AnimationBaseURL:     "https://tableland.xyz/rigs/animate?id=", // TODO: Update when we know it.
+			}
+			if err := store.InsertLookups(ctx, lookups); err != nil {
+				return nil, fmt.Errorf("calling insert lookups: %v", err)
+			}
+			return nil, nil
+		},
+		Desc: "lookups job",
+	}
 }

@@ -73,27 +73,14 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 }
 
 // InsertLayers implements InsertLayers.
-func (s *Store) InsertLayers(ctx context.Context, cid string, layers []local.Layer) error {
+func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
-	sql, err := s.factory.SQLForInsertingLayers(tableName, cid, layers)
+	sql, err := s.factory.SQLForInsertingLayers(tableName, layers)
 	if err != nil {
 		return fmt.Errorf("getting sql to insert layers: %v", err)
-	}
-	return s.writeSQL(ctx, sql)
-}
-
-// InsertRigs implements InsertRigs.
-func (s *Store) InsertRigs(ctx context.Context, cid string, rigs []local.Rig) error {
-	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
-	if err != nil {
-		return fmt.Errorf("getting table name: %v", err)
-	}
-	sql, err := s.factory.SQLForInsertingRigs(tableName, cid, rigs)
-	if err != nil {
-		return fmt.Errorf("getting sql to insert rigs: %v", err)
 	}
 	return s.writeSQL(ctx, sql)
 }
@@ -111,54 +98,80 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	return s.writeSQL(ctx, sql)
 }
 
-// ClearPartsData implements ClearPartsData.
-func (s *Store) ClearPartsData(ctx context.Context) error {
+// InsertLookups implements InsertLookups.
+func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) error {
+	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingLookups(tableName, lookups)
+	if err != nil {
+		return fmt.Errorf("getting sql to insert lookups: %v", err)
+	}
+	return s.writeSQL(ctx, sql)
+}
+
+// ClearParts implements ClearParts.
+func (s *Store) ClearParts(ctx context.Context) error {
 	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
 	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing parts data: %v", err)
+		return fmt.Errorf("getting sql for clearing parts: %v", err)
 	}
 	return s.writeSQL(ctx, sql)
 }
 
-// ClearLayersData implements ClearLayersData.
-func (s *Store) ClearLayersData(ctx context.Context) error {
+// ClearLayers implements ClearLayers.
+func (s *Store) ClearLayers(ctx context.Context) error {
 	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
 	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing layers data: %v", err)
+		return fmt.Errorf("getting sql for clearing layers: %v", err)
 	}
 	return s.writeSQL(ctx, sql)
 }
 
-// ClearRigsData implements ClearRigsData.
-func (s *Store) ClearRigsData(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "rigs", s.chainID)
-	if err != nil {
-		return fmt.Errorf("getting table name: %v", err)
-	}
-	sql, err := s.factory.SQLForClearingData(tableName)
-	if err != nil {
-		return fmt.Errorf("getting sql for clearing rigs data: %v", err)
-	}
-	return s.writeSQL(ctx, sql)
-}
-
-// ClearRigAttributesData implements ClearRigAttributesData.
-func (s *Store) ClearRigAttributesData(ctx context.Context) error {
+// ClearRigAttributes implements ClearRigAttributes.
+func (s *Store) ClearRigAttributes(ctx context.Context) error {
 	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
 	sql, err := s.factory.SQLForClearingData(tableName)
 	if err != nil {
-		return fmt.Errorf("getting sql for clearing rig attributes data: %v", err)
+		return fmt.Errorf("getting sql for clearing rig attributes: %v", err)
+	}
+	return s.writeSQL(ctx, sql)
+}
+
+// ClearLookups implements ClearLookups.
+func (s *Store) ClearLookups(ctx context.Context) error {
+	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing lookups: %v", err)
+	}
+	return s.writeSQL(ctx, sql)
+}
+
+// ClearPilotSessions implements ClearPilotSessions.
+func (s *Store) ClearPilotSessions(ctx context.Context) error {
+	tableName, err := s.localStore.TableName(ctx, "pilot_sessions", s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing pilot sessions: %v", err)
 	}
 	return s.writeSQL(ctx, sql)
 }

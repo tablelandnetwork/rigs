@@ -1,14 +1,15 @@
 export function getURITemplate(
   tablelandHost: string,
-  tokensTable: string,
-  attributesTable: string
+  attributesTable: string,
+  lookupsTable: string,
+  displayAttributes: boolean
 ): string[] {
-  if (attributesTable === "") {
+  if (!displayAttributes) {
     const uri =
       tablelandHost +
       "/query?extract=true&unwrap=true&s=" +
       encodeURIComponent(
-        `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('trait_type','status','value','pre-reveal'))) from ${tokensTable} where id=ID;`
+        `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id,'attributes',json_array(json_object('trait_type','status','value','pre-reveal'))) from ${attributesTable} join ${lookupsTable} where rig_id=ID group by rig_id;`
       );
     return uri.split("ID");
   } else {
@@ -16,7 +17,7 @@ export function getURITemplate(
       tablelandHost +
       "/query?extract=true&unwrap=true&s=" +
       encodeURIComponent(
-        `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from ${tokensTable} join ${attributesTable} on ${tokensTable}.id=${attributesTable}.rig_id where id=ID group by id;`
+        `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from ${attributesTable} join ${lookupsTable} where rig_id=ID group by rig_id;`
       );
     return uri.split("ID");
   }

@@ -16,8 +16,9 @@ func init() {
 
 	clearDataCmd.Flags().Bool("parts", false, "clear data for the parts table")
 	clearDataCmd.Flags().Bool("layers", false, "clear data for the layers table")
-	clearDataCmd.Flags().Bool("rigs", false, "clear data for the rigs table")
 	clearDataCmd.Flags().Bool("attrs", false, "clear data for the rig attributes table")
+	clearDataCmd.Flags().Bool("lookups", false, "clear data for the lookups table")
+	clearDataCmd.Flags().Bool("pilots", false, "clear data for the pilots sessions table")
 }
 
 var clearDataCmd = &cobra.Command{
@@ -26,7 +27,11 @@ var clearDataCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		clearAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
+		clearAll := !viper.GetBool("parts") &&
+			!viper.GetBool("layers") &&
+			!viper.GetBool("attrs") &&
+			!viper.GetBool("lookups") &&
+			!viper.GetBool("pilots")
 
 		clearDataExecFn := func(clearDataFn func(context.Context) error) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
@@ -42,24 +47,34 @@ var clearDataCmd = &cobra.Command{
 
 		if viper.GetBool("parts") || clearAll {
 			jobID++
-			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearPartsData), Desc: "parts"})
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearParts), Desc: "parts"})
 		}
 		if viper.GetBool("layers") || clearAll {
 			jobID++
 			jobs = append(
 				jobs,
-				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearLayersData), Desc: "layers"},
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearLayers), Desc: "layers"},
 			)
-		}
-		if viper.GetBool("rigs") || clearAll {
-			jobID++
-			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigsData), Desc: "rigs"})
 		}
 		if viper.GetBool("attrs") || clearAll {
 			jobID++
 			jobs = append(
 				jobs,
-				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigAttributesData), Desc: "rig attributes"},
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigAttributes), Desc: "rig attributes"},
+			)
+		}
+		if viper.GetBool("lookups") || clearAll {
+			jobID++
+			jobs = append(
+				jobs,
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearLookups), Desc: "lookups"},
+			)
+		}
+		if viper.GetBool("pilots") || clearAll {
+			jobID++
+			jobs = append(
+				jobs,
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearPilotSessions), Desc: "pilot sessions"},
 			)
 		}
 
