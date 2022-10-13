@@ -12,6 +12,8 @@ export const useRig = (id: string) => {
   useEffect(() => {
     let isCancelled = false;
 
+    if (!id) return;
+
     tableland.read(selectRigWithPilots(id)).then((result) => {
       const rigs = result.rows.map(rigWithPilotsFromRow);
       if (!isCancelled && rigs.length) setRig(rigs[0]);
