@@ -9,6 +9,7 @@ import { Activity } from "./modules/Activity";
 const GRID_GAP = 4;
 
 const MODULE_PROPS = {
+  borderRadius: "3px",
   p: 8,
   bgColor: "paper",
 };

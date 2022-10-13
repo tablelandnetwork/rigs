@@ -13,7 +13,7 @@ import { prettyNumber } from "../../../utils/fmt";
 
 const StatItem = ({ name, value }: { name: string; value: number }) => {
   return (
-    <Stack p={3}>
+    <Stack p={3} borderRadius="3px">
       <Text noOfLines={1}>{name}</Text>
       <Flex align="center" justify="center">
         <Text fontSize="4xl" lineHeight="100%" py={8} noOfLines={1}>

@@ -35,7 +35,7 @@ export const RigDisplay = ({
   };
 
   return (
-    <Box position="relative" {...props}>
+    <Box position="relative" overflow="hidden" {...props}>
       <Image src={thumb} />
       <Box position="absolute" right="0" bottom="0" width="25%">
         {showPilot ? (
