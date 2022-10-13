@@ -24,6 +24,11 @@ import { findNFT } from "../../utils/nfts";
 
 const GRID_GAP = 4;
 
+const MODULE_PROPS = {
+  p: 8,
+  bgColor: "paper",
+};
+
 export const RigDetails = () => {
   const { id } = useParams();
   const { rig } = useRig(id || "");
@@ -64,7 +69,7 @@ export const RigDetails = () => {
           <>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <Box p={4} bgColor="paper">
+                <Box p={4} bgColor="paper" borderRadius="3px">
                   <RigDisplay
                     border={1}
                     borderStyle="solid"
@@ -74,14 +79,14 @@ export const RigDetails = () => {
                     pilotBorderWidth="3px"
                   />
                 </Box>
-                <RigAttributes rig={rig} />
+                <RigAttributes rig={rig} {...MODULE_PROPS} />
               </VStack>
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <Pilots rig={rig} nfts={nfts} isOwner={userOwnsRig} />
-                <Badges rig={rig} nfts={nfts} />
-                <FlightLog rig={rig} nfts={nfts} />
+                <Pilots rig={rig} nfts={nfts} isOwner={userOwnsRig} {...MODULE_PROPS} />
+                <Badges rig={rig} nfts={nfts} {...MODULE_PROPS} />
+                <FlightLog rig={rig} nfts={nfts} {...MODULE_PROPS} />
               </VStack>
             </GridItem>
           </>

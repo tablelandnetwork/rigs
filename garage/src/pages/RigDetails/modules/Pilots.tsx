@@ -1,6 +1,7 @@
 import React from "react";
 import { ethers } from "ethers";
 import {
+  Box,
   Button,
   Heading,
   HStack,
@@ -36,10 +37,6 @@ import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
 import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../../../settings";
 import { prettyNumber } from "../../../utils/fmt";
-
-const GRID_GAP = 4;
-const PAPER_TABLE_PT = 8;
-const PAPER_TABLE_HEADING_PX = 8;
 
 interface ModalProps {
   rig: RigWithPilots;
@@ -168,13 +165,13 @@ const getPilots = (
   });
 };
 
-interface PilotProps {
+type PilotProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
   nfts: NFT[];
   isOwner: boolean;
 };
 
-export const Pilots = ({ rig, nfts, isOwner }: PilotProps) => {
+export const Pilots = ({ rig, nfts, isOwner, p, ...props }: PilotProps) => {
   const { data: blockNumber } = useBlockNumber();
   const pilots = getPilots(rig, nfts, blockNumber);
 
@@ -196,9 +193,9 @@ export const Pilots = ({ rig, nfts, isOwner }: PilotProps) => {
 
   return (
     <>
-      <VStack align="stretch" bg="paper" spacing={GRID_GAP} pt={PAPER_TABLE_PT}>
+      <VStack align="stretch" spacing={4} pt={p} {...props}>
         <HStack
-          px={PAPER_TABLE_HEADING_PX}
+          px={p}
           justify="space-between"
           align="baseline"
           sx={{ width: "100%" }}
@@ -212,18 +209,18 @@ export const Pilots = ({ rig, nfts, isOwner }: PilotProps) => {
         <Table>
           <Thead>
             <Tr>
-              <Th pl={8} colSpan={2}>
+              <Th pl={p} colSpan={2}>
                 Pilot
               </Th>
               <Th>Flight time (FT)</Th>
-              <Th pr={8}>Status</Th>
+              <Th pr={p}>Status</Th>
             </Tr>
           </Thead>
           <Tbody>
             {pilots.map(({ pilot, imageUrl, flightTime, status }, index) => {
               return (
                 <Tr key={`pilots-${index}`}>
-                  <Td pl={8} pr={0}>
+                  <Td pl={p} pr={0}>
                     {imageUrl ? (
                       <Image
                         src={imageUrl}
@@ -237,14 +234,14 @@ export const Pilots = ({ rig, nfts, isOwner }: PilotProps) => {
                   </Td>
                   <Td pl={0}>{pilot}</Td>
                   <Td>{prettyNumber(flightTime)}</Td>
-                  <Td pr={8}>{status}</Td>
+                  <Td pr={p}>{status}</Td>
                 </Tr>
               );
             })}
           </Tbody>
         </Table>
         {isOwner && (
-          <StackItem px={GRID_GAP} pb={GRID_GAP}>
+          <StackItem px={4} pb={4}>
             {!rig.currentPilot && (
               <Button
                 variant="outlined"

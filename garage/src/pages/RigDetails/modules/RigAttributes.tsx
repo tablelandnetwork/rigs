@@ -1,20 +1,17 @@
 import React from "react";
-import { Heading, Table, Tbody, Td, Tr, VStack } from "@chakra-ui/react";
+import { Box, Heading, Table, Tbody, Td, Tr, VStack } from "@chakra-ui/react";
 import { RigWithPilots } from "../../../types";
 
-const PAPER_TABLE_PT = 8;
-const PAPER_TABLE_HEADING_PX = 8;
-
-interface RigAttributesProps {
+type RigAttributesProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
-}
+};
 
-export const RigAttributes = ({ rig }: RigAttributesProps) => {
+export const RigAttributes = ({ rig, p, ...props }: RigAttributesProps) => {
   if (!rig.attributes) return null;
 
   return (
-    <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading px={PAPER_TABLE_HEADING_PX}>Properties</Heading>
+    <VStack align="stretch" pt={p} {...props}>
+      <Heading px={p}>Properties</Heading>
       <Table variant="simple">
         <Tbody>
           {rig.attributes
@@ -28,10 +25,10 @@ export const RigAttributes = ({ rig }: RigAttributesProps) => {
                   : {};
               return (
                 <Tr key={`rig-${rig.id}-attribute-${attribute.traitType}`}>
-                  <Td pl={8} {...tdProps}>
+                  <Td pl={p} {...tdProps}>
                     {attribute.traitType}
                   </Td>
-                  <Td pr={8} {...tdProps} textAlign="right">
+                  <Td pr={p} {...tdProps} textAlign="right">
                     {attribute.value}
                   </Td>
                 </Tr>

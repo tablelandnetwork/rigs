@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Box,
   Heading,
   Image,
   Spinner,
@@ -15,15 +16,12 @@ import { RigWithPilots } from "../../../types";
 import { NFT } from "../../../hooks/useNFTs";
 import { education, code } from "../../../assets/badges/";
 
-const PAPER_TABLE_PT = 8;
-const PAPER_TABLE_HEADING_PX = 8;
-
-interface BadgesProps {
+type BadgesProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
   nfts: NFT[];
 };
 
-export const Badges = ({ rig }: BadgesProps) => {
+export const Badges = ({ rig, p, ...props }: BadgesProps) => {
   const data = [
     {
       badge: "Coding",
@@ -39,28 +37,28 @@ export const Badges = ({ rig }: BadgesProps) => {
     },
   ];
   return (
-    <VStack align="stretch" bg="paper" pt={PAPER_TABLE_PT}>
-      <Heading px={PAPER_TABLE_HEADING_PX}>Badges</Heading>
+    <VStack align="stretch" pt={p} {...props}>
+      <Heading px={p}>Badges</Heading>
       <Table>
         <Thead>
           <Tr>
-            <Th pl={8} colSpan={2}>
+            <Th pl={p} colSpan={2}>
               Name
             </Th>
             <Th>Earned by</Th>
-            <Th pr={8}>Visibility</Th>
+            <Th pr={p}>Visibility</Th>
           </Tr>
         </Thead>
         <Tbody>
           {data.map(({ badge, pilot, visibility, badgeImageUrl }, index) => {
             return (
               <Tr key={`badges-${index}`}>
-                <Td pl={8} pr={0}>
+                <Td pl={p} pr={0}>
                   <Image src={badgeImageUrl} width="30px" height="30px" />
                 </Td>
                 <Td pl={0}>{badge}</Td>
                 <Td>{pilot}</Td>
-                <Td pr={8}>{visibility}</Td>
+                <Td pr={p}>{visibility}</Td>
               </Tr>
             );
           })}
