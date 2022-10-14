@@ -4,15 +4,15 @@ import { useAccount, useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
 import { rigFromRow } from "../utils/xforms";
-import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../settings";
+import { contractAddress, contractInterface } from "../contract";
 
 export const useOwnedRigs = () => {
   const { address } = useAccount();
   const { connection: tableland } = useTablelandConnection();
 
   const { data } = useContractRead({
-    addressOrName: CONTRACT_ADDRESS,
-    contractInterface: CONTRACT_INTERFACE,
+    addressOrName: contractAddress,
+    contractInterface,
     functionName: "tokensOfOwner",
     args: address,
   });

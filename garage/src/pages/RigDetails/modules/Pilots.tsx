@@ -35,7 +35,7 @@ import {
 } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
-import { CONTRACT_ADDRESS, CONTRACT_INTERFACE } from "../../../settings";
+import { contractAddress, contractInterface } from "../../../contract";
 import { prettyNumber } from "../../../utils/fmt";
 
 interface ModalProps {
@@ -46,8 +46,8 @@ interface ModalProps {
 
 const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   const { config } = usePrepareContractWrite({
-    addressOrName: CONTRACT_ADDRESS,
-    contractInterface: CONTRACT_INTERFACE,
+    addressOrName: contractAddress,
+    contractInterface,
     functionName: "trainRig",
     args: ethers.BigNumber.from(rig.id),
   });
@@ -94,8 +94,8 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
 
 const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   const { config } = usePrepareContractWrite({
-    addressOrName: CONTRACT_ADDRESS,
-    contractInterface: CONTRACT_INTERFACE,
+    addressOrName: contractAddress,
+    contractInterface,
     functionName: "parkRig",
     args: ethers.BigNumber.from(rig.id),
   });
