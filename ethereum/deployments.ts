@@ -55,7 +55,7 @@ export const deployments: RigsDeployments = {
     layersTable: "layers_5_19",
     attributesTable: "rig_attributes_5_20",
     lookupsTable: "", // TODO: Fill me.
-    pilotSessionsTable: "", // TODO: Fill me.
+    pilotSessionsTable: "pilot_sessions_80001_3498",
     displayAttributes: true,
   },
   localhost: {
