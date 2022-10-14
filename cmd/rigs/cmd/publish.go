@@ -48,7 +48,7 @@ func init() {
 		time.Minute*5,
 		"how long to wait for a txn receipt before failing",
 	)
-	publishCmd.PersistentFlags().String("tbl-db-path", "", "path to the local tableland sqlite db file")
+	publishCmd.PersistentFlags().String("tbl-db-path", "./tableland.db", "path to the local tableland sqlite db file")
 	publishCmd.PersistentFlags().String("private-key", "", "the private key of for the client to use")
 
 	publishCmd.PersistentFlags().String(

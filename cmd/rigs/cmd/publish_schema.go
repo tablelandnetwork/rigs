@@ -18,8 +18,9 @@ func init() {
 	schemaCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push table schemas to tableland")
 	schemaCmd.Flags().Bool("parts", false, "publish the schema for the parts table")
 	schemaCmd.Flags().Bool("layers", false, "publish the schema for the layers table")
-	schemaCmd.Flags().Bool("rigs", false, "publish the schema for the rigs table")
 	schemaCmd.Flags().Bool("attrs", false, "publish the schema for the rig attributes table")
+	schemaCmd.Flags().Bool("lookups", false, "publish the schema for the lookups table")
+	schemaCmd.Flags().Bool("pilots", false, "publish the schema for the pilots sessions table")
 }
 
 var schemaCmd = &cobra.Command{
@@ -28,7 +29,11 @@ var schemaCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		publishAll := !viper.GetBool("parts") && !viper.GetBool("layers") && !viper.GetBool("rigs") && !viper.GetBool("attrs")
+		publishAll := !viper.GetBool("parts") &&
+			!viper.GetBool("layers") &&
+			!viper.GetBool("attrs") &&
+			!viper.GetBool("lookups") &&
+			!viper.GetBool("pilots")
 
 		createTableExecFcn := func(definition storage.TableDefinition) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
@@ -49,15 +54,19 @@ var schemaCmd = &cobra.Command{
 		}
 		if viper.GetBool("layers") || publishAll {
 			jobID++
-			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.RigsDefinition)})
-		}
-		if viper.GetBool("rigs") || publishAll {
-			jobID++
-			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.RigAttributesDefinition)})
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.LayersDefinition)})
 		}
 		if viper.GetBool("attrs") || publishAll {
 			jobID++
-			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.LayersDefinition)})
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.RigAttributesDefinition)})
+		}
+		if viper.GetBool("lookups") || publishAll {
+			jobID++
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.LookupsDefinition)})
+		}
+		if viper.GetBool("pilots") || publishAll {
+			jobID++
+			jobs = append(jobs, wpool.Job{ID: wpool.JobID(jobID), ExecFn: createTableExecFcn(storage.PilotSessionsDefinition)})
 		}
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*100))
