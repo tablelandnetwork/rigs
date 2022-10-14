@@ -391,13 +391,50 @@ contract TablelandRigs is
     }
 
     // tmp
-    function setPilotsTable(uint256 pilotsTableId) external onlyOwner {
-        _rigPilotSessionsTableId = pilotsTableId;
+    function initRigsStatus() external onlyOwner {
+        _rigsStatus = new uint8[](maxSupply);
     }
 
     // tmp
-    function initRigsStatus() external onlyOwner {
-        _rigsStatus = new uint8[](maxSupply);
+    function createPilotsTable() external onlyOwner {
+        _rigPilotSessionsTableId = TablelandDeployments.get().createTable(
+            address(this),
+            SQLHelpers.toCreateFromSchema(
+                "id integer primary key, rig_id integer not null, owner text not null, pilot_contract text, pilot_id integer, start_time integer not null, end_time integer",
+                RIG_PILOT_SESSIONS_PREFIX
+            )
+        );
+    }
+
+    // tmp
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public pure returns (bytes4) {
+        return 0x150b7a02;
+    }
+
+    // tmp
+    function getTrainSQL(uint256 tokenId)
+        external
+        view
+        returns (string memory)
+    {
+        return
+            SQLHelpers.toInsert(
+                RIG_PILOT_SESSIONS_PREFIX,
+                _rigPilotSessionsTableId,
+                "rig_id,owner,start_time",
+                string.concat(
+                    StringsUpgradeable.toString(uint64(tokenId)),
+                    ",",
+                    StringsUpgradeable.toHexString(ownerOf(tokenId)),
+                    ",",
+                    StringsUpgradeable.toString(uint64(block.number))
+                )
+            );
     }
 
     /**
