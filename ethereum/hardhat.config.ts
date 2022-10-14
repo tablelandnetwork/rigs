@@ -129,7 +129,7 @@ const config: HardhatUserConfig = {
       feeRecipient: "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
       maxSupply: 3000,
       etherPrice: "0.05",
-      mintPhase: "waitlist",
+      mintPhase: "public",
       tables: {
         tablelandPrivateKey: process.env.ETHEREUM_GOERLI_PRIVATE_KEY,
         tablelandProvider: process.env.ETHEREUM_GOERLI_API_KEY,
