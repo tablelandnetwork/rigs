@@ -512,31 +512,32 @@ describe("Rigs", function () {
     it("Should have pending metadata if no attributeTable", async function () {
       const tablelandHost = "http://testnet.tableland.network";
       const table1 = "table1";
-      const uri = getURITemplate(tablelandHost, table1, "");
+      const table2 = "table2";
+      const uri = getURITemplate(tablelandHost, table1, table2, false);
       const result =
         tablelandHost +
         "/query?extract=true&unwrap=true&s=" +
         encodeURIComponent(
-          `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('trait_type','status','value','pre-reveal'))) from table1 where id=`
+          `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id,'attributes',json_array(json_object('trait_type','status','value','pre-reveal'))) from table1 join table2 where rig_id=`
         );
       expect(uri[0]).to.equal(result);
-      expect(uri[1]).to.equal("%3B");
+      expect(uri[1]).to.equal("%20group%20by%20rig_id%3B");
     });
 
     it("Should have final metadata if attributeTable", async function () {
       const tablelandHost = "http://testnet.tableland.network";
       const table1 = "table1";
       const table2 = "table2";
-      const uri = getURITemplate(tablelandHost, table1, table2);
+      const uri = getURITemplate(tablelandHost, table1, table2, true);
       const result =
         tablelandHost +
         "/query?extract=true&unwrap=true&s=" +
         encodeURIComponent(
-          `select json_object('name','Rig #'||id,'external_url','https://tableland.xyz/rigs/'||id,'image',image,'image_alpha',image_alpha,'thumb',thumb,'thumb_alpha',thumb_alpha,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 on table1.id=table2.rig_id where id=`
+          `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 where rig_id=`
         );
 
       expect(uri[0]).to.equal(result);
-      expect(uri[1]).to.equal("%20group%20by%20id%3B");
+      expect(uri[1]).to.equal("%20group%20by%20rig_id%3B");
     });
 
     it("Should not return token URI for non-existent token", async function () {

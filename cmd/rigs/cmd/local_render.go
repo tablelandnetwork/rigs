@@ -18,7 +18,8 @@ func init() {
 
 	renderCmd.Flags().String("to-path", "./renders", "path to write the images to")
 	renderCmd.Flags().String("layers-path", "./artifacts/layers", "path to the rigs layer images")
-	renderCmd.Flags().Int("size", 1200, "width and height of generated images")
+	renderCmd.Flags().Int("size", 4000, "width and height of generated images")
+	renderCmd.Flags().Int("medium-size", 2000, "width and height of generated medium images")
 	renderCmd.Flags().Int("thumb-size", 600, "width and height of generated thumb images")
 	renderCmd.Flags().Bool("labels", false, "render metadata labels on generated images")
 	renderCmd.Flags().Int("concurrency", 2, "how many concurrent workers used for rendering rig images")
@@ -30,7 +31,7 @@ var renderCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 
-		b := builder.NewBuilder(localStore, ipfsClient)
+		b := builder.NewBuilder(localStore)
 
 		rigs, err := localStore.Rigs(ctx)
 		checkErr(err)
@@ -49,6 +50,7 @@ var renderCmd = &cobra.Command{
 				builder.RenderCompression(png.DefaultCompression),
 				builder.RenderLabels(viper.GetBool("labels")),
 				builder.RenderSize(viper.GetInt("size")),
+				builder.RenderMediumSize(viper.GetInt("medium-size")),
 				builder.RenderThumbSize(viper.GetInt("thumb-size")),
 			}
 			jobs = append(jobs, wpool.Job{

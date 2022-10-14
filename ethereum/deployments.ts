@@ -17,8 +17,10 @@ export interface RigsDeployment {
   allowlistTable: string;
   partsTable: string;
   layersTable: string;
-  tokensTable: string;
   attributesTable: string;
+  lookupsTable: string;
+  pilotSessionsTable: string;
+  displayAttributes: boolean;
 }
 
 export interface RigsDeployments {
@@ -36,8 +38,10 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_5_59",
     partsTable: "parts_5_30",
     layersTable: "layers_5_29",
-    tokensTable: "rigs_5_28",
     attributesTable: "rig_attributes_5_27",
+    lookupsTable: "", // TODO: Fill me.
+    pilotSessionsTable: "", // TODO: Fill me.
+    displayAttributes: true,
   },
   // testnets
   "polygon-mumbai": {
@@ -49,8 +53,10 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_5_59",
     partsTable: "parts_5_21",
     layersTable: "layers_5_19",
-    tokensTable: "rigs_5_22",
     attributesTable: "rig_attributes_5_20",
+    lookupsTable: "", // TODO: Fill me.
+    pilotSessionsTable: "", // TODO: Fill me.
+    displayAttributes: true,
   },
   localhost: {
     contractAddress: "",
@@ -61,7 +67,9 @@ export const deployments: RigsDeployments = {
     allowlistTable: "",
     partsTable: "",
     layersTable: "",
-    tokensTable: "",
     attributesTable: "",
+    lookupsTable: "",
+    pilotSessionsTable: "",
+    displayAttributes: true,
   },
 };

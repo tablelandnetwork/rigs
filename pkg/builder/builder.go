@@ -1,7 +1,6 @@
 package builder
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/json"
@@ -18,7 +17,6 @@ import (
 	"strings"
 	"sync"
 
-	iface "github.com/ipfs/interface-go-ipfs-core"
 	"github.com/rs/zerolog/log"
 	"github.com/tablelandnetwork/rigs/pkg/renderer"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
@@ -34,7 +32,8 @@ const (
 
 var (
 	defaultRenderConfig = renderConfig{
-		size:        1200,
+		size:        4000,
+		mediumSize:  2000,
 		thumbSize:   400,
 		compression: png.DefaultCompression,
 		drawLabels:  false,
@@ -55,8 +54,7 @@ type RandomnessSource interface {
 
 // Builder builds Rigs.
 type Builder struct {
-	s    local.Store
-	ipfs iface.CoreAPI
+	s local.Store
 
 	fleetsCache             []local.Part
 	fleetPartTypesCache     map[string][]string
@@ -68,11 +66,9 @@ type Builder struct {
 // NewBuilder creates a Builder.
 func NewBuilder(
 	s local.Store,
-	ipfs iface.CoreAPI,
 ) *Builder {
 	return &Builder{
-		s:    s,
-		ipfs: ipfs,
+		s: s,
 	}
 }
 
@@ -119,7 +115,7 @@ func (b *Builder) Build(ctx context.Context, option BuildOption) (*local.Rig, er
 		return nil, fmt.Errorf("building rig data: %v", err)
 	}
 
-	if err := b.s.InsertRigs(ctx, []local.Rig{rig}); err != nil {
+	if err := b.s.InsertRigs(ctx, []local.Rig{*rig}); err != nil {
 		if strings.Contains(err.Error(), "UNIQUE constraint failed: rigs.vin") {
 			// We happened to assemble a duplicate rig, so call this same func recursively.
 			log.Info().Msgf("assembled duplicate rig with vin %s, discarding rig and re-assembling", rig.VIN)
@@ -128,11 +124,12 @@ func (b *Builder) Build(ctx context.Context, option BuildOption) (*local.Rig, er
 		return nil, fmt.Errorf("inserting rig: %v", err)
 	}
 
-	return &rig, nil
+	return rig, nil
 }
 
 type renderConfig struct {
 	size        int
+	mediumSize  int
 	thumbSize   int
 	compression png.CompressionLevel
 	drawLabels  bool
@@ -145,6 +142,13 @@ type RenderOption func(*renderConfig)
 func RenderSize(size int) RenderOption {
 	return func(c *renderConfig) {
 		c.size = size
+	}
+}
+
+// RenderMediumSize controls the size of the created medium image.
+func RenderMediumSize(size int) RenderOption {
+	return func(c *renderConfig) {
+		c.mediumSize = size
 	}
 }
 
@@ -182,152 +186,163 @@ func (b *Builder) Render(
 		opt(&c)
 	}
 
-	reader, writer := io.Pipe()
-	var readerData bytes.Buffer
-	readerThrough := io.TeeReader(reader, &readerData)
-	readerThumb, writerThumb := io.Pipe()
+	rigPath := path.Join(toPath, fmt.Sprint(rig.ID))
+	if err := os.RemoveAll(rigPath); err != nil {
+		return "", fmt.Errorf("removing images dir: %v", err)
+	}
+	err := os.MkdirAll(rigPath, os.ModePerm)
+	if err != nil {
+		return "", fmt.Errorf("creating directory: %v", err)
+	}
 
-	readerAlpha, writerAlpha := io.Pipe()
-	var readerAlphaData bytes.Buffer
-	readerAlphaThrough := io.TeeReader(readerAlpha, &readerAlphaData)
-	readerAlphaThumb, writerAlphaThumb := io.Pipe()
-
+	imageFullFile, err := os.Create(path.Join(rigPath, "image_full.png"))
+	if err != nil {
+		return "", fmt.Errorf("creating file: %v", err)
+	}
+	imageMediumFile, err := os.Create(path.Join(rigPath, "image_medium.png"))
+	if err != nil {
+		return "", fmt.Errorf("creating file: %v", err)
+	}
+	imageThumbFile, err := os.Create(path.Join(rigPath, "image_thumb.png"))
+	if err != nil {
+		return "", fmt.Errorf("creating file: %v", err)
+	}
+	imageFullAlphaFile, err := os.Create(path.Join(rigPath, "image_full_alpha.png"))
+	if err != nil {
+		return "", fmt.Errorf("creating file: %v", err)
+	}
+	imageMediumAlphaFile, err := os.Create(path.Join(rigPath, "image_medium_alpha.png"))
+	if err != nil {
+		return "", fmt.Errorf("creating file: %v", err)
+	}
+	imageThumbAlphaFile, err := os.Create(path.Join(rigPath, "image_thumb_alpha.png"))
+	if err != nil {
+		return "", fmt.Errorf("creating file: %v", err)
+	}
 	defer func() {
-		if err := reader.Close(); err != nil {
-			log.Error().Err(err).Msg("closing reader")
-		}
-		if err := readerThumb.Close(); err != nil {
-			log.Error().Err(err).Msg("closing reader thumb")
-		}
-		if err := readerAlpha.Close(); err != nil {
-			log.Error().Err(err).Msg("closing reader alpha")
-		}
-		if err := readerAlphaThumb.Close(); err != nil {
-			log.Error().Err(err).Msg("closing reader alpha thumb")
-		}
+		_ = imageFullFile.Close()
+		_ = imageMediumFile.Close()
+		_ = imageThumbFile.Close()
+		_ = imageFullAlphaFile.Close()
+		_ = imageMediumAlphaFile.Close()
+		_ = imageThumbAlphaFile.Close()
 	}()
 
-	execFunc := func(
-		rig local.Rig,
-		writer *io.PipeWriter,
-		readerData io.Reader,
-		writerThumb *io.PipeWriter,
-		background bool,
-	) wpool.ExecutionFn {
-		return func(ctx context.Context) (interface{}, error) {
-			if err := b.AssembleImage(ctx, rig, layersPath, writer,
-				AssembleImageBackground(background),
-				AssembleImageCompression(c.compression),
-				AssembleImageLabels(c.drawLabels),
-				AssembleImageSize(c.size),
-			); err != nil {
-				return nil, fmt.Errorf("assembling image: %v", err)
-			}
-			if err := writer.Close(); err != nil {
-				return nil, fmt.Errorf("closing writer: %v", err)
-			}
-			thumbRect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
-			if err := resizeImage(readerData, thumbRect, writerThumb); err != nil {
-				return nil, fmt.Errorf("resizing image: %v", err)
-			}
-			if err := writerThumb.Close(); err != nil {
-				return nil, fmt.Errorf("closing thumb writer: %v", err)
-			}
-			return nil, nil
-		}
-	}
+	prMedium, pwMedium := io.Pipe()
+	prThumb, pwThumb := io.Pipe()
+	prMediumAlpha, pwMediumAlpha := io.Pipe()
+	prThumbAlpha, pwThumbAlpha := io.Pipe()
 
 	jobs := []wpool.Job{
 		{
-			ID:     1,
-			Desc:   "render images with background",
-			ExecFn: execFunc(*rig, writer, &readerData, writerThumb, true),
+			ID:   1,
+			Desc: "assemble image",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				if err := b.AssembleImage(
+					ctx,
+					rig,
+					layersPath,
+					io.MultiWriter(
+						imageFullFile,
+						pwMedium,
+						pwThumb,
+					),
+					AssembleImageBackground(true),
+					AssembleImageCompression(c.compression),
+					AssembleImageLabels(c.drawLabels),
+					AssembleImageSize(c.size),
+				); err != nil {
+					return nil, fmt.Errorf("assembling image: %v", err)
+				}
+				if err := prMedium.Close(); err != nil {
+					return nil, fmt.Errorf("closing medium pipe writer: %v", err)
+				}
+				if err := prThumb.Close(); err != nil {
+					return nil, fmt.Errorf("closing thumb pipe writer: %v", err)
+				}
+				return nil, nil
+			},
 		},
 		{
-			ID:     2,
-			Desc:   "render images without backgrounds",
-			ExecFn: execFunc(*rig, writerAlpha, &readerAlphaData, writerAlphaThumb, false),
+			ID:   2,
+			Desc: "assemble image alpha",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				if err := b.AssembleImage(
+					ctx,
+					rig,
+					layersPath,
+					io.MultiWriter(
+						imageFullAlphaFile,
+						pwMediumAlpha,
+						pwThumbAlpha,
+					),
+					AssembleImageBackground(false),
+					AssembleImageCompression(c.compression),
+					AssembleImageLabels(c.drawLabels),
+					AssembleImageSize(c.size),
+				); err != nil {
+					return nil, fmt.Errorf("assembling image alpha: %v", err)
+				}
+				if err := prMediumAlpha.Close(); err != nil {
+					return nil, fmt.Errorf("closing medium pipe writer alpha: %v", err)
+				}
+				if err := prThumbAlpha.Close(); err != nil {
+					return nil, fmt.Errorf("closing thumb pipe writer alpha: %v", err)
+				}
+				return nil, nil
+			},
 		},
 		{
 			ID:   3,
-			Desc: "writing images to disk",
+			Desc: "resize medium",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				rigPath := path.Join(toPath, fmt.Sprint(rig.ID))
-				if err := os.RemoveAll(rigPath); err != nil {
-					return nil, fmt.Errorf("removing images dir: %v", err)
+				rect := image.Rect(0, 0, c.mediumSize, c.mediumSize)
+				if err := resizeImage(prMedium, rect, imageMediumFile); err != nil {
+					return nil, err
 				}
-				err := os.MkdirAll(rigPath, os.ModePerm)
-				if err != nil {
-					return nil, fmt.Errorf("creating directory: %v", err)
+				return nil, nil
+			},
+		},
+		{
+			ID:   4,
+			Desc: "resize thumb",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				rect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
+				if err := resizeImage(prThumb, rect, imageThumbFile); err != nil {
+					return nil, err
 				}
-				copyFn := func(name string, src io.Reader) wpool.ExecutionFn {
-					return func(ctx context.Context) (interface{}, error) {
-						file, err := os.Create(name)
-						if err != nil {
-							return nil, fmt.Errorf("creating image file: %v", err)
-						}
-						defer func() {
-							_ = file.Close()
-						}()
-						_, err = io.Copy(file, src)
-						if err != nil {
-							return nil, fmt.Errorf("copying image data: %v", err)
-						}
-						return nil, nil
-					}
+				return nil, nil
+			},
+		},
+		{
+			ID:   5,
+			Desc: "resize medium alpha",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				rect := image.Rect(0, 0, c.mediumSize, c.mediumSize)
+				if err := resizeImage(prMediumAlpha, rect, imageMediumAlphaFile); err != nil {
+					return nil, err
 				}
-				jobs := []wpool.Job{
-					{
-						ID:     1,
-						ExecFn: copyFn(path.Join(rigPath, "image.png"), readerThrough),
-						Desc:   "image",
-					},
-					{
-						ID:     2,
-						ExecFn: copyFn(path.Join(rigPath, "image_alpha.png"), readerAlphaThrough),
-						Desc:   "image alpha",
-					},
-					{
-						ID:     3,
-						ExecFn: copyFn(path.Join(rigPath, "thumb.png"), readerThumb),
-						Desc:   "thumb",
-					},
-					{
-						ID:     4,
-						ExecFn: copyFn(path.Join(rigPath, "thumb_alpha.png"), readerAlphaThumb),
-						Desc:   "thumb alpha",
-					},
+				return nil, nil
+			},
+		},
+		{
+			ID:   6,
+			Desc: "resize thumb alpha",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				rect := image.Rect(0, 0, c.thumbSize, c.thumbSize)
+				if err := resizeImage(prThumbAlpha, rect, imageThumbAlphaFile); err != nil {
+					return nil, err
 				}
-				wp := wpool.New(4, rate.Inf)
-				go wp.GenerateFrom(jobs)
-				ctx, cancel := context.WithCancel(ctx)
-				defer cancel()
-				go wp.Run(ctx)
-			Loop:
-				for {
-					select {
-					case r, ok := <-wp.Results():
-						if !ok {
-							break
-						}
-						if r.Err != nil {
-							return nil, r.Err
-						}
-					case <-wp.Done:
-						break Loop
-					}
-				}
-				return rigPath, nil
+				return nil, nil
 			},
 		},
 	}
 
-	wp := wpool.New(3, rate.Inf)
+	wp := wpool.New(6, rate.Inf)
 	go wp.GenerateFrom(jobs)
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	go wp.Run(ctx)
-	var path string
 Loop:
 	for {
 		select {
@@ -338,14 +353,11 @@ Loop:
 			if r.Err != nil {
 				return "", r.Err
 			}
-			if r.ID == 3 {
-				path = r.Value.(string)
-			}
 		case <-wp.Done:
 			break Loop
 		}
 	}
-	return path, nil
+	return rigPath, nil
 }
 
 type assembleRigConfig struct {
@@ -375,11 +387,11 @@ func AssembleOriginalRig(id int, original local.OriginalRig, randomnessSource Ra
 }
 
 // AssembleRig generates Rig data.
-func (b *Builder) AssembleRig(ctx context.Context, opt AssembleRigOption) (local.Rig, error) {
+func (b *Builder) AssembleRig(ctx context.Context, opt AssembleRigOption) (*local.Rig, error) {
 	c := assembleRigConfig{}
 	opt(&c)
 
-	var rig local.Rig
+	var rig *local.Rig
 	var err error
 
 	if c.original != nil {
@@ -388,12 +400,12 @@ func (b *Builder) AssembleRig(ctx context.Context, opt AssembleRigOption) (local
 		rig, err = b.assembleRandomRig(ctx, c.id, c.randomness)
 	}
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("building rig data: %v", err)
+		return nil, fmt.Errorf("building rig data: %v", err)
 	}
 
 	layers, err := b.getLayers(ctx, rig, false)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting layers for vin: %v", err)
+		return nil, fmt.Errorf("getting layers for vin: %v", err)
 	}
 	rig.VIN = asSha256(layers)
 	rig.PercentOriginal = percentOriginal(rig.Parts, 0)
@@ -416,32 +428,32 @@ func (b *Builder) assembleRandomRig(
 	ctx context.Context,
 	id int,
 	rs RandomnessSource,
-) (local.Rig, error) {
-	rig := local.Rig{ID: id}
+) (*local.Rig, error) {
+	rig := &local.Rig{ID: id}
 
 	fleets, err := b.fleets(ctx)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting fleets: %v", err)
+		return nil, fmt.Errorf("getting fleets: %v", err)
 	}
 
 	randoms, err := rs.GenRandoms(10)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting random numbers: %v", err)
+		return nil, fmt.Errorf("getting random numbers: %v", err)
 	}
 
 	fleetPart, err := selectPart(fleets, randoms[0])
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("selecting fleet trait: %v", err)
+		return nil, fmt.Errorf("selecting fleet trait: %v", err)
 	}
 	rig.Parts = append(rig.Parts, fleetPart)
 
 	partTypes, err := b.fleetPartTypes(ctx, fleetPart.Name)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting fleet part types: %v", err)
+		return nil, fmt.Errorf("getting fleet part types: %v", err)
 	}
 
 	if len(partTypes) > len(randoms)-1 {
-		return local.Rig{}, errors.New("more part types than random numbers")
+		return nil, errors.New("more part types than random numbers")
 	}
 
 	for i, partType := range partTypes {
@@ -451,12 +463,12 @@ func (b *Builder) assembleRandomRig(
 			partType,
 		)
 		if err != nil {
-			return local.Rig{}, fmt.Errorf("getting parts for fleet and part type: %v", err)
+			return nil, fmt.Errorf("getting parts for fleet and part type: %v", err)
 		}
 
 		part, err := selectPart(parts, randoms[i+1])
 		if err != nil {
-			return local.Rig{}, fmt.Errorf("selecting part %s: %v", partType, err)
+			return nil, fmt.Errorf("selecting part %s: %v", partType, err)
 		}
 		rig.Parts = append(rig.Parts, part)
 	}
@@ -473,15 +485,15 @@ func (b *Builder) assembleOriginalRig(
 	id int,
 	original local.OriginalRig,
 	rs RandomnessSource,
-) (local.Rig, error) {
-	rig := local.Rig{ID: id}
+) (*local.Rig, error) {
+	rig := &local.Rig{ID: id}
 
 	fleetParts, err := b.s.Parts(ctx, local.PartsOfType("Fleet"), local.PartsOfName(original.Fleet))
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting fleet part: %v", err)
+		return nil, fmt.Errorf("getting fleet part: %v", err)
 	}
 	if len(fleetParts) != 1 {
-		return local.Rig{}, fmt.Errorf("should have found 1 fleet part, but found %d", len(fleetParts))
+		return nil, fmt.Errorf("should have found 1 fleet part, but found %d", len(fleetParts))
 	}
 
 	fleetPart := fleetParts[0]
@@ -490,12 +502,12 @@ func (b *Builder) assembleOriginalRig(
 
 	partTypes, err := b.fleetPartTypes(ctx, fleetPart.Name)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("getting fleet part types: %v", err)
+		return nil, fmt.Errorf("getting fleet part types: %v", err)
 	}
 
 	randomVals, err := rs.GenRandoms(10)
 	if err != nil {
-		return local.Rig{}, fmt.Errorf("generating random numbers part type seleciton: %v", err)
+		return nil, fmt.Errorf("generating random numbers part type seleciton: %v", err)
 	}
 
 	for i, partType := range partTypes {
@@ -521,20 +533,20 @@ func (b *Builder) assembleOriginalRig(
 
 		parts, err := b.s.Parts(ctx, options...)
 		if err != nil {
-			return local.Rig{}, fmt.Errorf("getting parts for original fleet part type: %v", err)
+			return nil, fmt.Errorf("getting parts for original fleet part type: %v", err)
 		}
 
 		var part local.Part
 		if partType == backgroundPartTypeName {
 			selectedPart, err := selectPart(parts, randomVals[i])
 			if err != nil {
-				return local.Rig{}, fmt.Errorf("selecting part: %v", err)
+				return nil, fmt.Errorf("selecting part: %v", err)
 			}
 			part = selectedPart
 		} else if len(parts) == 1 {
 			part = parts[0]
 		} else {
-			return local.Rig{},
+			return nil,
 				fmt.Errorf(
 					"should have found 1 part for original %s, color %s, part type %s, but found %d",
 					original.Name,
@@ -590,7 +602,7 @@ func AssembleImageCompression(compression png.CompressionLevel) AssembleImageOpt
 // AssembleImage writes the Rig image to the provided Writer for the provided Rig.
 func (b *Builder) AssembleImage(
 	ctx context.Context,
-	rig local.Rig,
+	rig *local.Rig,
 	layersPath string,
 	writer io.Writer,
 	opts ...AssembleImageOption,
@@ -639,7 +651,7 @@ func (b *Builder) AssembleImage(
 	return nil
 }
 
-func (b *Builder) getLayers(ctx context.Context, rig local.Rig, background bool) ([]local.Layer, error) {
+func (b *Builder) getLayers(ctx context.Context, rig *local.Rig, background bool) ([]local.Layer, error) {
 	fleet, err := getFleet(rig)
 	if err != nil {
 		return nil, err
@@ -660,7 +672,7 @@ func (b *Builder) getLayers(ctx context.Context, rig local.Rig, background bool)
 	)
 }
 
-func getFleet(rig local.Rig) (string, error) {
+func getFleet(rig *local.Rig) (string, error) {
 	for _, part := range rig.Parts {
 		if part.Type == "Fleet" {
 			return part.Name, nil
@@ -669,7 +681,7 @@ func getFleet(rig local.Rig) (string, error) {
 	return "", errors.New("no fleet part found")
 }
 
-func getRigLabel(rig local.Rig) (string, error) {
+func getRigLabel(rig *local.Rig) (string, error) {
 	b, err := json.MarshalIndent(rig, "", "  ")
 	if err != nil {
 		return "", err
@@ -791,7 +803,7 @@ func percentOriginal(parts []local.Part, bonusFactor float64) float64 {
 func resizeImage(data io.Reader, size image.Rectangle, to io.Writer) error {
 	i, _, err := image.Decode(data)
 	if err != nil {
-		return err
+		return fmt.Errorf("decoding data: %v", err)
 	}
 	dst := image.NewRGBA(size)
 	draw.CatmullRom.Scale(dst, size, i, i.Bounds(), draw.Over, nil)
