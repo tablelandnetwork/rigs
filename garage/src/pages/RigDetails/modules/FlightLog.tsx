@@ -20,13 +20,13 @@ type FlightLogProps = React.ComponentProps<typeof Box> & {
 
 export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
   const events = rig.pilotSessions
-    .flatMap(({ startTime, endTime, contract, tokenId }) => {
+    .flatMap(({ startTime, endTime, owner, contract, tokenId }) => {
       const { name = "Trainer" } = findNFT({ tokenId, contract }, nfts) || {};
 
-      let events = [{ type: `Piloted ${name}`, timestamp: startTime }];
+      let events = [{ type: `Piloted ${name}`, timestamp: startTime, owner }];
 
       if (endTime) {
-        events = [...events, { type: "Parked", timestamp: endTime }];
+        events = [...events, { type: "Parked", timestamp: endTime, owner }];
       }
 
       return events;
@@ -38,12 +38,12 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
       <Heading px={p}>Flight log</Heading>
       <Table>
         <Tbody>
-          {events.map(({ type }, index) => {
+          {events.map(({ type, owner }, index) => {
             return (
               <Tr key={`flight-log-${index}`}>
                 <Td pl={p}>{type}</Td>
                 <Td pr={p} isNumeric>
-                  0x96ff...4651
+                  {owner}
                 </Td>
               </Tr>
             );
