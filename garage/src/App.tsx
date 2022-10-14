@@ -21,7 +21,11 @@ import { RigDetails } from "./pages/RigDetails";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 
 const { chains, provider } = configureChains(
-  [chain.mainnet],
+  [
+    process.env.NODE_ENV === "development"
+      ? chain.polygonMumbai
+      : chain.mainnet,
+  ],
   [alchemyProvider({ apiKey: process.env.ALCHEMY_ID }), publicProvider()]
 );
 
