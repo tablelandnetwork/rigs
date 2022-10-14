@@ -395,6 +395,16 @@ contract TablelandRigs is
         _unpause();
     }
 
+    // tmp
+    function setPilotsTable(uint256 pilotsTableId) external onlyOwner {
+        _rigPilotSessionsTableId = pilotsTableId;
+    }
+
+    // tmp
+    function initRigsStatus() external onlyOwner {
+        _rigsStatus = new uint8[](maxSupply);
+    }
+
     /**
      * @dev See {ITablelandRigs-pilotInfo}.
      */
