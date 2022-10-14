@@ -57,7 +57,7 @@ contract TablelandRigs is
 
     // TODO Remove the following, but for context, the table schema:
     /**
-        create table rig_pilot_sessions(
+        create table pilot_sessions(
             id integer primary key, 
             rig_id integer not null, 
             owner text not null,
@@ -69,14 +69,19 @@ contract TablelandRigs is
      */
 
     // Table prefix for the Rigs pilot sessions table.
-    string private constant RIG_PILOT_SESSIONS_PREFIX = "rig_pilot_sessions";
+    string private constant RIG_PILOT_SESSIONS_PREFIX = "pilot_sessions";
+
+    // Table prefix for the Rigs ownership index table.
+    string private constant RIG_OWNERSHIP_INDEX_PREFIX = "rig_ownership_index";
 
     // Table ID for the Rigs pilot sessions table.
-    // TODO do we want to have a method for updating this value?
     uint256 private _rigPilotSessionsTableId;
 
-    // Tracks the Rig `tokenId` to its current `RigPilot`.
-    mapping(uint256 => RigPilot) internal _pilots;
+    // Table ID for the Rigs pilot sessions table.
+    // uint256 private _rigOwnershipIndexTableId = 1; // TODO ignore this for now; need to add table to deploy script
+
+    // Tracks the Rig `tokenId` to its current `Pilot`.
+    mapping(uint256 => Pilot) internal _pilots;
 
     // Track piloted vs. parked Rigs as a bitlist.
     // TODO this was implemented for gas reduction purposes while iterating/checking for duplicates in `_pilots`
@@ -393,7 +398,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-pilotInfo}.
      */
-    function pilotInfo(uint256 tokenId) public view returns (RigPilot memory) {
+    function pilotInfo(uint256 tokenId) public view returns (Pilot memory) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         return _pilots[tokenId];
@@ -416,16 +421,15 @@ contract TablelandRigs is
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to train the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A())
-            revert InvalidRigOwnership(tokenId);
+        if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
         // Check if the Rig has gone through training yet
         // An `index` of `1` represents training is happening; the Rig is "locked" into training for 30 days
         if (_pilots[tokenId].index > 0) revert RigIsTrainingOrTrained(tokenId);
         // Assign a trainer pilot to the Rig
         // TODO is it worth using `SafeCastUpgradeable.toUint64`? Also impacts `_setClaimed` and some methods below
-        _pilots[tokenId] = RigPilot(1, uint64(block.number), address(0), 0);
+        _pilots[tokenId] = Pilot(1, uint64(block.number), address(0), 0);
         _rigsStatus[tokenId - 1] = 1;
-        // Insert the training pilot into the Tableland `rig_pilot_sessions` table
+        // Insert the training pilot into the Tableland `pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
             INSERT INTO rigs_pilots (
@@ -464,12 +468,11 @@ contract TablelandRigs is
         uint256 tokenId,
         address pilotContract,
         uint256 pilotTokenId
-    ) external {
+    ) public {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to pilot the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A())
-            revert InvalidRigOwnership(tokenId);
+        if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
         // Validate if pilot training is completed
         // Once training begins, the Rig is prevented from being parked until
         // training has been completed; thus, only need to check if the Rig has
@@ -478,15 +481,14 @@ contract TablelandRigs is
         // Check if Rig is currently in-flight (not parked)
         if (_pilots[tokenId].startTime > 0) revert RigIsNotParked(tokenId);
         // Check if `pilotContract` is an ERC721; cannot be the Rigs contract
-        // TODO is this the right way to handle checking if the ERC721 is the Rigs contract? Or, is there a different way w/upgradeable contracts
         if (
-            !pilotContract.supportsInterface(type(IERC721).interfaceId) ||
-            (pilotContract.supportsInterface(type(IERC721).interfaceId) &&
-                pilotContract == address(this))
+            pilotContract == address(this) ||
+            !pilotContract.supportsInterface(type(IERC721).interfaceId)
         ) revert InvalidPilotContract(pilotContract);
+
         // Check ownership of `pilotTokenId` at target `pilotContract`
         if (IERC721(pilotContract).ownerOf(pilotTokenId) != _msgSenderERC721A())
-            revert InvalidPilotOwnership(pilotTokenId);
+            revert Unauthorized();
         // Check if the pilot is actively piloting another Rig, and if so, park the other Rig
         for (uint256 i = 1; i <= maxSupply; i++) {
             if (
@@ -499,14 +501,14 @@ contract TablelandRigs is
             }
         }
         // Assign a new pilot to the Rig, incrementing the previous pilot's `index` by `1`
-        _pilots[tokenId] = RigPilot(
+        _pilots[tokenId] = Pilot(
             _pilots[tokenId].index + 1,
             uint64(block.number),
             pilotContract,
             pilotTokenId
         );
         _rigsStatus[tokenId - 1] = 1;
-        // Insert the pilot into the Tableland `rig_pilot_sessions` table
+        // Insert the pilot into the Tableland `pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
             INSERT INTO rigs_pilots (
@@ -543,27 +545,56 @@ contract TablelandRigs is
     }
 
     /**
+     * @dev See {ITablelandRigs-batchPilotRigs}.
+     */
+    function pilotRig(
+        uint256[] calldata tokenIds,
+        address[] calldata pilotContracts,
+        uint256[] calldata pilotTokenIds
+    ) external {
+        // Ensure the arrays are non-empty
+        if (
+            tokenIds.length == 0 ||
+            pilotContracts.length == 0 ||
+            pilotTokenIds.length == 0
+        ) revert InvalidBatchPilotRig();
+        // Ensure there is a 1:1 relationship between Rig `tokenIds` and pilots
+        // Only allow a batch to be an arbitrary max length of 255
+        // Clients should restrict this further (e.g., <=5) to avoid gas exceeding limits
+        if (
+            tokenIds.length != pilotContracts.length ||
+            tokenIds.length != pilotTokenIds.length ||
+            tokenIds.length > type(uint8).max
+        ) revert InvalidBatchPilotRig();
+        // For each token, call `pilotRig`
+        // TODO optimize with impl using `toBatchInsert` vs. calling `pilotRig`
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            pilotRig(tokenIds[i], pilotContracts[i], pilotTokenIds[i]);
+        }
+    }
+
+    /**
      * @dev See {ITablelandRigs-parkRig}.
      */
     function parkRig(uint256 tokenId) public {
         // Check the Rig `tokenId` exists.
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to park the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A()) {
-            if (address(this) != _msgSenderERC721A()) {
-                revert InvalidRigOwnership(tokenId);
-            }
-        }
+        if (
+            !(ownerOf(tokenId) == _msgSenderERC721A() ||
+                address(this) == _msgSenderERC721A())
+        ) revert Unauthorized();
         // Ensure Rig is currently being piloted
         uint64 startTime = _pilots[tokenId].startTime;
         if (startTime == 0) revert RigIsParked(tokenId);
         // Ensure the Rig has trained; `index` of `1` indicates training is occurring
         // If the Rig is training, check if 30 days has elapsed (the required training time)
-        (bool isValidSubtraction, uint256 blockDifference) = SafeMathUpgradeable
-            .trySub(block.number, 172800);
+        (bool success, uint256 blockDifference) = SafeMathUpgradeable.trySub(
+            block.number,
+            172800
+        );
         if (
-            !isValidSubtraction ||
-            _pilots[tokenId].index == 0 ||
+            !success ||
             (_pilots[tokenId].index == 1 &&
                 !(blockDifference > _pilots[tokenId].startTime))
         ) {
@@ -574,7 +605,7 @@ contract TablelandRigs is
         _pilots[tokenId].pilotContract = address(0);
         _pilots[tokenId].pilotId = 0;
         _rigsStatus[tokenId - 1] = 0;
-        // Update the row in the `rig_pilot_sessions` table with its `end_time`
+        // Update the row in the `pilot_sessions` table with its `end_time`
         string memory setters = string.concat(
             "start_time=0,end_time=(",
             StringsUpgradeable.toString(uint64(block.number)),
@@ -590,11 +621,11 @@ contract TablelandRigs is
             "start_time=",
             StringsUpgradeable.toString(startTime)
         );
-        // Update the pilot information in the Tableland `rig_pilot_sessions` table
+        // Update the pilot information in the Tableland `pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
             UPDATE 
-                rig_pilot_sessions 
+                pilot_sessions 
             SET 
                 start_time=0, 
                 end_time=(block.number-startTime) 
@@ -641,7 +672,6 @@ contract TablelandRigs is
 
     /**
      * @dev See {ERC721A-_beforeTokenTransfers}.
-     * Also, adds logic to block transfers while a Rig is being piloted.
      */
     function _beforeTokenTransfers(
         address from,
@@ -650,12 +680,71 @@ contract TablelandRigs is
         uint256 quantity
     ) internal virtual override {
         _requireNotPaused();
+        // Block transfers while a Rig is being piloted
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
-            // If `RigPilot.startTime` is not zero, then the Rig is in-flight
+            // If `Pilot.startTime` is not zero, then the Rig is in-flight
             if (_pilots[tokenId].startTime > 0) revert RigIsNotParked(tokenId);
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
+    }
+
+    /**
+     * @dev See {ERC721A-_afterTokenTransfers}.
+     */
+    function _afterTokenTransfers(
+        address from,
+        address to,
+        uint256 startTokenId,
+        uint256 quantity
+    ) internal virtual override {
+        // Insert Rig ownership data into a table, for indexing purposes in Tableland
+        // TODO this increases gas by 1.5-2x
+        // For a mint: 94768 -> 152429
+        // For a simple transfer: 57993 -> 115663
+        /*
+        if (quantity > 1) {
+            uint256 tokenId = startTokenId;
+            string[] memory values = new string[](quantity);
+            for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
+                values[tokenId + quantity - end] = string.concat(
+                    StringsUpgradeable.toString(uint64(tokenId)),
+                    ",",
+                    StringsUpgradeable.toHexString(to),
+                    ",",
+                    Strings.toHexString(uint64(block.number))
+                );
+            }
+            TablelandDeployments.get().runSQL(
+                address(this),
+                _rigOwnershipIndexTableId,
+                SQLHelpers.toBatchInsert(
+                    RIG_OWNERSHIP_INDEX_PREFIX,
+                    _rigOwnershipIndexTableId,
+                    "rig_id,owner,block_number",
+                    values
+                )
+            );
+        } else {
+            TablelandDeployments.get().runSQL(
+                address(this),
+                _rigOwnershipIndexTableId,
+                SQLHelpers.toInsert(
+                    RIG_OWNERSHIP_INDEX_PREFIX,
+                    _rigOwnershipIndexTableId,
+                    "rig_id,owner,block_number",
+                    string.concat(
+                        StringsUpgradeable.toString(uint64(startTokenId)),
+                        ",",
+                        StringsUpgradeable.toHexString(to),
+                        ",",
+                        Strings.toHexString(uint64(block.number))
+                    )
+                )
+            );
+        }
+        */
+        super._afterTokenTransfers(from, to, startTokenId, quantity);
     }
 
     // =============================
