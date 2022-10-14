@@ -10,6 +10,7 @@ export interface Pilot {
 }
 
 export interface PilotSession extends Pilot {
+  owner: string;
   startTime: number;
   endTime?: number;
 }
