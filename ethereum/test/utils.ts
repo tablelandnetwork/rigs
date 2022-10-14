@@ -1,10 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { BigNumber } from "ethers";
 import { ethers, upgrades } from "hardhat";
-import {
-  TestSQLHelpers,
-  TablelandTables,
-} from "@tableland/evm/typechain-types";
+import { TestSQLHelpers, TablelandTables } from "@tableland/evm";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 

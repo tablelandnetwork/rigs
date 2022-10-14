@@ -23,16 +23,16 @@ interface ITablelandRigs {
     // Thrown when minting when there are no more Rigs.
     error SoldOut();
 
-    // Thrown when attempting to interact with non-owned Rigs.
-    error InvalidRigOwnership(uint256 tokenId);
+    // Thrown when attempting to interact with non-owned Rigs or Pilot tokens.
+    error Unauthorized();
 
     // Thrown if a Pilot's contract is not ERC721-compliant.
     error InvalidPilotContract(address pilotContract);
 
-    // Thrown if an address does not own the token at a specified Pilot contract.
-    error InvalidPilotOwnership(uint256 pilotId);
+    // Thrown upon a batch pilot update error.
+    error InvalidBatchPilotRig();
 
-    // Thrown if a Rig tries to be piloted with an existing `RigPilot`.
+    // Thrown if a Rig tries to be piloted with an existing `Pilot`.
     error SpecifiedPilotIsActive(address pilotContract, uint256 pilotId);
 
     // Thrown when a Rig has is training or has already completed its training.
@@ -56,8 +56,7 @@ interface ITablelandRigs {
     }
 
     // A Rig's pilot
-    // TODO alterted this to align with the table column definitions
-    struct RigPilot {
+    struct Pilot {
         // Index of the current pilot, for tracking the history of a Rig's pilots.
         uint16 index;
         // Keep track of the pilot's starting `block.number` for flight time tracking.
@@ -239,7 +238,7 @@ interface ITablelandRigs {
      *
      * - `tokenId` must exist
      */
-    function pilotInfo(uint256 tokenId) external view returns (RigPilot memory);
+    function pilotInfo(uint256 tokenId) external view returns (Pilot memory);
 
     /**
      * @dev Retrieves Rig status for piloted (`1`) or parked (`0`).
@@ -261,12 +260,12 @@ interface ITablelandRigs {
      *
      * - `tokenId` must exist
      * - `msg.sender` must own the Rig
-     * - `RigPilot.index` must be `0` (untrained)
+     * - `Pilot.index` must be `0` (untrained)
      */
     function trainRig(uint256 tokenId) external;
 
     /**
-     * @dev Puts a Rig in flight while setting a custom `RigPilot`.
+     * @dev Puts a single Rig in flight by setting a custom `Pilot`.
      *
      * tokenId - the unique Rig token identifier
      * pilotContract - ERC721 contract address of a desired Rig's pilot
@@ -276,11 +275,11 @@ interface ITablelandRigs {
      *
      * - `tokenId` must exist
      * - `msg.sender` must own the Rig
-     * - `RigPilot.index` cannot be `0`; must haved completed training (see `parkRig`)
-     * - `RigPilot.startTime` must be `0` (parked)
+     * - `Pilot.index` cannot be `0`; must haved completed training (see `parkRig`)
+     * - `Pilot.startTime` must be `0` (parked)
      * - `pilotContract` must be an ERC721 contract; cannot be the Rigs contract
      * - `pilotTokenId` must be owned by `msg.sender` at `pilotContract`
-     * - `RigPilot` can only be associated with one Rig at a time; parks on conflict
+     * - `Pilot` can only be associated with one Rig at a time; parks on conflict
      */
     function pilotRig(
         uint256 tokenId,
@@ -289,7 +288,27 @@ interface ITablelandRigs {
     ) external;
 
     /**
-     * @dev Parks a Rig and ends the current `RigPilot` session.
+     * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
+     *
+     * tokenIds - a list of unique Rig token identifiers
+     * pilotContracts - a list of ERC721 contract addresses of a desired Rig's pilot
+     * pilotTokenIds - a list of unique token identifiers at the target `pilotContract`
+     *
+     * Requirements:
+     *
+     * - All input parameters must be non-empty
+     * - All input parameters must have an equal length
+     * - There cannot exist a duplicate value in each of the individual parameters
+     * - See `pilotRig` for additional constraints on a per-token basis.
+     */
+    function pilotRig(
+        uint256[] memory tokenIds,
+        address[] memory pilotContracts,
+        uint256[] memory pilotTokenIds
+    ) external;
+
+    /**
+     * @dev Parks a Rig and ends the current `Pilot` session.
      *
      * tokenId - the unique Rig token identifier
      *
@@ -297,8 +316,8 @@ interface ITablelandRigs {
      *
      * - `tokenId` must exist
      * - `msg.sender` must own the Rig, or is the Rigs contract (for calls from `pilotRig`)
-     * - `RigPilot.startTime` should not be zero (0 == parked)
-     * - `RigPilot` must have completed 30 days of training
+     * - `Pilot.startTime` should not be zero (0 == parked)
+     * - `Pilot` must have completed 30 days of training
      */
     function parkRig(uint256 tokenId) external;
 }

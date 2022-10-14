@@ -4,7 +4,7 @@ import chaiAsPromised from "chai-as-promised";
 import { BigNumber, utils } from "ethers";
 import { ethers, network } from "hardhat";
 import { PaymentSplitter, TablelandRigs } from "../typechain-types";
-import { TablelandTables } from "@tableland/evm/typechain-types";
+import { TablelandTables } from "@tableland/evm";
 import { MerkleTree } from "merkletreejs";
 import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
 import { getURITemplate } from "../helpers/uris";
@@ -633,6 +633,13 @@ describe("Rigs", function () {
       );
     });
 
+    it("Should not Rig status info for non-existent token", async function () {
+      // Try calling with a non-existent token
+      await expect(rigs.rigStatus(BigNumber.from(0))).to.be.rejectedWith(
+        "OwnerQueryForNonexistentToken"
+      );
+    });
+
     it("Should get default pilot info for a garaged Rig", async function () {
       // Mint a token and then get its pilot's default info (i.e., still in the garage)
       await rigs.setMintPhase(3);
@@ -703,7 +710,7 @@ describe("Rigs", function () {
       const sender = accounts[5];
       await expect(
         rigs.connect(sender).trainRig(BigNumber.from(tokenId))
-      ).to.be.rejectedWith("InvalidRigOwnership");
+      ).to.be.rejectedWith("Unauthorized");
     });
 
     it("Should train Rig if msg.sender is token owner", async function () {
@@ -741,8 +748,21 @@ describe("Rigs", function () {
     });
 
     it("Should not pilot Rig for non-existent token", async function () {
+      // Try with a single Rig and `pilotRig`
       await expect(
-        rigs.pilotRig(BigNumber.from(0), ethers.constants.AddressZero, 1)
+        rigs["pilotRig(uint256,address,uint256)"](
+          BigNumber.from(0),
+          ethers.constants.AddressZero,
+          BigNumber.from(1)
+        )
+      ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
+      // Try with multiple Rigs and `pilotRig` (batch)
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          [BigNumber.from(0)],
+          [ethers.constants.AddressZero],
+          [BigNumber.from(1)]
+        )
       ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
     });
 
@@ -761,12 +781,12 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(sender)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(tokenId),
             ethers.constants.AddressZero,
             BigNumber.from(1)
           )
-      ).to.be.rejectedWith("InvalidRigOwnership");
+      ).to.be.rejectedWith("Unauthorized");
     });
 
     it("Should not pilot Rig if never ungaraged", async function () {
@@ -783,7 +803,7 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(tokenId),
             ethers.constants.AddressZero,
             BigNumber.from(1)
@@ -807,7 +827,7 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(tokenId),
             ethers.constants.AddressZero,
             BigNumber.from(1)
@@ -817,12 +837,68 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(tokenId),
             ethers.constants.AddressZero,
             BigNumber.from(1)
           )
       ).to.be.rejectedWith("RigIsNotParked");
+    });
+
+    it("Should not batch pilot Rigs for empty, unequal length, or max length for arrays", async function () {
+      // Try to send empty arrays
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"]([], [], [])
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          [BigNumber.from(0)],
+          [],
+          []
+        )
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          [BigNumber.from(0)],
+          [ethers.constants.AddressZero],
+          []
+        )
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
+      // Try to send arrays of unequal lengths
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          [BigNumber.from(0), BigNumber.from(0)],
+          [ethers.constants.AddressZero],
+          [BigNumber.from(1)]
+        )
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          [BigNumber.from(0)],
+          [ethers.constants.AddressZero, ethers.constants.AddressZero],
+          [BigNumber.from(1)]
+        )
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          [BigNumber.from(0)],
+          [ethers.constants.AddressZero],
+          [BigNumber.from(1), BigNumber.from(2)]
+        )
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
+      // Try with an array of tokens exceeding 255 in length (the arbitrary limit)
+      const tokenIds = [...Array(256).keys()];
+      const pilotContracts = [...Array(256).keys()].map(
+        (_) => ethers.constants.AddressZero
+      );
+      const pilotIds = [...Array(256).keys()];
+      await expect(
+        rigs["pilotRig(uint256[],address[],uint256[])"](
+          tokenIds,
+          pilotContracts,
+          pilotIds
+        )
+      ).to.be.rejectedWith("InvalidBatchPilotRig");
     });
 
     it("Should not park Rig for non-existent token", async function () {
@@ -831,7 +907,7 @@ describe("Rigs", function () {
       );
     });
 
-    it("Should not park Rig if msg.sender is not token owner", async function () {
+    it("Should not park Rig if msg.sender is not token owner or Rigs contract", async function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
@@ -845,10 +921,11 @@ describe("Rigs", function () {
       const sender = accounts[5];
       await expect(
         rigs.connect(sender).parkRig(BigNumber.from(tokenId))
-      ).to.be.rejectedWith("InvalidRigOwnership");
+      ).to.be.rejectedWith("Unauthorized");
+      // Attempt to park the Rig with an address that doesn't own the token
     });
 
-    it("Should not park Rig if training is incomplete", async function () {
+    it("Should not park Rig if training is incomplete or already parked", async function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
@@ -872,6 +949,10 @@ describe("Rigs", function () {
       await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId)))
         .to.emit(rigs, "Parked")
         .withArgs(BigNumber.from(tokenId));
+      // Try to park the Rig again
+      await expect(
+        rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
+      ).to.be.rejectedWith("RigIsParked");
     });
 
     it("Should not allow non-ERC721 / Rigs contract for pilots", async function () {
@@ -896,7 +977,7 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(tokenId),
             ethers.constants.AddressZero,
             BigNumber.from(1)
@@ -906,7 +987,11 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(BigNumber.from(tokenId), rigs.address, BigNumber.from(1))
+          ["pilotRig(uint256,address,uint256)"](
+            BigNumber.from(tokenId),
+            rigs.address,
+            BigNumber.from(1)
+          )
       ).to.be.rejectedWith("InvalidPilotContract");
     });
 
@@ -942,12 +1027,12 @@ describe("Rigs", function () {
       await expect(
         rigs
           .connect(rigTokenOwner)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(rigTokenId),
             fauxERC721.address,
             pilotTokenIdRandomPilotTokenHolder
           )
-      ).to.be.rejectedWith("InvalidPilotOwnership");
+      ).to.be.rejectedWith("Unauthorized");
       // Mint a faux NFT and set the pilot to an ERC721 contract & pilot
       tx = await fauxERC721.connect(rigTokenOwner).mint();
       receipt = await tx.wait();
@@ -955,7 +1040,11 @@ describe("Rigs", function () {
       const pilotTokenIdRigOwner = event.args?.tokenId;
       await rigs
         .connect(rigTokenOwner)
-        .pilotRig(BigNumber.from(1), fauxERC721.address, pilotTokenIdRigOwner);
+        ["pilotRig(uint256,address,uint256)"](
+          BigNumber.from(1),
+          fauxERC721.address,
+          pilotTokenIdRigOwner
+        );
     });
 
     it("Should not allow the same pilot to operate multiple Rigs", async function () {
@@ -996,16 +1085,16 @@ describe("Rigs", function () {
       // Set the pilot for the first Rig
       await rigs
         .connect(tokenOwner)
-        .pilotRig(
+        ["pilotRig(uint256,address,uint256)"](
           BigNumber.from(rigTokenId1),
           fauxERC721.address,
           pilotTokenId
         );
-      // Try to set the same pilot for the second Rig
+      // Try to set the same pilot for the second Rig; it should park the first Rig and pilot the second
       await expect(
         rigs
           .connect(tokenOwner)
-          .pilotRig(
+          ["pilotRig(uint256,address,uint256)"](
             BigNumber.from(rigTokenId2),
             fauxERC721.address,
             pilotTokenId
