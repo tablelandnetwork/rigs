@@ -268,16 +268,20 @@ export const Pilots = ({ rig, nfts, isOwner, p, ...props }: PilotProps) => {
           </StackItem>
         )}
       </VStack>
-      <TrainRigModal
-        rig={rig}
-        isOpen={trainModalOpen}
-        onClose={onCloseTrainModal}
-      />
-      <ParkRigModal
-        rig={rig}
-        isOpen={parkModalOpen}
-        onClose={onCloseParkModal}
-      />
+      {trainModalOpen && (
+        <TrainRigModal
+          rig={rig}
+          isOpen={trainModalOpen}
+          onClose={onCloseTrainModal}
+        />
+      )}
+      {parkModalOpen && (
+        <ParkRigModal
+          rig={rig}
+          isOpen={parkModalOpen}
+          onClose={onCloseParkModal}
+        />
+      )}
     </>
   );
 };
