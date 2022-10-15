@@ -85,6 +85,7 @@ const theme = extendTheme(
       Text: {
         variants: {
           orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
+          emptyState: { fontStyle: "italic" },
         },
       },
       Heading: {

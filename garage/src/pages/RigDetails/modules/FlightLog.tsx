@@ -6,6 +6,7 @@ import {
   Table,
   Tbody,
   Td,
+  Text,
   Tr,
   VStack,
 } from "@chakra-ui/react";
@@ -48,6 +49,11 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
               </Tr>
             );
           })}
+          {events.length === 0 && (
+            <Text p={p} variant="emptyState">
+              This Rig has never left the garage.
+            </Text>
+          )}
         </Tbody>
       </Table>
     </VStack>

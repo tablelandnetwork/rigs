@@ -8,6 +8,7 @@ import {
   Tbody,
   Thead,
   Td,
+  Text,
   Th,
   Tr,
   VStack,
@@ -53,7 +54,11 @@ export const Badges = ({ rig, p, ...props }: BadgesProps) => {
           {data.map(({ badge, pilot, visibility, badgeImageUrl }, index) => {
             return (
               <Tr key={`badges-${index}`}>
-                <Td pl={p} pr={0} width={`calc(var(--chakra-sizes-${p}) + 30px)`}>
+                <Td
+                  pl={p}
+                  pr={0}
+                  width={`calc(var(--chakra-sizes-${p}) + 30px)`}
+                >
                   <Image src={badgeImageUrl} width="30px" height="30px" />
                 </Td>
                 <Td pl={3}>{badge}</Td>
@@ -67,6 +72,11 @@ export const Badges = ({ rig, p, ...props }: BadgesProps) => {
               </Tr>
             );
           })}
+          {data.length === 0 && (
+            <Text p={p} variant="emptyState">
+              This rig has not earned any badges.
+            </Text>
+          )}
         </Tbody>
       </Table>
     </VStack>

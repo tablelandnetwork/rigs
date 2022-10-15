@@ -1,13 +1,15 @@
 import React from "react";
 import {
   Box,
-  Heading,
   Flex,
+  Heading,
   Image,
+  Spinner,
   Table,
   Tbody,
-  Tr,
   Td,
+  Text,
+  Tr,
 } from "@chakra-ui/react";
 import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
 import { useRigsActivity } from "../../../hooks/useRigsActivity";
@@ -55,6 +57,11 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                 </Tr>
               );
             })}
+          {events && events.length === 0 && (
+            <Text p={p} variant="emptyState">
+              No activity yet.
+            </Text>
+          )}
         </Tbody>
       </Table>
     </Flex>

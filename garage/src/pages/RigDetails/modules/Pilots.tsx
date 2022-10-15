@@ -17,10 +17,10 @@ import {
   StackItem,
   Table,
   Tbody,
-  Text,
-  Thead,
   Td,
+  Text,
   Th,
+  Thead,
   Tr,
   VStack,
   useDisclosure,
@@ -247,6 +247,11 @@ export const Pilots = ({ rig, nfts, isOwner, p, ...props }: PilotProps) => {
                 </Tr>
               );
             })}
+            {pilots.length === 0 && (
+              <Text px={p} py={4} variant="emptyState">
+                This Rig has never left the garage.
+              </Text>
+            )}
           </Tbody>
         </Table>
         {isOwner && (

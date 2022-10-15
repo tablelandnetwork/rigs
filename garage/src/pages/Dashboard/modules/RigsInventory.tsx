@@ -71,6 +71,12 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         </Grid>
       )}
 
+      {rigs && rigs.length === 0 && (
+        <Text variant="emptyState" pt={8}>
+          You don't own any Rigs.
+        </Text>
+      )}
+
       {!rigs && (
         <Flex width="100%" height="200px" align="center" justify="center">
           <Spinner />
