@@ -107,7 +107,7 @@ Now that we've built our Rigs data and imagery locally, we're ready to publish t
 We'll first push the Rigs images to NFT.storage.
 
 ```
-> rigs publish images
+> rigs publish renders
 2022/08/24 20:50:00 Adding folder to IPFS...
 
 ...
