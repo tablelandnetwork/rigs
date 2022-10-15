@@ -10,7 +10,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { TablelandConnectButton } from "../../components/TablelandConnectButton";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useRig } from "../../hooks/useRig";
 import { useNFTs } from "../../hooks/useNFTs";
@@ -59,7 +59,7 @@ export const RigDetails = () => {
           <Button variant="solid" as={Link} to="/dashboard">
             Dashboard
           </Button>
-          <ConnectButton />
+          <TablelandConnectButton />
         </Flex>
       </Topbar>
       <Grid

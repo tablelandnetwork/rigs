@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Heading, Flex, Stack, Text } from "@chakra-ui/react";
 import { Topbar } from "../Topbar";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { TablelandConnectButton } from "../components/TablelandConnectButton";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
 import desert from "../assets/desert-bg.png";
@@ -27,7 +27,7 @@ export const Enter = () => {
     >
       <Topbar mode="light">
         <Flex justify="flex-end" width="100%">
-          <ConnectButton />
+          <TablelandConnectButton />
         </Flex>
       </Topbar>
       <Flex
@@ -44,7 +44,7 @@ export const Enter = () => {
             with other Rig owners from across Tableland. Learn how to pilot your
             Rig to earn flight-time and badges in the Garage.
           </Text>
-          <ConnectButton />
+          <TablelandConnectButton size="large" />
         </Stack>
       </Flex>
     </Flex>

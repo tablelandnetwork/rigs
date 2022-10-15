@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Flex } from "@chakra-ui/react";
 import { Topbar } from "../../Topbar";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { TablelandConnectButton } from "../../components/TablelandConnectButton";
 import { RigsInventory } from "./modules/RigsInventory";
 import { Stats } from "./modules/Stats";
 import { Activity } from "./modules/Activity";
@@ -24,7 +24,7 @@ export const Dashboard = () => {
     >
       <Topbar>
         <Flex justify="flex-end" width="100%">
-          <ConnectButton />
+          <TablelandConnectButton />
         </Flex>
       </Topbar>
       <Flex
