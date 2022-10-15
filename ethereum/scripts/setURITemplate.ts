@@ -18,14 +18,17 @@ async function main() {
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
   // Get URI template
-  if (rigsDeployment.tokensTable === "") {
-    throw Error(`missing table names entries in config`);
+  if (rigsDeployment.attributesTable === "") {
+    throw Error(`missing attributes table entry in deployments`);
   }
-
+  if (rigsDeployment.lookupsTable === "") {
+    throw Error(`missing lookups table entry in deployments`);
+  }
   const uriTemplate = getURITemplate(
     rigsDeployment.tablelandHost,
-    rigsDeployment.tokensTable,
-    rigsDeployment.attributesTable
+    rigsDeployment.attributesTable,
+    rigsDeployment.lookupsTable,
+    rigsDeployment.displayAttributes
   );
 
   // Update base URI
