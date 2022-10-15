@@ -230,6 +230,26 @@ interface ITablelandRigs {
     function unpause() external;
 
     /**
+     * @dev Initializes Rig pilots with table creation and `_rigsStatus` array.
+     *
+     * The following defines the table schema:
+     *
+     *      id integer primary key,
+     *      rig_id integer not null,
+     *      owner text not null,
+     *      pilot_contract text,
+     *      pilot_id integer,
+     *      start_time integer not null,
+     *      end_time integer
+     */
+    function initPilots() external;
+
+    /**
+     * @dev Returns the Tableland table in the form `{prefix}_{tableName}_{tableId}`.
+     */
+    function pilotsTable() external returns (string memory);
+
+    /**
      * @dev Retrieves pilot info for a Rig.
      *
      * tokenId - the unique Rig token identifier

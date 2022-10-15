@@ -93,8 +93,7 @@ contract TablelandRigs is
         address payable _beneficiary,
         address payable royaltyReceiver,
         bytes32 _allowlistRoot,
-        bytes32 _waitlistRoot,
-        uint256 rigPilotSessionsTableId
+        bytes32 _waitlistRoot
     ) public initializerERC721A initializer {
         __ERC721A_init("Tableland Rigs", "RIG");
         __ERC721AQueryable_init();
@@ -111,8 +110,6 @@ contract TablelandRigs is
         allowlistRoot = _allowlistRoot;
         waitlistRoot = _waitlistRoot;
         mintPhase = MintPhase.CLOSED;
-        _rigPilotSessionsTableId = rigPilotSessionsTableId;
-        _rigsStatus = new uint8[](_maxSupply);
     }
 
     // =============================
@@ -395,13 +392,23 @@ contract TablelandRigs is
         _unpause();
     }
 
-    // tmp
-    function initRigsStatus() external onlyOwner {
+    /**
+     * @dev See {ITablelandRigs-initPilots}.
+     */
+    function initPilots() external onlyOwner {
+        initRigsStatus(); // TODO to remove `_rigsStatus` for optimized logic; won't need this
+        createPilotsTable();
+    }
+
+    // TODO to remove `_rigsStatus` for optimized logic; won't need this
+    function initRigsStatus() internal {
         _rigsStatus = new uint8[](maxSupply);
     }
 
-    // tmp
-    function createPilotsTable() external onlyOwner {
+    /**
+     * @dev See {ITablelandRigs-createPilotsTable}.
+     */
+    function createPilotsTable() internal {
         _rigPilotSessionsTableId = TablelandDeployments.get().createTable(
             address(this),
             SQLHelpers.toCreateFromSchema(
@@ -411,36 +418,14 @@ contract TablelandRigs is
         );
     }
 
-    // tmp
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
-        return 0x150b7a02;
-    }
-
-    // tmp
-    function getTrainSQL(uint256 tokenId)
-        external
-        view
-        returns (string memory)
-    {
+    /**
+     * @dev See {ITablelandRigs-createPilotsTable}.
+     */
+    function pilotsTable() external view returns (string memory) {
         return
-            SQLHelpers.toInsert(
+            SQLHelpers.toNameFromId(
                 RIG_PILOT_SESSIONS_PREFIX,
-                _rigPilotSessionsTableId,
-                "rig_id,owner,start_time",
-                string.concat(
-                    StringsUpgradeable.toString(uint64(tokenId)),
-                    ",",
-                    SQLHelpers.quote(
-                        StringsUpgradeable.toHexString(ownerOf(tokenId))
-                    ),
-                    ",",
-                    StringsUpgradeable.toString(uint64(block.number))
-                )
+                _rigPilotSessionsTableId
             );
     }
 
@@ -646,34 +631,52 @@ contract TablelandRigs is
             block.number,
             172800
         );
-        if (
-            !success ||
-            (_pilots[tokenId].index == 1 &&
-                !(blockDifference > _pilots[tokenId].startTime))
-        ) {
-            revert RigIsNotTrained(tokenId);
-        }
         // Update the pilot, resetting values (except `index`) to `0` to indicate it's now parked
         _pilots[tokenId].startTime = 0;
         _pilots[tokenId].pilotContract = address(0);
         _pilots[tokenId].pilotId = 0;
         _rigsStatus[tokenId - 1] = 0;
-        // Update the row in the `pilot_sessions` table with its `end_time`
-        string memory setters = string.concat(
-            "start_time=0,end_time=(",
-            StringsUpgradeable.toString(uint64(block.number)),
-            "-",
-            StringsUpgradeable.toString(startTime),
-            ")"
-        );
-        // Only update the row with the matching `rig_id` and `start_time`
-        string memory filters = string.concat(
-            "rig_id=",
-            StringsUpgradeable.toString(uint64(tokenId)),
-            " and ",
-            "start_time=",
-            StringsUpgradeable.toString(startTime)
-        );
+        // Check if training has completed
+        string memory setters;
+        string memory filters;
+        if (
+            !success ||
+            !(_pilots[tokenId].index == 1 &&
+                (blockDifference > _pilots[tokenId].startTime))
+        ) {
+            // Pilot training is incomplete; reset the training pilot `index` & Rig must go through training again
+            _pilots[tokenId].index = 0;
+            // Update the row in the `pilot_sessions` table with its `end_time` equal to the `start_time` (no time)
+            setters = string.concat(
+                "start_time=0,end_time=",
+                StringsUpgradeable.toString(startTime)
+            );
+            // Only update the row with the matching `rig_id` and `start_time`
+            filters = string.concat(
+                "rig_id=",
+                StringsUpgradeable.toString(uint64(tokenId)),
+                " and ",
+                "start_time=",
+                StringsUpgradeable.toString(startTime)
+            );
+        } else {
+            // If training completed, update the row in the `pilot_sessions` table with its `end_time`
+            setters = string.concat(
+                "start_time=0,end_time=(",
+                StringsUpgradeable.toString(uint64(block.number)),
+                "-",
+                StringsUpgradeable.toString(startTime),
+                ")"
+            );
+            // Only update the row with the matching `rig_id` and `start_time`
+            filters = string.concat(
+                "rig_id=",
+                StringsUpgradeable.toString(uint64(tokenId)),
+                " and ",
+                "start_time=",
+                StringsUpgradeable.toString(startTime)
+            );
+        }
         // Update the pilot information in the Tableland `pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
@@ -681,10 +684,10 @@ contract TablelandRigs is
                 pilot_sessions 
             SET 
                 start_time=0, 
-                end_time=(block.number-startTime) 
+                end_time=(block.number-startTime) # Or, if incomplete: end_time=start_time
             WHERE 
                 rig_id=tokenId 
-                and start_time=startTime
+                and start_time=startTime 
          */
         TablelandDeployments.get().runSQL(
             address(this),
@@ -763,9 +766,9 @@ contract TablelandRigs is
                 values[tokenId + quantity - end] = string.concat(
                     StringsUpgradeable.toString(uint64(tokenId)),
                     ",",
-                    StringsUpgradeable.toHexString(to),
+                    SQLHelpers.quote(StringsUpgradeable.toHexString(to)),
                     ",",
-                    Strings.toHexString(uint64(block.number))
+                    Strings.toString(uint64(block.number))
                 );
             }
             TablelandDeployments.get().runSQL(
@@ -789,15 +792,27 @@ contract TablelandRigs is
                     string.concat(
                         StringsUpgradeable.toString(uint64(startTokenId)),
                         ",",
-                        StringsUpgradeable.toHexString(to),
+                        SQLHelpers.quote(StringsUpgradeable.toHexString(to)),
                         ",",
-                        Strings.toHexString(uint64(block.number))
+                        Strings.toString(uint64(block.number))
                     )
                 )
             );
         }
         */
         super._afterTokenTransfers(from, to, startTokenId, quantity);
+    }
+
+    /**
+     * @dev Required to create and receive an ERC-721 Tableland TABLE token for `pilot_sessions`.
+     */
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public pure returns (bytes4) {
+        return 0x150b7a02;
     }
 
     // =============================
