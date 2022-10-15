@@ -35,7 +35,10 @@ export const RigDetails = () => {
   const { id } = useParams();
   const { rig } = useRig(id || "");
   const { rigs } = useOwnedRigs();
-  const { nfts } = useNFTs(rig?.pilotSessions);
+  const pilots = useMemo(() => {
+    return rig?.pilotSessions.filter((v) => v.contract);
+  }, [rig]);
+  const { nfts } = useNFTs(pilots);
 
   const userOwnsRig = useMemo(() => {
     return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));
@@ -87,7 +90,12 @@ export const RigDetails = () => {
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <Pilots rig={rig} nfts={nfts} isOwner={userOwnsRig} {...MODULE_PROPS} />
+                <Pilots
+                  rig={rig}
+                  nfts={nfts}
+                  isOwner={userOwnsRig}
+                  {...MODULE_PROPS}
+                />
                 <Badges rig={rig} nfts={nfts} {...MODULE_PROPS} />
                 <FlightLog rig={rig} nfts={nfts} {...MODULE_PROPS} />
               </VStack>
