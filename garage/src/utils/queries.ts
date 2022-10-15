@@ -37,7 +37,7 @@ export const selectRigs = (ids: string[]): string => {
         'tokenId', cast(session.pilot_id as text)
       )
       FROM ${pilotSessionsTable} AS session
-      WHERE session.rig_id = rig_id AND session.end_time IS NULL
+      WHERE session.rig_id = attributes.rig_id AND session.end_time IS NULL
     ) AS pilot
   FROM ${attributesTable} AS attributes
   JOIN ${lookupsTable}
