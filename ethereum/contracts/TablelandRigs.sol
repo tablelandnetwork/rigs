@@ -435,7 +435,9 @@ contract TablelandRigs is
                 string.concat(
                     StringsUpgradeable.toString(uint64(tokenId)),
                     ",",
-                    StringsUpgradeable.toHexString(ownerOf(tokenId)),
+                    SQLHelpers.quote(
+                        StringsUpgradeable.toHexString(ownerOf(tokenId))
+                    ),
                     ",",
                     StringsUpgradeable.toString(uint64(block.number))
                 )
@@ -497,7 +499,9 @@ contract TablelandRigs is
                 string.concat(
                     StringsUpgradeable.toString(uint64(tokenId)),
                     ",",
-                    StringsUpgradeable.toHexString(ownerOf(tokenId)),
+                    SQLHelpers.quote(
+                        StringsUpgradeable.toHexString(ownerOf(tokenId))
+                    ),
                     ",",
                     StringsUpgradeable.toString(uint64(block.number))
                 )
@@ -578,9 +582,11 @@ contract TablelandRigs is
                 string.concat(
                     StringsUpgradeable.toString(uint64(tokenId)),
                     ",",
-                    StringsUpgradeable.toHexString(ownerOf(tokenId)),
+                    SQLHelpers.quote(
+                        StringsUpgradeable.toHexString(ownerOf(tokenId))
+                    ),
                     ",",
-                    Strings.toHexString(pilotContract),
+                    SQLHelpers.quote(Strings.toHexString(pilotContract)),
                     ",",
                     StringsUpgradeable.toString(uint64(pilotTokenId)),
                     ",",
