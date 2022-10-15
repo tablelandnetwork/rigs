@@ -98,6 +98,7 @@ export const selectRigsActivity = (
   SELECT
     cast(rig_id as text),
     ${THUMB_IPFS_URI_SELECT} as "thumb",
+    ${IMAGE_IPFS_URI_SELECT} as "image",
     pilot_contract,
     pilot_id,
     start_time,
