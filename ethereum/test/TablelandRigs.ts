@@ -4,11 +4,10 @@ import chaiAsPromised from "chai-as-promised";
 import { BigNumber, utils } from "ethers";
 import { ethers, network } from "hardhat";
 import { PaymentSplitter, TablelandRigs } from "../typechain-types";
-import { TablelandTables } from "@tableland/evm";
 import { MerkleTree } from "merkletreejs";
 import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
 import { getURITemplate } from "../helpers/uris";
-import { deployTablelandTables, tableSetup } from "./utils";
+import { deployTablelandTables } from "./utils";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 chai.use(chaiAsPromised);
@@ -29,14 +28,11 @@ describe("Rigs", function () {
   const waitlist: AllowList = {};
   let allowlistTree: MerkleTree;
   let waitlistTree: MerkleTree;
-  let rigPilotSessionsTableId: BigNumber;
-  // Required during testing with The Garage methods that call `runSQL`
-  let tables: TablelandTables;
 
   // Use a fixture, which runs *once* to help ensure deterministic contract addresses
   async function deployRigsFixture() {
     // First, deploy the `TablelandTables` registry contract (required when using `TablelandDeployments.sol`)
-    tables = await deployTablelandTables();
+    await deployTablelandTables();
 
     // Account setup
     accounts = await ethers.getSigners();
@@ -68,9 +64,6 @@ describe("Rigs", function () {
     )) as PaymentSplitter;
     await splitter.deployed();
 
-    // Create a `rig_pilot_sessions` table using the `beneficiary` (i.e., not created by the Rigs contract)
-    rigPilotSessionsTableId = await tableSetup(beneficiary, tables);
-
     const RigsFactory = await ethers.getContractFactory("TablelandRigs");
     rigs = await (await RigsFactory.deploy()).deployed();
     await (
@@ -80,8 +73,7 @@ describe("Rigs", function () {
         beneficiary.address,
         splitter.address,
         allowlistTree.getHexRoot(),
-        waitlistTree.getHexRoot(),
-        BigNumber.from(rigPilotSessionsTableId)
+        waitlistTree.getHexRoot()
       )
     ).wait();
     await rigs.setContractURI("https://foo.xyz");
@@ -94,12 +86,14 @@ describe("Rigs", function () {
         beneficiary.address,
         splitter.address,
         allowlistTree.getHexRoot(),
-        waitlistTree.getHexRoot(),
-        BigNumber.from(rigPilotSessionsTableId)
+        waitlistTree.getHexRoot()
       )
     ).to.be.revertedWith(
       "ERC721A__Initializable: contract is already initialized"
     );
+
+    // Create a `pilot_sessions` table owned by contract and initialize `_rigsStatus` array
+    await rigs.initPilots();
   }
 
   beforeEach(async function () {
@@ -926,7 +920,7 @@ describe("Rigs", function () {
       // Attempt to park the Rig with an address that doesn't own the token
     });
 
-    it("Should not park Rig if training is incomplete or already parked", async function () {
+    it("Should not park Rig if already parked", async function () {
       // First, mint a Rig to `tokenOwner`
       await rigs.setMintPhase(3);
       const tokenOwner = accounts[4];
@@ -938,11 +932,37 @@ describe("Rigs", function () {
       const tokenId = event.args?.tokenId;
       // Train the Rig, putting it in-flight, and advance 1 block
       await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
-      // Attempt to park the Rig before training has been completed
+      // Park the Rig before training has been completed
       await expect(
         rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
-      ).to.be.rejectedWith("RigIsNotTrained");
-      // Advance 172800 blocks (30 days)
+      ).to.emit(rigs, "Parked");
+      // Try to park the Rig again
+      await expect(
+        rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
+      ).to.be.rejectedWith("RigIsParked");
+    });
+
+    it("Should park Rig and reset pilot 'index' if training incomplete", async function () {
+      // First, mint a Rig to `tokenOwner`
+      await rigs.setMintPhase(3);
+      const tokenOwner = accounts[4];
+      const tx = await rigs
+        .connect(tokenOwner)
+        ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+      const receipt = await tx.wait();
+      const [event] = receipt.events ?? [];
+      const tokenId = event.args?.tokenId;
+      // Train the Rig, putting it in-flight, and advance 1 block
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
+      // Park the Rig before training has been completed
+      await expect(
+        rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
+      ).to.emit(rigs, "Parked");
+      // Check that the index is now `0` since training was incomplete
+      let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+      expect(pilotInfo.index).to.equal(BigNumber.from(0));
+      // Start training again and advance 172800 blocks (30 days)
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       await network.provider.send("hardhat_mine", [
         ethers.utils.hexValue(172800),
       ]);
@@ -950,10 +970,9 @@ describe("Rigs", function () {
       await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId)))
         .to.emit(rigs, "Parked")
         .withArgs(BigNumber.from(tokenId));
-      // Try to park the Rig again
-      await expect(
-        rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
-      ).to.be.rejectedWith("RigIsParked");
+      // Validate the pilot `index` is `1` and nothing was reset now that training is complete
+      pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+      expect(pilotInfo.index).to.equal(BigNumber.from(1));
     });
 
     it("Should not allow non-ERC721 / Rigs contract for pilots", async function () {

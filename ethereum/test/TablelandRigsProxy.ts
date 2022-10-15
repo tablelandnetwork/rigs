@@ -86,7 +86,6 @@ async function deploy(
       splitter,
       root,
       root,
-      1,
     ],
     {
       kind: "uups",
