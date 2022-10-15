@@ -1,52 +1,90 @@
 import React from "react";
 import {
   Alert,
+  AlertIcon,
   AlertTitle,
   AlertDescription,
   Box,
   Link,
+  Spinner,
 } from "@chakra-ui/react";
-import { useContractWrite } from "wagmi";
+import { useContractWrite, useWaitForTransaction } from "wagmi";
 
 type TransactionStateAlertProps = Omit<
   ReturnType<typeof useContractWrite>,
   "reset" | "variables" | "write" | "writeAsync"
 >;
 
-export const TransactionStateAlert = ({
-  data,
-  isIdle,
-  isError,
-  isLoading,
-  isSuccess,
-}: TransactionStateAlertProps) => {
-  if (isIdle || !data?.hash) return null;
+export const TransactionStateAlert = (props: TransactionStateAlertProps) => {
+  const {
+    data,
+    isIdle: transactionIdle,
+    isLoading: transactionLoading,
+    isError: transactionError,
+    isSuccess: transactionSuccess,
+  } = props;
 
-  const etherscanLink = `https://etherscan.io/tx/${data.hash}`;
+  if (transactionIdle) return null;
 
-  const status = isLoading
-    ? "info"
-    : isSuccess
-    ? "success"
-    : isError
-    ? "error"
-    : undefined;
+  const {
+    isError: waitFailed,
+    isLoading: waitLoading,
+    data: waitData,
+  } = useWaitForTransaction(data);
+
+  const etherscanLink =
+    process.env.NODE_ENV === "development"
+      ? `https://mumbai.polygonscan.com/tx/${data?.hash}`
+      : `https://etherscan.io/tx/${data?.hash}`;
+
+  const hasReceipt = !!waitData;
+
+  const isSuccess = hasReceipt ? waitData.status === 1 : false;
+  const isError = hasReceipt ? waitData.status === 0 : false;
+
+  const status =
+    transactionLoading || waitLoading
+      ? "info"
+      : transactionError
+      ? "warning"
+      : waitFailed
+      ? "error"
+      : isSuccess
+      ? "success"
+      : isError
+      ? "error"
+      : undefined;
 
   return (
     <Alert status={status} mt={4}>
       <Box>
+        {(transactionLoading || waitLoading) && <Spinner mr={3} size="xs" />}
+        {(isError || isSuccess) && <AlertIcon />}
+      </Box>
+      <Box>
         <AlertTitle>
-          {isLoading && "Transaction is pending"}
-          {isError && "Transaction failed"}
-          {isSuccess && "Transaction successful"}
+          {transactionLoading && "Check your wallet."}
+          {transactionError && "Transaction not submitted."}
+          {transactionSuccess && waitLoading && "Transaction is pending."}
+          {transactionSuccess &&
+            waitFailed &&
+            "Failed to get transaction status."}
+          {transactionSuccess && isError && "Transaction failed."}
+          {transactionSuccess && isSuccess && "Transaction successful."}
         </AlertTitle>
 
-        <AlertDescription>
-          See the transaction on{" "}
-          <Link href={etherscanLink} isExternal>
-            Etherscan
-          </Link>
-        </AlertDescription>
+        {transactionSuccess && (
+          <AlertDescription>
+            See the transaction on{" "}
+            <Link
+              href={etherscanLink}
+              isExternal
+              sx={{ textDecoration: "underline" }}
+            >
+              Etherscan
+            </Link>
+          </AlertDescription>
+        )}
       </Box>
     </Alert>
   );
