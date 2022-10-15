@@ -41,11 +41,18 @@ var viewCmd = &cobra.Command{
 		if !viper.GetBool("no-viewer") {
 			r.PathPrefix("/").Handler(http.FileServer(http.Dir("viewer/dist")))
 			checkErr(os.Setenv("API", api))
-			npmCmd := exec.Command("npm", "run", "generate")
-			npmCmd.Dir = "viewer"
-			stdout, err := npmCmd.Output()
+
+			installCmd := exec.Command("npm", "install")
+			installCmd.Dir = "viewer"
+			installOut, err := installCmd.Output()
 			checkErr(err)
-			fmt.Println(string(stdout))
+			fmt.Println(string(installOut))
+
+			runCmd := exec.Command("npm", "run", "generate")
+			runCmd.Dir = "viewer"
+			runOut, err := runCmd.Output()
+			checkErr(err)
+			fmt.Println(string(runOut))
 		}
 
 		go func() {
