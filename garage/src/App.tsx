@@ -125,6 +125,18 @@ const theme = extendTheme(
           textTransform: "uppercase",
         },
         variants: {
+          connect: {
+            bg: "black",
+            color: "white",
+            fontWeight: "normal",
+          },
+          disconnect: {
+            bg: "inherit",
+            color: "paper",
+            border: "none",
+            fontWeight: "normal",
+            _hover: { textDecoration: "underline" },
+          },
           "outlined-background": {
             bg: "bg",
             borderColor: "primary",
