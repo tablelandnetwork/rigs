@@ -84,7 +84,7 @@ const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
             Train rig
           </Button>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {isSuccess ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -125,7 +125,7 @@ const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
             Park rig
           </Button>
           <Button variant="ghost" onClick={onClose}>
-            Cancel
+            {isSuccess ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
