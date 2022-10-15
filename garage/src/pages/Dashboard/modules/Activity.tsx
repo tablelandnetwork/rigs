@@ -39,16 +39,19 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
               const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
               return (
                 <Tr key={`activity-row-${index}`}>
-                  <Td pl={p} pr={0}>
+                  <Td
+                    pl={p}
+                    pr={0}
+                    width={`calc(var(--chakra-sizes-${p}) + 20px)`}
+                  >
                     <Image
                       src={thumbUrl}
                       alt={`Rig ${rigId}`}
                       sx={{ width: "20px", height: "20px" }}
                     />
                   </Td>
-                  <Td textAlign="start">{`#${rigId}`}</Td>
+                  <Td>{`#${rigId}`}</Td>
                   <Td
-                    textAlign="end"
                     pr={p}
                     sx={{
                       maxWidth: { base: "200px", md: "300px" },
@@ -56,6 +59,7 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                       overflow: "hidden",
                       whiteSpace: "nowrap",
                     }}
+                    isNumeric
                   >
                     {action}
                   </Td>
