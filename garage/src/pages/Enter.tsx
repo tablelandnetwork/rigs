@@ -38,8 +38,16 @@ export const Enter = () => {
         height="100%"
       >
         <Stack maxWidth="650px" align="center" color="white">
-          <Heading as="h1" variant="orbitron" fontSize="64">Enter the Garage</Heading>
-          <Text textAlign="center">
+          <Heading as="h1" variant="orbitron" fontSize="64">
+            Enter the Garage.
+          </Heading>
+          <Text
+            textAlign="center"
+            fontSize="16"
+            pt={6}
+            pb={12}
+            maxWidth="445px"
+          >
             Tired? Thirsty? Sunburned? Come take a break from the heat and hang
             with other Rig owners from across Tableland. Learn how to pilot your
             Rig to earn flight-time and badges in the Garage.
