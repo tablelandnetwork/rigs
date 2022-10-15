@@ -5,6 +5,7 @@ import {
   Flex,
   GridItem,
   SimpleGrid,
+  Spinner,
   Stack,
   Text,
 } from "@chakra-ui/react";
@@ -39,6 +40,11 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
               </GridItem>
             );
           })}
+        {!stats && (
+          <Flex justify="center">
+            <Spinner />
+          </Flex>
+        )}
       </SimpleGrid>
     </Flex>
   );

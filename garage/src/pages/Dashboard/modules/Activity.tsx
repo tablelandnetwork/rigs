@@ -27,6 +27,11 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
       {...otherProps}
     >
       <Heading px={p}>Activity</Heading>
+      {!events && (
+        <Flex align="center" justify="center">
+          <Spinner m={p} size="md" />
+        </Flex>
+      )}
       <Table>
         <Tbody>
           {events &&
