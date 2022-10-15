@@ -35,7 +35,7 @@ var buildCmd = &cobra.Command{
 
 		checkErr(localStore.ClearRigs(ctx))
 
-		b := builder.NewBuilder(localStore, ipfsClient)
+		b := builder.NewBuilder(localStore)
 
 		jobMeta := make([]*local.OriginalRig, count)
 

@@ -82,11 +82,11 @@ Now that our Rigs data is built, we can render the corresponding images for all 
 > rigs local render
 ```
 
-The resulting images will be written to a folder called `./renders`. Each subfolder name corresponds to a Rig ID and inside each Rig ID folder are the four images created for the Rig.
+The resulting images will be written to a folder called `./renders`. Each subfolder name corresponds to a Rig ID and inside each Rig ID folder are the six images created for the Rig.
 
 ```
 > ls ./renders/1/
-image.png        image_alpha.png  thumb.png        thumb_alpha.png
+image_full.png        image_full_alpha.png        image_medium.png        image_medium_alpha.png        image_thumb.png        image_thumb_alpha.png
 ```
 
 You can launch a simple local web app to view the results. 
@@ -107,7 +107,7 @@ Now that we've built our Rigs data and imagery locally, we're ready to publish t
 We'll first push the Rigs images to NFT.storage.
 
 ```
-> rigs publish images
+> rigs publish renders
 2022/08/24 20:50:00 Adding folder to IPFS...
 
 ...
@@ -118,29 +118,27 @@ Images published with CID bafybeiffjkwh6jndds6mvkflhxgkpod3fvc7esaueabn5j6jva5wn
 > **Note**
 > Pushing imagery to NFT.storage requires you pass a NFT.storate API key using the `--nft-storage-key` flag. In this example, it has be set using the `RIGS_NFT_STORAGE_KEY` environment variable.
 
-The resulting CID is tracked in `local.db`'s `cids` table and used in an upcoming step to write the Rigs data to Tableland. Before we can do that, we must first create the tables that will hold our Rigs and attributes data on Tableland.
+The resulting CID is tracked in `local.db`'s `cids` table and used in an upcoming step to write the Rigs data to Tableland. Before we can do that, we must first create the tables that will hold our Rigs data on Tableland.
 
 ```
-> rigs publish schema --rigs --attrs --to-tableland
-created table rigs_80001_1217
+> rigs publish schema --attrs --lookups --to-tableland
 created table rig_attributes_80001_1218
+created table lookups_80001_1219
 ```
 
-The `--attrs` and `--rigs` flags specify that we want to create the tables to hold the Rigs and their attributes. The names of the resulting tables are tracked in `local.db`'s table called `table_names`. By default, the tables are created on Polygon Mumbai, but you can choose a different chain with the `--chain` flag.
+The `--attrs` and `--lookups` flags specify that we want to create the tables to hold the Rigs attributes and lookup information about the imagery we've stored on NFT.storage(IPFS). The names of the resulting tables are tracked in `local.db`'s table called `table_names`. By default, the tables are created on Polygon Mumbai, but you can choose a different chain with the `--chain` flag.
 
 > **Note**
-> All write interactions with Tableland (creating and writing to tables) must provide a private key hex string using the `--private-key` flag as well as an EVM backend provider API key using the `--infura` or `--alchemy` flags. In these examples, you can assume the flags were set using the corresponding environment variables `RIGS_PRIVATE_KEY` and `RIGS_INFURA` or `RIGS_ALCHEMY`.
+> All mutating interactions with Tableland (creating and writing to tables) must provide a private key hex string using the `--private-key` flag as well as an EVM backend provider API key using the `--infura` or `--alchemy` flags. In these examples, you can assume the flags were set using the corresponding environment variables `RIGS_PRIVATE_KEY` and `RIGS_INFURA` or `RIGS_ALCHEMY`.
 
 Now we can write our Rigs data to those Tableland tables. The following command transforms our built Rigs data stored in `local.db` into the appropriate SQL statements to populate the Tableland tables, and then executes those SQL statements using Tableland's [Go client](https://pkg.go.dev/github.com/textileio/go-tableland/pkg/client).
 
 ```
-> rigs publish data --rigs --attrs --to-tableland
-processed job 4. rig attrs offset 0
-processed job 1. rigs with offset 0
-processed job 2. rigs with offset 70
-processed job 3. rigs with offset 140
-processed job 5. rig attrs offset 70
-processed job 6. rig attrs offset 140
+> rigs publish data --attrs --lookups --to-tableland
+processed job 1. rig attrs offset 0
+processed job 2. rig attrs offset 70
+processed job 3. rig attrs offset 140
+processed job 4. lookups
 done
 ```
 
@@ -161,7 +159,7 @@ Rigs inherits from [ERC721A](https://chiru-labs.github.io/ERC721A). Rigs is an i
 
 ## Configuration
 
-Configuration is managed from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts). These files include information needed for [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata), the ERC2981 NFT Royalty Standard, royalty receivers for a payment splitter, max supply, mint price, mint revenue receiver, mint phase, allowlist files, and Tableland tables used for Rig parts, layers, tokens, and attributes that were covered in the Rigs CLI section above.
+Configuration is managed from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts). These files include information needed for [contract-level metadata](https://docs.opensea.io/docs/contract-level-metadata), the ERC2981 NFT Royalty Standard, royalty receivers for a payment splitter, max supply, mint price, mint revenue receiver, mint phase, allowlist files, and Tableland tables used for Rig parts, layers, attributes and lookups that were covered in the Rigs CLI section above.
 
 The [scripts](./ethereum/scripts/) folder contains a number of helpful scripts covered below. The input to these scripts comes from the [Hardhat config file](./ethereum/hardhat.config.ts) and [`deployments.ts`](./ethereum/deployments.ts).
 
@@ -209,7 +207,7 @@ See [the tests](./ethereum/test/TablelandRigs.ts) to get a deeper view into the 
 
 ## Tableland NFT Metadata
 
-NFT metadata can be queried from Tableland by calling Tableland's `/query` endpoint with the appropriate SQL query string. For Rigs, this query is defined in [ethereum/helpers/uris.ts](ethereum/helpers/uris.ts). This query string is used by the contract function `tokenURI(uint256 tokenId)` to return the Tableland `/query` URL for the specified token ID. An example of this URL for Rig 2856 can be seen [here](https://testnet.tableland.network/query?mode=list&s=select%20json_object(%27name%27%2C%27Rig%20%23%27%7C%7Cid%2C%27external_url%27%2C%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%7C%7Cid%2C%27image%27%2Cimage%2C%27image_alpha%27%2Cimage_alpha%2C%27thumb%27%2Cthumb%2C%27thumb_alpha%27%2Cthumb_alpha%2C%27attributes%27%2Cjson_group_array(json_object(%27display_type%27%2Cdisplay_type%2C%27trait_type%27%2Ctrait_type%2C%27value%27%2Cvalue)))%20from%20rigs_5_28%20join%20rig_attributes_5_27%20on%20rigs_5_28.id%3Drig_attributes_5_27.rig_id%20where%20id%3D2856%20group%20by%20id%3B).
+NFT metadata can be queried from Tableland by calling Tableland's `/query` endpoint with the appropriate SQL query string. For Rigs, this query is defined in [ethereum/helpers/uris.ts](ethereum/helpers/uris.ts). This query string is used by the contract function `tokenURI(uint256 tokenId)` to return the Tableland `/query` URL for the specified token ID. An example of this URL for Rig 2856 can be seen [here](https://testnet.tableland.network/query?extract=true&unwrap=true&s=select%20json_object(%27name%27%2C%27Rig%20%23%27%7C%7Cid%2C%27external_url%27%2C%27https%3A%2F%2Ftableland.xyz%2Frigs%2F%27%7C%7Cid%2C%27image%27%2Cimage%2C%27image_alpha%27%2Cimage_alpha%2C%27thumb%27%2Cthumb%2C%27thumb_alpha%27%2Cthumb_alpha%2C%27attributes%27%2Cjson_group_array(json_object(%27display_type%27%2Cdisplay_type%2C%27trait_type%27%2Ctrait_type%2C%27value%27%2Cvalue)))%20from%20rigs_5_28%20join%20rig_attributes_5_27%20on%20rigs_5_28.id%3Drig_attributes_5_27.rig_id%20where%20id%3D2856%20group%20by%20id%3B).
 
 That metadata URL is unique in that it requires the token ID be inserted into the middle of the URL string, something not typically supported by ERC721 implementations. Additionally, during the Rigs minting process, we chose to make visible the minted Rigs images and top-level metadata, while hiding the more detailed attribute metadata until after the mint period ended. This required being able to change the URI returned from `tokenURI(uint256 tokenId)` from the SQL query that hides attribute data to the one that returns it. 
 

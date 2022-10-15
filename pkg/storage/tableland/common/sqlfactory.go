@@ -8,6 +8,7 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
+	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 
 	// Import the SQLite driver.
 	_ "github.com/doug-martin/goqu/v9/dialect/sqlite3"
@@ -38,42 +39,20 @@ func (s *SQLFactory) SQLForInsertingParts(table string, parts []local.Part) (str
 }
 
 // SQLForInsertingLayers returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingLayers(table string, cid string, layers []local.Layer) (string, error) {
+func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (string, error) {
 	var vals [][]interface{}
 	for _, layer := range layers {
 		coloredPart := fmt.Sprintf("%s %s", layer.Color, layer.PartName)
 		vals = append(
 			vals,
-			goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, fmt.Sprintf("ipfs://%s/%s", cid, layer.Path)},
+			goqu.Vals{layer.ID, layer.Fleet, coloredPart, layer.Position, layer.Path},
 		)
 	}
-	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "cid").Vals(vals...)
+	ds := s.d.Insert(table).Cols("id", "fleet", "rig_attributes_value", "position", "path").Vals(vals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert parts: %v", err)
 	}
-	return clean(sql), nil
-}
-
-// SQLForInsertingRigs returns the SQL statement.
-func (s *SQLFactory) SQLForInsertingRigs(rigsTable, cid string, rigs []local.Rig) (string, error) {
-	var rigVals [][]interface{}
-	for _, rig := range rigs {
-		rigVals = append(rigVals, goqu.Vals{
-			rig.ID,
-			fmt.Sprintf("ipfs://%s/%d/image.png", cid, rig.ID),
-			fmt.Sprintf("ipfs://%s/%d/image_alpha.png", cid, rig.ID),
-			fmt.Sprintf("ipfs://%s/%d/thumb.png", cid, rig.ID),
-			fmt.Sprintf("ipfs://%s/%d/thumb_alpha.png", cid, rig.ID),
-		})
-	}
-
-	ds := s.d.Insert(rigsTable).Cols("id", "image", "image_alpha", "thumb", "thumb_alpha").Vals(rigVals...)
-	sql, _, err := ds.ToSQL()
-	if err != nil {
-		return "", fmt.Errorf("creating sql to insert rigs: %v", err)
-	}
-
 	return clean(sql), nil
 }
 
@@ -124,6 +103,38 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 		return "", fmt.Errorf("creating sql to insert rig attributes: %v", err)
 	}
 
+	return clean(sql), nil
+}
+
+// SQLForInsertingLookups returns the SQL statement.
+func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tableland.Lookups) (string, error) {
+	ds := s.d.Insert(lookupsTable).Cols(
+		"renders_cid",
+		"layers_cid",
+		"image_full_name",
+		"image_full_alpha_name",
+		"image_medium_name",
+		"image_medium_alpha_name",
+		"image_thumb_name",
+		"image_thumb_alpha_name",
+		"animation_base_url",
+	).Vals(
+		[]interface{}{
+			lookups.RendersCid,
+			lookups.LayersCid,
+			lookups.ImageFullName,
+			lookups.ImageFullAlphaName,
+			lookups.ImageMediumName,
+			lookups.ImageMediumAlphaName,
+			lookups.ImageThumbName,
+			lookups.ImageThumbAlphaName,
+			lookups.AnimationBaseURL,
+		},
+	)
+	sql, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert lookups: %v", err)
+	}
 	return clean(sql), nil
 }
 

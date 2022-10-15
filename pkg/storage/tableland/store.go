@@ -33,20 +33,8 @@ var (
 			fleet text not null,
 			rig_attributes_value text not null,
 			position integer not null,
-			cid text not null,
+			path text not null,
 			unique(fleet,rig_attributes_value,position)
-		)`,
-	}
-	// RigsDefinition defines the rigs table.
-	RigsDefinition = TableDefinition{
-		Prefix: "rigs",
-		Schema: `(
-			id integer primary key,
-			image text,
-			image_alpha text,
-			thumb text,
-			thumb_alpha text,
-			animation_url text
 		)`,
 	}
 	// RigAttributesDefinition defines the rig attribes table.
@@ -60,17 +48,59 @@ var (
 			unique(rig_id, trait_type)
 		)`,
 	}
+	// LookupsDefinition defines the lookups table.
+	LookupsDefinition = TableDefinition{
+		Prefix: "lookups",
+		Schema: `(
+			renders_cid text,
+			layers_cid text,
+			image_full_name text,
+			image_full_alpha_name text,
+			image_medium_name text,
+			image_medium_alpha_name text,
+			image_thumb_name text,
+			image_thumb_alpha_name text,
+			animation_base_url text
+		)`,
+	}
+	// PilotSessionsDefinition defines the pilot sessions table.
+	PilotSessionsDefinition = TableDefinition{
+		Prefix: "pilot_sessions",
+		Schema: `(
+			id integer primary key,
+  		rig_id integer not null,
+			owner text not null,
+  		pilot_contract text,
+  		pilot_id integer,
+  		start_time integer not null,
+  		end_time integer
+		)`,
+	}
 )
+
+// Lookups holds values to be referenced in queries.
+type Lookups struct {
+	RendersCid           string
+	LayersCid            string
+	ImageFullName        string
+	ImageFullAlphaName   string
+	ImageMediumName      string
+	ImageMediumAlphaName string
+	ImageThumbName       string
+	ImageThumbAlphaName  string
+	AnimationBaseURL     string
+}
 
 // Store defines a data store interface for rigs.
 type Store interface {
 	CreateTable(context.Context, TableDefinition) (string, error)
 	InsertParts(context.Context, []local.Part) error
-	InsertLayers(context.Context, string, []local.Layer) error
-	InsertRigs(context.Context, string, []local.Rig) error
+	InsertLayers(context.Context, []local.Layer) error
 	InsertRigAttributes(context.Context, []local.Rig) error
-	ClearPartsData(context.Context) error
-	ClearLayersData(context.Context) error
-	ClearRigsData(context.Context) error
-	ClearRigAttributesData(context.Context) error
+	InsertLookups(context.Context, Lookups) error
+	ClearParts(context.Context) error
+	ClearLayers(context.Context) error
+	ClearRigAttributes(context.Context) error
+	ClearLookups(context.Context) error
+	ClearPilotSessions(context.Context) error
 }
