@@ -25,13 +25,13 @@ export const TransactionStateAlert = (props: TransactionStateAlertProps) => {
     isSuccess: transactionSuccess,
   } = props;
 
-  if (transactionIdle) return null;
-
   const {
     isError: waitFailed,
     isLoading: waitLoading,
     data: waitData,
   } = useWaitForTransaction(data);
+
+  if (transactionIdle) return null;
 
   const blockExplorerLink = `${blockExplorerBaseUrl}/tx/${data?.hash}`;
   const hasReceipt = !!waitData;
