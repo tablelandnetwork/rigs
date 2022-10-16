@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
   Box,
@@ -35,7 +35,7 @@ const MODULE_PROPS = {
 
 export const RigDetails = () => {
   const { id } = useParams();
-  const { rig } = useRig(id || "");
+  const { rig, refresh } = useRig(id || "");
   const { rigs } = useOwnedRigs();
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
@@ -49,17 +49,37 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
+  // NOTE(daniel): refresh callbacks use a 2s delay because we read the status from Tableland
+  // and not the contract and there is a small delay between a transaction finishing and
+  // the data being queryable
+
   const {
     isOpen: trainModalOpen,
     onOpen: onOpenTrainModal,
-    onClose: onCloseTrainModal,
+    onClose: _onCloseTrainModal,
   } = useDisclosure();
+
+  const onCloseTrainModal = useCallback(
+    (completedTx: boolean) => {
+      _onCloseTrainModal();
+      if (completedTx) setTimeout(() => refresh(), 2_000);
+    },
+    [_onCloseTrainModal, refresh]
+  );
 
   const {
     isOpen: parkModalOpen,
     onOpen: onOpenParkModal,
-    onClose: onCloseParkModal,
+    onClose: _onCloseParkModal,
   } = useDisclosure();
+
+  const onCloseParkModal = useCallback(
+    (completedTx: boolean) => {
+      _onCloseParkModal();
+      if (completedTx) setTimeout(() => refresh(), 2_000);
+    },
+    [_onCloseParkModal, refresh]
+  );
 
   return (
     <Flex

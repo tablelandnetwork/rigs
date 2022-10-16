@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { ethers } from "ethers";
 import {
   Button,
@@ -23,7 +23,7 @@ import { contractAddress, contractInterface } from "../contract";
 interface ModalProps {
   rig: RigWithPilots;
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (completedTx: boolean) => void;
 }
 
 export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
@@ -36,12 +36,16 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write } = contractWrite;
-  const { isLoading: isTxDone } = useWaitForTransaction({
+  const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
 
+  const onCloseWithTxStatus = useCallback(() => {
+    return onClose(isSuccess);
+  }, [onClose, isSuccess]);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onCloseWithTxStatus}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Train Rig</ModalHeader>
@@ -68,10 +72,10 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           </Button>
           <Button
             variant="ghost"
-            onClick={onClose}
-            isDisabled={isLoading || (isSuccess && !isTxDone)}
+            onClick={onCloseWithTxStatus}
+            isDisabled={isLoading || (isSuccess && isTxLoading)}
           >
-            {isTxDone ? "Close" : "Cancel"}
+            {(isSuccess && !isTxLoading) ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -89,12 +93,16 @@ export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write } = contractWrite;
-  const { isLoading: isTxDone } = useWaitForTransaction({
+  const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
 
+  const onCloseWithTxStatus = useCallback(() => {
+    return onClose(isSuccess);
+  }, [onClose, isSuccess]);
+
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    <Modal isOpen={isOpen} onClose={onCloseWithTxStatus}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Park Rig</ModalHeader>
@@ -114,10 +122,10 @@ export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           </Button>
           <Button
             variant="ghost"
-            isDisabled={isLoading || (isSuccess && !isTxDone)}
-            onClick={onClose}
+            isDisabled={isLoading || (isSuccess && isTxLoading)}
+            onClick={onCloseWithTxStatus}
           >
-            {isTxDone ? "Close" : "Cancel"}
+            {(isSuccess && !isTxLoading) ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
