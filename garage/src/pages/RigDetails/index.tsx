@@ -8,9 +8,11 @@ import {
   GridItem,
   Spinner,
   VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { TablelandConnectButton } from "../../components/TablelandConnectButton";
+import { TrainRigModal, ParkRigModal } from "../../components/FlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useRig } from "../../hooks/useRig";
 import { useNFTs } from "../../hooks/useNFTs";
@@ -46,6 +48,18 @@ export const RigDetails = () => {
 
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
+
+  const {
+    isOpen: trainModalOpen,
+    onOpen: onOpenTrainModal,
+    onClose: onCloseTrainModal,
+  } = useDisclosure();
+
+  const {
+    isOpen: parkModalOpen,
+    onOpen: onOpenParkModal,
+    onClose: onCloseParkModal,
+  } = useDisclosure();
 
   return (
     <Flex
@@ -94,6 +108,8 @@ export const RigDetails = () => {
                   rig={rig}
                   nfts={nfts}
                   isOwner={userOwnsRig}
+                  onOpenParkModal={onOpenParkModal}
+                  onOpenTrainModal={onOpenTrainModal}
                   {...MODULE_PROPS}
                 />
                 <Badges rig={rig} nfts={nfts} {...MODULE_PROPS} />
@@ -105,6 +121,20 @@ export const RigDetails = () => {
 
         {!rig && <Spinner />}
       </Grid>
+      {rig && trainModalOpen && (
+        <TrainRigModal
+          rig={rig}
+          isOpen={trainModalOpen}
+          onClose={onCloseTrainModal}
+        />
+      )}
+      {rig && parkModalOpen && (
+        <ParkRigModal
+          rig={rig}
+          isOpen={parkModalOpen}
+          onClose={onCloseParkModal}
+        />
+      )}
     </Flex>
   );
 };
