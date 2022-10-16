@@ -19,36 +19,40 @@ const ipfsGatewayUri = 'https://nftstorage.link/ipfs/';
 export async function load({ url }) {
 	const tableland = connect({ chain: 'polygon-mumbai' });
 
-	const rigId = url.searchParams.get('rig');
+	let rigId = url.pathname;
 
-	if (!rigId) {
-		// the client is asking for an invalid url
-		// TODO: should be show a placeholder?
-		throw new Error('invalid rig ID');
-	}
+	// if (!rigId) {
+	// 	// the client is asking for an invalid url
+	// 	// TODO: should be show a placeholder?
+	// 	throw new Error('invalid rig ID');
+	// }
+
+	// allow for .html suffix
+	const parts = rigId.replace(/^\/|\/$/g, '').split('.');
+	rigId = parts[0];
 
 	/*await tableland.read(
     `SELECT * FROM ${rigBadgesTableName} WHERE rig_id = ${rigId};`,
     { output: "objects" }
   );*/
 	// TODO: get the badges via tableland
-	const allBadges = [
-		'TableLand_Icons-01.svg',
-		'TableLand_Icons-02.svg',
-		'TableLand_Icons-03.svg',
-		'TableLand_Icons-04.svg',
-		'TableLand_Icons-05.svg',
-		'TableLand_Icons-06.svg'
-	];
+	// const allBadges = [
+	// 	'TableLand_Icons-01.svg',
+	// 	'TableLand_Icons-02.svg',
+	// 	'TableLand_Icons-03.svg',
+	// 	'TableLand_Icons-04.svg',
+	// 	'TableLand_Icons-05.svg',
+	// 	'TableLand_Icons-06.svg'
+	// ];
 
 	// TODO: remove this when we are rendering real badge data
 	//       until then you can choose a number of badges to show for manual testing,
 	//       the max visible as of 2022/10/06 is 11
-	const totalRigBadgesLength = 117;
-	const totalRigBadges = [];
-	for (let i = 0; i < totalRigBadgesLength; i++) {
-		totalRigBadges.push(allBadges[Math.floor(Math.random() * 100) % allBadges.length]);
-	}
+	// const totalRigBadgesLength = 117;
+	// const totalRigBadges = [];
+	// for (let i = 0; i < totalRigBadgesLength; i++) {
+	// 	totalRigBadges.push(allBadges[Math.floor(Math.random() * 100) % allBadges.length]);
+	// }
 
 	// const maxBadges = 11;
 	// const badges = [];
@@ -69,13 +73,13 @@ export async function load({ url }) {
 		unwrap: true
 	});
 
-	let pilot = '';
+	let pilot;
 	const sessions: any = await tableland.read(
 		`SELECT * FROM ${pilotSessionsTable} WHERE rig_id = ${rigId} AND start_time > 0;`,
 		{ output: 'objects' }
 	);
 	if (sessions && sessions.length > 0) {
-		pilot = 'trainer-pilot.svg';
+		pilot = 'trainer_pilot.svg';
 	}
 
 	// TODO: comment+uncomment to see different aspects
