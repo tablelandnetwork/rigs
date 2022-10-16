@@ -25,3 +25,7 @@ export const deployment: Pick<
       contractAddress: "0x2f9EE58e25D1AcA55841D98f7f1b0aEbD11750Bc",
     }
   : deployments.ethereum;
+
+export const ipfsGatewayBaseUrl = isDevelopment
+  ? "https://nftstorage.link"
+  : "https://tableland.mypinata.cloud";

@@ -1,8 +1,9 @@
 import { Rig } from "../types";
+import { ipfsGatewayBaseUrl } from "../env";
 
 const ipfsUriToGatewayUrl = (ipfsUri: string): string => {
   const cidAndPath = ipfsUri.match(/^ipfs:\/\/(.*)$/)![1];
-  return `https://tableland.mypinata.cloud/ipfs/${cidAndPath}`;
+  return `${ipfsGatewayBaseUrl}/ipfs/${cidAndPath}`;
 };
 
 interface RigImageUrls {
