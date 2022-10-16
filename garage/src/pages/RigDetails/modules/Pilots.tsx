@@ -131,13 +131,13 @@ export const Pilots = ({
               </Tr>
             );
           })}
-          {pilots.length === 0 && (
-            <Text px={p} py={4} variant="emptyState">
-              This Rig has never left the garage.
-            </Text>
-          )}
         </Tbody>
       </Table>
+      {pilots.length === 0 && (
+        <Text px={p} py={4} variant="emptyState">
+          This Rig has never left the garage.
+        </Text>
+      )}
       {isOwner && (
         <StackItem px={4} pb={4}>
           {!rig.currentPilot && (

@@ -49,13 +49,13 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
               </Tr>
             );
           })}
-          {events.length === 0 && (
-            <Text p={p} variant="emptyState">
-              This Rig has never left the garage.
-            </Text>
-          )}
         </Tbody>
       </Table>
+      {events.length === 0 && (
+        <Text p={p} variant="emptyState">
+          This Rig has never left the garage.
+        </Text>
+      )}
     </VStack>
   );
 };

@@ -66,13 +66,13 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                 </Tr>
               );
             })}
-          {events && events.length === 0 && (
-            <Text p={p} variant="emptyState">
-              No activity yet.
-            </Text>
-          )}
         </Tbody>
       </Table>
+      {events && events.length === 0 && (
+        <Text p={p} variant="emptyState">
+          No activity yet.
+        </Text>
+      )}
     </Flex>
   );
 };
