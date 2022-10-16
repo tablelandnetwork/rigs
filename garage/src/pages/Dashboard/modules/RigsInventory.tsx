@@ -52,8 +52,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
 
   return (
     <VStack align="start" {...props} sx={{ height: "100%", width: "100%" }}>
-      <Flex />
-      <Heading>Rigs {rigs && ` (${rigs.length})`}</Heading>
+      <Heading mb={2}>Rigs {rigs && ` (${rigs.length})`}</Heading>
 
       {rigs && nfts && (
         <Grid
