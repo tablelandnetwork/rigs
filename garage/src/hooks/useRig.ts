@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { RigWithPilots } from "../types";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigWithPilots } from "../utils/queries";
@@ -8,6 +8,11 @@ export const useRig = (id: string) => {
   const { connection: tableland } = useTablelandConnection();
 
   const [rig, setRig] = useState<RigWithPilots>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -22,7 +27,7 @@ export const useRig = (id: string) => {
     return () => {
       isCancelled = true;
     };
-  }, [id, setRig]);
+  }, [id, setRig, /* effect dep */ shouldRefresh]);
 
-  return { rig };
+  return { rig, refresh };
 };
