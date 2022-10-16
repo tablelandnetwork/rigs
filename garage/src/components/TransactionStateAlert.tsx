@@ -9,6 +9,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { useContractWrite, useWaitForTransaction } from "wagmi";
+import { blockExplorerBaseUrl } from "../env";
 
 type TransactionStateAlertProps = Omit<
   ReturnType<typeof useContractWrite>,
@@ -32,11 +33,7 @@ export const TransactionStateAlert = (props: TransactionStateAlertProps) => {
     data: waitData,
   } = useWaitForTransaction(data);
 
-  const etherscanLink =
-    process.env.NODE_ENV === "development"
-      ? `https://mumbai.polygonscan.com/tx/${data?.hash}`
-      : `https://etherscan.io/tx/${data?.hash}`;
-
+  const blockExplorerLink = `${blockExplorerBaseUrl}/tx/${data?.hash}`;
   const hasReceipt = !!waitData;
 
   const isSuccess = hasReceipt ? waitData.status === 1 : false;
@@ -77,7 +74,7 @@ export const TransactionStateAlert = (props: TransactionStateAlertProps) => {
           <AlertDescription>
             See the transaction on{" "}
             <Link
-              href={etherscanLink}
+              href={blockExplorerLink}
               isExternal
               sx={{ textDecoration: "underline" }}
             >

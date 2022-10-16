@@ -1,17 +1,6 @@
-import { deployments } from "@tableland/rigs/deployments";
+import { deployment } from "../env";
 
-const deployment =
-  process.env.NODE_ENV === "development"
-    ? deployments["polygon-mumbai"]
-    : deployments.ethereum;
-
-// TODO(daniel): use this once the data in @tableland/rigs is up to date
-// const { attributesTable, lookupsTable, pilotSessionsTable } = deployment;
-
-const attributesTable = "rig_attributes_5_811";
-const lookupsTable = "lookups_5_812";
-// const pilotSessionsTable = "pilot_sessions_5_813"; // table on goerli
-const pilotSessionsTable = "pilot_sessions_80001_3502"; // table on mumbai used by current contract
+const { attributesTable, lookupsTable, pilotSessionsTable } = deployment;
 
 const IMAGE_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name`;
 const IMAGE_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name`;

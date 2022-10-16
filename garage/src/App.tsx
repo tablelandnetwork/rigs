@@ -12,20 +12,17 @@ import {
   RainbowKitProvider,
   darkTheme,
 } from "@rainbow-me/rainbowkit";
-import { chain, configureChains, createClient, WagmiConfig } from "wagmi";
+import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { Enter } from "./pages/Enter";
 import { Dashboard } from "./pages/Dashboard";
 import { RigDetails } from "./pages/RigDetails";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
+import { chain } from "./env";
 
 const { chains, provider } = configureChains(
-  [
-    process.env.NODE_ENV === "development"
-      ? chain.polygonMumbai
-      : chain.mainnet,
-  ],
+  [chain],
   [alchemyProvider({ apiKey: process.env.ALCHEMY_ID }), publicProvider()]
 );
 
