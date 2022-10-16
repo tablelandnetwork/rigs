@@ -625,65 +625,53 @@ contract TablelandRigs is
         // Ensure Rig is currently being piloted
         uint64 startTime = _pilots[tokenId].startTime;
         if (startTime == 0) revert RigIsParked(tokenId);
-        // Ensure the Rig has trained; `index` of `1` indicates training is occurring
-        // If the Rig is training, check if 30 days has elapsed (the required training time)
+        // Only update the row with the matching `rig_id` and `start_time`
+        string memory filters = string.concat(
+            "rig_id=",
+            StringsUpgradeable.toString(uint64(tokenId)),
+            " and ",
+            "start_time=",
+            StringsUpgradeable.toString(startTime)
+        );
+        // Session update type is dependent on training completion status
+        string memory setters;
+        // Check if training has completed; 30 days of blocks must have elapsed (required training time)
         (bool success, uint256 blockDifference) = SafeMathUpgradeable.trySub(
             block.number,
             172800
         );
-        // Update the pilot, resetting values (except `index`) to `0` to indicate it's now parked
-        _pilots[tokenId].startTime = 0;
-        _pilots[tokenId].pilotContract = address(0);
-        _pilots[tokenId].pilotId = 0;
-        _rigsStatus[tokenId - 1] = 0;
-        // Check if training has completed
-        string memory setters;
-        string memory filters;
         if (
             !success ||
-            !(_pilots[tokenId].index == 1 &&
-                (blockDifference > _pilots[tokenId].startTime))
+            (_pilots[tokenId].index == 1 && !(blockDifference > startTime))
         ) {
             // Pilot training is incomplete; reset the training pilot `index` & Rig must go through training again
             _pilots[tokenId].index = 0;
-            // Update the row in the `pilot_sessions` table with its `end_time` equal to the `start_time` (no time)
+            // Update the row in `pilot_sessions` table with its `end_time` equal to the `start_time` (no flight time)
             setters = string.concat(
-                "start_time=0,end_time=",
-                StringsUpgradeable.toString(startTime)
-            );
-            // Only update the row with the matching `rig_id` and `start_time`
-            filters = string.concat(
-                "rig_id=",
-                StringsUpgradeable.toString(uint64(tokenId)),
-                " and ",
-                "start_time=",
+                "end_time=",
                 StringsUpgradeable.toString(startTime)
             );
         } else {
             // If training completed, update the row in the `pilot_sessions` table with its `end_time`
             setters = string.concat(
-                "start_time=0,end_time=(",
+                "end_time=(",
                 StringsUpgradeable.toString(uint64(block.number)),
                 "-",
                 StringsUpgradeable.toString(startTime),
                 ")"
             );
-            // Only update the row with the matching `rig_id` and `start_time`
-            filters = string.concat(
-                "rig_id=",
-                StringsUpgradeable.toString(uint64(tokenId)),
-                " and ",
-                "start_time=",
-                StringsUpgradeable.toString(startTime)
-            );
         }
+        // Update the pilot, resetting values (except `index`) to `0` to indicate it's now parked
+        _pilots[tokenId].startTime = 0;
+        _pilots[tokenId].pilotContract = address(0);
+        _pilots[tokenId].pilotId = 0;
+        _rigsStatus[tokenId - 1] = 0;
         // Update the pilot information in the Tableland `pilot_sessions` table
         // TODO Remove the following, but for context, the statement
         /**
             UPDATE 
                 pilot_sessions 
             SET 
-                start_time=0, 
                 end_time=(block.number-startTime) # Or, if incomplete: end_time=start_time
             WHERE 
                 rig_id=tokenId 
