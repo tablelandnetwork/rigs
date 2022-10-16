@@ -954,13 +954,33 @@ describe("Rigs", function () {
       const tokenId = event.args?.tokenId;
       // Train the Rig, putting it in-flight, and advance 1 block
       await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
+      // Check the Rig is in-flight, training
+      let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+      expect(pilotInfo.index).to.equal(BigNumber.from(1));
+      expect(pilotInfo.startTime).to.not.be.equal(BigNumber.from(0));
       // Park the Rig before training has been completed
       await expect(
         rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
       ).to.emit(rigs, "Parked");
       // Check that the index is now `0` since training was incomplete
-      let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+      pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
       expect(pilotInfo.index).to.equal(BigNumber.from(0));
+      expect(pilotInfo.startTime).to.equal(BigNumber.from(0));
+      // Start training again but also park before training completed (advance 10 blocks)
+      await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
+      await network.provider.send("hardhat_mine", [ethers.utils.hexValue(10)]);
+      // Check the Rig is in-flight, training
+      pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+      expect(pilotInfo.index).to.equal(BigNumber.from(1));
+      expect(pilotInfo.startTime).to.not.be.equal(BigNumber.from(0));
+      // Park the Rig before training has been completed
+      await expect(
+        rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
+      ).to.emit(rigs, "Parked");
+      // Check that the index is now `0` since training was incomplete
+      pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+      expect(pilotInfo.index).to.equal(BigNumber.from(0));
+      expect(pilotInfo.startTime).to.equal(BigNumber.from(0));
       // Start training again and advance 172800 blocks (30 days)
       await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
       await network.provider.send("hardhat_mine", [
@@ -970,7 +990,7 @@ describe("Rigs", function () {
       await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId)))
         .to.emit(rigs, "Parked")
         .withArgs(BigNumber.from(tokenId));
-      // Validate the pilot `index` is `1` and nothing was reset now that training is complete
+      // Validate the pilot `index` is `1` and it was not reset, now that training is complete
       pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
       expect(pilotInfo.index).to.equal(BigNumber.from(1));
     });
