@@ -11,7 +11,11 @@ import {
   ModalCloseButton,
   Text,
 } from "@chakra-ui/react";
-import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import {
+  useContractWrite,
+  usePrepareContractWrite,
+  useWaitForTransaction,
+} from "wagmi";
 import { RigWithPilots } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { contractAddress, contractInterface } from "../contract";
@@ -32,6 +36,9 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write } = contractWrite;
+  const { isLoading: isTxDone } = useWaitForTransaction({
+    hash: contractWrite.data?.hash,
+  });
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -59,8 +66,12 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           >
             Train rig
           </Button>
-          <Button variant="ghost" onClick={onClose}>
-            {isSuccess ? "Close" : "Cancel"}
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            isDisabled={isLoading || (isSuccess && !isTxDone)}
+          >
+            {isTxDone ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -78,6 +89,9 @@ export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write } = contractWrite;
+  const { isLoading: isTxDone } = useWaitForTransaction({
+    hash: contractWrite.data?.hash,
+  });
 
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
@@ -98,8 +112,12 @@ export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           >
             Park rig
           </Button>
-          <Button variant="ghost" onClick={onClose}>
-            {isSuccess ? "Close" : "Cancel"}
+          <Button
+            variant="ghost"
+            isDisabled={isLoading || (isSuccess && !isTxDone)}
+            onClick={onClose}
+          >
+            {isTxDone ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
