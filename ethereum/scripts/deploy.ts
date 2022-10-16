@@ -211,6 +211,10 @@ async function main() {
   await tx.wait();
   console.log("Set URI template:", uriTemplate.join("{id}"));
 
+  tx = await rigs.initPilots();
+  await tx.wait();
+  console.log("Initialized pilots");
+
   // Warn that addresses need to be saved in deployments file
   console.warn(
     `\nSave 'deployments.${network.name}.contractAddress: "${rigs.address}"' in deployments.ts!`
