@@ -1,6 +1,6 @@
 {
   "name": "@tableland/rigs",
-  "version": "0.1.0-pre0",
+  "version": "0.1.0-pre1",
   "description": "Tableland Rigs contract",
   "engines": {
     "node": ">=14.0.0"
