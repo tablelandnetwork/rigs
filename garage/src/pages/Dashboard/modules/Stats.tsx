@@ -9,6 +9,7 @@ import {
   Stack,
   Text,
 } from "@chakra-ui/react";
+import { useBlockNumber } from "wagmi";
 import { useStats } from "../../../hooks/useRigStats";
 import { prettyNumber } from "../../../utils/fmt";
 
@@ -26,7 +27,8 @@ const StatItem = ({ name, value }: { name: string; value: number }) => {
 };
 
 export const Stats = (props: React.ComponentProps<typeof Box>) => {
-  const { stats } = useStats();
+  const { data: currentBlockNumber } = useBlockNumber();
+  const { stats } = useStats(currentBlockNumber);
 
   return (
     <Flex direction="column" sx={{ height: "100%" }} {...props}>
