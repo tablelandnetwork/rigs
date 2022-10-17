@@ -19,7 +19,7 @@ var rendersCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := cmd.Context()
 		path := viper.GetString("renders-path")
-		cid, err := dirPublisher.PublishDir(ctx, path)
+		cid, err := dirPublisher.PublishDir(ctx, path, "renders")
 		checkErr(err)
 		checkErr(localStore.TrackCid(ctx, "renders", cid))
 		fmt.Printf("Renders published with cid %s\n", cid)
