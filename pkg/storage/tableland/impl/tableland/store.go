@@ -112,7 +112,7 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	if err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	return s.trackTxn(ctx, hash, "rig_attributes", sql)
+	return s.trackTxn(ctx, hash, "attributes", sql)
 }
 
 // InsertLookups implements InsertLookups.
@@ -125,7 +125,11 @@ func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) er
 	if err != nil {
 		return fmt.Errorf("getting sql to insert lookups: %v", err)
 	}
-	return s.writeSQL(ctx, sql)
+	hash, err := s.writeSQL(ctx, sql)
+	if err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	return s.trackTxn(ctx, hash, "lookups", sql)
 }
 
 // ClearParts implements ClearParts.
@@ -176,7 +180,13 @@ func (s *Store) ClearRigAttributes(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing rig attributes: %v", err)
 	}
-	return s.writeSQL(ctx, sql)
+	if _, err := s.writeSQL(ctx, sql); err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	if err := s.localStore.ClearTxns(ctx, "attributes", s.chainID, "insert"); err != nil {
+		return fmt.Errorf("clearning txns: %v", err)
+	}
+	return nil
 }
 
 // ClearLookups implements ClearLookups.
@@ -189,7 +199,13 @@ func (s *Store) ClearLookups(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("getting sql for clearing lookups: %v", err)
 	}
-	return s.writeSQL(ctx, sql)
+	if _, err := s.writeSQL(ctx, sql); err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	if err := s.localStore.ClearTxns(ctx, "lookups", s.chainID, "insert"); err != nil {
+		return fmt.Errorf("clearning txns: %v", err)
+	}
+	return nil
 }
 
 // ClearPilotSessions implements ClearPilotSessions.
@@ -205,7 +221,7 @@ func (s *Store) ClearPilotSessions(ctx context.Context) error {
 	if _, err := s.writeSQL(ctx, sql); err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	if err := s.localStore.ClearTxns(ctx, "rig_attributes", s.chainID, "insert"); err != nil {
+	if err := s.localStore.ClearTxns(ctx, "pilots", s.chainID, "insert"); err != nil {
 		return fmt.Errorf("clearning txns: %v", err)
 	}
 	return nil
