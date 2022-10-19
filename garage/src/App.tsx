@@ -15,10 +15,8 @@ import {
 import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
-import { Enter } from "./pages/Enter";
-import { Dashboard } from "./pages/Dashboard";
-import { RigDetails } from "./pages/RigDetails";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
+import { routes } from "./routes";
 import { chain } from "./env";
 
 const { chains, provider } = configureChains(
@@ -171,23 +169,23 @@ function App() {
         <RainbowKitProvider chains={chains} theme={darkTheme()}>
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Enter />} />
-              <Route
-                path="/dashboard"
-                element={
-                  <RequiresWalletConnection>
-                    <Dashboard />
-                  </RequiresWalletConnection>
-                }
-              />
-              <Route
-                path="/rigs/:id"
-                element={
-                  <RequiresWalletConnection>
-                    <RigDetails />
-                  </RequiresWalletConnection>
-                }
-              />
+              {routes.map(
+                ({ requiresWalletConnection, element, ...props }, index) => (
+                  <Route
+                    {...props}
+                    key={`route-${index}`}
+                    element={
+                      requiresWalletConnection ? (
+                        <RequiresWalletConnection>
+                          {element}
+                        </RequiresWalletConnection>
+                      ) : (
+                        element
+                      )
+                    }
+                  />
+                )
+              )}
             </Routes>
           </BrowserRouter>
         </RainbowKitProvider>
