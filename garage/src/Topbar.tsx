@@ -1,22 +1,30 @@
 import React from "react";
-import { Flex, Image, Show, Text } from "@chakra-ui/react";
+import { Link } from "react-router-dom";
+import { Button, Flex, Image, Show, Spacer, Text } from "@chakra-ui/react";
+import { TablelandConnectButton } from "./components/TablelandConnectButton";
 import logo from "./assets/tableland.svg";
+import { useCurrentRoute } from "./hooks/useCurrentRoute";
 
-interface TopbarProps {
-  children: React.ReactNode;
-  mode?: "light" | "dark";
-}
+export const TOPBAR_HEIGHT = "80px";
 
-export const Topbar = ({ children, mode = "dark" }: TopbarProps) => {
-  const bgColor = mode === "dark" ? "primary" : "primaryLight";
+export const Topbar = () => {
+  const route = useCurrentRoute();
+
+  const isEnter = route?.route.key === "ENTER";
+
+  const bgColor = isEnter ? "primaryLight" : "primary";
+  const isRigDetails = route?.route.key === "RIG_DETAILS";
 
   return (
     <Flex
-      height="80px"
+      height={TOPBAR_HEIGHT}
       width="100%"
       bg={bgColor}
       color="black"
       align="center"
+      position="sticky"
+      top="0"
+      zIndex={2}
       px={8}
       py={4}
     >
@@ -26,7 +34,16 @@ export const Topbar = ({ children, mode = "dark" }: TopbarProps) => {
           Garage
         </Text>
       </Show>
-      {children}
+      <Flex justify="space-between" align="center" width="100%" ml={8}>
+        {isRigDetails ? (
+          <Button variant="solid" as={Link} to="/dashboard">
+            Dashboard
+          </Button>
+        ) : (
+          <Spacer />
+        )}
+        <TablelandConnectButton />
+      </Flex>
     </Flex>
   );
 };

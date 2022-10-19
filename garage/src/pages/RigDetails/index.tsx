@@ -16,7 +16,7 @@ import { TrainRigModal, ParkRigModal } from "../../components/FlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useRig } from "../../hooks/useRig";
 import { useNFTs } from "../../hooks/useNFTs";
-import { Topbar } from "../../Topbar";
+import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
@@ -86,16 +86,9 @@ export const RigDetails = () => {
       direction="column"
       align="center"
       justify="stretch"
-      sx={{ width: "100%", height: "100%" }}
+      width="100%"
+      minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
     >
-      <Topbar>
-        <Flex justify="space-between" align="center" width="100%" ml={8}>
-          <Button variant="solid" as={Link} to="/dashboard">
-            Dashboard
-          </Button>
-          <TablelandConnectButton />
-        </Flex>
-      </Topbar>
       <Grid
         templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(2, 1fr)" }}
         pt={GRID_GAP}

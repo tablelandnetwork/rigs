@@ -15,6 +15,7 @@ import {
 import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
+import { Topbar } from "./Topbar";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 import { routes } from "./routes";
 import { chain } from "./env";
@@ -168,6 +169,7 @@ function App() {
       <WagmiConfig client={wagmiClient}>
         <RainbowKitProvider chains={chains} theme={darkTheme()}>
           <BrowserRouter>
+            <Topbar />
             <Routes>
               {routes.map(
                 ({ requiresWalletConnection, element, ...props }, index) => (

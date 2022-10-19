@@ -1,7 +1,6 @@
 import React from "react";
 import { Box, Flex } from "@chakra-ui/react";
-import { Topbar } from "../../Topbar";
-import { TablelandConnectButton } from "../../components/TablelandConnectButton";
+import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigsInventory } from "./modules/RigsInventory";
 import { Stats } from "./modules/Stats";
 import { Activity } from "./modules/Activity";
@@ -20,13 +19,9 @@ export const Dashboard = () => {
       direction="column"
       align="center"
       justify="stretch"
-      sx={{ width: "100%", height: "100%" }}
+      width="100%"
+      minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
     >
-      <Topbar>
-        <Flex justify="flex-end" width="100%">
-          <TablelandConnectButton />
-        </Flex>
-      </Topbar>
       <Flex
         direction={{ base: "column", lg: "row" }}
         pt={GRID_GAP}
