@@ -13,6 +13,7 @@ import {
 import { RigWithPilots } from "../../../types";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
+import { truncateWalletAddress } from "../../../utils/fmt";
 
 type FlightLogProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
@@ -44,7 +45,7 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
               <Tr key={`flight-log-${index}`}>
                 <Td pl={p}>{type}</Td>
                 <Td pr={p} isNumeric>
-                  {owner}
+                  {truncateWalletAddress(owner)}
                 </Td>
               </Tr>
             );

@@ -91,9 +91,8 @@ export const RigDetails = () => {
     >
       <Grid
         templateColumns={{ base: "repeat(1, 1fr)", md: "repeat(2, 1fr)" }}
-        pt={GRID_GAP}
+        p={GRID_GAP}
         gap={GRID_GAP}
-        px={GRID_GAP}
         maxWidth="1385px"
         height="100%"
       >
