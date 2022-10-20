@@ -22,7 +22,6 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
     <Flex
       direction="column"
       pt={p}
-      mb={8}
       sx={{ height: "100%", minWidth: { xl: "400px" } }}
       {...otherProps}
     >
