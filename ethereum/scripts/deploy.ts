@@ -33,19 +33,13 @@ async function main() {
     throw Error("missing provider");
   }
 
-  // Get URI template
+  // Ensure we can build URI template
   if (rigsDeployment.attributesTable === "") {
     throw Error(`missing attributes table entry in deployments`);
   }
   if (rigsDeployment.lookupsTable === "") {
     throw Error(`missing lookups table entry in deployments`);
   }
-  const uriTemplate = getURITemplate(
-    rigsDeployment.tablelandHost,
-    rigsDeployment.attributesTable,
-    rigsDeployment.lookupsTable,
-    rigsDeployment.displayAttributes
-  );
 
   // Don't allow multiple deployments per network
   if (rigsDeployment.contractAddress !== "") {
@@ -194,17 +188,28 @@ async function main() {
   ).deployed();
   console.log("Deployed Rigs:", rigs.address);
 
+  // Set contract URI
   let tx = await rigs.setContractURI(contractURI);
   await tx.wait();
   console.log("Set contract URI:", contractURI);
 
-  tx = await rigs.setURITemplate(uriTemplate);
-  await tx.wait();
-  console.log("Set URI template:", uriTemplate.join("{id}"));
-
+  // Init pilots
   tx = await rigs.initPilots();
   await tx.wait();
   console.log("Initialized pilots");
+
+  // Set URI template
+  const pilotsTable = await rigs.pilotsTable();
+  const uriTemplate = getURITemplate(
+    rigsDeployment.tablelandHost,
+    rigsDeployment.attributesTable,
+    rigsDeployment.lookupsTable,
+    pilotsTable,
+    rigsDeployment.displayAttributes
+  );
+  tx = await rigs.setURITemplate(uriTemplate);
+  await tx.wait();
+  console.log("Set URI template:", uriTemplate.join("{id}"));
 
   // Warn that addresses need to be saved in deployments file
   console.warn(
