@@ -28,7 +28,11 @@ export const Topbar = () => {
       px={8}
       py={4}
     >
-      <Image src={logo} sx={{ maxWidth: { base: "50px", md: "100%" } }} />{" "}
+      <Image
+        src={logo}
+        sx={{ maxWidth: { base: "50px", md: "100%" } }}
+        mr={2}
+      />
       <Show above="sm">
         <Text variant="orbitron" fontSize="20">
           Garage
