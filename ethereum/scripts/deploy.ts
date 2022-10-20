@@ -199,7 +199,7 @@ async function main() {
   console.log("Initialized pilots");
 
   // Set URI template
-  const pilotsTable = await rigs.pilotsTable();
+  const pilotsTable = await rigs.pilotSessionsTable();
   const uriTemplate = getURITemplate(
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
@@ -210,10 +210,6 @@ async function main() {
   tx = await rigs.setURITemplate(uriTemplate);
   await tx.wait();
   console.log("Set URI template:", uriTemplate.join("{id}"));
-
-  tx = await rigs.initPilots();
-  await tx.wait();
-  console.log("Initialized pilots");
 
   // Warn that addresses need to be saved in deployments file
   console.warn(
