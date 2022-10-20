@@ -64,7 +64,7 @@ func (c *Client) UploadCar(ctx context.Context, payload io.Reader) (string, erro
 
 	uploadResponse := &uploadResponse{}
 	if err := json.Unmarshal(body, uploadResponse); err != nil {
-		return "", fmt.Errorf("unmarshaling response: %v", err)
+		return "", fmt.Errorf("unmarshaling response: %v, \n%s", err, string(body))
 	}
 
 	if uploadResponse.Error != nil {
