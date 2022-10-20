@@ -57,10 +57,18 @@ export const Dashboard = () => {
         borderTopColor="bg"
         borderTopWidth="1px"
       >
-        <Link href="htps://twitter.com/tableland__" title="Tableland on Twitter" isExternal>
+        <Link
+          href="htps://twitter.com/tableland__"
+          title="Tableland on Twitter"
+          isExternal
+        >
           <Image src={twitterMark} color="primary" />
         </Link>
-        <Link href="https://opensea.io/collection/tableland-rigs" title="Rigs on OpenSea" isExternal>
+        <Link
+          href="https://opensea.io/collection/tableland-rigs"
+          title="Rigs on OpenSea"
+          isExternal
+        >
           <Image src={openseaMark} color="primary" />
         </Link>
       </Flex>

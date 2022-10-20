@@ -46,7 +46,9 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const pilots = useMemo(() => {
     if (!rigs) return;
 
-    return rigs.map((v) => v.currentPilot).filter((v) => v?.contract) as Pilot[];
+    return rigs
+      .map((v) => v.currentPilot)
+      .filter((v) => v?.contract) as Pilot[];
   }, [rigs]);
   const { nfts } = useNFTs(pilots);
 
