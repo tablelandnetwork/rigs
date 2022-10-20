@@ -1,5 +1,11 @@
 import React from "react";
-import { Button, Flex, Image, Text } from "@chakra-ui/react";
+import {
+  Button,
+  Flex,
+  Image,
+  Text,
+  useBreakpointValue,
+} from "@chakra-ui/react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import exit from "../assets/exit.svg";
 
@@ -8,6 +14,10 @@ export const TablelandConnectButton = ({
 }: {
   size?: "small" | "large";
 }) => {
+  const showAddress = useBreakpointValue(
+    { base: false, sm: true },
+    { ssr: false }
+  );
   return (
     <ConnectButton.Custom>
       {({
@@ -59,12 +69,14 @@ export const TablelandConnectButton = ({
 
               return (
                 <Flex align="center">
-                  <Text color="inactive">{account.displayName}</Text>
+                  {showAddress && (
+                    <Text color="inactive">{account.displayName}</Text>
+                  )}
                   <Button
                     leftIcon={<Image src={exit} />}
                     onClick={openAccountModal}
                     variant="disconnect"
-                    pl={7}
+                    pl={6}
                     pr={0}
                   >
                     Exit
