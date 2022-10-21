@@ -46,10 +46,10 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                     <Image
                       src={thumbUrl}
                       alt={`Rig ${rigId}`}
-                      sx={{ width: "20px", height: "20px" }}
+                      sx={{ width: "20px", height: "20px", maxWidth: "20px" }}
                     />
                   </Td>
-                  <Td>{`#${rigId}`}</Td>
+                  <Td width="60px">{`#${rigId}`}</Td>
                   <Td
                     pr={p}
                     sx={{
