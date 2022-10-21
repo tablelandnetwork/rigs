@@ -18,7 +18,16 @@ const StatItem = ({ name, value }: { name: string; value: number }) => {
     <Stack p={3} borderRadius="3px">
       <Text noOfLines={1}>{name}</Text>
       <Flex align="center" justify="center">
-        <Text fontSize="4xl" lineHeight="100%" py={8} noOfLines={1}>
+        <Text
+          fontSize="4xl"
+          py={8}
+          sx={{
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+          title={prettyNumber(value)}
+        >
           {prettyNumber(value)}
         </Text>
       </Flex>
