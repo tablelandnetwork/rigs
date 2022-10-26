@@ -12,7 +12,6 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/token/common/ERC2981Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/math/SafeMathUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@tableland/evm/contracts/utils/SQLHelpers.sol";
@@ -55,19 +54,6 @@ contract TablelandRigs is
     // URI for contract info.
     string private _contractInfoURI;
 
-    // TODO Remove the following, but for context, the table schema:
-    /**
-        create table pilot_sessions(
-            id integer primary key, 
-            rig_id integer not null, 
-            owner text not null,
-            pilot_contract text, 
-            pilot_id integer, 
-            start_time integer not null, 
-            end_time integer
-        )
-     */
-
     // Table prefix for the Rigs pilot sessions table.
     string private constant RIG_PILOT_SESSIONS_PREFIX = "pilot_sessions";
 
@@ -81,11 +67,10 @@ contract TablelandRigs is
     // uint256 private _rigOwnershipIndexTableId = 1; // TODO ignore this for now; need to add table to deploy script
 
     // Tracks the Rig `tokenId` to its current `Pilot`.
-    mapping(uint256 => Pilot) internal _pilots;
+    mapping(uint16 => Pilot) internal _pilots;
 
-    // Track piloted vs. parked Rigs as a bitlist.
-    // TODO this was implemented for gas reduction purposes while iterating/checking for duplicates in `_pilots`
-    uint8[] internal _rigsStatus;
+    // Tracks the packed `pilot` to the Rig `tokenId` to help check if a custom pilot is in use.
+    mapping(uint192 => uint16) internal _pilotIndex;
 
     function initialize(
         uint256 _maxSupply,
@@ -396,19 +381,13 @@ contract TablelandRigs is
      * @dev See {ITablelandRigs-initPilots}.
      */
     function initPilots() external onlyOwner {
-        initRigsStatus(); // TODO to remove `_rigsStatus` for optimized logic; won't need this
-        createPilotsTable();
-    }
-
-    // TODO to remove `_rigsStatus` for optimized logic; won't need this
-    function initRigsStatus() internal {
-        _rigsStatus = new uint8[](maxSupply);
+        _createPilotsTable();
     }
 
     /**
-     * @dev See {ITablelandRigs-createPilotsTable}.
+     * @dev Creates the pilot sessions table.
      */
-    function createPilotsTable() internal {
+    function _createPilotsTable() internal {
         _rigPilotSessionsTableId = TablelandDeployments.get().createTable(
             address(this),
             SQLHelpers.toCreateFromSchema(
@@ -419,7 +398,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-createPilotsTable}.
+     * @dev See {ITablelandRigs-pilotsTable}.
      */
     function pilotsTable() external view returns (string memory) {
         return
@@ -435,17 +414,40 @@ contract TablelandRigs is
     function pilotInfo(uint256 tokenId) public view returns (Pilot memory) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        return _pilots[tokenId];
+        return _pilots[uint16(tokenId)];
     }
 
-    /**
-     * @dev See {ITablelandRigs-rigStatus}.
-     */
-    // TODO this was created for testing purposes, but it isn't "required" if deemed redundant with `pilotInfo`
-    function rigStatus(uint256 tokenId) public view returns (uint8) {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        return _rigsStatus[tokenId - 1];
+    function _pilotStatus(uint256 tokenId) private view returns (GarageStatus) {
+        Pilot memory p = _pilots[uint16(tokenId)];
+        if (p.startTime == 0) {
+            if (p.pilot == 0) return GarageStatus.UNTRAINED;
+            // The `park` logic should set `pilot` to `0` if both of these are true:
+            //   - `pilot` is currently `1`
+            //   - rigs has not been training for long enough
+            // ie, `park` results in a status of UNTRAINED or PARKED
+            // In no other cases should `park` update `pilot` (it's either current or last used pilot)
+            else return GarageStatus.PARKED;
+        } else {
+            // Invariant: pilot cannot be `0` if `startTime` is > `0`.
+            // ie, if rig is training or being piloted, pilot is either the trainer or a real pilot
+            if (p.pilot == 1) return GarageStatus.TRAINING;
+            else return GarageStatus.PILOTED;
+        }
+    }
+
+    function _canPilot(uint256 tokenId) private view returns (bool) {
+        // two ways to pilot:
+        //   1. in PARKED status
+        //   2. in TRAINING status for long enough
+        // Invariant: you cannot switch real pilots mid-flight, but you can go
+        // from trainer -> real pilot to make it easier + cheaper to pilot (continue playing the game)
+        Pilot memory p = _pilots[uint16(tokenId)];
+        if (p.startTime == 0) {
+            // Rig is either UNTRAINED or PARKED. It's not possible to pilot from UNTRAINED.
+            return p.pilot != 0; // could be trainer (`1`) or real pilot
+        } else if (p.pilot == 1) {
+            return block.number >= p.startTime + 172800;
+        } else return false;
     }
 
     /**
@@ -456,24 +458,12 @@ contract TablelandRigs is
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to train the specified Rig
         if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
-        // Check if the Rig has gone through training yet
-        // An `index` of `1` represents training is happening; the Rig is "locked" into training for 30 days
-        if (_pilots[tokenId].index > 0) revert RigIsTrainingOrTrained(tokenId);
-        // Assign a trainer pilot to the Rig
-        // TODO is it worth using `SafeCastUpgradeable.toUint64`? Also impacts `_setClaimed` and some methods below
-        _pilots[tokenId] = Pilot(1, uint64(block.number), address(0), 0);
-        _rigsStatus[tokenId - 1] = 1;
-        // Insert the training pilot into the Tableland `pilot_sessions` table
-        // TODO Remove the following, but for context, the statement
-        /**
-            INSERT INTO rigs_pilots (
-                rig_id, owner, start_time
-            ) 
-            VALUES 
-            (
-                tokenId, ownerOf(tokenId), block.number
-            )
-         */
+        // Validate the Rig is untrained
+        if (_pilotStatus(tokenId) != GarageStatus.UNTRAINED)
+            revert InvalidPilotStatus(tokenId);
+        // Assign a trainer pilot to the Rig (a `pilot` value of `1`)
+        _pilots[uint16(tokenId)] = Pilot(uint64(block.number), 1);
+        // Insert the Rig training session into the Tableland `pilot_sessions` table
         TablelandDeployments.get().runSQL(
             address(this),
             _rigPilotSessionsTableId,
@@ -509,54 +499,30 @@ contract TablelandRigs is
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to pilot the specified Rig
         if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
-        // Validate if pilot training is completed
-        // Once training begins, the Rig is prevented from being parked until
-        // training has been completed; thus, only need to check if the Rig has
-        // been ungaraged yet since parking handles training logic (see `parkRig` for more details)
-        if (_pilots[tokenId].index == 0) revert RigIsNotTrained(tokenId);
-        // Check if Rig is currently in-flight (not parked)
-        if (_pilots[tokenId].startTime > 0) revert RigIsNotParked(tokenId);
-        // Check if `pilotContract` is an ERC721; cannot be the Rigs contract
+        // Check if the Rig can be piloted
+        if (!_canPilot(tokenId)) revert InvalidPilotStatus(tokenId);
+        // Check if `pilotContract` is an ERC-721; cannot be the Rigs contract
         if (
             pilotContract == address(this) ||
             !pilotContract.supportsInterface(type(IERC721).interfaceId)
-        ) revert InvalidPilotContract(pilotContract);
-
-        // Check ownership of `pilotTokenId` at target `pilotContract`
+        ) revert InvalidCustomPilot();
+        // Check ownership of pilot token ID at target `pilotContract`
         if (IERC721(pilotContract).ownerOf(pilotTokenId) != _msgSenderERC721A())
-            revert Unauthorized();
+            revert InvalidCustomPilot();
+        // Verify the pilot token ID fits into a uint32 (required for packing)
+        if (pilotTokenId > type(uint32).max) revert InvalidCustomPilot();
         // Check if the pilot is actively piloting another Rig, and if so, park the other Rig
-        for (uint256 i = 1; i <= maxSupply; i++) {
-            if (
-                // `_rigsStatus` starts at index `0`, while `tokenId` in `_pilots` starts at `1`
-                _rigsStatus[i - 1] == 1 &&
-                (_pilots[i].pilotContract == pilotContract &&
-                    _pilots[i].pilotId == pilotTokenId)
-            ) {
-                parkRig(i);
-            }
+        // TODO not sure if this is right, for shifting/packing
+        // See a better example: https://github.com/chiru-labs/ERC721A/blob/1843596cf863557fcd3bf0105222a7c29690af5c/contracts/ERC721A.sol#L233
+        uint192 pilot = (uint192(uint160(pilotContract)) << 32) |
+            uint192(pilotTokenId);
+        if (_pilotIndex[pilot] != 0) {
+            parkRig(_pilotIndex[pilot]);
         }
-        // Assign a new pilot to the Rig, incrementing the previous pilot's `index` by `1`
-        _pilots[tokenId] = Pilot(
-            _pilots[tokenId].index + 1,
-            uint64(block.number),
-            pilotContract,
-            pilotTokenId
-        );
-        _rigsStatus[tokenId - 1] = 1;
+        // Assign a new pilot to the Rig and update the pilot index
+        _pilots[uint16(tokenId)].pilot = pilot;
+        _pilotIndex[pilot] = uint16(tokenId);
         // Insert the pilot into the Tableland `pilot_sessions` table
-        // TODO Remove the following, but for context, the statement
-        /**
-            INSERT INTO rigs_pilots (
-                rig_id, owner, pilot_contract, 
-                pilot_id, start_time
-            ) 
-            VALUES 
-            (
-                tokenId, ownerOf(tokenId), pilotContract,
-                pilotTokenId, block.number
-            )
-         */
         TablelandDeployments.get().runSQL(
             address(this),
             _rigPilotSessionsTableId,
@@ -615,17 +581,21 @@ contract TablelandRigs is
      * @dev See {ITablelandRigs-parkRig}.
      */
     function parkRig(uint256 tokenId) public {
-        // Check the Rig `tokenId` exists.
+        // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to park the specified Rig
         if (
             !(ownerOf(tokenId) == _msgSenderERC721A() ||
                 address(this) == _msgSenderERC721A())
         ) revert Unauthorized();
-        // Ensure Rig is currently being piloted
-        uint64 startTime = _pilots[tokenId].startTime;
-        if (startTime == 0) revert RigIsParked(tokenId);
+        // Ensure Rig is currently in-flight
+        // TODO error thrown here with `Should not allow the same pilot to operate multiple Rigs`
+        if (
+            !(_pilotStatus(tokenId) == GarageStatus.TRAINING ||
+                _pilotStatus(tokenId) == GarageStatus.PILOTED)
+        ) revert InvalidPilotStatus(tokenId);
         // Only update the row with the matching `rig_id` and `start_time`
+        uint64 startTime = _pilots[uint16(tokenId)].startTime;
         string memory filters = string.concat(
             "rig_id=",
             StringsUpgradeable.toString(uint64(tokenId)),
@@ -635,24 +605,20 @@ contract TablelandRigs is
         );
         // Session update type is dependent on training completion status
         string memory setters;
-        // Check if training has completed; 30 days of blocks must have elapsed (required training time)
-        (bool success, uint256 blockDifference) = SafeMathUpgradeable.trySub(
-            block.number,
-            172800
-        );
+        // Check if training has completed (30 days worth of blocks have elapsed; the required training time)
         if (
-            !success ||
-            (_pilots[tokenId].index == 1 && !(blockDifference > startTime))
+            _pilotStatus(tokenId) == GarageStatus.TRAINING &&
+            !(block.number >= startTime + 172800)
         ) {
-            // Pilot training is incomplete; reset the training pilot `index` & Rig must go through training again
-            _pilots[tokenId].index = 0;
+            // Pilot training is incomplete; reset the training pilot such that the Rig must train again
+            _pilots[uint16(tokenId)].pilot = 0;
             // Update the row in `pilot_sessions` table with its `end_time` equal to the `start_time` (no flight time)
             setters = string.concat(
                 "end_time=",
                 StringsUpgradeable.toString(startTime)
             );
         } else {
-            // If training completed, update the row in the `pilot_sessions` table with its `end_time`
+            // Training is complete; update the row in the `pilot_sessions` table with its `end_time`
             setters = string.concat(
                 "end_time=(",
                 StringsUpgradeable.toString(uint64(block.number)),
@@ -661,22 +627,9 @@ contract TablelandRigs is
                 ")"
             );
         }
-        // Update the pilot, resetting values (except `index`) to `0` to indicate it's now parked
-        _pilots[tokenId].startTime = 0;
-        _pilots[tokenId].pilotContract = address(0);
-        _pilots[tokenId].pilotId = 0;
-        _rigsStatus[tokenId - 1] = 0;
+        // Set the `startTime` to `0` to indicate the Rig is now parked
+        _pilots[uint16(tokenId)].startTime = 0;
         // Update the pilot information in the Tableland `pilot_sessions` table
-        // TODO Remove the following, but for context, the statement
-        /**
-            UPDATE 
-                pilot_sessions 
-            SET 
-                end_time=(block.number-startTime) # Or, if incomplete: end_time=start_time
-            WHERE 
-                rig_id=tokenId 
-                and start_time=startTime 
-         */
         TablelandDeployments.get().runSQL(
             address(this),
             _rigPilotSessionsTableId,
@@ -728,7 +681,8 @@ contract TablelandRigs is
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
             // If `Pilot.startTime` is not zero, then the Rig is in-flight
-            if (_pilots[tokenId].startTime > 0) revert RigIsNotParked(tokenId);
+            if (_pilots[uint16(tokenId)].startTime > 0)
+                revert InvalidPilotStatus(tokenId);
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
