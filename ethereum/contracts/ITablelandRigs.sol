@@ -23,11 +23,11 @@ interface ITablelandRigs {
     // Thrown when minting when there are no more Rigs.
     error SoldOut();
 
-    // Thrown when attempting to interact with non-owned Rigs or Pilot tokens.
+    // Thrown when attempting to interact with non-owned Rigs.
     error Unauthorized();
 
-    // Thrown if a Pilot's contract is not ERC721-compliant.
-    error InvalidPilotContract(address pilotContract);
+    // Thrown if a Pilot's contract is not ERC-721 compliant or pilot token ID is greater than a uint32.
+    error InvalidCustomPilot();
 
     // Thrown upon a batch pilot update error.
     error InvalidBatchPilotRig();
@@ -35,8 +35,8 @@ interface ITablelandRigs {
     // Thrown if a Rig tries to be piloted with an existing `Pilot`.
     error SpecifiedPilotIsActive(address pilotContract, uint256 pilotId);
 
-    // Thrown when a Rig has is training or has already completed its training.
-    error RigIsTrainingOrTrained(uint256 tokenId);
+    // Thrown when a Garage action is attempted while a Rig is in a `GarageStatus` that is invalid for it to be performed.
+    error InvalidPilotStatus(uint256 tokenId);
 
     // Thrown when a Rig is trying to be piloted but hasn't completed its training.
     error RigIsNotTrained(uint256 tokenId);
@@ -55,17 +55,24 @@ interface ITablelandRigs {
         PUBLIC
     }
 
-    // A Rig's pilot
+    // Values describing a Rig's Garage status.
+    enum GarageStatus {
+        UNTRAINED,
+        TRAINING,
+        PARKED,
+        PILOTED
+    }
+
+    // A Rig's pilot.
     struct Pilot {
-        // Index of the current pilot, for tracking the history of a Rig's pilots.
-        uint16 index;
         // Keep track of the pilot's starting `block.number` for flight time tracking.
         uint64 startTime;
-        // Address of the ERC721 pilot contract.
-        address pilotContract;
-        // TODO we have 160 + 64 + 16 = 240 bits in this tighly packed group, so room for 16 bits of extra data, if needed
-        // Token ID of the ERC721 pilot.
-        uint256 pilotId;
+        // Address of the ERC721 pilot contract, packed with the pilot token ID.
+        //
+        // Bits Layout:
+        // - [0..159]    `pilotContract`
+        // - [160..191]  `pilotTokenId`
+        uint192 pilot;
     }
 
     /**
@@ -230,7 +237,7 @@ interface ITablelandRigs {
     function unpause() external;
 
     /**
-     * @dev Initializes Rig pilots with table creation and `_rigsStatus` array.
+     * @dev Initializes Rig pilots by creating the `pilot_sessios` table.
      *
      * The following defines the table schema:
      *
@@ -259,17 +266,6 @@ interface ITablelandRigs {
      * - `tokenId` must exist
      */
     function pilotInfo(uint256 tokenId) external view returns (Pilot memory);
-
-    /**
-     * @dev Retrieves Rig status for piloted (`1`) or parked (`0`).
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     */
-    function rigStatus(uint256 tokenId) external view returns (uint8);
 
     /**
      * @dev Trains a Rig for a period of 30 days, putting it in flight.
