@@ -1,8 +1,8 @@
-import { connect, Connection } from "@tableland/sdk";
-import { useState, useEffect } from "react";
+import { connect } from "@tableland/sdk";
+
+const connection = connect({ network: "testnet" });
+const data = { connection };
 
 export const useTablelandConnection = () => {
-  const [connection, setConnection] = useState<Connection>(connect({ network: "testnet" }));
-
-  return { connection };
+  return data;
 };
