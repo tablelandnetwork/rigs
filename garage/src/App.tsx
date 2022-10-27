@@ -174,7 +174,7 @@ function App() {
           <BrowserRouter>
             <Topbar />
             <Routes>
-              {routes.map(
+              {routes().map(
                 ({ requiresWalletConnection, element, ...props }, index) => (
                   <Route
                     {...props}
