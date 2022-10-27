@@ -1,4 +1,4 @@
-import React, { useCallback } from "react";
+import React, { useEffect } from "react";
 import { ethers } from "ethers";
 import {
   Button,
@@ -23,10 +23,16 @@ import { contractAddress, contractInterface } from "../contract";
 interface ModalProps {
   rig: RigWithPilots;
   isOpen: boolean;
-  onClose: (completedTx: boolean) => void;
+  onClose: () => void;
+  onTransactionSubmitted: (txHash: string) => void;
 }
 
-export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
+export const TrainRigModal = ({
+  rig,
+  isOpen,
+  onClose,
+  onTransactionSubmitted,
+}: ModalProps) => {
   const { config } = usePrepareContractWrite({
     addressOrName: contractAddress,
     contractInterface,
@@ -40,12 +46,13 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
     hash: contractWrite.data?.hash,
   });
 
-  const onCloseWithTxStatus = useCallback(() => {
-    return onClose(isSuccess);
-  }, [onClose, isSuccess]);
+  useEffect(() => {
+    if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
+      onTransactionSubmitted(contractWrite.data.hash);
+  }, [onTransactionSubmitted, contractWrite?.data, isSuccess]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onCloseWithTxStatus}>
+    <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Train Rig</ModalHeader>
@@ -72,10 +79,10 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           </Button>
           <Button
             variant="ghost"
-            onClick={onCloseWithTxStatus}
+            onClick={onClose}
             isDisabled={isLoading || (isSuccess && isTxLoading)}
           >
-            {(isSuccess && !isTxLoading) ? "Close" : "Cancel"}
+            {isSuccess && !isTxLoading ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
@@ -83,7 +90,12 @@ export const TrainRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
   );
 };
 
-export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
+export const ParkRigModal = ({
+  rig,
+  isOpen,
+  onClose,
+  onTransactionSubmitted,
+}: ModalProps) => {
   const { config } = usePrepareContractWrite({
     addressOrName: contractAddress,
     contractInterface,
@@ -97,12 +109,13 @@ export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
     hash: contractWrite.data?.hash,
   });
 
-  const onCloseWithTxStatus = useCallback(() => {
-    return onClose(isSuccess);
-  }, [onClose, isSuccess]);
+  useEffect(() => {
+    if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
+      onTransactionSubmitted(contractWrite.data.hash);
+  }, [onTransactionSubmitted, contractWrite?.data, isSuccess]);
 
   return (
-    <Modal isOpen={isOpen} onClose={onCloseWithTxStatus}>
+    <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Park Rig</ModalHeader>
@@ -123,9 +136,9 @@ export const ParkRigModal = ({ rig, isOpen, onClose }: ModalProps) => {
           <Button
             variant="ghost"
             isDisabled={isLoading || (isSuccess && isTxLoading)}
-            onClick={onCloseWithTxStatus}
+            onClick={onClose}
           >
-            {(isSuccess && !isTxLoading) ? "Close" : "Cancel"}
+            {isSuccess && !isTxLoading ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
       </ModalContent>
