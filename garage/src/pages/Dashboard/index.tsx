@@ -58,7 +58,7 @@ export const Dashboard = () => {
         borderTopWidth="1px"
       >
         <Link
-          href="htps://twitter.com/tableland__"
+          href="https://twitter.com/tableland__"
           title="Tableland on Twitter"
           isExternal
         >
