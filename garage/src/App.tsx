@@ -22,7 +22,10 @@ import { chain } from "./env";
 
 const { chains, provider } = configureChains(
   [chain],
-  [alchemyProvider({ apiKey: process.env.ALCHEMY_ID }), publicProvider()]
+  [
+    alchemyProvider({ apiKey: import.meta.env.VITE_ALCHEMY_ID }),
+    publicProvider(),
+  ]
 );
 
 const { connectors } = getDefaultWallets({
