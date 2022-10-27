@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback } from "react";
 import {
   Button,
   Flex,
@@ -7,6 +7,7 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useTablelandConnection } from "../hooks/useTablelandConnection";
 import exit from "../assets/exit.svg";
 
 export const TablelandConnectButton = ({
@@ -18,6 +19,8 @@ export const TablelandConnectButton = ({
     { base: false, sm: true },
     { ssr: false }
   );
+  const { connection: tableland } = useTablelandConnection();
+
   return (
     <ConnectButton.Custom>
       {({
@@ -28,7 +31,19 @@ export const TablelandConnectButton = ({
         openConnectModal,
         mounted,
       }) => {
-        const connected = mounted && account && chain;
+        const connected = mounted && account && chain && tableland.token;
+
+        const connect = useCallback(() => {
+          if (!mounted) return;
+
+          if (!account || !chain) {
+            openConnectModal();
+          }
+
+          if (account && chain) {
+            tableland.siwe();
+          }
+        }, [mounted, account, chain, tableland]);
 
         return (
           <div
@@ -45,7 +60,7 @@ export const TablelandConnectButton = ({
               if (!connected) {
                 return (
                   <Button
-                    onClick={openConnectModal}
+                    onClick={connect}
                     variant="connect"
                     borderRadius="3px"
                     sx={{
