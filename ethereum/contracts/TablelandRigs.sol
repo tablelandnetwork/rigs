@@ -55,16 +55,10 @@ contract TablelandRigs is
     string private _contractInfoURI;
 
     // Table prefix for the Rigs pilot sessions table.
-    string private constant RIG_PILOT_SESSIONS_PREFIX = "pilot_sessions";
-
-    // Table prefix for the Rigs ownership index table.
-    string private constant RIG_OWNERSHIP_INDEX_PREFIX = "rig_ownership_index";
+    string private constant PILOT_SESSIONS_PREFIX = "pilot_sessions";
 
     // Table ID for the Rigs pilot sessions table.
-    uint256 private _rigPilotSessionsTableId;
-
-    // Table ID for the Rigs pilot sessions table.
-    // uint256 private _rigOwnershipIndexTableId = 1; // TODO ignore this for now; need to add table to deploy script
+    uint256 private _pilotSessionsTableId;
 
     // Tracks the Rig `tokenId` to its current `Pilot`.
     mapping(uint16 => Pilot) internal _pilots;
@@ -381,30 +375,30 @@ contract TablelandRigs is
      * @dev See {ITablelandRigs-initPilots}.
      */
     function initPilots() external onlyOwner {
-        _createPilotsTable();
+        _createPilotSessionsTable();
     }
 
     /**
      * @dev Creates the pilot sessions table.
      */
-    function _createPilotsTable() internal {
-        _rigPilotSessionsTableId = TablelandDeployments.get().createTable(
+    function _createPilotSessionsTable() internal {
+        _pilotSessionsTableId = TablelandDeployments.get().createTable(
             address(this),
             SQLHelpers.toCreateFromSchema(
                 "id integer primary key, rig_id integer not null, owner text not null, pilot_contract text, pilot_id integer, start_time integer not null, end_time integer",
-                RIG_PILOT_SESSIONS_PREFIX
+                PILOT_SESSIONS_PREFIX
             )
         );
     }
 
     /**
-     * @dev See {ITablelandRigs-pilotsTable}.
+     * @dev See {ITablelandRigs-pilotSesssionsTable}.
      */
-    function pilotsTable() external view returns (string memory) {
+    function pilotSesssionsTable() external view returns (string memory) {
         return
             SQLHelpers.toNameFromId(
-                RIG_PILOT_SESSIONS_PREFIX,
-                _rigPilotSessionsTableId
+                PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId
             );
     }
 
@@ -417,36 +411,44 @@ contract TablelandRigs is
         return _pilots[uint16(tokenId)];
     }
 
+    /**
+     * @dev Returns the current Garage status of a Rig.
+     *
+     * tokenId - the unique Rig token identifier
+     */
     function _pilotStatus(uint256 tokenId) private view returns (GarageStatus) {
         Pilot memory p = _pilots[uint16(tokenId)];
         if (p.startTime == 0) {
             if (p.pilot == 0) return GarageStatus.UNTRAINED;
-            // The `park` logic should set `pilot` to `0` if both of these are true:
+            // The `park` logic sets `pilot` to `0` if both of these are true:
             //   - `pilot` is currently `1`
-            //   - rigs has not been training for long enough
-            // ie, `park` results in a status of UNTRAINED or PARKED
-            // In no other cases should `park` update `pilot` (it's either current or last used pilot)
+            //   - Rig has not been training for long enough
+            // i.e., `park` results in a status of `UNTRAINED` or `PARKED`
             else return GarageStatus.PARKED;
         } else {
-            // Invariant: pilot cannot be `0` if `startTime` is > `0`.
-            // ie, if rig is training or being piloted, pilot is either the trainer or a real pilot
+            // Invariant: `pilot` cannot be `0` if `startTime` is > `0`.
             if (p.pilot == 1) return GarageStatus.TRAINING;
             else return GarageStatus.PILOTED;
         }
     }
 
+    /**
+     * @dev Returns whether or not a Rig can be piloted.
+     *
+     * tokenId - the unique Rig token identifier
+     */
     function _canPilot(uint256 tokenId) private view returns (bool) {
-        // two ways to pilot:
-        //   1. in PARKED status
-        //   2. in TRAINING status for long enough
-        // Invariant: you cannot switch real pilots mid-flight, but you can go
-        // from trainer -> real pilot to make it easier + cheaper to pilot (continue playing the game)
+        // Invariant: Cannot switch real pilots mid-flight, but can go from trainer -> real pilot
+        // There are two ways to pilot:
+        //   1. In a `PARKED` status
+        //   2. In a `TRAINING` status for long enough (30 days; 172800 blocks)
         Pilot memory p = _pilots[uint16(tokenId)];
         if (p.startTime == 0) {
-            // Rig is either UNTRAINED or PARKED. It's not possible to pilot from UNTRAINED.
-            return p.pilot != 0; // could be trainer (`1`) or real pilot
+            // Rig is either `UNTRAINED` or `PARKED`.
+            // It's not possible to pilot from `UNTRAINED`.
+            return p.pilot != 0; // Could be a trainer (`1`) or real pilot
         } else if (p.pilot == 1) {
-            return block.number >= p.startTime + 172800;
+            return block.number >= p.startTime + 172800; // Check training time completed
         } else return false;
     }
 
@@ -460,16 +462,17 @@ contract TablelandRigs is
         if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
         // Validate the Rig is untrained
         if (_pilotStatus(tokenId) != GarageStatus.UNTRAINED)
-            revert InvalidPilotStatus(tokenId);
+            revert InvalidPilotStatus();
         // Assign a trainer pilot to the Rig (a `pilot` value of `1`)
-        _pilots[uint16(tokenId)] = Pilot(uint64(block.number), 1);
+        _pilots[uint16(tokenId)].startTime = uint64(block.number);
+        _pilots[uint16(tokenId)].pilot = 1;
         // Insert the Rig training session into the Tableland `pilot_sessions` table
         TablelandDeployments.get().runSQL(
             address(this),
-            _rigPilotSessionsTableId,
+            _pilotSessionsTableId,
             SQLHelpers.toInsert(
-                RIG_PILOT_SESSIONS_PREFIX,
-                _rigPilotSessionsTableId,
+                PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId,
                 "rig_id,owner,start_time",
                 string.concat(
                     StringsUpgradeable.toString(uint64(tokenId)),
@@ -500,7 +503,7 @@ contract TablelandRigs is
         // Verify `msg.sender` is authorized to pilot the specified Rig
         if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
         // Check if the Rig can be piloted
-        if (!_canPilot(tokenId)) revert InvalidPilotStatus(tokenId);
+        if (!_canPilot(tokenId)) revert InvalidPilotStatus();
         // Check if `pilotContract` is an ERC-721; cannot be the Rigs contract
         if (
             pilotContract == address(this) ||
@@ -511,24 +514,25 @@ contract TablelandRigs is
             revert InvalidCustomPilot();
         // Verify the pilot token ID fits into a uint32 (required for packing)
         if (pilotTokenId > type(uint32).max) revert InvalidCustomPilot();
+        // Set up the packed pilot (cast, then set pilot ID, starting at bit position 160)
+        uint192 pilot = uint192(uint160(pilotContract)) |
+            (uint192(pilotTokenId) << 160);
         // Check if the pilot is actively piloting another Rig, and if so, park the other Rig
-        // TODO not sure if this is right, for shifting/packing
-        // See a better example: https://github.com/chiru-labs/ERC721A/blob/1843596cf863557fcd3bf0105222a7c29690af5c/contracts/ERC721A.sol#L233
-        uint192 pilot = (uint192(uint160(pilotContract)) << 32) |
-            uint192(pilotTokenId);
         if (_pilotIndex[pilot] != 0) {
             parkRig(_pilotIndex[pilot]);
         }
         // Assign a new pilot to the Rig and update the pilot index
+        if (_pilotStatus(uint16(tokenId)) != GarageStatus.TRAINING)
+            _pilots[uint16(tokenId)].startTime = uint64(block.number);
         _pilots[uint16(tokenId)].pilot = pilot;
         _pilotIndex[pilot] = uint16(tokenId);
         // Insert the pilot into the Tableland `pilot_sessions` table
         TablelandDeployments.get().runSQL(
             address(this),
-            _rigPilotSessionsTableId,
+            _pilotSessionsTableId,
             SQLHelpers.toInsert(
-                RIG_PILOT_SESSIONS_PREFIX,
-                _rigPilotSessionsTableId,
+                PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId,
                 "rig_id,owner,pilot_contract,pilot_id,start_time",
                 string.concat(
                     StringsUpgradeable.toString(uint64(tokenId)),
@@ -589,11 +593,10 @@ contract TablelandRigs is
                 address(this) == _msgSenderERC721A())
         ) revert Unauthorized();
         // Ensure Rig is currently in-flight
-        // TODO error thrown here with `Should not allow the same pilot to operate multiple Rigs`
         if (
             !(_pilotStatus(tokenId) == GarageStatus.TRAINING ||
                 _pilotStatus(tokenId) == GarageStatus.PILOTED)
-        ) revert InvalidPilotStatus(tokenId);
+        ) revert InvalidPilotStatus();
         // Only update the row with the matching `rig_id` and `start_time`
         uint64 startTime = _pilots[uint16(tokenId)].startTime;
         string memory filters = string.concat(
@@ -632,10 +635,10 @@ contract TablelandRigs is
         // Update the pilot information in the Tableland `pilot_sessions` table
         TablelandDeployments.get().runSQL(
             address(this),
-            _rigPilotSessionsTableId,
+            _pilotSessionsTableId,
             SQLHelpers.toUpdate(
-                RIG_PILOT_SESSIONS_PREFIX,
-                _rigPilotSessionsTableId,
+                PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId,
                 setters,
                 filters
             )
@@ -682,67 +685,9 @@ contract TablelandRigs is
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
             // If `Pilot.startTime` is not zero, then the Rig is in-flight
             if (_pilots[uint16(tokenId)].startTime > 0)
-                revert InvalidPilotStatus(tokenId);
+                revert InvalidPilotStatus();
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
-    }
-
-    /**
-     * @dev See {ERC721A-_afterTokenTransfers}.
-     */
-    function _afterTokenTransfers(
-        address from,
-        address to,
-        uint256 startTokenId,
-        uint256 quantity
-    ) internal virtual override {
-        // Insert Rig ownership data into a table, for indexing purposes in Tableland
-        // TODO this increases gas by 1.5-2x
-        // For a mint: 94768 -> 152429
-        // For a simple transfer: 57993 -> 115663
-        /*
-        if (quantity > 1) {
-            uint256 tokenId = startTokenId;
-            string[] memory values = new string[](quantity);
-            for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
-                values[tokenId + quantity - end] = string.concat(
-                    StringsUpgradeable.toString(uint64(tokenId)),
-                    ",",
-                    SQLHelpers.quote(StringsUpgradeable.toHexString(to)),
-                    ",",
-                    Strings.toString(uint64(block.number))
-                );
-            }
-            TablelandDeployments.get().runSQL(
-                address(this),
-                _rigOwnershipIndexTableId,
-                SQLHelpers.toBatchInsert(
-                    RIG_OWNERSHIP_INDEX_PREFIX,
-                    _rigOwnershipIndexTableId,
-                    "rig_id,owner,block_number",
-                    values
-                )
-            );
-        } else {
-            TablelandDeployments.get().runSQL(
-                address(this),
-                _rigOwnershipIndexTableId,
-                SQLHelpers.toInsert(
-                    RIG_OWNERSHIP_INDEX_PREFIX,
-                    _rigOwnershipIndexTableId,
-                    "rig_id,owner,block_number",
-                    string.concat(
-                        StringsUpgradeable.toString(uint64(startTokenId)),
-                        ",",
-                        SQLHelpers.quote(StringsUpgradeable.toHexString(to)),
-                        ",",
-                        Strings.toString(uint64(block.number))
-                    )
-                )
-            );
-        }
-        */
-        super._afterTokenTransfers(from, to, startTokenId, quantity);
     }
 
     /**
