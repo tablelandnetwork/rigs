@@ -1,5 +1,4 @@
-import React, { useCallback, useMemo } from "react";
-import { Link } from "react-router-dom";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -11,9 +10,9 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { TablelandConnectButton } from "../../components/TablelandConnectButton";
 import { TrainRigModal, ParkRigModal } from "../../components/FlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
+import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
 import { useNFTs } from "../../hooks/useNFTs";
 import { TOPBAR_HEIGHT } from "../../Topbar";
@@ -23,6 +22,7 @@ import { Pilots } from "./modules/Pilots";
 import { Badges } from "./modules/Badges";
 import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
+import { sleep, runUntilConditionMet } from "../../utils/async";
 
 const GRID_GAP = 4;
 
@@ -36,6 +36,7 @@ const MODULE_PROPS = {
 export const RigDetails = () => {
   const { id } = useParams();
   const { rig, refresh } = useRig(id || "");
+  const { connection: tableland } = useTablelandConnection();
   const { rigs } = useOwnedRigs();
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
@@ -46,40 +47,48 @@ export const RigDetails = () => {
     return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));
   }, [rig, rigs]);
 
+  const [pendingTx, setPendingTx] = useState<string>();
+  const clearPendingTx = useCallback(() => {
+    setPendingTx(undefined);
+  }, [setPendingTx]);
+
+  const refreshRigAndClearPendingTx = useCallback(() => {
+    refresh();
+    sleep(500).then(_ => setPendingTx(undefined));
+  }, [refresh, setPendingTx]);
+
+  // Effect that waits until a tableland receipt is available for a tx hash
+  // and then refreshes the rig data
+  useEffect(() => {
+    if (tableland && pendingTx) {
+      runUntilConditionMet(
+        () => tableland.receipt(pendingTx),
+        (data) => !!data,
+        refreshRigAndClearPendingTx,
+        {
+          initialDelay: 0,
+          wait: 2_000,
+          maxNumberOfAttempts: 10,
+          onMaxNumberOfAttemptsReached: clearPendingTx,
+        }
+      );
+    }
+  }, [pendingTx, refreshRigAndClearPendingTx, tableland, clearPendingTx]);
+
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
-
-  // NOTE(daniel): refresh callbacks use a 2s delay because we read the status from Tableland
-  // and not the contract and there is a small delay between a transaction finishing and
-  // the data being queryable
 
   const {
     isOpen: trainModalOpen,
     onOpen: onOpenTrainModal,
-    onClose: _onCloseTrainModal,
+    onClose: onCloseTrainModal,
   } = useDisclosure();
-
-  const onCloseTrainModal = useCallback(
-    (completedTx: boolean) => {
-      _onCloseTrainModal();
-      if (completedTx) setTimeout(() => refresh(), 2_000);
-    },
-    [_onCloseTrainModal, refresh]
-  );
 
   const {
     isOpen: parkModalOpen,
     onOpen: onOpenParkModal,
-    onClose: _onCloseParkModal,
+    onClose: onCloseParkModal,
   } = useDisclosure();
-
-  const onCloseParkModal = useCallback(
-    (completedTx: boolean) => {
-      _onCloseParkModal();
-      if (completedTx) setTimeout(() => refresh(), 2_000);
-    },
-    [_onCloseParkModal, refresh]
-  );
 
   return (
     <Flex
@@ -108,6 +117,7 @@ export const RigDetails = () => {
                     borderRadius="3px"
                     rig={rig}
                     pilotNFT={currentNFT}
+                    loading={!!pendingTx}
                     pilotBorderWidth="3px"
                   />
                 </Box>
@@ -138,6 +148,7 @@ export const RigDetails = () => {
           rig={rig}
           isOpen={trainModalOpen}
           onClose={onCloseTrainModal}
+          onTransactionSubmitted={setPendingTx}
         />
       )}
       {rig && parkModalOpen && (
@@ -145,6 +156,7 @@ export const RigDetails = () => {
           rig={rig}
           isOpen={parkModalOpen}
           onClose={onCloseParkModal}
+          onTransactionSubmitted={setPendingTx}
         />
       )}
     </Flex>
