@@ -1,18 +1,26 @@
 import React, { useEffect } from "react";
 import { Heading, Flex, Stack, Text } from "@chakra-ui/react";
-import { TablelandConnectButton } from "../components/TablelandConnectButton";
-import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
+import { TablelandConnectButton } from "../components/TablelandConnectButton";
+import { useTablelandConnection } from "../hooks/useTablelandConnection";
+import { useNavigate } from "react-router-dom";
 import desert from "../assets/desert-bg.png";
 import { TOPBAR_HEIGHT } from "../Topbar";
 
 export const Enter = () => {
   const { isConnected } = useAccount();
+  const { connection: tableland } = useTablelandConnection();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isConnected) navigate("/dashboard");
-  }, [isConnected, navigate]);
+    const interval = setInterval(() => {
+      if (isConnected && tableland.token) navigate("/dashboard");
+    }, 300);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [isConnected, tableland.token, navigate]);
 
   return (
     <Flex
