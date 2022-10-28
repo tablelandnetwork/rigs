@@ -29,11 +29,11 @@ interface ITablelandRigs {
     // Thrown if a Pilot's contract is not ERC-721 compliant or pilot token ID is greater than a uint32.
     error InvalidCustomPilot();
 
-    // Thrown upon a batch pilot update error.
-    error InvalidBatchPilotRig();
-
     // Thrown when a Garage action is attempted while a Rig is in a `GarageStatus` that is invalid for it to be performed.
     error InvalidPilotStatus();
+
+    // Thrown upon a batch pilot update error.
+    error InvalidBatchPilotRig();
 
     // Values describing mint phases.
     enum MintPhase {
@@ -55,11 +55,11 @@ interface ITablelandRigs {
     struct Pilot {
         // Keep track of the pilot's starting `block.number` for flight time tracking.
         uint64 startTime;
-        // Address of the ERC721 pilot contract, packed with the pilot token ID.
+        // Address of the ERC-721 pilot contract, packed with the pilot token ID.
         //
         // Bits Layout:
-        // - [0..159]    `pilotContract`
-        // - [160..191]  `pilotTokenId`
+        // - [0..159]    `pilotContract` - the ERC-721 contract of the pilot
+        // - [160..191]  `pilotTokenId` - the ERC-721 token ID of the pilot
         uint192 pilot;
     }
 
@@ -82,7 +82,6 @@ interface ITablelandRigs {
         uint256 amount
     );
 
-    // TODO check if making these `indexed` is worthwhile; it adds a little gas but makes em more easily queryable
     /**
      * @dev Emitted when a Rig starts its training.
      */
@@ -225,17 +224,17 @@ interface ITablelandRigs {
     function unpause() external;
 
     /**
-     * @dev Initializes Rig pilots by creating the `pilot_sessios` table.
+     * @dev Initializes Rig pilots by creating the pilot sessios table.
      */
     function initPilots() external;
 
     /**
      * @dev Returns the Tableland table name for the pilot sessions table.
      */
-    function pilotSesssionsTable() external returns (string memory);
+    function pilotSessionsTable() external returns (string memory);
 
     /**
-     * @dev Retrieves pilot info for a Rig.
+     * @dev Retrieves pilot info for a Rig, with packed pilot info.
      *
      * tokenId - the unique Rig token identifier
      *
@@ -246,7 +245,7 @@ interface ITablelandRigs {
     function pilotInfo(uint256 tokenId) external view returns (Pilot memory);
 
     /**
-     * @dev Trains a Rig for a period of 30 days, putting it in flight.
+     * @dev Trains a Rig for a period of 30 days, putting it in-flight.
      *
      * tokenId - the unique Rig token identifier
      *
@@ -262,7 +261,7 @@ interface ITablelandRigs {
      * @dev Puts a single Rig in flight by setting a custom `Pilot`.
      *
      * tokenId - the unique Rig token identifier
-     * pilotContract - ERC721 contract address of a desired Rig's pilot
+     * pilotContract - ERC-721 contract address of a desired Rig's pilot
      * pilotTokenId - the unique token identifier at the target `pilotContract`
      *
      * Requirements:
@@ -270,9 +269,9 @@ interface ITablelandRigs {
      * - `tokenId` must exist
      * - `msg.sender` must own the Rig
      * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
-     * - `pilotContract` must be an ERC721 contract; cannot be the Rigs contract
+     * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
      * - `pilotTokenId` must be owned by `msg.sender` at `pilotContract`
-     * - `Pilot` can only be associated with one Rig at a time; parks on conflict
+     * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict
      */
     function pilotRig(
         uint256 tokenId,
@@ -284,7 +283,7 @@ interface ITablelandRigs {
      * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
      *
      * tokenIds - a list of unique Rig token identifiers
-     * pilotContracts - a list of ERC721 contract addresses of a desired Rig's pilot
+     * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
      * pilotTokenIds - a list of unique token identifiers at the target `pilotContract`
      *
      * Requirements:
@@ -292,7 +291,8 @@ interface ITablelandRigs {
      * - All input parameters must be non-empty
      * - All input parameters must have an equal length
      * - There cannot exist a duplicate value in each of the individual parameters
-     * - See `pilotRig` for additional constraints on a per-token basis.
+     * - Values are processed in order (i.e., use same index for each array)
+     * - See `pilotRig` for additional constraints on a per-token basis
      */
     function pilotRig(
         uint256[] memory tokenIds,
