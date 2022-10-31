@@ -26,7 +26,7 @@ interface ITablelandRigs {
     // Thrown when attempting to interact with non-owned Rigs.
     error Unauthorized();
 
-    // Thrown if a Pilot's contract is not ERC-721 compliant or pilot token ID is greater than a uint32.
+    // Thrown if a Pilot's contract is not ERC-721 compliant or pilot ID is greater than a uint32.
     error InvalidCustomPilot();
 
     // Thrown when a Garage action is attempted while a Rig is in a `GarageStatus` that is invalid for it to be performed.
@@ -53,14 +53,12 @@ interface ITablelandRigs {
 
     // A Rig's pilot.
     struct Pilot {
-        // Keep track of the pilot's starting `block.number` for flight time tracking.
+        // Starting block number of pilot's flight time
         uint64 startTime;
-        // Address of the ERC-721 pilot contract, packed with the pilot token ID.
-        //
-        // Bits Layout:
-        // - [0..159]    `pilotContract` - the ERC-721 contract of the pilot
-        // - [160..191]  `pilotTokenId` - the ERC-721 token ID of the pilot
-        uint192 pilot;
+        // ERC-721 token ID of the pilot at `pilotContract`
+        uint32 pilotId;
+        // Address of the ERC-721 contract for the pilot
+        address pilotContract;
     }
 
     /**
@@ -261,8 +259,8 @@ interface ITablelandRigs {
      * @dev Puts a single Rig in flight by setting a custom `Pilot`.
      *
      * tokenId - the unique Rig token identifier
+     * pilotId - the unique token identifier at the target `pilotContract`
      * pilotContract - ERC-721 contract address of a desired Rig's pilot
-     * pilotTokenId - the unique token identifier at the target `pilotContract`
      *
      * Requirements:
      *
@@ -270,21 +268,21 @@ interface ITablelandRigs {
      * - `msg.sender` must own the Rig
      * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
      * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
-     * - `pilotTokenId` must be owned by `msg.sender` at `pilotContract`
+     * - `pilotId` must be owned by `msg.sender` at `pilotContract`
      * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict
      */
     function pilotRig(
         uint256 tokenId,
-        address pilotContract,
-        uint256 pilotTokenId
+        uint256 pilotId,
+        address pilotContract
     ) external;
 
     /**
      * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
      *
      * tokenIds - a list of unique Rig token identifiers
+     * pilotIds - a list of unique token identifiers at the target `pilotContract`
      * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
-     * pilotTokenIds - a list of unique token identifiers at the target `pilotContract`
      *
      * Requirements:
      *
@@ -296,8 +294,8 @@ interface ITablelandRigs {
      */
     function pilotRig(
         uint256[] memory tokenIds,
-        address[] memory pilotContracts,
-        uint256[] memory pilotTokenIds
+        uint256[] memory pilotIds,
+        address[] memory pilotContracts
     ) external;
 
     /**
