@@ -73,14 +73,12 @@ contract TablelandRigs is
     // Table ID for the Rigs pilot sessions table.
     uint256 private _pilotSessionsTableId;
 
-    // A Rig's pilot.
+    // Tracks the Rig `tokenId` to its current pilot, represented as a packed `uint256`.
     //
     // Bits layout:
     // - [0..63]    `startTime` - starting block number of pilot's flight time
     // - [64..95]   `pilotId` - ERC-721 token ID of the pilot at `pilotContract`
     // - [96..255]  `pilotContract` - address of the ERC-721 contract for the pilot
-    uint256 _packedPilot;
-    // Tracks the Rig `tokenId` to its current `_packedPilot`.
     mapping(uint16 => uint256) internal _pilots;
 
     // Tracks the packed "pilot data" (pilot contract and pilot ID) to the Rig `tokenId`.
@@ -438,7 +436,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev Returns all of the unpacked `_packedPilot` info from `_pilots` at Rig token ID.
+     * @dev Returns all of the unpacked pilot info from `_pilots` at Rig token ID.
      *
      * tokenId - the unique Rig token identifier
      */
@@ -459,7 +457,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev Returns the pilot's start time from `_packedPilot`
+     * @dev Returns a pilot's start time.
      *
      * tokenId - the unique Rig token identifier
      */
@@ -468,7 +466,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev Returns the pilot data (packed `uint32` pilot ID and `uint160` pilot contract) from `_packedPilot`
+     * @dev Returns a pilot's data (packed `uint32` pilot ID and `uint160` pilot contract).
      *
      * tokenId - the unique Rig token identifier
      */
@@ -477,7 +475,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev Sets the pilot's start time in `_packedPilot`
+     * @dev Sets a pilot's start time.
      *
      * tokenId - the unique Rig token identifier
      * startTime - the starting block number when putting a Rig into flight
@@ -500,7 +498,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev Sets the "pilot data" (both the pilot ID and pilot contract) in `_packedPilot`
+     * @dev Sets the "pilot data" (both the pilot ID and pilot contract) for a pilot.
      *
      * tokenId - the unique Rig token identifier
      * pilotId - the unique token identifier at the target `pilotContract`
