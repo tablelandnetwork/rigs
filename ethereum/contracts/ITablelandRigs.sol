@@ -88,7 +88,7 @@ interface ITablelandRigs {
     /**
      * @dev Emitted when a Rig is piloted.
      */
-    event Piloted(uint256 tokenId);
+    event Piloted(uint256 tokenId, uint256 pilotId, address pilotContract);
 
     /**
      * @dev Emitted when a Rig is parked.

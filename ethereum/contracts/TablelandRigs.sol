@@ -557,12 +557,13 @@ contract TablelandRigs is
         // There are two ways to pilot:
         //   1. In a `PARKED` status
         //   2. In a `TRAINING` status for long enough (30 days; 172800 blocks)
-        if (_startTime(uint16(tokenId)) == 0) {
+        uint64 startTime = _startTime(uint16(tokenId));
+        if (startTime == 0) {
             // Rig is either `UNTRAINED` or `PARKED`
             // It's not possible to pilot from `UNTRAINED`
             return _pilotData(uint16(tokenId)) != 0; // Could be a trainer (`1`) or real pilot
         } else if (_pilotData(uint16(tokenId)) == 1) {
-            return block.number >= _startTime(uint16(tokenId)) + 172800; // Check training time completed
+            return block.number >= startTime + 172800; // Check training time completed
         } else return false;
     }
 
@@ -577,7 +578,8 @@ contract TablelandRigs is
         // Validate the Rig is untrained
         if (_pilotStatus(uint16(tokenId)) != GarageStatus.UNTRAINED)
             revert InvalidPilotStatus();
-        // Assign a trainer pilot to the Rig (the "pilot data" value: pilot ID is `1`, and pilot contract is `0`)
+        // Assign a trainer pilot to the Rig in `_pilots`
+        // The "pilot data" is the pilot ID `1` and pilot contract `0`
         _setStartTime(uint16(tokenId), uint64(block.number));
         _setPilotData(uint16(tokenId), 1, 0);
         // Insert the Rig training session into the Tableland pilot sessions table
@@ -628,8 +630,8 @@ contract TablelandRigs is
             revert InvalidCustomPilot();
         // Verify the `pilotId` fits into a `uint32` (required for packing)
         if (pilotId > type(uint32).max) revert InvalidCustomPilot();
-        // Initialize the packed "pilot data" (pilot contract and pilot ID)
-        uint192 pilot = (uint192(pilotId) |
+        // Initialize the packed "pilot data" (pilot ID `uint32` with a pilot contract `uint160`, shifted 32 bits)
+        uint192 pilotData = (uint192(pilotId) |
             (uint192(uint160(pilotContract)) << 32));
         // Verify if a pilot is already in use, by checking:
         // 1. Has the custom pilot been used before
@@ -637,10 +639,10 @@ contract TablelandRigs is
         // 3. Is the other Rig in-flight (not `PARKED`)
         // If a different, in-flight Rig is using this pilot, park the other Rig
         if (
-            _pilotIndex[pilot] != 0 &&
-            _pilotIndex[pilot] != tokenId &&
-            _pilotStatus(_pilotIndex[pilot]) != GarageStatus.PARKED
-        ) parkRig(_pilotIndex[pilot]);
+            _pilotIndex[pilotData] != 0 &&
+            _pilotIndex[pilotData] != tokenId &&
+            _pilotStatus(_pilotIndex[pilotData]) != GarageStatus.PARKED
+        ) parkRig(_pilotIndex[pilotData]);
         // If the Rig is in-flight while still using its trainer pilot, update its session (no parking required)
         // Pilot has completed training at this point (training validation is defined in `_canPilot`, above)
         if (_pilotStatus(uint16(tokenId)) == GarageStatus.TRAINING) {
@@ -696,15 +698,15 @@ contract TablelandRigs is
             );
         }
         // Avoid overwriting existing pilot if data is unchanged (i.e., if most recent pilot is the same as the one specified)
-        if (_pilotData(uint16(tokenId)) != pilot) {
+        if (_pilotData(uint16(tokenId)) != pilotData) {
             _setPilotData(
                 uint16(tokenId),
                 uint32(pilotId),
                 uint160(pilotContract)
             );
-            _pilotIndex[pilot] = uint16(tokenId);
+            _pilotIndex[pilotData] = uint16(tokenId);
         }
-        emit Piloted(tokenId);
+        emit Piloted(tokenId, pilotId, pilotContract);
     }
 
     /**
@@ -747,9 +749,10 @@ contract TablelandRigs is
                 address(this) == _msgSenderERC721A())
         ) revert Unauthorized();
         // Ensure Rig is currently in-flight
+        GarageStatus pilotStatus = _pilotStatus(uint16(tokenId));
         if (
-            !(_pilotStatus(uint16(tokenId)) == GarageStatus.TRAINING ||
-                _pilotStatus(uint16(tokenId)) == GarageStatus.PILOTED)
+            !(pilotStatus == GarageStatus.TRAINING ||
+                pilotStatus == GarageStatus.PILOTED)
         ) revert InvalidPilotStatus();
         // Only update the row with the matching `rig_id` and `start_time`
         uint64 startTime = _startTime(uint16(tokenId));
@@ -764,7 +767,7 @@ contract TablelandRigs is
         string memory setters;
         // Check if training is complete; must elapse without parking
         if (
-            _pilotStatus(uint16(tokenId)) == GarageStatus.TRAINING &&
+            pilotStatus == GarageStatus.TRAINING &&
             !(block.number >= startTime + 172800)
         ) {
             // Pilot training is incomplete; reset the training pilot such that the Rig must train again
@@ -837,7 +840,7 @@ contract TablelandRigs is
         // Block transfers while a Rig is being piloted (i.e., is not `PARKED`)
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
-            // If `Pilot.startTime` is not zero, then the Rig is in-flight
+            // If the pilot's `startTime` is not zero, then the Rig is in-flight
             if (_startTime(uint16(tokenId)) > 0) revert InvalidPilotStatus();
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
