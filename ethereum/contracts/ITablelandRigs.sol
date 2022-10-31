@@ -55,10 +55,10 @@ interface ITablelandRigs {
     struct Pilot {
         // Starting block number of pilot's flight time
         uint64 startTime;
-        // ERC-721 token ID of the pilot at `pilotContract`
-        uint32 pilotId;
         // Address of the ERC-721 contract for the pilot
         address pilotContract;
+        // ERC-721 token ID of the pilot at `pilotContract`
+        uint32 pilotId;
     }
 
     /**
@@ -88,7 +88,7 @@ interface ITablelandRigs {
     /**
      * @dev Emitted when a Rig is piloted.
      */
-    event Piloted(uint256 tokenId, uint256 pilotId, address pilotContract);
+    event Piloted(uint256 tokenId, address pilotContract, uint256 pilotId);
 
     /**
      * @dev Emitted when a Rig is parked.
@@ -259,8 +259,8 @@ interface ITablelandRigs {
      * @dev Puts a single Rig in flight by setting a custom `Pilot`.
      *
      * tokenId - the unique Rig token identifier
-     * pilotId - the unique token identifier at the target `pilotContract`
      * pilotContract - ERC-721 contract address of a desired Rig's pilot
+     * pilotId - the unique token identifier at the target `pilotContract`
      *
      * Requirements:
      *
@@ -273,16 +273,16 @@ interface ITablelandRigs {
      */
     function pilotRig(
         uint256 tokenId,
-        uint256 pilotId,
-        address pilotContract
+        address pilotContract,
+        uint256 pilotId
     ) external;
 
     /**
      * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
      *
      * tokenIds - a list of unique Rig token identifiers
-     * pilotIds - a list of unique token identifiers at the target `pilotContract`
      * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
+     * pilotIds - a list of unique token identifiers at the target `pilotContract`
      *
      * Requirements:
      *
@@ -294,8 +294,8 @@ interface ITablelandRigs {
      */
     function pilotRig(
         uint256[] memory tokenIds,
-        uint256[] memory pilotIds,
-        address[] memory pilotContracts
+        address[] memory pilotContracts,
+        uint256[] memory pilotIds
     ) external;
 
     /**

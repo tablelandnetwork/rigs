@@ -429,10 +429,10 @@ contract TablelandRigs is
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         (
             uint64 startTime,
-            uint32 pilotId,
-            uint160 pilotContract
+            uint160 pilotContract,
+            uint32 pilotId
         ) = _unpackedPilotInfo(uint16(tokenId));
-        return Pilot(startTime, pilotId, address(pilotContract));
+        return Pilot(startTime, address(pilotContract), pilotId);
     }
 
     /**
@@ -445,14 +445,14 @@ contract TablelandRigs is
         view
         returns (
             uint64,
-            uint32,
-            uint160
+            uint160,
+            uint32
         )
     {
         return (
             uint64(_pilots[tokenId]),
-            uint32(_pilots[tokenId] >> _BITPOS_PILOT_ID),
-            uint160(_pilots[tokenId] >> _BITPOS_PILOT_CONTRACT)
+            uint160(_pilots[tokenId] >> _BITPOS_PILOT_CONTRACT),
+            uint32(_pilots[tokenId] >> _BITPOS_PILOT_ID)
         );
     }
 
@@ -506,16 +506,16 @@ contract TablelandRigs is
      */
     function _setPilotData(
         uint16 tokenId,
-        uint32 pilotId,
-        uint160 pilotContract
+        uint160 pilotContract,
+        uint32 pilotId
     ) internal virtual {
         uint256 pilot = _pilots[tokenId];
-        uint256 pilotIdCasted;
         uint256 pilotContractCasted;
+        uint256 pilotIdCasted;
         // Cast "pilot data" (pilot contract and pilot ID) with assembly to avoid redundant masking
         assembly {
-            pilotIdCasted := pilotId
             pilotContractCasted := pilotContract
+            pilotIdCasted := pilotId
         }
         // Set the pilot by first masking the start time
         pilot =
@@ -579,7 +579,7 @@ contract TablelandRigs is
         // Assign a trainer pilot to the Rig in `_pilots`
         // The "pilot data" is the pilot ID `1` and pilot contract `0`
         _setStartTime(uint16(tokenId), uint64(block.number));
-        _setPilotData(uint16(tokenId), 1, 0);
+        _setPilotData(uint16(tokenId), 0, 1);
         // Insert the Rig training session into the Tableland pilot sessions table
         TablelandDeployments.get().runSQL(
             address(this),
@@ -609,8 +609,8 @@ contract TablelandRigs is
      */
     function pilotRig(
         uint256 tokenId,
-        uint256 pilotId,
-        address pilotContract
+        address pilotContract,
+        uint256 pilotId
     ) public {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
@@ -699,12 +699,12 @@ contract TablelandRigs is
         if (_pilotData(uint16(tokenId)) != pilotData) {
             _setPilotData(
                 uint16(tokenId),
-                uint32(pilotId),
-                uint160(pilotContract)
+                uint160(pilotContract),
+                uint32(pilotId)
             );
             _pilotIndex[pilotData] = uint16(tokenId);
         }
-        emit Piloted(tokenId, pilotId, pilotContract);
+        emit Piloted(tokenId, pilotContract, pilotId);
     }
 
     /**
@@ -712,8 +712,8 @@ contract TablelandRigs is
      */
     function pilotRig(
         uint256[] calldata tokenIds,
-        uint256[] calldata pilotIds,
-        address[] calldata pilotContracts
+        address[] calldata pilotContracts,
+        uint256[] calldata pilotIds
     ) external {
         // Ensure the arrays are non-empty
         if (
@@ -731,7 +731,7 @@ contract TablelandRigs is
         ) revert InvalidBatchPilotRig();
         // For each token, call `pilotRig`
         for (uint8 i = 0; i < tokenIds.length; i++) {
-            pilotRig(tokenIds[i], pilotIds[i], pilotContracts[i]);
+            pilotRig(tokenIds[i], pilotContracts[i], pilotIds[i]);
         }
     }
 
