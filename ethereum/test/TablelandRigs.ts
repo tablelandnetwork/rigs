@@ -493,7 +493,7 @@ describe("Rigs", function () {
       tablelandHost +
       "/query?extract=true&unwrap=true&s=" +
       encodeURIComponent(
-        `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id,'attributes',json_array(json_object('trait_type','status','value','pre-reveal'))) from table1 join table2 where rig_id=`
+        `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id||'.html','attributes',json_array(json_object('trait_type','status','value','pre-reveal'))) from table1 join table2 where rig_id=`
       );
     expect(uri[0]).to.equal(result);
     expect(uri[1]).to.equal("%20group%20by%20rig_id%3B");
@@ -508,7 +508,7 @@ describe("Rigs", function () {
       tablelandHost +
       "/query?extract=true&unwrap=true&s=" +
       encodeURIComponent(
-        `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id,'attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 where rig_id=`
+        `select json_object('name','Rig #'||rig_id,'external_url','https://tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id||'.html','attributes',json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))) from table1 join table2 where rig_id=`
       );
 
     expect(uri[0]).to.equal(result);
