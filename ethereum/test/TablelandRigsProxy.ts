@@ -44,10 +44,9 @@ describe("TablelandRigsProxy", function () {
       accounts[3].address,
       tree.getHexRoot()
     );
-    const BadFactory = await ethers.getContractFactory(
-      "TablelandRigs",
-      accounts[1]
-    );
+    const BadFactory = await ethers.getContractFactory("TablelandRigs", {
+      signer: accounts[1],
+    });
     await expect(update(rigs, BadFactory)).to.be.revertedWith(
       "Ownable: caller is not the owner"
     );
