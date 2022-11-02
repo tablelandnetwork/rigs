@@ -17,21 +17,28 @@ async function main() {
   }
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
-  // Get URI template
-  if (rigsDeployment.tokensTable === "") {
-    throw Error(`missing table names entries in config`);
+  // Ensure we can build URI template
+  if (rigsDeployment.attributesTable === "") {
+    throw Error(`missing attributes table entry in deployments`);
+  }
+  if (rigsDeployment.lookupsTable === "") {
+    throw Error(`missing lookups table entry in deployments`);
   }
 
-  const uriTemplate = getURITemplate(
-    rigsDeployment.tablelandHost,
-    rigsDeployment.tokensTable,
-    rigsDeployment.attributesTable
-  );
-
-  // Update base URI
+  // Get pilots table
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   ) as TablelandRigs;
+  const pilotsTable = await rigs.pilotsTable();
+
+  // Update URI template
+  const uriTemplate = getURITemplate(
+    rigsDeployment.tablelandHost,
+    rigsDeployment.attributesTable,
+    rigsDeployment.lookupsTable,
+    pilotsTable,
+    rigsDeployment.displayAttributes
+  );
   const tx = await rigs.setURITemplate(uriTemplate);
   const receipt = await tx.wait();
   console.log(

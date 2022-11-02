@@ -42,38 +42,43 @@ func NewDirPublisher(
 	}
 }
 
-// PublishDir publishes the specified dir to nft.storage.
-func (dp *DirPublisher) PublishDir(ctx context.Context, dir, label string) (string, error) {
+// DirToIpfs publishes the specified dir to IPFS.
+func (dp *DirPublisher) DirToIpfs(ctx context.Context, dir, label string) (cid.Cid, error) {
 	fi, err := os.Stat(dir)
 	if err != nil {
-		return "", fmt.Errorf("stating dir: %v", err)
+		return cid.Cid{}, fmt.Errorf("stating dir: %v", err)
 	}
 
 	node, err := ipfsfiles.NewSerialFile(dir, false, fi)
 	if err != nil {
-		return "", fmt.Errorf("creating node from dir: %v", err)
+		return cid.Cid{}, fmt.Errorf("creating node from dir: %v", err)
 	}
 
 	log.Default().Println("Adding folder to IPFS...")
 
 	ipfsPath, err := dp.ipfsClient.Unixfs().Add(ctx, node, options.Unixfs.CidVersion(1))
 	if err != nil {
-		return "", fmt.Errorf("adding dir to ipfs: %v", err)
+		return cid.Cid{}, fmt.Errorf("adding dir to ipfs: %v", err)
 	}
 
 	if err := dp.localStore.TrackCid(ctx, label, ipfsPath.Cid().String()); err != nil {
-		return "", fmt.Errorf("tracking cid: %v", err)
+		return cid.Cid{}, fmt.Errorf("tracking cid: %v", err)
 	}
 
 	log.Default().Printf("Folder added with cid %s\n", ipfsPath.Cid().String())
 
+	return ipfsPath.Cid(), nil
+}
+
+// CidToCarChunks publishes the cid already in IPFS to nft.storage.
+func (dp *DirPublisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "rigs-uploader")
 	if err != nil {
+		_ = os.RemoveAll(tmpDir)
 		return "", fmt.Errorf("making tmp dir: %v", err)
 	}
-	defer func() {
-		_ = os.RemoveAll(tmpDir)
-	}()
+
+	log.Default().Printf("writing car chunks to %s", tmpDir)
 
 	carReader, carWriter := io.Pipe()
 
@@ -82,7 +87,7 @@ func (dp *DirPublisher) PublishDir(ctx context.Context, dir, label string) (stri
 			ID:   1,
 			Desc: "write car",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				if err := car.WriteCar(ctx, dp.ipfsClient.Dag(), []cid.Cid{ipfsPath.Cid()}, carWriter); err != nil {
+				if err := car.WriteCar(ctx, dp.ipfsClient.Dag(), []cid.Cid{dirCid}, carWriter); err != nil {
 					return nil, fmt.Errorf("writing car: %v", err)
 				}
 				_ = carWriter.Close()
@@ -120,6 +125,7 @@ L0:
 				continue
 			}
 			if r.Err != nil {
+				_ = os.RemoveAll(tmpDir)
 				return "", fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
 			}
 			log.Default().Printf("processed job %d. %s\n", r.ID, r.Desc)
@@ -138,22 +144,29 @@ L0:
 			if err == io.EOF {
 				break
 			}
+			_ = os.RemoveAll(tmpDir)
 			return "", fmt.Errorf("iterating splitter: %v", err)
 		}
 		log.Default().Printf("writing car chunk %d\n", c)
 		b, err := io.ReadAll(car)
 		if err != nil {
+			_ = os.RemoveAll(tmpDir)
 			return "", fmt.Errorf("reading car chunk: %v", err)
 		}
 		if err := os.WriteFile(fmt.Sprintf("%s/chunk-%d.car", tmpDir, c), b, 0o644); err != nil {
+			_ = os.RemoveAll(tmpDir)
 			return "", fmt.Errorf("writing car chunk to file: %v", err)
 		}
 		c++
 	}
+	return tmpDir, nil
+}
 
+// CarChunksToNftStorage publishes the car chunks in the specified dir to nft.storage.
+func (dp *DirPublisher) CarChunksToNftStorage(ctx context.Context, tmpDir string) error {
 	chunks, err := os.ReadDir(tmpDir)
 	if err != nil {
-		return "", fmt.Errorf("reading tmp dir: %v", err)
+		return fmt.Errorf("reading tmp dir: %v", err)
 	}
 
 	var jobs1 []wpool.Job
@@ -180,7 +193,7 @@ L0:
 	ctx1, cancel1 := context.WithCancel(ctx)
 	defer cancel1()
 
-	p1 := wpool.New(20, rate.Every(time.Millisecond*350))
+	p1 := wpool.New(1, rate.Every(time.Millisecond*350))
 	go p1.GenerateFrom(jobs1)
 	go p1.Run(ctx1)
 L1:
@@ -191,12 +204,13 @@ L1:
 				continue
 			}
 			if r.Err != nil {
-				return "", fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+				return fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
 			}
 			log.Default().Printf("processed job %d: %s, %v", r.ID, r.Desc, r.Value)
 		case <-p1.Done:
 			break L1
 		}
 	}
-	return ipfsPath.Cid().String(), nil
+	_ = os.RemoveAll(tmpDir)
+	return nil
 }
