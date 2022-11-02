@@ -199,7 +199,7 @@ async function main() {
   console.log("Initialized pilots");
 
   // Set URI template
-  const pilotsTable = await rigs.pilotsTable();
+  const pilotsTable = await rigs.pilotSessionsTable();
   const uriTemplate = getURITemplate(
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
