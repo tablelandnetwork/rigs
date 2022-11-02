@@ -52,7 +52,7 @@ export const RigDisplay = ({
 
   return (
     <Box position="relative" overflow="hidden" {...props}>
-      <Image src={thumb} />
+      <Image src={thumb} minWidth="100%" />
       <Box position="absolute" right="0" bottom="0" width="25%">
         {showPilot ? (
           loading ? (
