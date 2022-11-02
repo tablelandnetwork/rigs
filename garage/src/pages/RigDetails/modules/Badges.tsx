@@ -59,7 +59,12 @@ export const Badges = ({ rig, p, ...props }: BadgesProps) => {
                   pr={0}
                   width={`calc(var(--chakra-sizes-${p}) + 30px)`}
                 >
-                  <Image src={badgeImageUrl} width="30px" height="30px" />
+                  <Image
+                    src={badgeImageUrl}
+                    width="30px"
+                    height="30px"
+                    minWidth="30px"
+                  />
                 </Td>
                 <Td pl={3}>{badge}</Td>
                 <Td>{pilot}</Td>
