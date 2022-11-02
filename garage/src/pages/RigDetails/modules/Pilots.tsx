@@ -127,7 +127,9 @@ export const Pilots = ({
                     <TrainerPilot width="30px" height="30px" />
                   )}
                 </Td>
-                <Td pl={3}>{pilot}</Td>
+                <Td pl={3} wordBreak="break-all">
+                  {pilot}
+                </Td>
                 <Td>{prettyNumber(flightTime)}</Td>
                 <Td pr={p} color={status == "Garaged" ? "inactive" : "inherit"}>
                   {status}
