@@ -46,6 +46,7 @@ ethereum/gobuild
 ethereum/cache
 ethereum/artifacts
 ethereum/allowlists
+ethereum/contracts/hardhat-dependency-compiler
 ethereum/.openzeppelin/unknown-*1337.json
 ethereum/deployments.d*
 ethereum/deployments.js*
