@@ -3,6 +3,7 @@ import {
   Box,
   Heading,
   Image,
+  Show,
   Spinner,
   Table,
   Tbody,
@@ -20,6 +21,10 @@ import { education, code } from "../../../assets/badges/";
 type BadgesProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
   nfts: NFT[];
+};
+
+const shortVisibilityString = (visibility: string) => {
+  return visibility === "Visible" ? "Yes" : "No";
 };
 
 export const Badges = ({ rig, p, ...props }: BadgesProps) => {
@@ -47,7 +52,10 @@ export const Badges = ({ rig, p, ...props }: BadgesProps) => {
               Name
             </Th>
             <Th>Earned by</Th>
-            <Th pr={p}>Visibility</Th>
+            <Th pr={p}>
+              <Show above="sm">Visibility</Show>
+              <Show below="sm">Shown</Show>
+            </Th>
           </Tr>
         </Thead>
         <Tbody>
@@ -72,7 +80,8 @@ export const Badges = ({ rig, p, ...props }: BadgesProps) => {
                   pr={p}
                   color={visibility == "Hidden" ? "inactive" : "inherit"}
                 >
-                  {visibility}
+                  <Show above="sm">{visibility}</Show>
+                  <Show below="sm">{shortVisibilityString(visibility)}</Show>
                 </Td>
               </Tr>
             );

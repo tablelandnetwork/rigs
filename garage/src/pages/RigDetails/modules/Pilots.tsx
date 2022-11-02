@@ -5,6 +5,7 @@ import {
   Heading,
   HStack,
   Image,
+  Show,
   StackItem,
   Table,
   Tbody,
@@ -99,7 +100,10 @@ export const Pilots = ({
             <Th pl={p} colSpan={2}>
               Pilot
             </Th>
-            <Th>Flight time (FT)</Th>
+            <Th>
+              <Show above="sm">Flight time (FT)</Show>
+              <Show below="sm">FT</Show>
+            </Th>
             <Th pr={p}>Status</Th>
           </Tr>
         </Thead>
