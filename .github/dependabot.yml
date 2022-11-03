@@ -12,3 +12,11 @@ updates:
     directory: "/viewer"
     schedule:
       interval: "daily"
+  - package-ecosystem: "npm"
+    directory: "/animation_url"
+    schedule:
+      interval: "daily"
+  - package-ecosystem: "npm"
+    directory: "/garage"
+    schedule:
+      interval: "daily"
