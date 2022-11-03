@@ -1,3 +1,4 @@
 {
+  "trailingSlash": false,
   "rewrites": [{ "source": "/(.*)", "destination": "/" }]
 }
