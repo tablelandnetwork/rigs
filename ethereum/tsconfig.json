@@ -3,12 +3,14 @@
     "target": "es2018",
     "lib": ["es2021"],
     "module": "commonjs",
+    "moduleResolution": "node",
     "strict": true,
     "esModuleInterop": true,
-    "moduleResolution": "node",
-    "outDir": "dist",
-    "declaration": true
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "."
   },
-  "include": ["./scripts", "./helpers", "./test", "./typechain-types"],
-  "files": ["./hardhat.config.ts"]
+  "include": ["./typechain-types/**/*"],
+  "files": ["deployments.ts"]
 }
