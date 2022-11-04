@@ -5,7 +5,7 @@ const chain = Object.entries(SUPPORTED_CHAINS).find(
   ([_, chain]) => chain.chainId === envChain.id
 )![0] as ChainName;
 
-const connection = connect({
+export const connection = connect({
   network: "testnet",
   chain,
 });
