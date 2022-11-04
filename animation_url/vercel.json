@@ -1,5 +1,4 @@
 {
   "trailingSlash": false,
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "github": { "silent": true }
 }
