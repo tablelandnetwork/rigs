@@ -19,6 +19,7 @@ export interface RigsDeployment {
   layersTable: string;
   attributesTable: string;
   lookupsTable: string;
+  pilotSessionsTable: string;
   displayAttributes: boolean;
 }
 
@@ -39,6 +40,7 @@ export const deployments: RigsDeployments = {
     layersTable: "layers_5_29",
     attributesTable: "rig_attributes_5_27",
     lookupsTable: "", // TODO: Fill me.
+    pilotSessionsTable: "", // TODO: Fill me.
     displayAttributes: true,
   },
   // testnets
@@ -53,6 +55,7 @@ export const deployments: RigsDeployments = {
     layersTable: "",
     attributesTable: "rig_attributes_80001_3507",
     lookupsTable: "lookups_80001_3508",
+    pilotSessionsTable: "pilot_sessions_80001_3598",
     displayAttributes: true,
   },
   localhost: {
@@ -66,6 +69,7 @@ export const deployments: RigsDeployments = {
     layersTable: "",
     attributesTable: "",
     lookupsTable: "",
+    pilotSessionsTable: "",
     displayAttributes: true,
   },
 };
