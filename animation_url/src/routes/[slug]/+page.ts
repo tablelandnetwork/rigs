@@ -5,7 +5,7 @@ const chain = "polygon-mumbai"; // "ethereum"
 
 const attributesTable = deployments[chain].attributesTable;
 const lookupsTable = deployments[chain].lookupsTable;
-const pilotSessionsTable = deployments[chain].sessionsTable;
+const pilotSessionsTable = deployments[chain].pilotSessionsTable;
 const ipfsGatewayUri = "https://nftstorage.link/ipfs/";
 
 /** @type {import('./$types').PageLoad} */
@@ -21,7 +21,7 @@ export async function load({ url }) {
   const stm = `select json_object(
     'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name
   ) from ${attributesTable} join ${lookupsTable} where rig_id=${rigId} group by rig_id;`;
-  const metadata: any = await tableland.read(stm, {
+  const metadata = await tableland.read(stm, {
     output: "objects",
     extract: true,
     unwrap: true,
@@ -30,7 +30,7 @@ export async function load({ url }) {
 
   // get pilot
   let pilot;
-  const sessions: any = await tableland.read(
+  const sessions = await tableland.read(
     `SELECT end_time FROM ${pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`,
     { output: "objects" }
   );
