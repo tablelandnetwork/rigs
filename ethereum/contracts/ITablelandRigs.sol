@@ -135,9 +135,9 @@ interface ITablelandRigs {
      *
      * by - the address to retrieve claims for
      */
-    function getClaimed(address by)
-        external
-        returns (uint16 allowClaims, uint16 waitClaims);
+    function getClaimed(
+        address by
+    ) external returns (uint16 allowClaims, uint16 waitClaims);
 
     /**
      * @dev Sets mint phase.

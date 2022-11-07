@@ -1,8 +1,23 @@
 <script>
   /** @type {import('./$types').PageData} */
   export let data;
-
 </script>
+
+<div class="container">
+  <img class="rig-image" src={data.imageUrl} alt="rig" width="100%" />
+  <div class="badges-container">
+    {#each data.badges as badge}
+      {#if badge}
+        <img src={badge} class="badge" alt="badge" />
+      {:else}
+        <div class="badge" />
+      {/if}
+    {/each}
+  </div>
+  {#if data.pilot}
+    <img class="pilot" src={data.pilot} alt="pilot" />
+  {/if}
+</div>
 
 <style type="text/css">
   :global(body) {
@@ -47,22 +62,4 @@
     border-left: 0.1875rem solid #101e1e;
     border-radius: 0.1875rem 0 0 0;
   }
-
 </style>
-<div class="container">
-  <img class="rig-image" src={ data.imageUrl } alt="rig" width=100%>
-  <div class="badges-container">
-    {#each data.badges as badge }
-    {#if badge}
-    <img src={ badge } class="badge" alt="badge">
-    {:else}
-    <div class="badge"></div>
-    {/if}
-    {/each}
-  </div>
-  {#if data.pilot}
-  <img class="pilot" src={ data.pilot } alt="pilot">
-  {/if}
-</div>
-
-
