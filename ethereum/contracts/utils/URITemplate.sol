@@ -26,11 +26,9 @@ contract URITemplate {
      *
      * tokenIdStr - the tokenId as a string
      */
-    function _getTokenURI(string memory tokenIdStr)
-        internal
-        view
-        returns (string memory)
-    {
+    function _getTokenURI(
+        string memory tokenIdStr
+    ) internal view returns (string memory) {
         if (_uriParts.length == 0) {
             return "";
         }
