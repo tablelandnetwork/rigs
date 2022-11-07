@@ -57,9 +57,9 @@ func init() {
 		`the tableland/evm to use, spported values are:
 	ethereum
 	optimism
+	arbitrum
 	polygon
 	ethereum-goerli
-	optimism-kovan
 	optimism-goerli
 	arbitrum-goerli
 	polygon-mumbai
@@ -177,12 +177,12 @@ func getChain() (client.Chain, error) {
 		return client.Chains.Ethereum, nil
 	case "optimism":
 		return client.Chains.Optimism, nil
+	case "arbitrum":
+		return client.Chains.Arbitrum, nil
 	case "polygon":
 		return client.Chains.Polygon, nil
 	case "ethereum-goerli":
 		return client.Chains.EthereumGoerli, nil
-	case "optimism-kovan":
-		return client.Chains.OptimismKovan, nil
 	case "optimism-goerli":
 		return client.Chains.OptimismGoerli, nil
 	case "arbitrum-goerli":
@@ -199,10 +199,10 @@ func getChain() (client.Chain, error) {
 var infuraURLs = map[client.ChainID]string{
 	client.ChainIDs.EthereumGoerli: "https://goerli.infura.io/v3/%s",
 	client.ChainIDs.Ethereum:       "https://mainnet.infura.io/v3/%s",
-	client.ChainIDs.OptimismKovan:  "https://optimism-kovan.infura.io/v3/%s",
 	client.ChainIDs.OptimismGoerli: "https://optimism-goerli.infura.io/v3/%s",
 	client.ChainIDs.Optimism:       "https://optimism-mainnet.infura.io/v3/%s",
-	client.ChainIDs.ArbitrumGoerli: "https://arbitrim-goerli.infura.io/v3/%s", // TODO: Check this, requires upgrade.
+	client.ChainIDs.ArbitrumGoerli: "https://arbitrim-goerli.infura.io/v3/%s",
+	client.ChainIDs.Arbitrum:       "https://arbitrum-mainnet.infura.io/v3/%s",
 	client.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.infura.io/v3/%s",
 	client.ChainIDs.Polygon:        "https://polygon-mainnet.infura.io/v3/%s",
 }
@@ -210,10 +210,10 @@ var infuraURLs = map[client.ChainID]string{
 var alchemyURLs = map[client.ChainID]string{
 	client.ChainIDs.EthereumGoerli: "https://eth-goerli.g.alchemy.com/v2/%s",
 	client.ChainIDs.Ethereum:       "https://eth-mainnet.g.alchemy.com/v2/%s",
-	client.ChainIDs.OptimismKovan:  "https://opt-kovan.g.alchemy.com/v2/%s",
 	client.ChainIDs.OptimismGoerli: "https://opt-goerli.g.alchemy.com/v2/%s",
 	client.ChainIDs.Optimism:       "https://opt-mainnet.g.alchemy.com/v2/%s",
 	client.ChainIDs.ArbitrumGoerli: "https://arb-goerli.g.alchemy.com/v2/%s",
+	client.ChainIDs.Arbitrum:       "https://arb-mainnet.g.alchemy.com/v2/%s",
 	client.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.g.alchemy.com/v2/%s",
 	client.ChainIDs.Polygon:        "https://polygon-mainnet.g.alchemy.com/v2/%s",
 }
