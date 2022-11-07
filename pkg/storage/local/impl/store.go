@@ -69,6 +69,15 @@ const (
 			name text not null,
 			primary key (label, chain_id)
 		);
+
+		create table if not exists txns (
+			hash text not null primary key,
+			table_label text not null,
+			chain_id integer not null,
+			action text not null,
+			sql text not null,
+			cost integer
+		);
 	`
 	clearInventorySQL = `
 		delete from parts;
@@ -207,6 +216,24 @@ func (s *Store) TrackTableName(ctx context.Context, label string, chainID int64,
 		name,
 	); err != nil {
 		return fmt.Errorf("executing query: %v", err)
+	}
+	return nil
+}
+
+// TrackTxn implements TrackTxn.
+func (s *Store) TrackTxn(
+	ctx context.Context,
+	hash string,
+	tableLabel string,
+	chainID int64,
+	action string,
+	sql string,
+	cost int64,
+) error {
+	vals := [][]interface{}{{hash, tableLabel, chainID, action, sql, cost}}
+	insert := s.db.Insert("txns").Cols("hash", "table_label", "chain_id", "action", "sql", "cost").Vals(vals...).Executor()
+	if _, err := insert.ExecContext(ctx); err != nil {
+		return fmt.Errorf("inserting txns: %v", err)
 	}
 	return nil
 }
@@ -514,6 +541,17 @@ func (s *Store) ClearInventory(ctx context.Context) error {
 func (s *Store) ClearRigs(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, clearRigsSQL); err != nil {
 		return fmt.Errorf("executing sql: %v", err)
+	}
+	return nil
+}
+
+// ClearTxns implements ClearTxns.
+func (s *Store) ClearTxns(ctx context.Context, tableLabel string, chainID int64, action string) error {
+	del := s.db.Delete("txns").
+		Where(goqu.And(goqu.C("table_label").Eq(tableLabel), goqu.C("chain_id").Eq(chainID), goqu.C("action").Eq(action))).
+		Executor()
+	if _, err := del.ExecContext(ctx); err != nil {
+		return fmt.Errorf("executing delete: %v", err)
 	}
 	return nil
 }

@@ -33,7 +33,7 @@ var rendersCmd = &cobra.Command{
 		chunksDir := viper.GetString("chunks-dir")
 
 		if chunksDir == "" && c.String() == "" {
-			c, err = dirPublisher.DirToIpfs(ctx, path)
+			c, err = dirPublisher.DirToIpfs(ctx, path, "renders")
 			checkErr(err)
 			fmt.Printf("Images added to IPFS with cid %s\n", c.String())
 		}
@@ -44,7 +44,5 @@ var rendersCmd = &cobra.Command{
 		}
 		checkErr(dirPublisher.CarChunksToNftStorage(ctx, chunksDir))
 		fmt.Printf("Renders published with cid %s\n", c.String())
-
-		checkErr(localStore.TrackCid(ctx, "renders", c.String()))
 	},
 }
