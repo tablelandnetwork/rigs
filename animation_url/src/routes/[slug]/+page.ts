@@ -1,8 +1,11 @@
 import { connect } from "@tableland/sdk";
+import { deployments } from "deployments";
 
-const attributesTable = "rig_attributes_80001_3507";
-const lookupsTable = "lookups_80001_3508";
-const pilotSessionsTable = "pilot_sessions_80001_3515";
+const chain = "polygon-mumbai"; // "ethereum"
+
+const attributesTable = deployments[chain].attributesTable;
+const lookupsTable = deployments[chain].lookupsTable;
+const pilotSessionsTable = deployments[chain].sessionsTable;
 const ipfsGatewayUri = "https://nftstorage.link/ipfs/";
 
 /** @type {import('./$types').PageLoad} */
