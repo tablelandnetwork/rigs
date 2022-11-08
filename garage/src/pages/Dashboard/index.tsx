@@ -22,7 +22,7 @@ export const Dashboard = () => {
         direction="column"
         align="center"
         width="100%"
-        minHeight={`calc(100vh - ${TOPBAR_HEIGHT}) + 40px`}
+        minHeight={`calc(100vh - ${TOPBAR_HEIGHT} + 40px)`}
         mb="40px"
       >
         <Flex
