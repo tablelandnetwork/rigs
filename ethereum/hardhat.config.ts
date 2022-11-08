@@ -54,11 +54,15 @@ const config: HardhatUserConfig = {
 
       // optimism
       optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
-      optimisticKovan: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
+      optimisticGoerli: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
 
       // polygon
       polygon: process.env.POLYSCAN_API_KEY || "",
       polygonMumbai: process.env.POLYSCAN_API_KEY || "",
+
+      // arbitrum
+      arbitrum: process.env.REPLACE_ME || "",
+      arbitrumGoerli: process.env.REPLACE_ME || "",
     },
   },
   networks: {
@@ -81,6 +85,24 @@ const config: HardhatUserConfig = {
           ? [process.env.OPTIMISM_PRIVATE_KEY]
           : [],
     },
+    polygon: {
+      url: `https://polygon-mainnet.g.alchemy.com/v2/${
+        process.env.POLYGON_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.POLYGON_PRIVATE_KEY !== undefined
+          ? [process.env.POLYGON_PRIVATE_KEY]
+          : [],
+    },
+    arbitrum: {
+      url: `https://arb-mainnet.g.alchemy.com/v2/${
+        process.env.ARBITRUM_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.ARBITRUM_PRIVATE_KEY !== undefined
+          ? [process.env.ARBITRUM_PRIVATE_KEY]
+          : [],
+    },
     // testnets
     "ethereum-goerli": {
       url: `https://eth-goerli.g.alchemy.com/v2/${
@@ -91,13 +113,13 @@ const config: HardhatUserConfig = {
           ? [process.env.ETHEREUM_GOERLI_PRIVATE_KEY]
           : [],
     },
-    "optimism-kovan": {
-      url: `https://opt-kovan.g.alchemy.com/v2/${
-        process.env.OPTIMISM_KOVAN_API_KEY ?? ""
+    "optimism-goerli": {
+      url: `https://opt-goerli.g.alchemy.com/v2/${
+        process.env.OPTIMISM_GOERLI_API_KEY ?? ""
       }`,
       accounts:
-        process.env.OPTIMISM_KOVAN_PRIVATE_KEY !== undefined
-          ? [process.env.OPTIMISM_KOVAN_PRIVATE_KEY]
+        process.env.OPTIMISM_GOERLI_PRIVATE_KEY !== undefined
+          ? [process.env.OPTIMISM_GOERLI_PRIVATE_KEY]
           : [],
     },
     "polygon-mumbai": {
@@ -107,6 +129,15 @@ const config: HardhatUserConfig = {
       accounts:
         process.env.POLYGON_MUMBAI_PRIVATE_KEY !== undefined
           ? [process.env.POLYGON_MUMBAI_PRIVATE_KEY]
+          : [],
+    },
+    "arbitrum-goerli": {
+      url: `https://arb-goerli.g.alchemy.com/v2/${
+        process.env.ARBITRUM_GOERLI_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.ARBITRUM_GOERLI_PRIVATE_KEY !== undefined
+          ? [process.env.ARBITRUM_GOERLI_PRIVATE_KEY]
           : [],
     },
     // devnets
