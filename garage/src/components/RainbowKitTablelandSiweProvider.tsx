@@ -57,8 +57,8 @@ export const RainbowKitTablelandSiweProvider = ({
           const issuedAt = new Date().toISOString();
           const now = Date.now();
           const expirationTime = new Date(
-            now + 10 * 60 * 60 * 1000
-          ).toISOString(); // Default to ~10 hours
+            now + 24 * 60 * 60 * 1000
+          ).toISOString();
 
           return new SiweMessage({
             domain: "Tableland",
