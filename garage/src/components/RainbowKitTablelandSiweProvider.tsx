@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useAccount } from "wagmi";
 import { SiweMessage, generateNonce } from "siwe";
 import {
   createAuthenticationAdapter,
@@ -24,6 +25,12 @@ export const RainbowKitTablelandSiweProvider = ({
     "_TABLELAND_TOKEN",
     undefined
   );
+
+  const _ = useAccount({
+    onDisconnect() {
+      setCachedToken(undefined);
+    },
+  });
 
   const [status, setStatus] = useState<AuthenticationStatus>("loading");
 
