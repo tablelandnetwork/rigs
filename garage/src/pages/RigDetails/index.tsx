@@ -19,7 +19,6 @@ import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
-import { Badges } from "./modules/Badges";
 import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../utils/async";
@@ -134,7 +133,6 @@ export const RigDetails = () => {
                   onOpenTrainModal={onOpenTrainModal}
                   {...MODULE_PROPS}
                 />
-                <Badges rig={rig} nfts={nfts} {...MODULE_PROPS} />
                 <FlightLog rig={rig} nfts={nfts} {...MODULE_PROPS} />
               </VStack>
             </GridItem>
