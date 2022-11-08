@@ -81,6 +81,8 @@ func init() {
 	publishCmd.PersistentFlags().String("alchemy-key", "", "api key for Alchemy")
 
 	publishCmd.MarkFlagsMutuallyExclusive("eth-api-url", "infura-key", "alchemy-key")
+
+	publishCmd.PersistentFlags().Bool("relay-writes", false, "whether or not to relay writes thought the validator")
 }
 
 var publishCmd = &cobra.Command{
@@ -111,7 +113,10 @@ var publishCmd = &cobra.Command{
 			chain = c
 		}
 
-		opts := []client.NewClientOption{client.NewClientChain(chain)}
+		opts := []client.NewClientOption{
+			client.NewClientChain(chain),
+			client.NewClientRelayWrites(viper.GetBool("relay-writes")),
+		}
 
 		ethURL := viper.GetString("eth-api-url")
 		infuraKey := viper.GetString("infura-key")

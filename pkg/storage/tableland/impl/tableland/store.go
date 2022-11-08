@@ -251,11 +251,11 @@ func (s *Store) writeSQL(ctx context.Context, sql string) (string, error) {
 }
 
 func (s *Store) trackTxn(ctx context.Context, hash, tableLabel, sql string) error {
-	tx, _, err := s.ethClient.TransactionByHash(ctx, ethcommon.HexToHash(hash))
+	r, err := s.ethClient.TransactionReceipt(ctx, ethcommon.HexToHash(hash))
 	if err != nil {
-		return fmt.Errorf("getting eth transaction: %v", err)
+		return fmt.Errorf("getting eth transaction receipt: %v", err)
 	}
-	if err := s.localStore.TrackTxn(ctx, hash, tableLabel, s.chainID, "insert", sql, tx.Cost().Int64()); err != nil {
+	if err := s.localStore.TrackTxn(ctx, hash, tableLabel, s.chainID, "insert", sql, int64(r.GasUsed)); err != nil {
 		return fmt.Errorf("tracking transaction: %v", err)
 	}
 	return nil
