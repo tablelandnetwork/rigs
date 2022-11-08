@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	"github.com/spf13/cobra"
@@ -14,6 +15,8 @@ func init() {
 	layersCmd.Flags().String("layers-path", "./artifacts/layers", "local filesystem path to the layer images")
 	layersCmd.Flags().String("cid", "", "cid of the layers images")
 	layersCmd.Flags().String("chunks-dir", "", "directory where car chunks are written")
+	layersCmd.Flags().Int("concurrency", 2, "number of concurrent uploads to nft.storage")
+	layersCmd.Flags().Duration("rate-limit", time.Millisecond*350, "rate limit for uploads to nft.storage")
 }
 
 var layersCmd = &cobra.Command{
@@ -42,7 +45,12 @@ var layersCmd = &cobra.Command{
 			checkErr(err)
 			fmt.Printf("Car chunks written to folder %s\n", chunksDir)
 		}
-		checkErr(dirPublisher.CarChunksToNftStorage(ctx, chunksDir))
+		checkErr(dirPublisher.CarChunksToNftStorage(
+			ctx,
+			chunksDir,
+			viper.GetInt("concurrency"),
+			viper.GetDuration("rate-limit"),
+		))
 		fmt.Printf("Layers published with cid %s\n", c.String())
 	},
 }
