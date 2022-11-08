@@ -32,12 +32,12 @@ var rendersCmd = &cobra.Command{
 		}
 		chunksDir := viper.GetString("chunks-dir")
 
-		if chunksDir == "" && c.String() == "" {
+		if chunksDir == "" && !c.Defined() {
 			c, err = dirPublisher.DirToIpfs(ctx, path, "renders")
 			checkErr(err)
 			fmt.Printf("Images added to IPFS with cid %s\n", c.String())
 		}
-		if chunksDir == "" && c.String() != "" {
+		if chunksDir == "" && c.Defined() {
 			chunksDir, err = dirPublisher.CidToCarChunks(ctx, c)
 			checkErr(err)
 			fmt.Printf("Car chunks written to folder %s\n", chunksDir)
