@@ -82,7 +82,7 @@ func init() {
 
 	publishCmd.MarkFlagsMutuallyExclusive("eth-api-url", "infura-key", "alchemy-key")
 
-	publishCmd.PersistentFlags().Bool("relay-writes", false, "whether or not to relay writes thought the validator")
+	publishCmd.PersistentFlags().Bool("relay-writes", false, "whether or not to relay writes through the validator")
 }
 
 var publishCmd = &cobra.Command{
