@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import { useAccount } from "wagmi";
 import { SiweMessage, generateNonce } from "siwe";
 import {
@@ -18,6 +18,10 @@ interface CachedToken {
   expiresAt: Date;
 }
 
+const AuthenticationStatusContext = React.createContext<AuthenticationStatus>(
+  "loading"
+);
+
 export const RainbowKitTablelandSiweProvider = ({
   children,
 }: RainbowKitSiweNextAuthProviderProps) => {
@@ -26,7 +30,7 @@ export const RainbowKitTablelandSiweProvider = ({
     undefined
   );
 
-  const _ = useAccount({
+  useAccount({
     onDisconnect() {
       setCachedToken(undefined);
     },
@@ -93,7 +97,12 @@ export const RainbowKitTablelandSiweProvider = ({
 
   return (
     <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-      {children}
+      <AuthenticationStatusContext.Provider value={status}>
+        {children}
+      </AuthenticationStatusContext.Provider>
     </RainbowKitAuthenticationProvider>
   );
 };
+
+export const useAuthenticationStatus = () =>
+  useContext(AuthenticationStatusContext);
