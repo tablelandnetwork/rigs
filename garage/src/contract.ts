@@ -1,5 +1,5 @@
 import { deployment } from "./env";
-import { TablelandRigs__factory } from "@tableland/rigs/typechain-types/factories/contracts/TablelandRigs__factory";
+import { TablelandRigs__factory } from "@tableland/rigs";
 
 export const { contractAddress } = deployment;
 
