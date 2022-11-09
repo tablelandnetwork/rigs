@@ -1,6 +1,6 @@
 {
   "name": "@tableland/rigs",
-  "version": "0.1.0-pre1",
+  "version": "0.1.0-pre3",
   "description": "Tableland Rigs contract",
   "engines": {
     "node": ">=14.0.0"
@@ -13,6 +13,12 @@
     "typechain-types/**/*.js?(.map)",
     "typechain-types/**/*.d.ts"
   ],
+  "exports": {
+    ".": "./typechain-types/index.js",
+    "./deployments": "./deployments.js",
+    "./deployments.js": "./deployments.js",
+    "./contracts/": "./contracts/"
+  },
   "scripts": {
     "build": "hardhat compile && npx tsc",
     "clean": "hardhat clean && rm -rf cache && rm -rf coverage && rm -f coverage.json && rm -f deployments.js* && rm -f deployments.d*",
