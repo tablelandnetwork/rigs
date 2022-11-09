@@ -16,12 +16,19 @@
   </div>
   {#if data.pilot}
     <img class="pilot" src={data.pilot} alt="pilot" />
+    <span class="warning">Status: In-flight (not transferable).</span>
   {/if}
 </div>
 
 <style type="text/css">
   :global(body) {
     margin: 0;
+  }
+
+  @font-face {
+  font-family: "AndaleMono";
+  src: url("andale-mono.woff2") format("woff2"),
+    url("andale-mono.woff") format("woff");
   }
 
   .container {
@@ -61,5 +68,17 @@
     border-top: 0.1875rem solid #101e1e;
     border-left: 0.1875rem solid #101e1e;
     border-radius: 0.1875rem 0 0 0;
+  }
+
+  .warning {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    font-family: 'AndaleMono', sans-serif;
+    font-size: 0.7rem;
+    padding: 0.3rem;
+    color: #75B6B5;
+    background-color: #101e1e;
+    border-radius: 0 0.1875rem 0 0;
   }
 </style>
