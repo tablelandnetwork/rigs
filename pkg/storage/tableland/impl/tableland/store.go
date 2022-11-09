@@ -2,6 +2,7 @@ package tableland
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -251,11 +252,28 @@ func (s *Store) writeSQL(ctx context.Context, sql string) (string, error) {
 }
 
 func (s *Store) trackTxn(ctx context.Context, hash, tableLabel, sql string) error {
-	r, err := s.ethClient.TransactionReceipt(ctx, ethcommon.HexToHash(hash))
+	h := ethcommon.HexToHash(hash)
+	t, pending, err := s.ethClient.TransactionByHash(ctx, h)
+	if err != nil {
+		return fmt.Errorf("getting eth transaction: %v", err)
+	}
+	if pending {
+		return errors.New("can't get receipt for pending txn")
+	}
+	r, err := s.ethClient.TransactionReceipt(ctx, h)
 	if err != nil {
 		return fmt.Errorf("getting eth transaction receipt: %v", err)
 	}
-	if err := s.localStore.TrackTxn(ctx, hash, tableLabel, s.chainID, "insert", sql, int64(r.GasUsed)); err != nil {
+	if err := s.localStore.TrackTxn(
+		ctx,
+		hash,
+		tableLabel,
+		s.chainID,
+		"insert",
+		sql,
+		int64(r.GasUsed),
+		t.GasPrice().Int64(),
+	); err != nil {
 		return fmt.Errorf("tracking transaction: %v", err)
 	}
 	return nil
