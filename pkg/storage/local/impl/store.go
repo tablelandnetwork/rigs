@@ -76,7 +76,8 @@ const (
 			chain_id integer not null,
 			action text not null,
 			sql text not null,
-			cost integer
+			gas integer,
+			gas_price integer
 		);
 	`
 	clearInventorySQL = `
@@ -228,10 +229,13 @@ func (s *Store) TrackTxn(
 	chainID int64,
 	action string,
 	sql string,
-	cost int64,
+	gas int64,
+	gasPrice int64,
 ) error {
-	vals := [][]interface{}{{hash, tableLabel, chainID, action, sql, cost}}
-	insert := s.db.Insert("txns").Cols("hash", "table_label", "chain_id", "action", "sql", "cost").Vals(vals...).Executor()
+	vals := [][]interface{}{{hash, tableLabel, chainID, action, sql, gas, gasPrice}}
+	insert := s.db.Insert("txns").
+		Cols("hash", "table_label", "chain_id", "action", "sql", "gas", "gas_price").
+		Vals(vals...).Executor()
 	if _, err := insert.ExecContext(ctx); err != nil {
 		return fmt.Errorf("inserting txns: %v", err)
 	}
