@@ -25,7 +25,7 @@
     "ethers": "^5.7.1",
     "prettier": "^2.6.2",
     "prettier-plugin-svelte": "^2.8.0",
-    "svelte": "^3.44.0",
+    "svelte": "^3.52.0",
     "svelte-check": "^2.7.1",
     "svelte-preprocess": "^4.10.6",
     "sveltejs-adapter-ipfs": "^0.3.1",
