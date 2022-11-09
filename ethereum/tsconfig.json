@@ -8,8 +8,7 @@
     "esModuleInterop": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "."
+    "sourceMap": true
   },
   "include": ["./typechain-types/**/*"],
   "files": ["deployments.ts"]
