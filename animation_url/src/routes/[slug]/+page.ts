@@ -1,5 +1,5 @@
 import { connect } from "@tableland/sdk";
-import { deployments } from "deployments";
+import { deployments } from "ethereum/deployments";
 
 const chain = "polygon-mumbai"; // "ethereum"
 

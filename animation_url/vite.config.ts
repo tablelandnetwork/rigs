@@ -6,7 +6,12 @@ const config: UserConfig = {
   plugins: [sveltekit()],
   resolve: {
     alias: {
-      deployments: resolve(__dirname, "..", "ethereum", "deployments.ts"),
+      "ethereum/deployments": resolve(
+        __dirname,
+        "..",
+        "ethereum",
+        "deployments.ts"
+      ),
     },
   },
 };
