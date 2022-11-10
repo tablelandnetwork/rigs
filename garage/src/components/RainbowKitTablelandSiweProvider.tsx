@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useContext } from "react";
+import { useAccount } from "wagmi";
 import { SiweMessage, generateNonce } from "siwe";
 import {
   createAuthenticationAdapter,
@@ -6,15 +7,45 @@ import {
   AuthenticationStatus,
 } from "@rainbow-me/rainbowkit";
 import { connection } from "../hooks/useTablelandConnection";
+import { useExpiringLocalStorage } from "../hooks/useLocalStorage";
 
 interface RainbowKitSiweNextAuthProviderProps {
   children: React.ReactNode;
 }
 
+interface CachedToken {
+  token: string;
+  expiresAt: Date;
+}
+
+const AuthenticationStatusContext = React.createContext<AuthenticationStatus>(
+  "loading"
+);
+
 export const RainbowKitTablelandSiweProvider = ({
   children,
 }: RainbowKitSiweNextAuthProviderProps) => {
-  const [status, setStatus] = useState<AuthenticationStatus>("unauthenticated");
+  const [cachedToken, setCachedToken] = useExpiringLocalStorage<CachedToken>(
+    "_TABLELAND_TOKEN",
+    undefined
+  );
+
+  useAccount({
+    onDisconnect() {
+      setCachedToken(undefined);
+    },
+  });
+
+  const [status, setStatus] = useState<AuthenticationStatus>("loading");
+
+  useEffect(() => {
+    setStatus(cachedToken ? "authenticated" : "unauthenticated");
+
+    if (cachedToken) {
+      connection.token = { token: cachedToken.token };
+    }
+  }, [cachedToken, setStatus]);
+
   const adapter = useMemo(
     () =>
       createAuthenticationAdapter({
@@ -26,8 +57,8 @@ export const RainbowKitTablelandSiweProvider = ({
           const issuedAt = new Date().toISOString();
           const now = Date.now();
           const expirationTime = new Date(
-            now + 10 * 60 * 60 * 1000
-          ).toISOString(); // Default to ~10 hours
+            now + 24 * 60 * 60 * 1000
+          ).toISOString();
 
           return new SiweMessage({
             domain: "Tableland",
@@ -53,9 +84,8 @@ export const RainbowKitTablelandSiweProvider = ({
               signature,
             })
           );
-          connection.token = { token };
 
-          setStatus("authenticated");
+          setCachedToken({ token, expiresAt: message.expirationTime });
 
           return true;
         },
@@ -67,7 +97,12 @@ export const RainbowKitTablelandSiweProvider = ({
 
   return (
     <RainbowKitAuthenticationProvider adapter={adapter} status={status}>
-      {children}
+      <AuthenticationStatusContext.Provider value={status}>
+        {children}
+      </AuthenticationStatusContext.Provider>
     </RainbowKitAuthenticationProvider>
   );
 };
+
+export const useAuthenticationStatus = () =>
+  useContext(AuthenticationStatusContext);

@@ -34,8 +34,8 @@ export const useStats = (currentBlockNumber: number | undefined) => {
         { name: "Num. pilots", value: numPilots },
         { name: "Average FT per flight", value: ftAvg },
         { name: "Total FT earned", value: ftTotal },
-        { name: "Badges earned", value: 0 },
-        { name: "Badges visible", value: 0 },
+        // { name: "Badges earned", value: 0 },
+        // { name: "Badges visible", value: 0 },
       ]);
     });
 

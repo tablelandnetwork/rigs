@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { useTablelandConnection } from "../hooks/useTablelandConnection";
+import { useAuthenticationStatus } from "./RainbowKitTablelandSiweProvider";
 
 interface RequiresWalletConnectionProps {
   children: React.ReactNode;
@@ -11,12 +11,14 @@ export const RequiresWalletConnection = ({
   children,
 }: RequiresWalletConnectionProps) => {
   const { isConnected } = useAccount();
-  const { connection: tableland } = useTablelandConnection();
+  const authStatus = useAuthenticationStatus();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isConnected || !tableland.token) navigate("/");
-  }, [isConnected, navigate]);
+    if (!isConnected || authStatus === "unauthenticated") {
+      navigate("/");
+    }
+  }, [isConnected, authStatus, navigate]);
 
   return <>{isConnected ? children : null}</>;
 };

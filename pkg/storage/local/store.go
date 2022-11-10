@@ -244,7 +244,8 @@ type Store interface {
 		chainID int64,
 		action string,
 		sql string,
-		cost int64,
+		gas int64,
+		gasPrice int64,
 	) error
 
 	// GetOriginalRigs gets a list of all OriginalRigs.

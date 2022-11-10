@@ -163,7 +163,12 @@ L0:
 }
 
 // CarChunksToNftStorage publishes the car chunks in the specified dir to nft.storage.
-func (dp *DirPublisher) CarChunksToNftStorage(ctx context.Context, tmpDir string) error {
+func (dp *DirPublisher) CarChunksToNftStorage(
+	ctx context.Context,
+	tmpDir string,
+	concurrency int,
+	rateLimit time.Duration,
+) error {
 	chunks, err := os.ReadDir(tmpDir)
 	if err != nil {
 		return fmt.Errorf("reading tmp dir: %v", err)
@@ -193,7 +198,7 @@ func (dp *DirPublisher) CarChunksToNftStorage(ctx context.Context, tmpDir string
 	ctx1, cancel1 := context.WithCancel(ctx)
 	defer cancel1()
 
-	p1 := wpool.New(1, rate.Every(time.Millisecond*350))
+	p1 := wpool.New(concurrency, rate.Every(rateLimit))
 	go p1.GenerateFrom(jobs1)
 	go p1.Run(ctx1)
 L1:
