@@ -350,6 +350,13 @@ contract TablelandRigs is
     }
 
     /**
+     * @dev See {ITablelandRigs-parkRigAsOwner}.
+     */
+    function parkRigAsOwner(uint256 tokenId) external onlyOwner {
+        _parkRig(tokenId);
+    }
+
+    /**
      * @dev See {ITablelandRigs-pause}.
      */
     function pause() external override onlyOwner {

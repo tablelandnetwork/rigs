@@ -11,11 +11,6 @@ import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import "./ITablelandRigPilots.sol";
 
-// TODO: make private park
-// TODO: batch park?
-// TODO: batch train?
-// TODO: allow contract owner to park?
-
 /**
  * @dev Implementation of {ITablelandRigPilots}.
  */
@@ -322,7 +317,7 @@ abstract contract TablelandRigPilots is
             _pilotIndex[pilotData] != 0 &&
             _pilotIndex[pilotData] != tokenId &&
             _pilotStatus(_pilotIndex[pilotData]) != GarageStatus.PARKED
-        ) parkRig(_pilotIndex[pilotData]);
+        ) _parkRig(_pilotIndex[pilotData]);
 
         // If the Rig is training, update its session (no parking required)
         // Pilot has completed training at this point (training validation is checked above)
@@ -423,15 +418,19 @@ abstract contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-parkRig}.
      */
-    function parkRig(uint256 tokenId) public {
+    function parkRig(uint256 tokenId) external {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to park the specified Rig
-        if (
-            !(ownerOf(tokenId) == _msgSenderERC721A() ||
-                address(this) == _msgSenderERC721A())
-        ) revert Unauthorized();
+        if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
 
+        _parkRig(tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigPilots-parkRig}.
+     */
+    function _parkRig(uint256 tokenId) internal {
         // Ensure Rig is currently in-flight
         GarageStatus status = _pilotStatus(tokenId);
         if (

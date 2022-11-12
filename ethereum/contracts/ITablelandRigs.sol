@@ -162,6 +162,19 @@ interface ITablelandRigs {
     function initPilots() external;
 
     /**
+     * @dev Allows contract owner to park any Rig that may be intentionally
+     * causing buyers to lose gas on sales that can't complete while the
+     * Rig is in-flight.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `msg.sender` must be contract owner
+     */
+    function parkRigAsOwner(uint256 tokenId) external;
+
+    /**
      * @dev Pauses minting.
      *
      * Requirements:

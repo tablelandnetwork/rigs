@@ -628,15 +628,19 @@ describe("Rigs", function () {
         _rigs.setRoyaltyReceiver(accounts[2].address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
 
+      await expect(_rigs.initPilots()).to.be.rejectedWith(
+        "Ownable: caller is not the owner"
+      );
+
+      await expect(_rigs.parkRigAsOwner(1)).to.be.rejectedWith(
+        "Ownable: caller is not the owner"
+      );
+
       await expect(_rigs.pause()).to.be.rejectedWith(
         "Ownable: caller is not the owner"
       );
 
       await expect(_rigs.unpause()).to.be.rejectedWith(
-        "Ownable: caller is not the owner"
-      );
-
-      await expect(_rigs.initPilots()).to.be.rejectedWith(
         "Ownable: caller is not the owner"
       );
     });
@@ -673,6 +677,8 @@ describe("Rigs", function () {
         const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(0));
@@ -984,9 +990,11 @@ describe("Rigs", function () {
           .connect(tokenOwner)
           .trainRig(BigNumber.from(rigTokenId));
         // Save the block number, which will used when checking if a training Rig remains in-flight when piloted
-        let blockNumber = await tx.blockNumber;
+        let blockNumber = tx.blockNumber;
         // Check the pilot info
         let pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        expect(pilotInfo.status).to.equal(1);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(1));
@@ -1012,6 +1020,8 @@ describe("Rigs", function () {
         let pilotReceipt = await tx.wait();
         // Check the pilot info
         pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        expect(pilotInfo.status).to.equal(3);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
         expect(pilotInfo.addr).to.equal(fauxERC721.address);
         expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
@@ -1019,6 +1029,8 @@ describe("Rigs", function () {
         await rigs.connect(tokenOwner).parkRig(BigNumber.from(rigTokenId));
         // Check the pilot info
         pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        expect(pilotInfo.status).to.equal(2);
+        expect(pilotInfo.pilotable).to.equal(true);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(fauxERC721.address);
         expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
@@ -1041,6 +1053,8 @@ describe("Rigs", function () {
         blockNumber = pilotReceipt.blockNumber;
         // Check the pilot info
         pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        expect(pilotInfo.status).to.equal(3);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
         expect(pilotInfo.addr).to.equal(fauxERC721.address);
         expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
@@ -1072,6 +1086,8 @@ describe("Rigs", function () {
         blockNumber = pilotReceipt.blockNumber;
         // Check the pilot info
         pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        expect(pilotInfo.status).to.equal(3);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
         expect(pilotInfo.addr).to.equal(fauxTwoERC721.address);
         expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
@@ -1259,6 +1275,8 @@ describe("Rigs", function () {
         // Check the Rig is in-flight, training
         // Recall that a state of `TRAINING` means that the contract is zero but pilot is set to `1`
         let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(1);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(1));
@@ -1269,6 +1287,8 @@ describe("Rigs", function () {
         // Check that the index is now `0` since training was incomplete
         // Recall that a state of `UNTRAINED` means that the contract is zero and pilot is set to `0`
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(0));
@@ -1279,6 +1299,8 @@ describe("Rigs", function () {
         ]);
         // Check the Rig is in-flight, training
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(1);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(1));
@@ -1288,6 +1310,8 @@ describe("Rigs", function () {
         ).to.emit(rigs, "Parked");
         // Check that the pilot is now `0` since training was incomplete
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(0));
@@ -1296,12 +1320,18 @@ describe("Rigs", function () {
         await network.provider.send("hardhat_mine", [
           ethers.utils.hexValue(172800),
         ]);
+        // Check that training complete (`pilotable` is `true`)
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(1);
+        expect(pilotInfo.pilotable).to.equal(true);
         // Park the Rig now that training has been completed
         await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId)))
           .to.emit(rigs, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Validate the pilot ID is `1` and it was not reset, now that training is complete
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(2);
+        expect(pilotInfo.pilotable).to.equal(true);
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(1));
       });
@@ -1348,12 +1378,43 @@ describe("Rigs", function () {
           );
         // Check out the pilot & owner info, post-transfer, just for fun
         const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(0));
         expect(await rigs.ownerOf(BigNumber.from(tokenId))).to.equal(
           receiver.address
         );
+      });
+    });
+
+    describe("parkRigAsOwner", function () {
+      it("Should allow contract owner to park any Rig", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Check pilot is untrained
+        let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        // Start training
+        await rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId));
+        // Check pilot is training
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(1);
+        // Park the Rig as the contract owner
+        await expect(rigs.parkRigAsOwner(BigNumber.from(tokenId)))
+          .to.emit(rigs, "Parked")
+          .withArgs(BigNumber.from(tokenId));
+        // Check pilot is back to untrained
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
       });
     });
   });
