@@ -781,6 +781,28 @@ describe("Rigs", function () {
         ).to.be.rejectedWith("Unauthorized");
       });
 
+      it("Should not pilot Rig if pilot id is too big", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Attempt to pilot the Rig with too big pilot id
+        await expect(
+          rigs
+            .connect(tokenOwner)
+            ["pilotRig(uint256,address,uint256)"](
+              BigNumber.from(tokenId),
+              ethers.constants.AddressZero,
+              BigNumber.from(Math.pow(2, 32))
+            )
+        ).to.be.rejectedWith('InvalidCustomPilot("pilot id too big")');
+      });
+
       it("Should not allow non-ERC-721 or Rigs contract for pilots", async function () {
         // First, mint a Rig to `tokenOwner`
         await rigs.setMintPhase(3);
@@ -808,7 +830,9 @@ describe("Rigs", function () {
               ethers.constants.AddressZero,
               BigNumber.from(1)
             )
-        ).to.be.rejectedWith("InvalidCustomPilot");
+        ).to.be.rejectedWith(
+          'InvalidCustomPilot("pilot contract not supported")'
+        );
         // Try to set the pilot to the Rigs contract address
         await expect(
           rigs
@@ -818,7 +842,9 @@ describe("Rigs", function () {
               rigs.address,
               BigNumber.from(1)
             )
-        ).to.be.rejectedWith("InvalidCustomPilot");
+        ).to.be.rejectedWith(
+          'InvalidCustomPilot("pilot contract not supported")'
+        );
       });
 
       it("Should not pilot Rig if untrained", async function () {
@@ -901,7 +927,7 @@ describe("Rigs", function () {
               fauxERC721.address,
               pilotTokenIdRandomPilotTokenHolder
             )
-        ).to.be.rejectedWith("InvalidCustomPilot");
+        ).to.be.rejectedWith('InvalidCustomPilot("unauthorized")');
         // Mint a faux NFT and set the pilot to an ERC-721 contract & pilot
         tx = await fauxERC721.connect(rigTokenOwner).mint();
         receipt = await tx.wait();

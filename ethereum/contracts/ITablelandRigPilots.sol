@@ -9,7 +9,7 @@ interface ITablelandRigPilots {
     error Unauthorized();
 
     // Thrown if a Pilot's contract is not ERC-721 compliant or pilot ID is greater than a uint32.
-    error InvalidCustomPilot();
+    error InvalidCustomPilot(string msg);
 
     // Thrown when a Garage action is attempted while a Rig is in a `GarageStatus` that is invalid for it to be performed.
     error InvalidPilotStatus();
@@ -53,11 +53,6 @@ interface ITablelandRigPilots {
      * @dev Emitted when a Rig is parked.
      */
     event Parked(uint256 tokenId);
-
-    /**
-     * @dev Initializes Rig pilots by creating the pilot sessios table.
-     */
-    function initPilots() external;
 
     /**
      * @dev Returns the Tableland table name for the pilot sessions table.

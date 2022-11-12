@@ -157,6 +157,11 @@ interface ITablelandRigs {
     function setRoyaltyReceiver(address receiver) external;
 
     /**
+     * @dev Initializes Rig pilots by creating the pilot sessios table.
+     */
+    function initPilots() external;
+
+    /**
      * @dev Pauses minting.
      *
      * Requirements:
