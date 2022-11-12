@@ -2,15 +2,12 @@ import * as dotenv from "dotenv";
 
 import { HardhatUserConfig, extendEnvironment } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
+import "@nomicfoundation/hardhat-toolbox"
 import "@nomiclabs/hardhat-ethers";
-import "@nomiclabs/hardhat-etherscan";
-import "@nomiclabs/hardhat-waffle";
+import "@nomicfoundation/hardhat-chai-matchers";
 import "@openzeppelin/hardhat-upgrades";
-import "@typechain/hardhat";
 import "hardhat-dependency-compiler";
-import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
-import "solidity-coverage";
 import { deployments, RigsDeployment, RigsDeployments } from "./deployments";
 
 dotenv.config();

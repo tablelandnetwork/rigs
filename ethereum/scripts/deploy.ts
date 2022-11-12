@@ -88,7 +88,7 @@ async function main() {
       chain: rigsDeployment.tablelandChain,
       signer: wallet.connect(provider),
     };
-    tbl = await connect(options);
+    tbl = connect(options);
   }
 
   // Create contract table
