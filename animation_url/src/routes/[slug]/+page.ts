@@ -1,5 +1,5 @@
 import { connect } from "@tableland/sdk";
-import { deployments } from "ethereum/deployments";
+import { deployments } from "@tableland/rigs/deployments";
 
 const environment =
   process.env.NODE_ENV === "development" ? "development" : "production";
