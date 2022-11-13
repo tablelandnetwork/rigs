@@ -14,16 +14,15 @@ async function main() {
   if (rigsDeployment.contractAddress === "") {
     throw Error(`no contractAddress entry for '${network.name}'`);
   }
-  console.log(`Using address '${rigsDeployment.contractAddress}'`);
+  console.log(`Using contract address '${rigsDeployment.contractAddress}'`);
 
-  if (
-    rigsDeployment.pilotsAddress === "" ||
-    rigsDeployment.pilotsAddress === ethers.constants.AddressZero
-  ) {
-    throw Error("invalid pilot address");
+  // Get pilots address
+  if (rigsDeployment.pilotsAddress === "") {
+    throw Error(`no pilotsAddress entry for '${network.name}'`);
   }
+  console.log(`Using pilots address '${rigsDeployment.pilotsAddress}'`);
 
-  // Update mint phase
+  // Update pilots address
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   ) as TablelandRigs;

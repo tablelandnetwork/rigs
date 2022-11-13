@@ -17,6 +17,9 @@ async function main() {
   if (rigsDeployment.royaltyContractAddress === "") {
     throw Error(`no royaltyContractAddress entry for '${network.name}'`);
   }
+  if (rigsDeployment.pilotsAddress === "") {
+    throw Error(`no pilotsAddress entry for '${network.name}'`);
+  }
 
   // Verify rigs
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
