@@ -41,7 +41,7 @@ describe("Rigs", function () {
     const TablelandTablesFactory = await ethers.getContractFactory(
       "TablelandTables"
     );
-    const tables = await (
+    await (
       (await upgrades.deployProxy(
         TablelandTablesFactory,
         ["https://foo.xyz/"],
@@ -80,7 +80,6 @@ describe("Rigs", function () {
       [20, 80]
     )) as PaymentSplitter;
     await splitter.deployed();
-
     const RigsFactory = await ethers.getContractFactory("TablelandRigs");
     rigs = await ((await RigsFactory.deploy()) as TablelandRigs).deployed();
     await (
@@ -96,6 +95,7 @@ describe("Rigs", function () {
     await rigs.setContractURI("https://foo.xyz");
     await rigs.setURITemplate(["https://foo.xyz/", "/bar"]);
 
+    // Check can only init once
     await expect(
       rigs.initialize(
         BigNumber.from(3000),
@@ -116,22 +116,8 @@ describe("Rigs", function () {
     ).deployed();
     await (await pilots.initialize(rigs.address)).wait();
 
-    await expect(
-      pilots.initialize(ethers.constants.AddressZero)
-    ).to.be.revertedWith("Initializable: contract is already initialized");
-
     // Set pilots on rigs
     await (await rigs.initPilots(pilots.address)).wait();
-    const tableEvents = await tables.queryFilter(
-      tables.filters.CreateTable(),
-      0,
-      100 // the event isn't in the same block as the `initPilots` txn (hardhat issue?)
-    );
-    const [event] = tableEvents ?? [];
-    const pilotSessionsTableId = event.args?.tableId;
-    expect(await rigs.pilotSessionsTable()).to.be.equal(
-      `pilot_sessions_${network.config.chainId}_${pilotSessionsTableId}`
-    );
   }
 
   beforeEach(async function () {
@@ -677,6 +663,14 @@ describe("Rigs", function () {
         await expect(
           _rigs.initPilots(ethers.constants.AddressZero)
         ).to.be.rejectedWith("Ownable: caller is not the owner");
+      });
+    });
+
+    describe("pilotSessionsTable", function () {
+      it("Should return pilot sessions table", async function () {
+        expect(await rigs.pilotSessionsTable()).to.be.equal(
+          `pilot_sessions_${network.config.chainId}_2`
+        );
       });
     });
 

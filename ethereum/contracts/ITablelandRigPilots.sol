@@ -55,6 +55,11 @@ interface ITablelandRigPilots {
     event Parked(uint256 tokenId);
 
     /**
+     * @dev Returns the address of the contract parent parent.
+     */
+    function parent() external view returns (address);
+
+    /**
      * @dev Returns the Tableland table name for the pilot sessions table.
      */
     function pilotSessionsTable() external view returns (string memory);

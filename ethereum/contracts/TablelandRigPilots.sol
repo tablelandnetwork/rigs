@@ -20,6 +20,8 @@ contract TablelandRigPilots is
     OwnableUpgradeable,
     UUPSUpgradeable
 {
+    using ERC165CheckerUpgradeable for address;
+
     // Table prefix for the Rigs pilot sessions table.
     string private constant _PILOT_SESSIONS_PREFIX = "pilot_sessions";
 
@@ -86,22 +88,22 @@ contract TablelandRigPilots is
     }
 
     /**
-     * @dev Returns the address of the current parent.
-     */
-    function parent() public view virtual returns (address) {
-        return _parent;
-    }
-
-    /**
      * @dev Throws if the sender is not the parent.
      */
-    function _checkParent() internal view virtual {
+    function _checkParent() private view {
         require(parent() == _msgSender(), "Pilots: caller is not the parent");
     }
 
     // =============================
     //      ITABLELANDRIGPILOTS
     // =============================
+
+    /**
+     * @dev See {ITablelandRigPilots-parent}.
+     */
+    function parent() public view returns (address) {
+        return _parent;
+    }
 
     /**
      * @dev See {ITablelandRigPilots-pilotSessionsTable}.
@@ -290,8 +292,6 @@ contract TablelandRigPilots is
         emit Training(tokenId);
     }
 
-    using ERC165CheckerUpgradeable for address;
-
     /**
      * @dev See {ITablelandRigPilots-pilotRig}.
      */
@@ -300,7 +300,7 @@ contract TablelandRigPilots is
         uint256 tokenId,
         address pilotAddr,
         uint256 pilotId
-    ) public onlyParent {
+    ) external onlyParent {
         // Verify the `pilotId` fits into a `uint32` (required for packing)
         if (pilotId > type(uint32).max)
             revert InvalidCustomPilot("pilot id too big");

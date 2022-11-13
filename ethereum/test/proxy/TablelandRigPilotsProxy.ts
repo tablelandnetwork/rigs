@@ -3,7 +3,10 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { ethers, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
-import type { TablelandTables, TablelandRigPilots } from "../../typechain-types";
+import type {
+  TablelandTables,
+  TablelandRigPilots,
+} from "../../typechain-types";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -61,7 +64,7 @@ describe("TablelandRigPilotsProxy", function () {
 async function deploy(Factory: ContractFactory): Promise<TablelandRigPilots> {
   const pilots = (await upgrades.deployProxy(
     Factory,
-    ["0x31346Df523caE0a44eB9fb49E153D0e60E8016b6"],
+    [ethers.constants.AddressZero],
     {
       kind: "uups",
     }
