@@ -25,6 +25,21 @@
     margin: 0;
   }
 
+  /**
+  * @license
+  * MyFonts Webfont Build ID 3867246, 2020-12-16T11:57:38-0500
+  * 
+  * The fonts listed in this notice are subject to the End User License
+  * Agreement(s) entered into by the website owner. All other parties are 
+  * explicitly restricted from using the Licensed Webfonts(s).
+  * 
+  * You may obtain a valid license at the URLs below.
+  * 
+  * Webfont: AndaleMonoPaneuropeanRegular by Monotype
+  * URL: https://www.myfonts.com/products/regular-andale-mono-paneuropean-345935
+  * Copyright: Copyright © 2014 Monotype Imaging Inc. All rights reserved.
+  * 
+  * © 2020 MyFonts Incn*/
   @font-face {
   font-family: "AndaleMono";
   src: url("andale-mono.woff2") format("woff2"),

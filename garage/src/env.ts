@@ -1,6 +1,5 @@
 import { chain as chains } from "wagmi";
-// import { deployments } from "@tableland/rigs/deployments";
-import { deployments } from "ethereum/deployments";
+import { deployments } from "@tableland/rigs/deployments";
 
 export const environment =
   process.env.NODE_ENV === "development" ? "development" : "production";

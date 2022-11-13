@@ -29,14 +29,13 @@ async function main() {
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   ) as TablelandRigs;
-  const pilotsTable = await rigs.pilotSessionsTable();
 
   // Update URI template
   const uriTemplate = getURITemplate(
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
     rigsDeployment.lookupsTable,
-    pilotsTable,
+    rigsDeployment.pilotSessionsTable,
     rigsDeployment.displayAttributes
   );
   const tx = await rigs.setURITemplate(uriTemplate);
