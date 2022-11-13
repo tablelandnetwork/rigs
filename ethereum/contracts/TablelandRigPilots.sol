@@ -12,8 +12,6 @@ import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import "./ITablelandRigPilots.sol";
 
-import "hardhat/console.sol";
-
 /**
  * @dev Implementation of {ITablelandRigPilots}.
  */
@@ -61,7 +59,6 @@ contract TablelandRigPilots is
 
     function initialize(address parent_) public initializer {
         __Ownable_init();
-        // __Pausable_init();
         __UUPSUpgradeable_init();
 
         _parent = parent_;

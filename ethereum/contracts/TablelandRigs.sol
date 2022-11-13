@@ -384,7 +384,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-trainRig}.
      */
-    function trainRig(uint256 tokenId) external {
+    function trainRig(uint256 tokenId) external whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to train the specified Rig
@@ -401,7 +401,7 @@ contract TablelandRigs is
         uint256 tokenId,
         address pilotAddr,
         uint256 pilotId
-    ) public {
+    ) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to pilot the specified Rig
@@ -418,7 +418,7 @@ contract TablelandRigs is
         uint256[] calldata tokenIds,
         address[] calldata pilotAddrs,
         uint256[] calldata pilotIds
-    ) external {
+    ) external whenNotPaused {
         // Ensure the arrays are non-empty
         if (
             tokenIds.length == 0 ||
@@ -444,7 +444,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-parkRig}.
      */
-    function parkRig(uint256 tokenId) external {
+    function parkRig(uint256 tokenId) external whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to park the specified Rig

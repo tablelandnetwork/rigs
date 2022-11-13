@@ -3,8 +3,8 @@ import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { ethers, upgrades } from "hardhat";
 import { utils, BigNumber, Contract, ContractFactory } from "ethers";
-import { buildTree } from "../helpers/allowlist";
-import type { TablelandRigs } from "../typechain-types";
+import { buildTree } from "../../helpers/allowlist";
+import type { TablelandRigs } from "../../typechain-types";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;

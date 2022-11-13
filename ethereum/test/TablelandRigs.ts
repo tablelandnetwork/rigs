@@ -37,11 +37,11 @@ describe("Rigs", function () {
   // Use a fixture, which runs *once* to help ensure deterministic contract addresses
   async function deployRigsFixture() {
     // First, deploy the `TablelandTables` registry contract
-    // Required for creating table from contract in `initPilots()`
+    // Required for creating table from contract in `TablelandRigPilots.initialize()`
     const TablelandTablesFactory = await ethers.getContractFactory(
       "TablelandTables"
     );
-    await (
+    const tables = await (
       (await upgrades.deployProxy(
         TablelandTablesFactory,
         ["https://foo.xyz/"],
@@ -116,17 +116,22 @@ describe("Rigs", function () {
     ).deployed();
     await (await pilots.initialize(rigs.address)).wait();
 
+    await expect(
+      pilots.initialize(ethers.constants.AddressZero)
+    ).to.be.revertedWith("Initializable: contract is already initialized");
+
     // Set pilots on rigs
     await (await rigs.initPilots(pilots.address)).wait();
-    // const receipt = await tx.wait();
-    // console.log(receipt);
-    // console.log(await rigs.pilotSessionsTable());
-    // const [event] = receipt.events ?? [];
-    // const pilotSessionsTableId = event.args?.tokenId;
-    // console.log(4);
-    // expect(await rigs.pilotSessionsTable()).to.be.equal(
-    //   `pilot_sessions_${network.config.chainId}_${pilotSessionsTableId}`
-    // );
+    const tableEvents = await tables.queryFilter(
+      tables.filters.CreateTable(),
+      0,
+      100 // the event isn't in the same block as the `initPilots` txn (hardhat issue?)
+    );
+    const [event] = tableEvents ?? [];
+    const pilotSessionsTableId = event.args?.tableId;
+    expect(await rigs.pilotSessionsTable()).to.be.equal(
+      `pilot_sessions_${network.config.chainId}_${pilotSessionsTableId}`
+    );
   }
 
   beforeEach(async function () {
@@ -643,14 +648,6 @@ describe("Rigs", function () {
         _rigs.setRoyaltyReceiver(accounts[2].address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
 
-      await expect(
-        _rigs.initPilots(ethers.constants.AddressZero)
-      ).to.be.rejectedWith("Ownable: caller is not the owner");
-
-      await expect(_rigs.parkRigAsOwner(1)).to.be.rejectedWith(
-        "Ownable: caller is not the owner"
-      );
-
       await expect(_rigs.pause()).to.be.rejectedWith(
         "Ownable: caller is not the owner"
       );
@@ -673,6 +670,16 @@ describe("Rigs", function () {
   });
 
   describe("The Garage", function () {
+    describe("initPilots", function () {
+      it("Should block contract non-owner", async function () {
+        const _rigs = rigs.connect(accounts[2]);
+
+        await expect(
+          _rigs.initPilots(ethers.constants.AddressZero)
+        ).to.be.rejectedWith("Ownable: caller is not the owner");
+      });
+    });
+
     describe("pilotInfo", function () {
       it("Should not return pilot info for non-existent token", async function () {
         // Try calling with a non-existent token
@@ -701,6 +708,18 @@ describe("Rigs", function () {
     });
 
     describe("trainRig", function () {
+      it("Should not train Rig when paused", async function () {
+        await rigs.pause();
+
+        // Try to train when paused
+        const sender = accounts[4];
+        await expect(
+          rigs.connect(sender).trainRig(BigNumber.from(0))
+        ).to.be.revertedWith("Pausable: paused");
+
+        await rigs.unpause();
+      });
+
       it("Should not train Rig for non-existent token", async function () {
         await expect(rigs.trainRig(BigNumber.from(0))).to.be.rejectedWith(
           "OwnerQueryForNonexistentToken"
@@ -760,6 +779,28 @@ describe("Rigs", function () {
     });
 
     describe("pilotRig", function () {
+      it("Should not pilot Rig when paused", async function () {
+        await rigs.pause();
+
+        // Try to pilot when paused
+        await expect(
+          rigs["pilotRig(uint256,address,uint256)"](
+            BigNumber.from(0),
+            ethers.constants.AddressZero,
+            BigNumber.from(1)
+          )
+        ).to.be.rejectedWith("Pausable: paused");
+        await expect(
+          rigs["pilotRig(uint256[],address[],uint256[])"](
+            [BigNumber.from(0)],
+            [ethers.constants.AddressZero],
+            [BigNumber.from(1)]
+          )
+        ).to.be.rejectedWith("Pausable: paused");
+
+        await rigs.unpause();
+      });
+
       it("Should not pilot Rig for non-existent token", async function () {
         // Try with a single Rig and `pilotRig`
         await expect(
@@ -1229,6 +1270,18 @@ describe("Rigs", function () {
     });
 
     describe("parkRig", function () {
+      it("Should not park Rig when paused", async function () {
+        await rigs.pause();
+
+        // Try to park when paused
+        const sender = accounts[4];
+        await expect(
+          rigs.connect(sender).parkRig(BigNumber.from(0))
+        ).to.be.revertedWith("Pausable: paused");
+
+        await rigs.unpause();
+      });
+
       it("Should not park Rig for non-existent token", async function () {
         await expect(rigs.parkRig(BigNumber.from(0))).to.be.rejectedWith(
           "OwnerQueryForNonexistentToken"
@@ -1405,6 +1458,24 @@ describe("Rigs", function () {
     });
 
     describe("parkRigAsOwner", function () {
+      it("Should not park Rig as owner for non-existent token", async function () {
+        await expect(rigs.parkRigAsOwner(BigNumber.from(0))).to.be.rejectedWith(
+          "OwnerQueryForNonexistentToken"
+        );
+      });
+
+      it("Should block contract non-owner", async function () {
+        const _rigs = rigs.connect(accounts[2]);
+
+        await expect(
+          _rigs.initPilots(ethers.constants.AddressZero)
+        ).to.be.rejectedWith("Ownable: caller is not the owner");
+
+        await expect(_rigs.parkRigAsOwner(1)).to.be.rejectedWith(
+          "Ownable: caller is not the owner"
+        );
+      });
+
       it("Should allow contract owner to park any Rig", async function () {
         // First, mint a Rig to `tokenOwner`
         await rigs.setMintPhase(3);
