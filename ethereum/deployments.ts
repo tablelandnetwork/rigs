@@ -36,10 +36,10 @@ export const deployments: RigsDeployments = {
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_5_57",
     allowlistTable: "rigs_allowlist_5_59",
-    partsTable: "parts_5_30",
-    layersTable: "layers_5_29",
-    attributesTable: "rig_attributes_5_27",
-    lookupsTable: "", // TODO: Fill me.
+    partsTable: "parts_42161_7",
+    layersTable: "layers_42161_8",
+    attributesTable: "rig_attributes_42161_9",
+    lookupsTable: "lookups_42161_10",
     pilotSessionsTable: "", // TODO: Fill me.
     displayAttributes: true,
   },
