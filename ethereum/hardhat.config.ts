@@ -2,7 +2,7 @@ import * as dotenv from "dotenv";
 
 import { HardhatUserConfig, extendEnvironment } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import "@nomicfoundation/hardhat-toolbox"
+import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-ethers";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@openzeppelin/hardhat-upgrades";

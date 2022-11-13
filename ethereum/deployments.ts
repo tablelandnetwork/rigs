@@ -4,6 +4,7 @@ export interface RigsDeployment {
   // Contracts
   contractAddress: string;
   royaltyContractAddress: string;
+  pilotsAddress: string;
 
   // Tables network
   tablelandChain: ChainName;
@@ -32,6 +33,7 @@ export const deployments: RigsDeployments = {
   ethereum: {
     contractAddress: "0x8EAa9AE1Ac89B1c8C8a8104D08C045f78Aadb42D",
     royaltyContractAddress: "0x9BE9627e25c9f348C1edB6E46dBCa2a6669e2D56",
+    pilotsAddress: "", // TODO: Fill me.
     tablelandChain: "ethereum-goerli",
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_5_57",
@@ -47,6 +49,7 @@ export const deployments: RigsDeployments = {
   "polygon-mumbai": {
     contractAddress: "0xc90CE622EEAbA7B6DA1066B6E9dF0997EeC88a7d",
     royaltyContractAddress: "0xB6349B77E802331dd5bFdef9241538e24ed51C31",
+    pilotsAddress: "",
     tablelandChain: "polygon-mumbai",
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_80001_3513",
@@ -61,6 +64,7 @@ export const deployments: RigsDeployments = {
   localhost: {
     contractAddress: "",
     royaltyContractAddress: "",
+    pilotsAddress: "",
     tablelandChain: "ethereum-goerli",
     tablelandHost: "http://localhost:8080",
     contractTable: "",

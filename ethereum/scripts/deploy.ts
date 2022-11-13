@@ -6,7 +6,11 @@ import {
   countList,
   getListFromCSVs,
 } from "../helpers/allowlist";
-import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
+import type {
+  TablelandRigs,
+  PaymentSplitter,
+  TablelandRigPilots,
+} from "../typechain-types";
 import {
   connect,
   ConnectOptions,
@@ -193,11 +197,6 @@ async function main() {
   await tx.wait();
   console.log("Set contract URI:", contractURI);
 
-  // Init pilots
-  tx = await rigs.initPilots();
-  await tx.wait();
-  console.log("Initialized pilots");
-
   // Set URI template
   const pilotsTable = await rigs.pilotSessionsTable();
   const uriTemplate = getURITemplate(
@@ -211,9 +210,28 @@ async function main() {
   await tx.wait();
   console.log("Set URI template:", uriTemplate.join("{id}"));
 
+  // Deploy Pilots
+  const RigPilotsFactory = await ethers.getContractFactory(
+    "TablelandRigPilots"
+  );
+  const pilots = await (
+    (await upgrades.deployProxy(RigPilotsFactory, [rigs.address], {
+      kind: "uups",
+    })) as TablelandRigPilots
+  ).deployed();
+  console.log("Deployed Pilots:", pilots.address);
+
+  // Init pilots
+  tx = await rigs.initPilots(pilots.address);
+  await tx.wait();
+  console.log("Initialized pilots");
+
   // Warn that addresses need to be saved in deployments file
   console.warn(
     `\nSave 'deployments.${network.name}.contractAddress: "${rigs.address}"' in deployments.ts!`
+  );
+  console.warn(
+    `\nSave 'deployments.${network.name}.pilotsAddress: "${pilots.address}"' in deployments.ts!`
   );
   console.warn(
     `Save 'deployments.${network.name}.royaltyContractAddress: "${splitter.address}"' in deployments.ts!`
