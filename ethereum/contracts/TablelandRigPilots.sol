@@ -1,23 +1,26 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-import "erc721a-upgradeable/contracts/ERC721AUpgradeable.sol";
-import "erc721a-upgradeable/contracts/ERC721A__Initializable.sol";
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165CheckerUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/math/MathUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import "./ITablelandRigPilots.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @dev Implementation of {ITablelandRigPilots}.
  */
-abstract contract TablelandRigPilots is
+contract TablelandRigPilots is
     ITablelandRigPilots,
-    ERC721A__Initializable,
-    ERC721AUpgradeable
+    OwnableUpgradeable,
+    UUPSUpgradeable
 {
     // Table prefix for the Rigs pilot sessions table.
     string private constant _PILOT_SESSIONS_PREFIX = "pilot_sessions";
@@ -38,6 +41,9 @@ abstract contract TablelandRigPilots is
     // Bit position of the pilot contract
     uint256 private constant _BITPOS_PILOT_ADDR = 96;
 
+    // Address of parent contract
+    address private _parent;
+
     // Table ID for the Rigs pilot sessions table.
     uint256 private _pilotSessionsTableId;
 
@@ -53,57 +59,12 @@ abstract contract TablelandRigPilots is
     // Used to help check if a custom pilot is in use.
     mapping(uint192 => uint16) private _pilotIndex;
 
-    function __TablelandRigPilots_init() internal onlyInitializingERC721A {
-        __TablelandRigPilots_init_unchained();
-    }
+    function initialize(address parent_) public initializer {
+        __Ownable_init();
+        // __Pausable_init();
+        __UUPSUpgradeable_init();
 
-    function __TablelandRigPilots_init_unchained()
-        internal
-        onlyInitializingERC721A
-    {}
-
-    // =============================
-    //      ITABLELANDRIGPILOTS
-    // =============================
-
-    /**
-     * @dev See {ITablelandRigPilots-pilotSessionsTable}.
-     */
-    function pilotSessionsTable() external view returns (string memory) {
-        return
-            SQLHelpers.toNameFromId(
-                _PILOT_SESSIONS_PREFIX,
-                _pilotSessionsTableId
-            );
-    }
-
-    /**
-     * @dev See {ITablelandRigPilots-pilotInfo}.
-     */
-    function pilotInfo(uint256 tokenId)
-        external
-        view
-        returns (PilotInfo memory)
-    {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-
-        return
-            PilotInfo(
-                _pilotStatus(tokenId),
-                _pilotStartTime(tokenId),
-                _canPilot(tokenId),
-                address(
-                    uint160(_pilots[uint16(tokenId)] >> _BITPOS_PILOT_ADDR)
-                ),
-                uint256(uint32(_pilots[uint16(tokenId)] >> _BITPOS_PILOT_ID))
-            );
-    }
-
-    /**
-     * @dev Creates the pilot sessions table.
-     */
-    function _createPilotSessionsTable() internal {
+        _parent = parent_;
         _pilotSessionsTableId = TablelandDeployments.get().createTable(
             address(this),
             SQLHelpers.toCreateFromSchema(
@@ -120,11 +81,77 @@ abstract contract TablelandRigPilots is
     }
 
     /**
-     * @dev Returns a pilot's start time.
-     *
-     * tokenId - the unique Rig token identifier
+     * @dev Throws if called by any account other than the parent.
      */
-    function _pilotStartTime(uint256 tokenId) internal view returns (uint64) {
+    modifier onlyParent() {
+        _checkParent();
+        _;
+    }
+
+    /**
+     * @dev Returns the address of the current parent.
+     */
+    function parent() public view virtual returns (address) {
+        return _parent;
+    }
+
+    /**
+     * @dev Throws if the sender is not the parent.
+     */
+    function _checkParent() internal view virtual {
+        require(parent() == _msgSender(), "Pilots: caller is not the parent");
+    }
+
+    // =============================
+    //      ITABLELANDRIGPILOTS
+    // =============================
+
+    /**
+     * @dev See {ITablelandRigPilots-pilotSessionsTable}.
+     */
+    function pilotSessionsTable()
+        external
+        view
+        onlyParent
+        returns (string memory)
+    {
+        return
+            SQLHelpers.toNameFromId(
+                _PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId
+            );
+    }
+
+    /**
+     * @dev See {ITablelandRigPilots-pilotInfo}.
+     */
+    function pilotInfo(uint256 tokenId)
+        external
+        view
+        onlyParent
+        returns (PilotInfo memory)
+    {
+        return
+            PilotInfo(
+                _pilotStatus(tokenId),
+                pilotStartTime(tokenId),
+                _canPilot(tokenId),
+                address(
+                    uint160(_pilots[uint16(tokenId)] >> _BITPOS_PILOT_ADDR)
+                ),
+                uint256(uint32(_pilots[uint16(tokenId)] >> _BITPOS_PILOT_ID))
+            );
+    }
+
+    /**
+     * @dev See {ITablelandRigPilots-pilotStartTime}.
+     */
+    function pilotStartTime(uint256 tokenId)
+        public
+        view
+        onlyParent
+        returns (uint64)
+    {
         return uint64(_pilots[uint16(tokenId)]);
     }
 
@@ -199,7 +226,7 @@ abstract contract TablelandRigPilots is
         // i.e., `park` results in a status of `UNTRAINED` or `PARKED`
         // Invariant: pilot data cannot be `0` if `startTime` is > `0`
         return
-            _pilotStartTime(tokenId) == 0
+            pilotStartTime(tokenId) == 0
                 ? (
                     _pilotData(tokenId) == 0
                         ? GarageStatus.UNTRAINED
@@ -227,17 +254,13 @@ abstract contract TablelandRigPilots is
             status == GarageStatus.PARKED ||
             (status == GarageStatus.TRAINING &&
                 block.number >=
-                _pilotStartTime(tokenId) + _PILOT_TRAINING_DURATION);
+                pilotStartTime(tokenId) + _PILOT_TRAINING_DURATION);
     }
 
     /**
      * @dev See {ITablelandRigPilots-trainRig}.
      */
-    function trainRig(uint256 tokenId) external {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to train the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
+    function trainRig(address sender, uint256 tokenId) external onlyParent {
         // Validate the Rig is untrained
         if (_pilotStatus(tokenId) != GarageStatus.UNTRAINED)
             revert InvalidPilotStatus();
@@ -260,9 +283,7 @@ abstract contract TablelandRigPilots is
                 string.concat(
                     StringsUpgradeable.toString(uint16(tokenId)),
                     ",",
-                    SQLHelpers.quote(
-                        StringsUpgradeable.toHexString(_msgSenderERC721A())
-                    ),
+                    SQLHelpers.quote(StringsUpgradeable.toHexString(sender)),
                     ",",
                     StringsUpgradeable.toString(uint64(block.number))
                 )
@@ -272,33 +293,29 @@ abstract contract TablelandRigPilots is
         emit Training(tokenId);
     }
 
-    using ERC165Checker for address;
+    using ERC165CheckerUpgradeable for address;
 
     /**
      * @dev See {ITablelandRigPilots-pilotRig}.
      */
     function pilotRig(
+        address sender,
         uint256 tokenId,
         address pilotAddr,
         uint256 pilotId
-    ) public {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to pilot the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
-
+    ) public onlyParent {
         // Verify the `pilotId` fits into a `uint32` (required for packing)
         if (pilotId > type(uint32).max)
             revert InvalidCustomPilot("pilot id too big");
 
         // Check if `pilotAddr` is an ERC-721; cannot be the Rigs contract
         if (
-            pilotAddr == address(this) ||
-            !pilotAddr.supportsInterface(type(IERC721).interfaceId)
+            pilotAddr == parent() ||
+            !pilotAddr.supportsInterface(type(IERC721Upgradeable).interfaceId)
         ) revert InvalidCustomPilot("pilot contract not supported");
 
         // Check ownership of `pilotId` at target `pilotAddr`
-        if (IERC721(pilotAddr).ownerOf(pilotId) != _msgSenderERC721A())
+        if (IERC721Upgradeable(pilotAddr).ownerOf(pilotId) != sender)
             revert InvalidCustomPilot("unauthorized");
 
         // Validate the Rig can be piloted
@@ -317,7 +334,7 @@ abstract contract TablelandRigPilots is
             _pilotIndex[pilotData] != 0 &&
             _pilotIndex[pilotData] != tokenId &&
             _pilotStatus(_pilotIndex[pilotData]) != GarageStatus.PARKED
-        ) _parkRig(_pilotIndex[pilotData]);
+        ) parkRig(sender, _pilotIndex[pilotData]);
 
         // If the Rig is training, update its session (no parking required)
         // Pilot has completed training at this point (training validation is checked above)
@@ -334,7 +351,7 @@ abstract contract TablelandRigPilots is
                 StringsUpgradeable.toString(uint16(tokenId)),
                 " and ",
                 "start_time=",
-                StringsUpgradeable.toString(_pilotStartTime(tokenId))
+                StringsUpgradeable.toString(pilotStartTime(tokenId))
             );
             TablelandDeployments.get().runSQL(
                 address(this),
@@ -362,7 +379,7 @@ abstract contract TablelandRigPilots is
                         StringsUpgradeable.toString(uint16(tokenId)),
                         ",",
                         SQLHelpers.quote(
-                            StringsUpgradeable.toHexString(_msgSenderERC721A())
+                            StringsUpgradeable.toHexString(sender)
                         ),
                         ",",
                         SQLHelpers.quote(Strings.toHexString(pilotAddr)),
@@ -386,51 +403,12 @@ abstract contract TablelandRigPilots is
     }
 
     /**
-     * @dev See {ITablelandRigPilots-batchPilotRigs}.
-     */
-    function pilotRig(
-        uint256[] calldata tokenIds,
-        address[] calldata pilotAddrs,
-        uint256[] calldata pilotIds
-    ) external {
-        // Ensure the arrays are non-empty
-        if (
-            tokenIds.length == 0 ||
-            pilotAddrs.length == 0 ||
-            pilotIds.length == 0
-        ) revert InvalidBatchPilotRig();
-
-        // Ensure there is a 1:1 relationship between Rig `tokenIds` and pilots
-        // Only allow a batch to be an arbitrary max length of 255
-        // Clients should restrict this further (e.g., <=5) to avoid gas exceeding limits
-        if (
-            tokenIds.length != pilotAddrs.length ||
-            tokenIds.length != pilotIds.length ||
-            tokenIds.length > type(uint8).max
-        ) revert InvalidBatchPilotRig();
-
-        // For each token, call `pilotRig`
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            pilotRig(tokenIds[i], pilotAddrs[i], pilotIds[i]);
-        }
-    }
-
-    /**
      * @dev See {ITablelandRigPilots-parkRig}.
      */
-    function parkRig(uint256 tokenId) external {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to park the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A()) revert Unauthorized();
-
-        _parkRig(tokenId);
-    }
-
-    /**
-     * @dev See {ITablelandRigPilots-parkRig}.
-     */
-    function _parkRig(uint256 tokenId) internal {
+    function parkRig(
+        address, /*sender*/
+        uint256 tokenId
+    ) public onlyParent {
         // Ensure Rig is currently in-flight
         GarageStatus status = _pilotStatus(tokenId);
         if (
@@ -439,7 +417,7 @@ abstract contract TablelandRigPilots is
 
         // Session update type is dependent on training completion status
         string memory setters;
-        uint64 startTime = _pilotStartTime(tokenId);
+        uint64 startTime = pilotStartTime(tokenId);
         if (
             status == GarageStatus.TRAINING &&
             !(block.number >= startTime + _PILOT_TRAINING_DURATION)
@@ -500,4 +478,13 @@ abstract contract TablelandRigPilots is
     ) public pure returns (bytes4) {
         return 0x150b7a02;
     }
+
+    // =============================
+    //       UUPSUpgradeable
+    // =============================
+
+    /**
+     * @dev See {UUPSUpgradeable-_authorizeUpgrade}.
+     */
+    function _authorizeUpgrade(address) internal view override onlyOwner {} // solhint-disable no-empty-blocks
 }

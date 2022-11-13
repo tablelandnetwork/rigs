@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
+import "./ITablelandRigPilots.sol";
+
 /**
  * @dev Interface of a TablelandRigs compliant contract.
  */
@@ -92,6 +94,7 @@ interface ITablelandRigs {
      */
     function getClaimed(address by)
         external
+        view
         returns (uint16 allowClaims, uint16 waitClaims);
 
     /**
@@ -131,7 +134,7 @@ interface ITablelandRigs {
     /**
      * @dev Returns contract URI for storefront-level metadata.
      */
-    function contractURI() external returns (string memory);
+    function contractURI() external view returns (string memory);
 
     /**
      * @dev Sets the contract URI.
@@ -158,8 +161,101 @@ interface ITablelandRigs {
 
     /**
      * @dev Initializes Rig pilots by creating the pilot sessios table.
+     *
+     * pilotsAddress - `ITablelandRigPilots` contract address
+     *
+     * Requirements:
+     *
+     * - `msg.sender` must be contract owner
      */
-    function initPilots() external;
+    function initPilots(address pilotsAddress) external;
+
+    /**
+     * @dev Returns the Tableland table name for the pilot sessions table.
+     */
+    function pilotSessionsTable() external view returns (string memory);
+
+    /**
+     * @dev Retrieves pilot info for a Rig.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     */
+    function pilotInfo(uint256 tokenId)
+        external
+        view
+        returns (ITablelandRigPilots.PilotInfo memory);
+
+    /**
+     * @dev Trains a Rig for a period of 30 days, putting it in-flight.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - pilot status must be valid (`UNTRAINED`)
+     */
+    function trainRig(uint256 tokenId) external;
+
+    /**
+     * @dev Puts a single Rig in flight by setting a custom `Pilot`.
+     *
+     * tokenId - the unique Rig token identifier
+     * pilotContract - ERC-721 contract address of a desired Rig's pilot
+     * pilotId - the unique token identifier at the target `pilotContract`
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
+     * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
+     * - `pilotId` must be owned by `msg.sender` at `pilotContract`
+     * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict
+     */
+    function pilotRig(
+        uint256 tokenId,
+        address pilotContract,
+        uint256 pilotId
+    ) external;
+
+    /**
+     * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
+     *
+     * tokenIds - a list of unique Rig token identifiers
+     * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
+     * pilotIds - a list of unique token identifiers at the target `pilotContract`
+     *
+     * Requirements:
+     *
+     * - All input parameters must be non-empty
+     * - All input parameters must have an equal length
+     * - There cannot exist a duplicate value in each of the individual parameters
+     * - Values are processed in order (i.e., use same index for each array)
+     * - See `pilotRig` for additional constraints on a per-token basis
+     */
+    function pilotRig(
+        uint256[] memory tokenIds,
+        address[] memory pilotContracts,
+        uint256[] memory pilotIds
+    ) external;
+
+    /**
+     * @dev Parks a Rig and ends the current `Pilot` session.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - `sender` must own the Rig
+     * - pilot status must be `TRAINING` or `PILOTED`
+     * - pilot must have completed 30 days of training
+     */
+    function parkRig(uint256 tokenId) external;
 
     /**
      * @dev Allows contract owner to park any Rig that may be intentionally

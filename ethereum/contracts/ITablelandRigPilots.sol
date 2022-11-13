@@ -57,10 +57,10 @@ interface ITablelandRigPilots {
     /**
      * @dev Returns the Tableland table name for the pilot sessions table.
      */
-    function pilotSessionsTable() external returns (string memory);
+    function pilotSessionsTable() external view returns (string memory);
 
     /**
-     * @dev Retrieves pilot info for a Rig, with packed pilot info.
+     * @dev Retrieves pilot info for a Rig.
      *
      * tokenId - the unique Rig token identifier
      *
@@ -74,21 +74,30 @@ interface ITablelandRigPilots {
         returns (PilotInfo memory);
 
     /**
+     * @dev Returns a pilot's start time.
+     *
+     * tokenId - the unique Rig token identifier
+     */
+    function pilotStartTime(uint256 tokenId) external view returns (uint64);
+
+    /**
      * @dev Trains a Rig for a period of 30 days, putting it in-flight.
      *
+     * sender - the initiator address
      * tokenId - the unique Rig token identifier
      *
      * Requirements:
      *
+     * - `sender` must own the Rig
      * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
      * - pilot status must be valid (`UNTRAINED`)
      */
-    function trainRig(uint256 tokenId) external;
+    function trainRig(address sender, uint256 tokenId) external;
 
     /**
      * @dev Puts a single Rig in flight by setting a custom `Pilot`.
      *
+     * sender - the initiator address
      * tokenId - the unique Rig token identifier
      * pilotContract - ERC-721 contract address of a desired Rig's pilot
      * pilotId - the unique token identifier at the target `pilotContract`
@@ -96,50 +105,31 @@ interface ITablelandRigPilots {
      * Requirements:
      *
      * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
+     * - `sender` must own the Rig
      * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
      * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
      * - `pilotId` must be owned by `msg.sender` at `pilotContract`
      * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict
      */
     function pilotRig(
+        address sender,
         uint256 tokenId,
         address pilotContract,
         uint256 pilotId
     ) external;
 
     /**
-     * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
-     *
-     * tokenIds - a list of unique Rig token identifiers
-     * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
-     * pilotIds - a list of unique token identifiers at the target `pilotContract`
-     *
-     * Requirements:
-     *
-     * - All input parameters must be non-empty
-     * - All input parameters must have an equal length
-     * - There cannot exist a duplicate value in each of the individual parameters
-     * - Values are processed in order (i.e., use same index for each array)
-     * - See `pilotRig` for additional constraints on a per-token basis
-     */
-    function pilotRig(
-        uint256[] memory tokenIds,
-        address[] memory pilotContracts,
-        uint256[] memory pilotIds
-    ) external;
-
-    /**
      * @dev Parks a Rig and ends the current `Pilot` session.
      *
+     * sender - the initiator address
      * tokenId - the unique Rig token identifier
      *
      * Requirements:
      *
      * - `tokenId` must exist
-     * - `msg.sender` must own the Rig, or is the Rigs contract (for calls from `pilotRig`)
+     * - `sender` must own the Rig
      * - pilot status must be `TRAINING` or `PILOTED`
      * - pilot must have completed 30 days of training
      */
-    function parkRig(uint256 tokenId) external;
+    function parkRig(address sender, uint256 tokenId) external;
 }

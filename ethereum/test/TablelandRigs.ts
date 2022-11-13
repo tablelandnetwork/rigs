@@ -8,7 +8,11 @@ import { ethers, network, upgrades } from "hardhat";
 import { MerkleTree } from "merkletreejs";
 import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
 import { getURITemplate } from "../helpers/uris";
-import { PaymentSplitter, TablelandRigs } from "../typechain-types";
+import {
+  PaymentSplitter,
+  TablelandRigs,
+  TablelandRigPilots,
+} from "../typechain-types";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
@@ -28,6 +32,7 @@ describe("Rigs", function () {
   const waitlist: AllowList = {};
   let allowlistTree: MerkleTree;
   let waitlistTree: MerkleTree;
+  let pilots: TablelandRigPilots;
 
   // Use a fixture, which runs *once* to help ensure deterministic contract addresses
   async function deployRigsFixture() {
@@ -104,14 +109,24 @@ describe("Rigs", function () {
       "ERC721A__Initializable: contract is already initialized"
     );
 
-    // Create a `pilot_sessions` table, owned by contract
-    const tx = await rigs.initPilots();
-    const receipt = await tx.wait();
-    const [event] = receipt.events ?? [];
-    const pilotSessionsTableId = event.args?.tokenId;
-    expect(await rigs.pilotSessionsTable()).to.be.equal(
-      `pilot_sessions_${network.config.chainId}_${pilotSessionsTableId}`
-    );
+    // Deploy the Pilots contract
+    const PilotsFactory = await ethers.getContractFactory("TablelandRigPilots");
+    pilots = await (
+      (await PilotsFactory.deploy()) as TablelandRigPilots
+    ).deployed();
+    await (await pilots.initialize(rigs.address)).wait();
+
+    // Set pilots on rigs
+    await (await rigs.initPilots(pilots.address)).wait();
+    // const receipt = await tx.wait();
+    // console.log(receipt);
+    // console.log(await rigs.pilotSessionsTable());
+    // const [event] = receipt.events ?? [];
+    // const pilotSessionsTableId = event.args?.tokenId;
+    // console.log(4);
+    // expect(await rigs.pilotSessionsTable()).to.be.equal(
+    //   `pilot_sessions_${network.config.chainId}_${pilotSessionsTableId}`
+    // );
   }
 
   beforeEach(async function () {
@@ -628,9 +643,9 @@ describe("Rigs", function () {
         _rigs.setRoyaltyReceiver(accounts[2].address)
       ).to.be.revertedWith("Ownable: caller is not the owner");
 
-      await expect(_rigs.initPilots()).to.be.rejectedWith(
-        "Ownable: caller is not the owner"
-      );
+      await expect(
+        _rigs.initPilots(ethers.constants.AddressZero)
+      ).to.be.rejectedWith("Ownable: caller is not the owner");
 
       await expect(_rigs.parkRigAsOwner(1)).to.be.rejectedWith(
         "Ownable: caller is not the owner"
@@ -721,7 +736,7 @@ describe("Rigs", function () {
         const tokenId = event.args?.tokenId;
         // Train the Rig
         await expect(rigs.connect(tokenOwner).trainRig(BigNumber.from(tokenId)))
-          .to.emit(rigs, "Training")
+          .to.emit(pilots, "Training")
           .withArgs(BigNumber.from(1));
       });
 
@@ -948,7 +963,7 @@ describe("Rigs", function () {
               pilotTokenIdRigOwner
             )
         )
-          .to.emit(rigs, "Piloted")
+          .to.emit(pilots, "Piloted")
           .withArgs(
             BigNumber.from(rigTokenId),
             fauxERC721.address,
@@ -1011,7 +1026,7 @@ describe("Rigs", function () {
             pilotTokenId
           );
         await expect(tx)
-          .to.emit(rigs, "Piloted")
+          .to.emit(pilots, "Piloted")
           .withArgs(
             BigNumber.from(rigTokenId),
             fauxERC721.address,
@@ -1043,7 +1058,7 @@ describe("Rigs", function () {
             pilotTokenId
           );
         await expect(tx)
-          .to.emit(rigs, "Piloted")
+          .to.emit(pilots, "Piloted")
           .withArgs(
             BigNumber.from(rigTokenId),
             fauxERC721.address,
@@ -1076,7 +1091,7 @@ describe("Rigs", function () {
             pilotTokenId
           );
         await expect(tx)
-          .to.emit(rigs, "Piloted")
+          .to.emit(pilots, "Piloted")
           .withArgs(
             BigNumber.from(rigTokenId),
             fauxTwoERC721.address,
@@ -1146,9 +1161,9 @@ describe("Rigs", function () {
               pilotTokenId
             )
         )
-          .to.emit(rigs, "Parked")
+          .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(rigTokenId1))
-          .to.emit(rigs, "Piloted")
+          .to.emit(pilots, "Piloted")
           .withArgs(
             BigNumber.from(rigTokenId2),
             fauxERC721.address,
@@ -1253,7 +1268,7 @@ describe("Rigs", function () {
         // Park the Rig before training has been completed
         await expect(
           rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
-        ).to.emit(rigs, "Parked");
+        ).to.emit(pilots, "Parked");
         // Try to park the Rig again
         await expect(
           rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
@@ -1283,7 +1298,7 @@ describe("Rigs", function () {
         // Park the Rig before training has been completed
         await expect(
           rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
-        ).to.emit(rigs, "Parked");
+        ).to.emit(pilots, "Parked");
         // Check that the index is now `0` since training was incomplete
         // Recall that a state of `UNTRAINED` means that the contract is zero and pilot is set to `0`
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
@@ -1307,7 +1322,7 @@ describe("Rigs", function () {
         // Park the Rig before training has been completed
         await expect(
           rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId))
-        ).to.emit(rigs, "Parked");
+        ).to.emit(pilots, "Parked");
         // Check that the pilot is now `0` since training was incomplete
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(0);
@@ -1326,7 +1341,7 @@ describe("Rigs", function () {
         expect(pilotInfo.pilotable).to.equal(true);
         // Park the Rig now that training has been completed
         await expect(rigs.connect(tokenOwner).parkRig(BigNumber.from(tokenId)))
-          .to.emit(rigs, "Parked")
+          .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Validate the pilot ID is `1` and it was not reset, now that training is complete
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
@@ -1410,7 +1425,7 @@ describe("Rigs", function () {
         expect(pilotInfo.status).to.equal(1);
         // Park the Rig as the contract owner
         await expect(rigs.parkRigAsOwner(BigNumber.from(tokenId)))
-          .to.emit(rigs, "Parked")
+          .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Check pilot is back to untrained
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));

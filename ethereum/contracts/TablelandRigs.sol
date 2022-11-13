@@ -12,7 +12,7 @@ import "@openzeppelin/contracts-upgradeable/utils/cryptography/MerkleProofUpgrad
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
-import "./TablelandRigPilots.sol";
+import "./ITablelandRigPilots.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -26,8 +26,7 @@ contract TablelandRigs is
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     ERC2981Upgradeable,
-    UUPSUpgradeable,
-    TablelandRigPilots
+    UUPSUpgradeable
 {
     // The maximum number of tokens that can be minted.
     uint256 public maxSupply;
@@ -44,11 +43,14 @@ contract TablelandRigs is
     // The waitClaims merkletree root.
     bytes32 public waitlistRoot;
 
-    // Flag specifying whether or not claims
+    // Flag specifying whether or not claims.
     MintPhase public mintPhase;
 
     // URI for contract info.
     string private _contractInfoURI;
+
+    // Pilots implementation.
+    ITablelandRigPilots private _pilots;
 
     function initialize(
         uint256 _maxSupply,
@@ -65,7 +67,6 @@ contract TablelandRigs is
         __ReentrancyGuard_init();
         __ERC2981_init();
         __UUPSUpgradeable_init();
-        __TablelandRigPilots_init();
 
         maxSupply = _maxSupply;
         mintPrice = _mintPrice;
@@ -83,7 +84,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-mint}.
      */
-    function mint(uint256 quantity) external payable override whenNotPaused {
+    function mint(uint256 quantity) external payable whenNotPaused {
         bytes32[] memory proof;
         _verifyMint(quantity, 0, 0, proof);
     }
@@ -96,7 +97,7 @@ contract TablelandRigs is
         uint256 freeAllowance,
         uint256 paidAllowance,
         bytes32[] calldata proof
-    ) external payable override whenNotPaused {
+    ) external payable whenNotPaused {
         _verifyMint(quantity, freeAllowance, paidAllowance, proof);
     }
 
@@ -294,7 +295,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-setMintPhase}.
      */
-    function setMintPhase(uint256 _mintPhase) external override onlyOwner {
+    function setMintPhase(uint256 _mintPhase) external onlyOwner {
         mintPhase = MintPhase(_mintPhase);
         emit MintPhaseChanged(mintPhase);
     }
@@ -302,36 +303,28 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-setBeneficiary}.
      */
-    function setBeneficiary(address payable _beneficiary)
-        public
-        override
-        onlyOwner
-    {
+    function setBeneficiary(address payable _beneficiary) public onlyOwner {
         beneficiary = _beneficiary;
     }
 
     /**
      * @dev See {ITablelandRigs-setURITemplate}.
      */
-    function setURITemplate(string[] memory uriTemplate)
-        external
-        override
-        onlyOwner
-    {
+    function setURITemplate(string[] memory uriTemplate) external onlyOwner {
         _setURITemplate(uriTemplate);
     }
 
     /**
      * @dev See {ITablelandRigs-contractURI}.
      */
-    function contractURI() public view override returns (string memory) {
+    function contractURI() public view returns (string memory) {
         return _contractInfoURI;
     }
 
     /**
      * @dev See {ITablelandRigs-setContractURI}.
      */
-    function setContractURI(string memory uri) external override onlyOwner {
+    function setContractURI(string memory uri) external onlyOwner {
         _contractInfoURI = uri;
     }
 
@@ -343,31 +336,132 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-initPilots}.
-     */
-    function initPilots() external onlyOwner {
-        _createPilotSessionsTable();
-    }
-
-    /**
-     * @dev See {ITablelandRigs-parkRigAsOwner}.
-     */
-    function parkRigAsOwner(uint256 tokenId) external onlyOwner {
-        _parkRig(tokenId);
-    }
-
-    /**
      * @dev See {ITablelandRigs-pause}.
      */
-    function pause() external override onlyOwner {
+    function pause() external onlyOwner {
         _pause();
     }
 
     /**
      * @dev See {ITablelandRigs-unpause}.
      */
-    function unpause() external override onlyOwner {
+    function unpause() external onlyOwner {
         _unpause();
+    }
+
+    // =============================
+    //      ITABLELANDRIGPILOTS
+    // =============================
+
+    /**
+     * @dev See {ITablelandRigs-initPilots}.
+     */
+    function initPilots(address pilotsAddress) external onlyOwner {
+        _pilots = ITablelandRigPilots(pilotsAddress);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-pilotSessionsTable}.
+     */
+    function pilotSessionsTable() external view returns (string memory) {
+        return _pilots.pilotSessionsTable();
+    }
+
+    /**
+     * @dev See {ITablelandRigs-pilotInfo}.
+     */
+    function pilotInfo(uint256 tokenId)
+        external
+        view
+        returns (ITablelandRigPilots.PilotInfo memory)
+    {
+        // Check the Rig `tokenId` exists
+        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+
+        return _pilots.pilotInfo(tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-trainRig}.
+     */
+    function trainRig(uint256 tokenId) external {
+        // Check the Rig `tokenId` exists
+        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+        // Verify `msg.sender` is authorized to train the specified Rig
+        if (ownerOf(tokenId) != _msgSenderERC721A())
+            revert ITablelandRigPilots.Unauthorized();
+
+        _pilots.trainRig(_msgSenderERC721A(), tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-pilotRig}.
+     */
+    function pilotRig(
+        uint256 tokenId,
+        address pilotAddr,
+        uint256 pilotId
+    ) public {
+        // Check the Rig `tokenId` exists
+        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+        // Verify `msg.sender` is authorized to pilot the specified Rig
+        if (ownerOf(tokenId) != _msgSenderERC721A())
+            revert ITablelandRigPilots.Unauthorized();
+
+        _pilots.pilotRig(_msgSenderERC721A(), tokenId, pilotAddr, pilotId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-pilotRig}.
+     */
+    function pilotRig(
+        uint256[] calldata tokenIds,
+        address[] calldata pilotAddrs,
+        uint256[] calldata pilotIds
+    ) external {
+        // Ensure the arrays are non-empty
+        if (
+            tokenIds.length == 0 ||
+            pilotAddrs.length == 0 ||
+            pilotIds.length == 0
+        ) revert ITablelandRigPilots.InvalidBatchPilotRig();
+
+        // Ensure there is a 1:1 relationship between Rig `tokenIds` and pilots
+        // Only allow a batch to be an arbitrary max length of 255
+        // Clients should restrict this further (e.g., <=5) to avoid gas exceeding limits
+        if (
+            tokenIds.length != pilotAddrs.length ||
+            tokenIds.length != pilotIds.length ||
+            tokenIds.length > type(uint8).max
+        ) revert ITablelandRigPilots.InvalidBatchPilotRig();
+
+        // For each token, call `pilotRig`
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            pilotRig(tokenIds[i], pilotAddrs[i], pilotIds[i]);
+        }
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRig}.
+     */
+    function parkRig(uint256 tokenId) external {
+        // Check the Rig `tokenId` exists
+        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+        // Verify `msg.sender` is authorized to park the specified Rig
+        if (ownerOf(tokenId) != _msgSenderERC721A())
+            revert ITablelandRigPilots.Unauthorized();
+
+        _pilots.parkRig(_msgSenderERC721A(), tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRigAsOwner}.
+     */
+    function parkRigAsOwner(uint256 tokenId) external onlyOwner {
+        // Check the Rig `tokenId` exists
+        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+
+        _pilots.parkRig(_msgSenderERC721A(), tokenId);
     }
 
     // =============================
@@ -408,7 +502,8 @@ contract TablelandRigs is
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
             // If the pilot's `startTime` is not zero, then the Rig is in-flight
-            if (_pilotStartTime(tokenId) > 0) revert InvalidPilotStatus();
+            if (_pilots.pilotStartTime(tokenId) > 0)
+                revert ITablelandRigPilots.InvalidPilotStatus();
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
