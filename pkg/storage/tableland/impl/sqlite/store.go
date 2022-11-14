@@ -137,18 +137,6 @@ func (s *Store) ClearLookups(ctx context.Context) error {
 	return nil
 }
 
-// ClearPilotSessions implements ClearPilotSessions.
-func (s *Store) ClearPilotSessions(ctx context.Context) error {
-	sql, err := s.factory.SQLForClearingData(tableland.PilotSessionsDefinition.Prefix)
-	if err != nil {
-		return fmt.Errorf("getting sql for clearing pilot sessions: %v", err)
-	}
-	if _, err := s.db.ExecContext(ctx, sql); err != nil {
-		return fmt.Errorf("clearing pilot sessions: %v", err)
-	}
-	return nil
-}
-
 // Close implements io.Closer.
 func (s *Store) Close() error {
 	return s.db.Close()
