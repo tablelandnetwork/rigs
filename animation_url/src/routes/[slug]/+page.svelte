@@ -42,8 +42,8 @@
   * © 2020 MyFonts Incn*/
   @font-face {
   font-family: "AndaleMono";
-  src: url("andale-mono.woff2") format("woff2"),
-    url("andale-mono.woff") format("woff");
+  src: url("@/assets/fonts/andale-mono.woff2") format("woff2"),
+    url("@/assets/fonts/andale-mono.woff") format("woff");
   }
 
   .container {
@@ -87,13 +87,13 @@
 
   .warning {
     position: absolute;
-    bottom: 0;
+    top: 2rem;
     left: 0;
     font-family: 'AndaleMono', sans-serif;
     font-size: 0.7rem;
-    padding: 0.3rem;
+    padding: 0.375rem 0.5625rem 0.46875rem;
     color: #75B6B5;
     background-color: #101e1e;
-    border-radius: 0 0.1875rem 0 0;
+    border-radius: 0 0.1875rem 0.1875rem 0;
   }
 </style>

@@ -1,5 +1,6 @@
 import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
+import { default as trainer } from "../../assets/trainer.svg";
 
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
@@ -32,7 +33,7 @@ export async function load({ url }) {
     { output: "objects" }
   );
   if (sessions && sessions.length > 0) {
-    pilot = "trainer_pilot.svg";
+    pilot = trainer;
   }
 
   return {
