@@ -73,36 +73,6 @@ describe("Pilots", function () {
     });
   });
 
-  describe("pilotSessionsTable", function () {
-    it("Should only allow contract parent", async function () {
-      const _pilots = pilots.connect(accounts[2]);
-
-      await expect(_pilots.pilotSessionsTable()).to.be.rejectedWith(
-        "Pilots: caller is not the parent"
-      );
-    });
-  });
-
-  describe("pilotInfo", function () {
-    it("Should only allow contract parent", async function () {
-      const _pilots = pilots.connect(accounts[2]);
-
-      await expect(_pilots.pilotInfo(BigNumber.from(1))).to.be.rejectedWith(
-        "Pilots: caller is not the parent"
-      );
-    });
-  });
-
-  describe("pilotStartTime", function () {
-    it("Should only allow contract parent", async function () {
-      const _pilots = pilots.connect(accounts[2]);
-
-      await expect(
-        _pilots.pilotStartTime(BigNumber.from(1))
-      ).to.be.rejectedWith("Pilots: caller is not the parent");
-    });
-  });
-
   describe("trainRig", function () {
     it("Should only allow contract parent", async function () {
       const _pilots = pilots.connect(accounts[2]);
