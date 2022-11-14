@@ -14,7 +14,7 @@ import {
   SUPPORTED_CHAINS,
 } from "@tableland/sdk";
 import fetch, { Headers, Request, Response } from "node-fetch";
-import { getContractURI, getURITemplate } from "../helpers/uris";
+import { getContractURI } from "../helpers/uris";
 import assert from "assert";
 
 if (!(globalThis as any).fetch) {
@@ -189,22 +189,9 @@ async function main() {
   console.log("Deployed Rigs:", rigs.address);
 
   // Set contract URI
-  let tx = await rigs.setContractURI(contractURI);
+  const tx = await rigs.setContractURI(contractURI);
   await tx.wait();
   console.log("Set contract URI:", contractURI);
-
-  // Set URI template
-  const pilotsTable = await rigs.pilotSessionsTable();
-  const uriTemplate = getURITemplate(
-    rigsDeployment.tablelandHost,
-    rigsDeployment.attributesTable,
-    rigsDeployment.lookupsTable,
-    pilotsTable,
-    rigsDeployment.displayAttributes
-  );
-  tx = await rigs.setURITemplate(uriTemplate);
-  await tx.wait();
-  console.log("Set URI template:", uriTemplate.join("{id}"));
 
   // Warn that addresses need to be saved in deployments file
   console.warn(

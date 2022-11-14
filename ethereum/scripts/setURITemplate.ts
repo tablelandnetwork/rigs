@@ -24,6 +24,9 @@ async function main() {
   if (rigsDeployment.lookupsTable === "") {
     throw Error(`missing lookups table entry in deployments`);
   }
+  if (rigsDeployment.pilotSessionsTable === "") {
+    throw Error(`missing pilot sessions table entry in deployments`);
+  }
 
   // Get pilots table
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
