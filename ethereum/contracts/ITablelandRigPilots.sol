@@ -73,10 +73,9 @@ interface ITablelandRigPilots {
      *
      * - `tokenId` must exist
      */
-    function pilotInfo(uint256 tokenId)
-        external
-        view
-        returns (PilotInfo memory);
+    function pilotInfo(
+        uint256 tokenId
+    ) external view returns (PilotInfo memory);
 
     /**
      * @dev Returns a pilot's start time.

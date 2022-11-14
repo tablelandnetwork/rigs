@@ -124,12 +124,9 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-pilotInfo}.
      */
-    function pilotInfo(uint256 tokenId)
-        external
-        view
-        onlyParent
-        returns (PilotInfo memory)
-    {
+    function pilotInfo(
+        uint256 tokenId
+    ) external view onlyParent returns (PilotInfo memory) {
         return
             PilotInfo(
                 _pilotStatus(tokenId),
@@ -145,12 +142,9 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-pilotStartTime}.
      */
-    function pilotStartTime(uint256 tokenId)
-        public
-        view
-        onlyParent
-        returns (uint64)
-    {
+    function pilotStartTime(
+        uint256 tokenId
+    ) public view onlyParent returns (uint64) {
         return uint64(_pilots[uint16(tokenId)]);
     }
 
@@ -402,10 +396,7 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-parkRig}.
      */
-    function parkRig(
-        address, /*sender*/
-        uint256 tokenId
-    ) public onlyParent {
+    function parkRig(address /*sender*/, uint256 tokenId) public onlyParent {
         // Ensure Rig is currently in-flight
         GarageStatus status = _pilotStatus(tokenId);
         if (

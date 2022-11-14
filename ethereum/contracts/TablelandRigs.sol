@@ -231,10 +231,10 @@ contract TablelandRigs is
      *
      * - `msg.value` must be greater than or equal to `costQuantity`
      */
-    function _mint(uint256 quantity, uint256 costQuantity)
-        private
-        nonReentrant
-    {
+    function _mint(
+        uint256 quantity,
+        uint256 costQuantity
+    ) private nonReentrant {
         // Check sufficient value
         uint256 cost = _cost(costQuantity);
         if (msg.value < cost) revert InsufficientValue(cost);
@@ -271,11 +271,9 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-getClaimed}.
      */
-    function getClaimed(address by)
-        public
-        view
-        returns (uint16 allowClaims, uint16 waitClaims)
-    {
+    function getClaimed(
+        address by
+    ) public view returns (uint16 allowClaims, uint16 waitClaims) {
         uint64 packed = _getAux(by);
         allowClaims = uint16(packed);
         waitClaims = uint16(packed >> 16);
@@ -370,11 +368,9 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-pilotInfo}.
      */
-    function pilotInfo(uint256 tokenId)
-        external
-        view
-        returns (ITablelandRigPilots.PilotInfo memory)
-    {
+    function pilotInfo(
+        uint256 tokenId
+    ) external view returns (ITablelandRigPilots.PilotInfo memory) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
@@ -508,7 +504,9 @@ contract TablelandRigs is
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(uint256 tokenId)
+    function tokenURI(
+        uint256 tokenId
+    )
         public
         view
         override(ERC721AUpgradeable, IERC721AUpgradeable)
@@ -545,7 +543,9 @@ contract TablelandRigs is
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
+    function supportsInterface(
+        bytes4 interfaceId
+    )
         public
         view
         override(ERC721AUpgradeable, IERC721AUpgradeable, ERC2981Upgradeable)

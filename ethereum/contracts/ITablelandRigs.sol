@@ -92,10 +92,9 @@ interface ITablelandRigs {
      *
      * by - the address to retrieve claims for
      */
-    function getClaimed(address by)
-        external
-        view
-        returns (uint16 allowClaims, uint16 waitClaims);
+    function getClaimed(
+        address by
+    ) external view returns (uint16 allowClaims, uint16 waitClaims);
 
     /**
      * @dev Sets mint phase.
@@ -184,10 +183,9 @@ interface ITablelandRigs {
      *
      * - `tokenId` must exist
      */
-    function pilotInfo(uint256 tokenId)
-        external
-        view
-        returns (ITablelandRigPilots.PilotInfo memory);
+    function pilotInfo(
+        uint256 tokenId
+    ) external view returns (ITablelandRigPilots.PilotInfo memory);
 
     /**
      * @dev Trains a single Rig for a period of 30 days, putting it in-flight.
