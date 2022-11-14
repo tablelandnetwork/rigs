@@ -209,25 +209,6 @@ func (s *Store) ClearLookups(ctx context.Context) error {
 	return nil
 }
 
-// ClearPilotSessions implements ClearPilotSessions.
-func (s *Store) ClearPilotSessions(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "pilot_sessions", s.chainID)
-	if err != nil {
-		return fmt.Errorf("getting table name: %v", err)
-	}
-	sql, err := s.factory.SQLForClearingData(tableName)
-	if err != nil {
-		return fmt.Errorf("getting sql for clearing pilot sessions: %v", err)
-	}
-	if _, err := s.writeSQL(ctx, sql); err != nil {
-		return fmt.Errorf("writing SQL: %v", err)
-	}
-	if err := s.localStore.ClearTxns(ctx, "pilots", s.chainID, "insert"); err != nil {
-		return fmt.Errorf("clearning txns: %v", err)
-	}
-	return nil
-}
-
 // Close implements io.Closer.
 func (s *Store) Close() error {
 	return nil

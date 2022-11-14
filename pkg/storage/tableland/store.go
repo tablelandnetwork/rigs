@@ -63,19 +63,6 @@ var (
 			animation_base_url text
 		)`,
 	}
-	// PilotSessionsDefinition defines the pilot sessions table.
-	PilotSessionsDefinition = TableDefinition{
-		Prefix: "pilot_sessions",
-		Schema: `(
-			id integer primary key,
-  		rig_id integer not null,
-			owner text not null,
-  		pilot_contract text,
-  		pilot_id integer,
-  		start_time integer not null,
-  		end_time integer
-		)`,
-	}
 )
 
 // Lookups holds values to be referenced in queries.
@@ -102,5 +89,4 @@ type Store interface {
 	ClearLayers(context.Context) error
 	ClearRigAttributes(context.Context) error
 	ClearLookups(context.Context) error
-	ClearPilotSessions(context.Context) error
 }

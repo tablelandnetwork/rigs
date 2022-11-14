@@ -122,11 +122,6 @@ func (s *Store) ClearLookups(_ context.Context) error {
 	return errors.New("ClearLookups not implemented")
 }
 
-// ClearPilotSessions implements ClearPilotSessions.
-func (s *Store) ClearPilotSessions(_ context.Context) error {
-	return errors.New("ClearPilotSessions not implemented")
-}
-
 // Close implements io.Closer.
 func (s *Store) Close() error {
 	return nil
