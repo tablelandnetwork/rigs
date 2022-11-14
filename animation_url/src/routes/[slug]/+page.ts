@@ -4,7 +4,9 @@ import { default as trainer } from "../../assets/trainer.svg";
 
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
-const ipfsGatewayUri = "https://nftstorage.link/ipfs/";
+const ipfsGatewayUri = import.meta.env.DEV
+  ? "https://nftstorage.link/ipfs/"
+  : "https://tableland.mypinata.cloud/ipfs/";
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ url }) {
