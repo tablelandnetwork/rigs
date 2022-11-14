@@ -1,10 +1,7 @@
 import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
 
-const environment =
-  process.env.NODE_ENV === "development" ? "development" : "production";
-const isDevelopment = environment === "development";
-const chain = isDevelopment ? "polygon-mumbai" : "ethereum";
+const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
 const ipfsGatewayUri = "https://nftstorage.link/ipfs/";
 
