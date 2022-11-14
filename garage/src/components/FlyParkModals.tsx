@@ -59,13 +59,20 @@ export const TrainRigModal = ({
         <ModalCloseButton />
         <ModalBody>
           <Text>
-            Before your Rig can handle any pilot it needs to go through training
-            for 30 days with the training pilot.
+            Before your Rig can handle a real pilot (an ERC721 token that you
+            own), it needs to accumulate enough FT with the trainer. This will
+            take about 30 days.
+          </Text>
+          <Text mt={4} sx={{ fontStyle: "bold" }}>
+            In-flight Rigs ARE NOT sellable or transferable! Your Rig may be
+            auto-parked if it's listed on a marketplace. If your Rig has a real
+            pilot that you sold or transferred, your Rig will be auto-parked if
+            the new owner uses it as a pilot of a different Rig.
           </Text>
           <Text mt={4} sx={{ fontStyle: "italic" }}>
-            Training your rig requires an on-chain transaction. When you click
-            the Train button below your wallet will request that you sign a
-            transaction that will cost a small gas fee.
+            Training requires an on-chain transaction. When you click the Train
+            button below your wallet will request that you sign a transaction
+            that will cost gas.
           </Text>
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
@@ -121,8 +128,16 @@ export const ParkRigModal = ({
         <ModalHeader>Park Rig</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          Parking your rig will let you do things like change pilot, chosing
-          what badges you want to display, etc.
+          <Text>
+            Training isn't complete! Be aware that your Rig will lose all of its
+            FT if you park now.
+          </Text>
+          <Text mt={4}>Parked Rigs can be sold or transferred.</Text>
+          <Text mt={4} sx={{ fontStyle: "italic" }}>
+            Parking requires an on-chain transaction. When you click the Park
+            button below your wallet will request that you sign a transaction
+            that will cost gas.
+          </Text>
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
