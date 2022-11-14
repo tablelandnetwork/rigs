@@ -33,7 +33,7 @@ export const deployments: RigsDeployments = {
   ethereum: {
     contractAddress: "0x8EAa9AE1Ac89B1c8C8a8104D08C045f78Aadb42D",
     royaltyContractAddress: "0x9BE9627e25c9f348C1edB6E46dBCa2a6669e2D56",
-    pilotsAddress: "", // TODO: Fill me.
+    pilotsAddress: "0xFe688e894AAA2A8F4740d09DA8c434Eb0B1AFb5D",
     tablelandChain: "ethereum-goerli",
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_5_57",
@@ -42,7 +42,7 @@ export const deployments: RigsDeployments = {
     layersTable: "layers_42161_8",
     attributesTable: "rig_attributes_42161_9",
     lookupsTable: "lookups_42161_10",
-    pilotSessionsTable: "", // TODO: Fill me.
+    pilotSessionsTable: "pilot_sessions_1_7",
     displayAttributes: true,
   },
   // testnets
