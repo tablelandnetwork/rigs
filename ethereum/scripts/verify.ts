@@ -17,12 +17,24 @@ async function main() {
   if (rigsDeployment.royaltyContractAddress === "") {
     throw Error(`no royaltyContractAddress entry for '${network.name}'`);
   }
+  if (rigsDeployment.pilotsAddress === "") {
+    throw Error(`no pilotsAddress entry for '${network.name}'`);
+  }
 
   // Verify rigs
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   );
-  const impl = await upgrades.erc1967.getImplementationAddress(rigs.address);
+  let impl = await upgrades.erc1967.getImplementationAddress(rigs.address);
+  await run("verify:verify", {
+    address: impl,
+  });
+
+  // Verify pilots
+  const pilots = (await ethers.getContractFactory("TablelandRigPilots")).attach(
+    rigsDeployment.pilotsAddress
+  );
+  impl = await upgrades.erc1967.getImplementationAddress(pilots.address);
   await run("verify:verify", {
     address: impl,
   });

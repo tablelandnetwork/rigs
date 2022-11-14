@@ -14,7 +14,7 @@ import {
   SUPPORTED_CHAINS,
 } from "@tableland/sdk";
 import fetch, { Headers, Request, Response } from "node-fetch";
-import { getContractURI, getURITemplate } from "../helpers/uris";
+import { getContractURI } from "../helpers/uris";
 import assert from "assert";
 
 if (!(globalThis as any).fetch) {
@@ -25,7 +25,7 @@ if (!(globalThis as any).fetch) {
 }
 
 async function main() {
-  console.log(`\nDeploying to '${network.name}'...`);
+  console.log(`\nDeploying rigs to '${network.name}'...`);
 
   // Get owner account
   const [account] = await ethers.getSigners();
@@ -88,7 +88,7 @@ async function main() {
       chain: rigsDeployment.tablelandChain,
       signer: wallet.connect(provider),
     };
-    tbl = await connect(options);
+    tbl = connect(options);
   }
 
   // Create contract table
@@ -189,27 +189,9 @@ async function main() {
   console.log("Deployed Rigs:", rigs.address);
 
   // Set contract URI
-  let tx = await rigs.setContractURI(contractURI);
+  const tx = await rigs.setContractURI(contractURI);
   await tx.wait();
   console.log("Set contract URI:", contractURI);
-
-  // Init pilots
-  tx = await rigs.initPilots();
-  await tx.wait();
-  console.log("Initialized pilots");
-
-  // Set URI template
-  const pilotsTable = await rigs.pilotSessionsTable();
-  const uriTemplate = getURITemplate(
-    rigsDeployment.tablelandHost,
-    rigsDeployment.attributesTable,
-    rigsDeployment.lookupsTable,
-    pilotsTable,
-    rigsDeployment.displayAttributes
-  );
-  tx = await rigs.setURITemplate(uriTemplate);
-  await tx.wait();
-  console.log("Set URI template:", uriTemplate.join("{id}"));
 
   // Warn that addresses need to be saved in deployments file
   console.warn(

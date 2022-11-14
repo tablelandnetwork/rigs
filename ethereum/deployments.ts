@@ -4,6 +4,7 @@ export interface RigsDeployment {
   // Contracts
   contractAddress: string;
   royaltyContractAddress: string;
+  pilotsAddress: string;
 
   // Tables network
   tablelandChain: ChainName;
@@ -32,6 +33,7 @@ export const deployments: RigsDeployments = {
   ethereum: {
     contractAddress: "0x8EAa9AE1Ac89B1c8C8a8104D08C045f78Aadb42D",
     royaltyContractAddress: "0x9BE9627e25c9f348C1edB6E46dBCa2a6669e2D56",
+    pilotsAddress: "", // TODO: Fill me.
     tablelandChain: "ethereum-goerli",
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_5_57",
@@ -45,22 +47,24 @@ export const deployments: RigsDeployments = {
   },
   // testnets
   "polygon-mumbai": {
-    contractAddress: "0xc90CE622EEAbA7B6DA1066B6E9dF0997EeC88a7d",
-    royaltyContractAddress: "0xB6349B77E802331dd5bFdef9241538e24ed51C31",
+    contractAddress: "0xa04ac9Ca2FE3Db8f372B1364CdaD6fc58453Fde8",
+    royaltyContractAddress: "0xa3c2D5633E31b5b5f7a97664d5Aeb06413931721",
+    pilotsAddress: "0xEAbC6eF167a61bA20bb77030bd2cf7eAa218f11D",
     tablelandChain: "polygon-mumbai",
     tablelandHost: "https://testnet.tableland.network",
-    contractTable: "rigs_contract_80001_3513",
-    allowlistTable: "rigs_allowlist_80001_3514",
+    contractTable: "rigs_contract_80001_3819",
+    allowlistTable: "rigs_allowlist_80001_3820",
     partsTable: "",
     layersTable: "",
     attributesTable: "rig_attributes_80001_3507",
     lookupsTable: "lookups_80001_3508",
-    pilotSessionsTable: "pilot_sessions_80001_3598",
+    pilotSessionsTable: "pilot_sessions_80001_3821",
     displayAttributes: true,
   },
   localhost: {
     contractAddress: "",
     royaltyContractAddress: "",
+    pilotsAddress: "",
     tablelandChain: "ethereum-goerli",
     tablelandHost: "http://localhost:8080",
     contractTable: "",

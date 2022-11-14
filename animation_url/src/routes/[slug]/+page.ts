@@ -1,10 +1,8 @@
 import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
+import { default as trainer } from "../../assets/trainer.svg";
 
-const environment =
-  process.env.NODE_ENV === "development" ? "development" : "production";
-const isDevelopment = environment === "development";
-const chain = isDevelopment ? "polygon-mumbai" : "ethereum";
+const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
 const ipfsGatewayUri = "https://nftstorage.link/ipfs/";
 
@@ -35,7 +33,7 @@ export async function load({ url }) {
     { output: "objects" }
   );
   if (sessions && sessions.length > 0) {
-    pilot = "trainer_pilot.svg";
+    pilot = trainer;
   }
 
   return {
