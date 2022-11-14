@@ -36,7 +36,7 @@ export const TrainRigModal = ({
   const { config } = usePrepareContractWrite({
     addressOrName: contractAddress,
     contractInterface,
-    functionName: "trainRig",
+    functionName: "trainRig(uint256)",
     args: ethers.BigNumber.from(rig.id),
   });
 
@@ -99,7 +99,7 @@ export const ParkRigModal = ({
   const { config } = usePrepareContractWrite({
     addressOrName: contractAddress,
     contractInterface,
-    functionName: "parkRig",
+    functionName: "parkRig(uint256)",
     args: ethers.BigNumber.from(rig.id),
   });
 
