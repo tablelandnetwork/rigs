@@ -384,7 +384,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-trainRig}.
      */
-    function trainRig(uint256 tokenId) external whenNotPaused {
+    function trainRig(uint256 tokenId) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to train the specified Rig
@@ -392,6 +392,21 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
 
         _pilots.trainRig(_msgSenderERC721A(), tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-trainRig}.
+     */
+    function trainRig(uint256[] calldata tokenIds) external whenNotPaused {
+        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
+        // Clients should restrict this further to avoid gas exceeding limits
+        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
+            revert ITablelandRigPilots.InvalidBatchPilotAction();
+
+        // For each token, call `trainRig`
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            trainRig(tokenIds[i]);
+        }
     }
 
     /**
@@ -424,7 +439,7 @@ contract TablelandRigs is
             tokenIds.length == 0 ||
             pilotAddrs.length == 0 ||
             pilotIds.length == 0
-        ) revert ITablelandRigPilots.InvalidBatchPilotRig();
+        ) revert ITablelandRigPilots.InvalidBatchPilotAction();
 
         // Ensure there is a 1:1 relationship between Rig `tokenIds` and pilots
         // Only allow a batch to be an arbitrary max length of 255
@@ -433,7 +448,7 @@ contract TablelandRigs is
             tokenIds.length != pilotAddrs.length ||
             tokenIds.length != pilotIds.length ||
             tokenIds.length > type(uint8).max
-        ) revert ITablelandRigPilots.InvalidBatchPilotRig();
+        ) revert ITablelandRigPilots.InvalidBatchPilotAction();
 
         // For each token, call `pilotRig`
         for (uint8 i = 0; i < tokenIds.length; i++) {
@@ -444,7 +459,7 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-parkRig}.
      */
-    function parkRig(uint256 tokenId) external whenNotPaused {
+    function parkRig(uint256 tokenId) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
         // Verify `msg.sender` is authorized to park the specified Rig
@@ -452,6 +467,21 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
 
         _pilots.parkRig(_msgSenderERC721A(), tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRig}.
+     */
+    function parkRig(uint256[] calldata tokenIds) external whenNotPaused {
+        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
+        // Clients should restrict this further to avoid gas exceeding limits
+        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
+            revert ITablelandRigPilots.InvalidBatchPilotAction();
+
+        // For each token, call `parkRig`
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            parkRig(tokenIds[i]);
+        }
     }
 
     /**

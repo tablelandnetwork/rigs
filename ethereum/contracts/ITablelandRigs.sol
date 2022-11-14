@@ -160,7 +160,7 @@ interface ITablelandRigs {
     function setRoyaltyReceiver(address receiver) external;
 
     /**
-     * @dev Initializes Rig pilots by creating the pilot sessios table.
+     * @dev Initializes Rig pilots by creating the pilot sessions table.
      *
      * pilotsAddress - `ITablelandRigPilots` contract address
      *
@@ -190,7 +190,7 @@ interface ITablelandRigs {
         returns (ITablelandRigPilots.PilotInfo memory);
 
     /**
-     * @dev Trains a Rig for a period of 30 days, putting it in-flight.
+     * @dev Trains a single Rig for a period of 30 days, putting it in-flight.
      *
      * tokenId - the unique Rig token identifier
      *
@@ -202,7 +202,21 @@ interface ITablelandRigs {
     function trainRig(uint256 tokenId) external;
 
     /**
-     * @dev Puts a single Rig in flight by setting a custom `Pilot`.
+     * @dev Puts multiple Rigs in training.
+     *
+     * tokenIds - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - Input array of `tokenIds` must be non-empty
+     * - There cannot exist a duplicate value in `tokenIds`
+     * - Values are processed in order
+     * - See `trainRig` for additional constraints on a per-token basis
+     */
+    function trainRig(uint256[] calldata tokenIds) external;
+
+    /**
+     * @dev Puts a single Rig in flight by setting a custom pilot.
      *
      * tokenId - the unique Rig token identifier
      * pilotContract - ERC-721 contract address of a desired Rig's pilot
@@ -214,7 +228,7 @@ interface ITablelandRigs {
      * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
      * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
      * - `pilotId` must be owned by `msg.sender` at `pilotContract`
-     * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict
+     * - pilot can only be associated with one Rig at a time; parks the other Rig on conflict
      */
     function pilotRig(
         uint256 tokenId,
@@ -223,7 +237,7 @@ interface ITablelandRigs {
     ) external;
 
     /**
-     * @dev Puts multiple Rigs in flight by setting a custom set of `Pilot`s.
+     * @dev Puts multiple Rigs in flight by setting a custom set of pilots.
      *
      * tokenIds - a list of unique Rig token identifiers
      * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
@@ -238,13 +252,13 @@ interface ITablelandRigs {
      * - See `pilotRig` for additional constraints on a per-token basis
      */
     function pilotRig(
-        uint256[] memory tokenIds,
-        address[] memory pilotContracts,
-        uint256[] memory pilotIds
+        uint256[] calldata tokenIds,
+        address[] calldata pilotContracts,
+        uint256[] calldata pilotIds
     ) external;
 
     /**
-     * @dev Parks a Rig and ends the current `Pilot` session.
+     * @dev Parks a single Rig and ends the current pilot session.
      *
      * tokenId - the unique Rig token identifier
      *
@@ -256,6 +270,20 @@ interface ITablelandRigs {
      * - pilot must have completed 30 days of training
      */
     function parkRig(uint256 tokenId) external;
+
+    /**
+     * @dev Parks multiple Rigs and ends the current pilot session.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - Input array of `tokenIds` must be non-empty
+     * - There cannot exist a duplicate value in `tokenIds`
+     * - Values are processed in order
+     * - See `parkRig` for additional constraints on a per-token basis
+     */
+    function parkRig(uint256[] calldata tokenIds) external;
 
     /**
      * @dev Allows contract owner to park any Rig that may be intentionally

@@ -15,7 +15,7 @@ interface ITablelandRigPilots {
     error InvalidPilotStatus();
 
     // Thrown upon a batch pilot update error.
-    error InvalidBatchPilotRig();
+    error InvalidBatchPilotAction();
 
     // Values describing a Rig's Garage status.
     enum GarageStatus {
