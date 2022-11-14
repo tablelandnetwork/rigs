@@ -58,7 +58,7 @@ export const deployments: RigsDeployments = {
     layersTable: "",
     attributesTable: "rig_attributes_80001_3507",
     lookupsTable: "lookups_80001_3508",
-    pilotSessionsTable: "",
+    pilotSessionsTable: "pilot_sessions_80001_3821",
     displayAttributes: true,
   },
   localhost: {
