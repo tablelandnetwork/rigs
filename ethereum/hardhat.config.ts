@@ -124,7 +124,7 @@ const config: HardhatUserConfig = {
       externalLink: "https://tableland.xyz/rigs",
       sellerFeeBasisPoints: 500,
       feeRecipient: "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
-      maxSupply: 50,
+      maxSupply: 3000,
       etherPrice: "0.05",
       mintPhase: "public",
       tables: {
