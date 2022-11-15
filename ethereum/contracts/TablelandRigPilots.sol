@@ -108,12 +108,7 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-pilotSessionsTable}.
      */
-    function pilotSessionsTable()
-        external
-        view
-        onlyParent
-        returns (string memory)
-    {
+    function pilotSessionsTable() external view returns (string memory) {
         return
             SQLHelpers.toNameFromId(
                 _PILOT_SESSIONS_PREFIX,
@@ -126,7 +121,7 @@ contract TablelandRigPilots is
      */
     function pilotInfo(
         uint256 tokenId
-    ) external view onlyParent returns (PilotInfo memory) {
+    ) external view returns (PilotInfo memory) {
         return
             PilotInfo(
                 _pilotStatus(tokenId),
@@ -142,9 +137,7 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-pilotStartTime}.
      */
-    function pilotStartTime(
-        uint256 tokenId
-    ) public view onlyParent returns (uint64) {
+    function pilotStartTime(uint256 tokenId) public view returns (uint64) {
         return uint64(_pilots[uint16(tokenId)]);
     }
 
