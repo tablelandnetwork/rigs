@@ -49,12 +49,7 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       goerli: process.env.ETHERSCAN_API_KEY || "",
 
-      // optimism
-      optimisticEthereum: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
-      optimisticKovan: process.env.OPTIMISM_ETHERSCAN_API_KEY || "",
-
       // polygon
-      polygon: process.env.POLYSCAN_API_KEY || "",
       polygonMumbai: process.env.POLYSCAN_API_KEY || "",
     },
   },
@@ -69,15 +64,6 @@ const config: HardhatUserConfig = {
           ? [process.env.ETHEREUM_PRIVATE_KEY]
           : [],
     },
-    optimism: {
-      url: `https://opt-mainnet.g.alchemy.com/v2/${
-        process.env.OPTIMISM_API_KEY ?? ""
-      }`,
-      accounts:
-        process.env.OPTIMISM_PRIVATE_KEY !== undefined
-          ? [process.env.OPTIMISM_PRIVATE_KEY]
-          : [],
-    },
     // testnets
     "ethereum-goerli": {
       url: `https://eth-goerli.g.alchemy.com/v2/${
@@ -86,15 +72,6 @@ const config: HardhatUserConfig = {
       accounts:
         process.env.ETHEREUM_GOERLI_PRIVATE_KEY !== undefined
           ? [process.env.ETHEREUM_GOERLI_PRIVATE_KEY]
-          : [],
-    },
-    "optimism-kovan": {
-      url: `https://opt-kovan.g.alchemy.com/v2/${
-        process.env.OPTIMISM_KOVAN_API_KEY ?? ""
-      }`,
-      accounts:
-        process.env.OPTIMISM_KOVAN_PRIVATE_KEY !== undefined
-          ? [process.env.OPTIMISM_KOVAN_PRIVATE_KEY]
           : [],
     },
     "polygon-mumbai": {
@@ -128,8 +105,14 @@ const config: HardhatUserConfig = {
       etherPrice: "0.05",
       mintPhase: "public",
       tables: {
-        tablelandPrivateKey: process.env.POLYGON_MUMBAI_PRIVATE_KEY,
-        tablelandProvider: process.env.POLYGON_MUMBAI_API_KEY,
+        testnet: {
+          tablelandPrivateKey: process.env.POLYGON_MUMBAI_PRIVATE_KEY,
+          tablelandAlchemyKey: process.env.POLYGON_MUMBAI_API_KEY,
+        },
+        mainnet: {
+          tablelandPrivateKey: process.env.ARBITRUM_PRIVATE_KEY,
+          tablelandAlchemyKey: process.env.ARBITRUM_API_KEY,
+        },
       },
       royaltyReceivers: [
         "0x12fC004d3bA84dF22ebfdE93A7a0B87267b06ACb",
@@ -146,7 +129,7 @@ const config: HardhatUserConfig = {
 
 interface RigsTablesConfig {
   tablelandPrivateKey: string | undefined;
-  tablelandProvider: string | undefined;
+  tablelandAlchemyKey: string | undefined;
 }
 
 interface RigsConfig {
@@ -162,7 +145,7 @@ interface RigsConfig {
   mintPhase: "closed" | "allowlist" | "waitlist" | "public";
 
   // rigs tables
-  tables: RigsTablesConfig;
+  tables: { testnet: RigsTablesConfig; mainnet: RigsTablesConfig };
 
   // rigs args
   maxSupply: number;
@@ -180,7 +163,6 @@ interface RigsConfig {
 
 interface RigsNetworkConfig {
   args: RigsConfig;
-
   deployments: RigsDeployments;
 }
 
@@ -196,6 +178,7 @@ declare module "hardhat/types/runtime" {
   interface HardhatRuntimeEnvironment {
     rigsConfig: RigsConfig;
     rigsDeployment: RigsDeployment;
+    mainnet: boolean;
   }
 }
 
@@ -204,6 +187,7 @@ extendEnvironment((hre: HardhatRuntimeEnvironment) => {
   const config = hre.userConfig.config;
   hre.rigsConfig = config.args;
   hre.rigsDeployment = (config.deployments as any)[hre.network.name];
+  hre.mainnet = hre.network.name === "ethereum";
 });
 
 export default config;
