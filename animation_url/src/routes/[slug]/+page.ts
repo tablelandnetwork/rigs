@@ -3,6 +3,9 @@ import { deployments } from "@tableland/rigs/deployments";
 import { default as trainer } from "../../assets/trainer.svg";
 
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
+const host = import.meta.env.DEV
+  ? "https://testnet.tableland.network"
+  : "https://tableland.network";
 const deployment = deployments[chain];
 const ipfsGatewayUri = import.meta.env.DEV
   ? "https://nftstorage.link/ipfs/"
@@ -10,7 +13,7 @@ const ipfsGatewayUri = import.meta.env.DEV
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ url }) {
-  const tableland = connect({ chain });
+  const tableland = connect({ chain, host });
 
   // get rig id, allowing for .html suffix
   let rigId = url.pathname;
