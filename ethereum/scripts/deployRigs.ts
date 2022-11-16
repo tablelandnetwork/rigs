@@ -1,4 +1,11 @@
-import { ethers, upgrades, network, rigsConfig, rigsDeployment } from "hardhat";
+import {
+  ethers,
+  upgrades,
+  network,
+  rigsConfig,
+  rigsDeployment,
+  mainnet,
+} from "hardhat";
 import { Wallet, providers, BigNumber, utils } from "ethers";
 import {
   AllowListEntry,
@@ -74,15 +81,27 @@ async function main() {
   );
 
   // Connect to tableland
-  let tbl: Connection;
+  let tbl: Connection | undefined;
   if (
     rigsDeployment.contractTable === "" ||
     rigsDeployment.allowlistTable === ""
   ) {
-    const wallet = new Wallet(rigsConfig.tables.tablelandPrivateKey!);
+    const privateKey = mainnet
+      ? rigsConfig.tables.mainnet.tablelandPrivateKey
+      : rigsConfig.tables.testnet.tablelandPrivateKey;
+    if (!privateKey) {
+      throw Error("missing Tableland private key");
+    }
+    const alchemyKey = mainnet
+      ? rigsConfig.tables.mainnet.tablelandAlchemyKey
+      : rigsConfig.tables.testnet.tablelandAlchemyKey;
+    if (!alchemyKey) {
+      throw Error("missing Tableland Alchemy API key");
+    }
+    const wallet = new Wallet(privateKey);
     const provider = new providers.AlchemyProvider(
       SUPPORTED_CHAINS[rigsDeployment.tablelandChain],
-      rigsConfig.tables.tablelandProvider
+      alchemyKey
     );
     const options: ConnectOptions = {
       chain: rigsDeployment.tablelandChain,
@@ -91,42 +110,10 @@ async function main() {
     tbl = connect(options);
   }
 
-  // Create contract table
-  let contractTable: string;
-  if (rigsDeployment.contractTable === "") {
-    const createRes = await tbl!.create(
-      "name text, description text, image text, external_link text, seller_fee_basis_points int, fee_recipient text",
-      { prefix: "rigs_contract" }
-    );
-    contractTable = createRes.name!;
-    console.log("Contract table created as:", contractTable);
-
-    // Insert contract info
-    const runStatement = `insert into ${contractTable} values ('${rigsConfig.name}', '${rigsConfig.description}', '${rigsConfig.image}', '${rigsConfig.externalLink}', ${rigsConfig.sellerFeeBasisPoints}, '${rigsConfig.feeRecipient}');`;
-    const writeRes = await tbl!.write(runStatement);
-    console.log(
-      `Inserted contract info with txn '${writeRes.hash}': `,
-      rigsConfig.name,
-      rigsConfig.description,
-      rigsConfig.image,
-      rigsConfig.externalLink,
-      rigsConfig.sellerFeeBasisPoints,
-      rigsConfig.feeRecipient
-    );
-  } else {
-    contractTable = rigsDeployment.contractTable;
-  }
-
-  // Get contract URI
-  const contractURI = getContractURI(
-    rigsDeployment.tablelandHost,
-    contractTable
-  );
-
   // Create allow list table
   let allowlistTable: string;
-  if (rigsDeployment.allowlistTable === "") {
-    const createRes = await tbl!.create(
+  if (tbl && rigsDeployment.allowlistTable === "") {
+    const createRes = await tbl.create(
       `address text, freeAllowance int, paidAllowance int, waitlist int`,
       { prefix: "rigs_allowlist" }
     );
@@ -135,6 +122,7 @@ async function main() {
 
     // Insert allow list entries
     async function insertEntries(
+      tbl: Connection,
       list: [string, AllowListEntry][],
       waitlist: boolean
     ) {
@@ -153,8 +141,8 @@ async function main() {
         );
       }
     }
-    await insertEntries(Object.entries(allowlist), false);
-    await insertEntries(Object.entries(waitlist), true);
+    await insertEntries(tbl, Object.entries(allowlist), false);
+    await insertEntries(tbl, Object.entries(waitlist), true);
   } else {
     allowlistTable = rigsDeployment.allowlistTable;
   }
@@ -167,6 +155,32 @@ async function main() {
   )) as PaymentSplitter;
   await splitter.deployed();
   console.log("Deployed PaymentSplitter:", splitter.address);
+
+  // Create contract table
+  let contractTable: string;
+  if (tbl && rigsDeployment.contractTable === "") {
+    const createRes = await tbl.create(
+      "name text, description text, image text, external_link text, seller_fee_basis_points int, fee_recipient text",
+      { prefix: "rigs_contract" }
+    );
+    contractTable = createRes.name!;
+    console.log("Contract table created as:", contractTable);
+
+    // Insert contract info
+    const runStatement = `insert into ${contractTable} values ('${rigsConfig.name}', '${rigsConfig.description}', '${rigsConfig.image}', '${rigsConfig.externalLink}', ${rigsConfig.sellerFeeBasisPoints}, '${splitter.address}');`;
+    const writeRes = await tbl.write(runStatement);
+    console.log(
+      `Inserted contract info with txn '${writeRes.hash}': `,
+      rigsConfig.name,
+      rigsConfig.description,
+      rigsConfig.image,
+      rigsConfig.externalLink,
+      rigsConfig.sellerFeeBasisPoints,
+      splitter.address
+    );
+  } else {
+    contractTable = rigsDeployment.contractTable;
+  }
 
   // Deploy Rigs
   const RigsFactory = await ethers.getContractFactory("TablelandRigs");
@@ -189,6 +203,10 @@ async function main() {
   console.log("Deployed Rigs:", rigs.address);
 
   // Set contract URI
+  const contractURI = getContractURI(
+    rigsDeployment.tablelandHost,
+    contractTable
+  );
   const tx = await rigs.setContractURI(contractURI);
   await tx.wait();
   console.log("Set contract URI:", contractURI);

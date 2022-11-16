@@ -81,7 +81,14 @@ export function getContractURI(
     tablelandHost +
     "/query?extract=true&unwrap=true&s=" +
     encodeURIComponent(
-      `select json_object('name',name,'description',description,'image',image,'external_link',external_link,'seller_fee_basis_points',seller_fee_basis_points,'fee_recipient',fee_recipient) from ${contractTable} limit 1;`
+      `select json_object(
+        'name',name,
+        'description',description,
+        'image',image,
+        'external_link',external_link,
+        'seller_fee_basis_points',seller_fee_basis_points,
+        'fee_recipient',fee_recipient
+      ) from ${contractTable} limit 1;`.replace(/(\r\n|\n|\r|\s\s+)/gm, "")
     )
   );
 }
