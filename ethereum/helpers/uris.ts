@@ -12,7 +12,7 @@ export function getURITemplate(
       encodeURIComponent(
         `select json_object(
           'name','Rig #'||rig_id,
-          'external_url','https://tableland.xyz/rigs/'||rig_id,
+          'external_url','https://garage.tableland.xyz/rigs/'||rig_id,
           'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,
           'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,
           'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,
@@ -39,7 +39,7 @@ export function getURITemplate(
       encodeURIComponent(
         `select json_object(
           'name','Rig #'||rig_id,
-          'external_url','https://tableland.xyz/rigs/'||rig_id,
+          'external_url','https://garage.tableland.xyz/rigs/'||rig_id,
           'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,
           'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,
           'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,
