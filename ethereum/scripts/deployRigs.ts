@@ -105,6 +105,7 @@ async function main() {
     );
     const options: ConnectOptions = {
       chain: rigsDeployment.tablelandChain,
+      host: rigsDeployment.tablelandHost,
       signer: wallet.connect(provider),
     };
     tbl = connect(options);
