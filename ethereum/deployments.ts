@@ -9,6 +9,7 @@ export interface RigsDeployment {
   // Tables network
   tablelandChain: ChainName;
   tablelandHost:
+    | "https://tableland.network"
     | "https://testnet.tableland.network"
     | "https://staging.tableland.network"
     | "http://localhost:8080";
@@ -35,7 +36,7 @@ export const deployments: RigsDeployments = {
     royaltyContractAddress: "0x9BE9627e25c9f348C1edB6E46dBCa2a6669e2D56",
     pilotsAddress: "0xFe688e894AAA2A8F4740d09DA8c434Eb0B1AFb5D",
     tablelandChain: "arbitrum",
-    tablelandHost: "https://testnet.tableland.network",
+    tablelandHost: "https://tableland.network",
     contractTable: "rigs_contract_42161_12",
     allowlistTable: "rigs_allowlist_42161_14",
     partsTable: "parts_42161_7",
