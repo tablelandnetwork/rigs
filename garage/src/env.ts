@@ -8,10 +8,6 @@ export const isDevelopment = environment === "development";
 
 export const chain = isDevelopment ? chains.polygonMumbai : chains.mainnet;
 
-export const host = isDevelopment
-  ? "https://testnet.tableland.network"
-  : "https://tableland.network";
-
 export const blockExplorerBaseUrl = isDevelopment
   ? "https://mumbai.polygonscan.com"
   : "https://etherscan.io";
