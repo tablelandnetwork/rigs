@@ -63,7 +63,7 @@ export const RigDetails = () => {
         (data) => !!data,
         refreshRigAndClearPendingTx,
         {
-          initialDelay: 0,
+          initialDelay: 5_000,
           wait: 2_000,
           maxNumberOfAttempts: 10,
           onMaxNumberOfAttemptsReached: clearPendingTx,
