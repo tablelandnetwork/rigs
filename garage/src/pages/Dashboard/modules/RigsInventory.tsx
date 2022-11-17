@@ -48,6 +48,8 @@ const RigListItem = ({
           style={{ position: "relative", display: "block" }}
         >
           <RigDisplay
+            outlineColor="primary"
+            outline={selected ? "2px solid" : undefined}
             rig={rig}
             borderRadius="3px"
             pilotNFT={currentNFT}
