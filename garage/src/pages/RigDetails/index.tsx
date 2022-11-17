@@ -143,7 +143,7 @@ export const RigDetails = () => {
       </Grid>
       {rig && trainModalOpen && (
         <TrainRigModal
-          rig={rig}
+          rigs={[rig]}
           isOpen={trainModalOpen}
           onClose={onCloseTrainModal}
           onTransactionSubmitted={setPendingTx}
@@ -151,7 +151,7 @@ export const RigDetails = () => {
       )}
       {rig && parkModalOpen && (
         <ParkRigModal
-          rig={rig}
+          rigs={[rig]}
           isOpen={parkModalOpen}
           onClose={onCloseParkModal}
           onTransactionSubmitted={setPendingTx}
