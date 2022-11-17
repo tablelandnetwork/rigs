@@ -1,5 +1,5 @@
 import { connect, ChainName, SUPPORTED_CHAINS } from "@tableland/sdk";
-import { chain as envChain, host } from "../env";
+import { chain as envChain, deployment } from "../env";
 
 const chain = Object.entries(SUPPORTED_CHAINS).find(
   ([_, chain]) => chain.chainId === envChain.id
@@ -8,7 +8,7 @@ const chain = Object.entries(SUPPORTED_CHAINS).find(
 export const connection = connect({
   network: "testnet",
   chain,
-  host,
+  host: deployment.tablelandHost,
 });
 
 const data = { connection };
