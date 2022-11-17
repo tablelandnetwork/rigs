@@ -43,12 +43,26 @@ const RigListItem = ({
   return (
     <GridItem>
       <VStack align="start" pb={2} flexShrink="0">
-        <RigDisplay
-          rig={rig}
-          borderRadius="3px"
-          pilotNFT={currentNFT}
-          loading={loading}
-        />
+        <Link
+          to={`/rigs/${rig.id}`}
+          style={{ position: "relative", display: "block" }}
+        >
+          <RigDisplay
+            rig={rig}
+            borderRadius="3px"
+            pilotNFT={currentNFT}
+            loading={loading}
+          />
+          <Box
+            position="absolute"
+            top="0"
+            left="0"
+            right="0"
+            bottom="0"
+            _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+            transition=".2s"
+          />
+        </Link>
         <Flex width="100%" justify="space-between">
           <Text>{`#${rig.id}`}</Text>
           <Text>{rig.currentPilot && "In-flight"}</Text>
