@@ -24,7 +24,7 @@ interface ModalProps {
   rig: RigWithPilots;
   isOpen: boolean;
   onClose: () => void;
-  onTransactionSubmitted: (txHash: string) => void;
+  onTransactionSubmitted?: (txHash: string) => void;
 }
 
 export const TrainRigModal = ({
