@@ -50,10 +50,14 @@ export const TrainRigsModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write } = contractWrite;
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
@@ -121,10 +125,14 @@ export const ParkRigsModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write } = contractWrite;
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
