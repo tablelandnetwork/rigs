@@ -17,6 +17,7 @@ import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { Topbar } from "./Topbar";
 import { RainbowKitTablelandSiweProvider } from "./components/RainbowKitTablelandSiweProvider";
+import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 import { routes } from "./routes";
 import { chain } from "./env";
@@ -175,25 +176,30 @@ function App() {
           <RainbowKitProvider chains={chains} theme={darkTheme()}>
             <BrowserRouter>
               <Topbar />
-              <Routes>
-                {routes().map(
-                  ({ requiresWalletConnection, element, ...props }, index) => (
-                    <Route
-                      {...props}
-                      key={`route-${index}`}
-                      element={
-                        requiresWalletConnection ? (
-                          <RequiresWalletConnection>
-                            {element}
-                          </RequiresWalletConnection>
-                        ) : (
-                          element
-                        )
-                      }
-                    />
-                  )
-                )}
-              </Routes>
+              <GlobalFlyParkModals>
+                <Routes>
+                  {routes().map(
+                    (
+                      { requiresWalletConnection, element, ...props },
+                      index
+                    ) => (
+                      <Route
+                        {...props}
+                        key={`route-${index}`}
+                        element={
+                          requiresWalletConnection ? (
+                            <RequiresWalletConnection>
+                              {element}
+                            </RequiresWalletConnection>
+                          ) : (
+                            element
+                          )
+                        }
+                      />
+                    )
+                  )}
+                </Routes>
+              </GlobalFlyParkModals>
             </BrowserRouter>
           </RainbowKitProvider>
         </RainbowKitTablelandSiweProvider>

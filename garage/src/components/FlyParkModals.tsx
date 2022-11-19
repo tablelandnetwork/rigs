@@ -16,19 +16,23 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { RigWithPilots } from "../types";
+import { Rig } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { contractAddress, contractInterface } from "../contract";
 
 interface ModalProps {
-  rig: RigWithPilots;
+  rigs: Rig[];
   isOpen: boolean;
   onClose: () => void;
-  onTransactionSubmitted: (txHash: string) => void;
+  onTransactionSubmitted?: (txHash: string) => void;
 }
 
-export const TrainRigModal = ({
-  rig,
+const pluralize = (s: string, c: any[]): string => {
+  return c.length === 1 ? s : `${s}s`;
+};
+
+export const TrainRigsModal = ({
+  rigs,
   isOpen,
   onClose,
   onTransactionSubmitted,
@@ -36,15 +40,24 @@ export const TrainRigModal = ({
   const { config } = usePrepareContractWrite({
     addressOrName: contractAddress,
     contractInterface,
-    functionName: "trainRig(uint256)",
-    args: ethers.BigNumber.from(rig.id),
+    functionName:
+      rigs.length === 1 ? "trainRig(uint256)" : "trainRig(uint256[])",
+    args:
+      rigs.length === 1
+        ? ethers.BigNumber.from(rigs[0].id)
+        : [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    enabled: isOpen,
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write } = contractWrite;
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
@@ -55,7 +68,7 @@ export const TrainRigModal = ({
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Train Rig</ModalHeader>
+        <ModalHeader>Train {pluralize("Rig", rigs)}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Text>
@@ -82,7 +95,7 @@ export const TrainRigModal = ({
             onClick={() => (write ? write() : undefined)}
             isDisabled={isLoading || isSuccess}
           >
-            Train rig
+            Train {pluralize("rig", rigs)}
           </Button>
           <Button
             variant="ghost"
@@ -97,8 +110,8 @@ export const TrainRigModal = ({
   );
 };
 
-export const ParkRigModal = ({
-  rig,
+export const ParkRigsModal = ({
+  rigs,
   isOpen,
   onClose,
   onTransactionSubmitted,
@@ -106,15 +119,20 @@ export const ParkRigModal = ({
   const { config } = usePrepareContractWrite({
     addressOrName: contractAddress,
     contractInterface,
-    functionName: "parkRig(uint256)",
-    args: ethers.BigNumber.from(rig.id),
+    functionName: "parkRig(uint256[])",
+    args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    enabled: isOpen,
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write } = contractWrite;
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
 
   useEffect(() => {
     if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
@@ -125,7 +143,7 @@ export const ParkRigModal = ({
     <Modal isOpen={isOpen} onClose={onClose}>
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Park Rig</ModalHeader>
+        <ModalHeader>Park {pluralize("Rig", rigs)}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <Text>
@@ -146,7 +164,7 @@ export const ParkRigModal = ({
             onClick={() => (write ? write() : undefined)}
             isDisabled={isLoading || isSuccess}
           >
-            Park rig
+            Park {pluralize("rig", rigs)}
           </Button>
           <Button
             variant="ghost"
