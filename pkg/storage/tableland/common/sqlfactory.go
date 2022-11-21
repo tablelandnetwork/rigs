@@ -3,7 +3,6 @@ package common
 import (
 	"errors"
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/doug-martin/goqu/v9"
@@ -71,7 +70,7 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 		attVales = append(
 			attVales,
 			goqu.Vals{rig.ID, "string", "VIN", rig.VIN},
-			goqu.Vals{rig.ID, "number", "% Original", math.Round((rig.PercentOriginal90*100)*100) / 100},
+			goqu.Vals{rig.ID, "number", "% Original", strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", rig.PercentOriginal90*100), "0"), ".")},
 		)
 		if rig.Original {
 			if len(rig.Parts) == 0 {

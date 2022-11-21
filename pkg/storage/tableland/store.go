@@ -44,7 +44,7 @@ var (
 			rig_id integer not null,
 			display_type text,
 			trait_type text not null,
-			value any not null,
+			value text not null,
 			unique(rig_id, trait_type)
 		)`,
 	}
