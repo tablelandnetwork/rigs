@@ -1,16 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
-  Button,
   Flex,
   Grid,
   GridItem,
   Spinner,
   VStack,
-  useDisclosure,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { TrainRigModal, ParkRigModal } from "../../components/FlyParkModals";
+import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
@@ -53,7 +51,7 @@ export const RigDetails = () => {
 
   const refreshRigAndClearPendingTx = useCallback(() => {
     refresh();
-    sleep(500).then(_ => setPendingTx(undefined));
+    sleep(500).then((_) => setPendingTx(undefined));
   }, [refresh, setPendingTx]);
 
   // Effect that waits until a tableland receipt is available for a tx hash
@@ -65,7 +63,7 @@ export const RigDetails = () => {
         (data) => !!data,
         refreshRigAndClearPendingTx,
         {
-          initialDelay: 0,
+          initialDelay: 5_000,
           wait: 2_000,
           maxNumberOfAttempts: 10,
           onMaxNumberOfAttemptsReached: clearPendingTx,
@@ -77,17 +75,15 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const {
-    isOpen: trainModalOpen,
-    onOpen: onOpenTrainModal,
-    onClose: onCloseTrainModal,
-  } = useDisclosure();
+  const { trainRigsModal, parkRigsModal } = useGlobalFlyParkModals();
 
-  const {
-    isOpen: parkModalOpen,
-    onOpen: onOpenParkModal,
-    onClose: onCloseParkModal,
-  } = useDisclosure();
+  const onOpenTrainModal = useCallback(() => {
+    if (rig) trainRigsModal.openModal([rig], setPendingTx);
+  }, [rig, setPendingTx]);
+
+  const onOpenParkModal = useCallback(() => {
+    if (rig) parkRigsModal.openModal([rig], setPendingTx);
+  }, [rig, setPendingTx]);
 
   return (
     <Flex
@@ -141,22 +137,6 @@ export const RigDetails = () => {
 
         {!rig && <Spinner />}
       </Grid>
-      {rig && trainModalOpen && (
-        <TrainRigModal
-          rig={rig}
-          isOpen={trainModalOpen}
-          onClose={onCloseTrainModal}
-          onTransactionSubmitted={setPendingTx}
-        />
-      )}
-      {rig && parkModalOpen && (
-        <ParkRigModal
-          rig={rig}
-          isOpen={parkModalOpen}
-          onClose={onCloseParkModal}
-          onTransactionSubmitted={setPendingTx}
-        />
-      )}
     </Flex>
   );
 };

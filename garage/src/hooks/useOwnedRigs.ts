@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Rig } from "../types";
 import { useAccount, useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
@@ -18,6 +18,11 @@ export const useOwnedRigs = () => {
   });
 
   const [rigs, setRigs] = useState<Rig[]>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
 
   useEffect(() => {
     let isCancelled = false;
@@ -32,7 +37,7 @@ export const useOwnedRigs = () => {
         isCancelled = true;
       };
     }
-  }, [data, setRigs]);
+  }, [data, setRigs, /* effect dep */ shouldRefresh]);
 
-  return { rigs };
+  return { rigs, refresh };
 };
