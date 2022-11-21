@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Button, Flex, Image, Show, Spacer, Text } from "@chakra-ui/react";
+import { Button, Flex, Image, Show, Text } from "@chakra-ui/react";
 import { TablelandConnectButton } from "./components/TablelandConnectButton";
 import logo from "./assets/tableland.svg";
 import { useCurrentRoute } from "./hooks/useCurrentRoute";
@@ -11,9 +11,7 @@ export const Topbar = () => {
   const route = useCurrentRoute();
 
   const isEnter = route?.route.key === "ENTER";
-
   const bgColor = isEnter ? "primaryLight" : "primary";
-  const isRigDetails = route?.route.key === "RIG_DETAILS";
 
   return (
     <Flex
@@ -39,13 +37,9 @@ export const Topbar = () => {
         </Text>
       </Show>
       <Flex justify="space-between" align="center" width="100%" ml={8}>
-        {isRigDetails ? (
-          <Button variant="solid" as={Link} to="/dashboard">
-            Dashboard
-          </Button>
-        ) : (
-          <Spacer />
-        )}
+        <Button variant="solid" as={Link} to="/dashboard">
+          Dashboard
+        </Button>
         <TablelandConnectButton />
       </Flex>
     </Flex>
