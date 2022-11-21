@@ -71,8 +71,8 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 			attVales,
 			goqu.Vals{rig.ID, "string", "VIN", rig.VIN},
 			goqu.Vals{
-				rig.ID, 
-				"number", 
+				rig.ID,
+				"number",
 				"% Original",
 				strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", rig.PercentOriginal90*100), "0"), "."),
 			},
