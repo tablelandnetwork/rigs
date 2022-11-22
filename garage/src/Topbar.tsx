@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { Button, Flex, Image, Show, Text } from "@chakra-ui/react";
+import { Button, Flex, Image, Show, Spacer, Text } from "@chakra-ui/react";
 import { TablelandConnectButton } from "./components/TablelandConnectButton";
 import logo from "./assets/tableland.svg";
 import { useCurrentRoute } from "./hooks/useCurrentRoute";
@@ -37,9 +37,13 @@ export const Topbar = () => {
         </Text>
       </Show>
       <Flex justify="space-between" align="center" width="100%" ml={8}>
-        <Button variant="solid" as={Link} to="/dashboard">
-          Dashboard
-        </Button>
+        {!isEnter ? (
+          <Button variant="solid" as={Link} to="/dashboard">
+            Dashboard
+          </Button>
+        ) : (
+          <Spacer />
+        )}
         <TablelandConnectButton />
       </Flex>
     </Flex>
