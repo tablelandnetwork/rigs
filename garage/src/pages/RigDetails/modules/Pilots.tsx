@@ -18,6 +18,7 @@ import {
 } from "@chakra-ui/react";
 import { RigWithPilots, PilotSession } from "../../../types";
 import { TrainerPilot } from "../../../components/TrainerPilot";
+import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { useBlockNumber } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
@@ -147,14 +148,14 @@ export const Pilots = ({
       {isOwner && (
         <StackItem px={4} pb={4}>
           {!rig.currentPilot && (
-            <Button variant="outlined" onClick={onOpenTrainModal} width="100%">
+            <ChainAwareButton variant="outlined" onClick={onOpenTrainModal} width="100%">
               Train
-            </Button>
+            </ChainAwareButton>
           )}
           {rig.currentPilot && (
-            <Button variant="outlined" onClick={onOpenParkModal} width="100%">
+            <ChainAwareButton variant="outlined" onClick={onOpenParkModal} width="100%">
               Park
-            </Button>
+            </ChainAwareButton>
           )}
         </StackItem>
       )}
