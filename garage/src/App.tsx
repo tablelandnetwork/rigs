@@ -18,6 +18,7 @@ import { publicProvider } from "wagmi/providers/public";
 import { Topbar } from "./Topbar";
 import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
+import { AccountWatcher } from "./components/AccountWatcher";
 import { routes } from "./routes";
 import { chain } from "./env";
 
@@ -172,6 +173,7 @@ function App() {
     <ChakraProvider theme={theme}>
       <WagmiConfig client={wagmiClient}>
         <RainbowKitProvider chains={chains} theme={darkTheme()}>
+          <AccountWatcher />
           <BrowserRouter>
             <Topbar />
             <GlobalFlyParkModals>
