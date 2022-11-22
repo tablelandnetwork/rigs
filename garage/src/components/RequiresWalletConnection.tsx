@@ -1,24 +1,18 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "wagmi";
-import { useAuthenticationStatus } from "./RainbowKitTablelandSiweProvider";
-
-interface RequiresWalletConnectionProps {
-  children: React.ReactNode;
-}
 
 export const RequiresWalletConnection = ({
   children,
-}: RequiresWalletConnectionProps) => {
+}: React.PropsWithChildren) => {
   const { isConnected } = useAccount();
-  const authStatus = useAuthenticationStatus();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isConnected || authStatus === "unauthenticated") {
+    if (!isConnected) {
       navigate("/");
     }
-  }, [isConnected, authStatus, navigate]);
+  }, [isConnected, navigate]);
 
   return <>{isConnected ? children : null}</>;
 };

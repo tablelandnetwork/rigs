@@ -16,7 +16,6 @@ import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { Topbar } from "./Topbar";
-import { RainbowKitTablelandSiweProvider } from "./components/RainbowKitTablelandSiweProvider";
 import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 import { routes } from "./routes";
@@ -172,37 +171,32 @@ function App() {
   return (
     <ChakraProvider theme={theme}>
       <WagmiConfig client={wagmiClient}>
-        <RainbowKitTablelandSiweProvider>
-          <RainbowKitProvider chains={chains} theme={darkTheme()}>
-            <BrowserRouter>
-              <Topbar />
-              <GlobalFlyParkModals>
-                <Routes>
-                  {routes().map(
-                    (
-                      { requiresWalletConnection, element, ...props },
-                      index
-                    ) => (
-                      <Route
-                        {...props}
-                        key={`route-${index}`}
-                        element={
-                          requiresWalletConnection ? (
-                            <RequiresWalletConnection>
-                              {element}
-                            </RequiresWalletConnection>
-                          ) : (
-                            element
-                          )
-                        }
-                      />
-                    )
-                  )}
-                </Routes>
-              </GlobalFlyParkModals>
-            </BrowserRouter>
-          </RainbowKitProvider>
-        </RainbowKitTablelandSiweProvider>
+        <RainbowKitProvider chains={chains} theme={darkTheme()}>
+          <BrowserRouter>
+            <Topbar />
+            <GlobalFlyParkModals>
+              <Routes>
+                {routes().map(
+                  ({ requiresWalletConnection, element, ...props }, index) => (
+                    <Route
+                      {...props}
+                      key={`route-${index}`}
+                      element={
+                        requiresWalletConnection ? (
+                          <RequiresWalletConnection>
+                            {element}
+                          </RequiresWalletConnection>
+                        ) : (
+                          element
+                        )
+                      }
+                    />
+                  )
+                )}
+              </Routes>
+            </GlobalFlyParkModals>
+          </BrowserRouter>
+        </RainbowKitProvider>
       </WagmiConfig>
     </ChakraProvider>
   );

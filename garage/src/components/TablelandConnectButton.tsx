@@ -27,15 +27,9 @@ export const TablelandConnectButton = ({
         openAccountModal,
         openChainModal,
         openConnectModal,
-        authenticationStatus,
         mounted,
       }) => {
-        const ready = mounted && authenticationStatus !== "loading";
-        const connected =
-          ready &&
-          account &&
-          chain &&
-          (!authenticationStatus || authenticationStatus === "authenticated");
+        const connected = mounted && account && chain;
 
         return (
           <div
