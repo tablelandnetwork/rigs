@@ -16,6 +16,7 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
+import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
 import { Rig } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { contractAddress, contractInterface } from "../contract";
@@ -50,7 +51,8 @@ export const TrainRigsModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write, reset } = contractWrite;
+  const { isLoading, isSuccess, write: _write, reset } = contractWrite;
+  const write = useTablelandTokenGatedContractWriteFn(_write);
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
@@ -125,7 +127,8 @@ export const ParkRigsModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write, reset } = contractWrite;
+  const { isLoading, isSuccess, write: _write, reset } = contractWrite;
+  const write = useTablelandTokenGatedContractWriteFn(_write);
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });

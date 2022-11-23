@@ -18,6 +18,7 @@ import { useNFTs, NFT } from "../../../hooks/useNFTs";
 import { Rig, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
+import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { findNFT } from "../../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../../utils/async";
 
@@ -223,7 +224,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       <Flex justify="flex-end" width="100%" pt={6}>
-        <Button
+        <ChainAwareButton
           disabled={!!pendingTx || !selectedRigs.size}
           onClick={
             currentlySelectable === Selectable.PARKED
@@ -236,7 +237,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
             : currentlySelectable === Selectable.PARKED
             ? "Train selected"
             : "Park selected"}
-        </Button>
+        </ChainAwareButton>
       </Flex>
 
       {rigs && rigs.length === 0 && (
