@@ -41,7 +41,7 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_42161_14",
     partsTable: "parts_42161_7",
     layersTable: "layers_42161_8",
-    attributesTable: "rig_attributes_42161_9",
+    attributesTable: "rig_attributes_42161_15",
     lookupsTable: "lookups_42161_10",
     pilotSessionsTable: "pilot_sessions_1_7",
     displayAttributes: true,
