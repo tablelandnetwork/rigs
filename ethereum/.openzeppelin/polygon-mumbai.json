@@ -35,6 +35,21 @@
       "address": "0xEAbC6eF167a61bA20bb77030bd2cf7eAa218f11D",
       "txHash": "0xc28e88028f1aa87a5a4e3855c3454c5546d92938d1c48d28e401f7069b577b27",
       "kind": "uups"
+    },
+    {
+      "address": "0xfdD15E0Af08AF6b767bc85384698eda79f5AcAb4",
+      "txHash": "0x852bf757a90491baad3106a4443c26e2ac0ff734a7378cc5299b50f19b9a9b81",
+      "kind": "uups"
+    },
+    {
+      "address": "0x03944483c45A40098061c4FF5EcF61F8F0175035",
+      "txHash": "0xc676385b1940c49fa1b87c7240d71e99cc211c4b899b8b6e30da2affdbb65e41",
+      "kind": "uups"
+    },
+    {
+      "address": "0x864655946432f52AE16BDE9af054380b3dE06789",
+      "txHash": "0x7ffa5fa2ce2df154e5bb854c0f063db303012045a340c2388a83ec8beced607c",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -4372,6 +4387,145 @@
           "t_uint96": {
             "label": "uint96",
             "numberOfBytes": "12"
+          }
+        }
+      }
+    },
+    "880ccce0999a70dea17115a4b440f36ed19b17119734b6570f178aeca6f91b04": {
+      "address": "0x6Cc528B001D248C91DbF146c4df81aBF106D31D4",
+      "txHash": "0x37e2412c3795f2c76fa695574141f79cda5e59b88f17e95568a892b529f0ee8e",
+      "layout": {
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:62",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:67"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ContextUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol:36"
+          },
+          {
+            "label": "_owner",
+            "offset": 0,
+            "slot": "51",
+            "type": "t_address",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:22"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "52",
+            "type": "t_array(t_uint256)49_storage",
+            "contract": "OwnableUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol:94"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "101",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "ERC1967UpgradeUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/ERC1967/ERC1967UpgradeUpgradeable.sol:211"
+          },
+          {
+            "label": "__gap",
+            "offset": 0,
+            "slot": "151",
+            "type": "t_array(t_uint256)50_storage",
+            "contract": "UUPSUpgradeable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol:107"
+          },
+          {
+            "label": "_parent",
+            "offset": 0,
+            "slot": "201",
+            "type": "t_address",
+            "contract": "TablelandRigPilots",
+            "src": "contracts/TablelandRigPilots.sol:45"
+          },
+          {
+            "label": "_pilotSessionsTableId",
+            "offset": 0,
+            "slot": "202",
+            "type": "t_uint256",
+            "contract": "TablelandRigPilots",
+            "src": "contracts/TablelandRigPilots.sol:48"
+          },
+          {
+            "label": "_pilots",
+            "offset": 0,
+            "slot": "203",
+            "type": "t_mapping(t_uint16,t_uint256)",
+            "contract": "TablelandRigPilots",
+            "src": "contracts/TablelandRigPilots.sol:56"
+          },
+          {
+            "label": "_pilotIndex",
+            "offset": 0,
+            "slot": "204",
+            "type": "t_mapping(t_uint192,t_uint16)",
+            "contract": "TablelandRigPilots",
+            "src": "contracts/TablelandRigPilots.sol:60"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_array(t_uint256)49_storage": {
+            "label": "uint256[49]",
+            "numberOfBytes": "1568"
+          },
+          "t_array(t_uint256)50_storage": {
+            "label": "uint256[50]",
+            "numberOfBytes": "1600"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_uint16,t_uint256)": {
+            "label": "mapping(uint16 => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint192,t_uint16)": {
+            "label": "mapping(uint192 => uint16)",
+            "numberOfBytes": "32"
+          },
+          "t_uint16": {
+            "label": "uint16",
+            "numberOfBytes": "2"
+          },
+          "t_uint192": {
+            "label": "uint192",
+            "numberOfBytes": "24"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
           }
         }
       }

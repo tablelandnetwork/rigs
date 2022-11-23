@@ -48,9 +48,9 @@ export const deployments: RigsDeployments = {
   },
   // testnets
   "polygon-mumbai": {
-    contractAddress: "0xa04ac9Ca2FE3Db8f372B1364CdaD6fc58453Fde8",
-    royaltyContractAddress: "0xa3c2D5633E31b5b5f7a97664d5Aeb06413931721",
-    pilotsAddress: "0xEAbC6eF167a61bA20bb77030bd2cf7eAa218f11D",
+    contractAddress: "0xfdD15E0Af08AF6b767bc85384698eda79f5AcAb4",
+    royaltyContractAddress: "0xb61974afD4348DA16e45BC48d53883A281bc4A6e",
+    pilotsAddress: "0x864655946432f52AE16BDE9af054380b3dE06789",
     tablelandChain: "polygon-mumbai",
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_80001_3819",
@@ -59,7 +59,7 @@ export const deployments: RigsDeployments = {
     layersTable: "layers_80001_3860",
     attributesTable: "rig_attributes_80001_3861",
     lookupsTable: "lookups_80001_3862",
-    pilotSessionsTable: "pilot_sessions_80001_3821",
+    pilotSessionsTable: "pilot_sessions_80001_4078",
     displayAttributes: true,
   },
   localhost: {

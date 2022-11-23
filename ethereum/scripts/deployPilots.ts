@@ -35,10 +35,13 @@ async function main() {
     )) as TablelandRigPilots
   ).deployed();
   console.log("Deployed Pilots:", pilots.address);
+  const pilotSessionsTable = await pilots.pilotSessionsTable();
+  console.log("Pilot sessions table:", pilotSessionsTable);
 
   // Warn that addresses need to be saved in deployments file
   console.warn(
-    `\nSave 'deployments.${network.name}.pilotsAddress: "${pilots.address}"' in deployments.ts!`
+    `\nSave 'deployments.${network.name}.pilotsAddress: "${pilots.address}"' in deployments.ts!`,
+    `\nSave 'deployments.${network.name}.pilotSessionsTable: "${pilotSessionsTable}"' in deployments.ts!`
   );
 }
 
