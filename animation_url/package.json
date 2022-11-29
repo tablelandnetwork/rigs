@@ -15,7 +15,7 @@
   "devDependencies": {
     "@playwright/test": "^1.27.1",
     "@sveltejs/adapter-auto": "^1.0.0-next.87",
-    "@sveltejs/kit": "1.0.0-next.532",
+    "@sveltejs/kit": "1.0.0-next.567",
     "@tableland/rigs": "^0.1.1",
     "@tableland/sdk": "^3.1.4",
     "@typescript-eslint/eslint-plugin": "^5.42.0",
