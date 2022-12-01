@@ -12,6 +12,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import {
+  useAccount,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
@@ -177,6 +178,23 @@ export const ParkRigsModal = ({
             {isSuccess && !isTxLoading ? "Close" : "Cancel"}
           </Button>
         </ModalFooter>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+export const PilotRigsModal = ({
+  rigs,
+  isOpen,
+  onClose,
+  onTransactionSubmitted,
+}: ModalProps) => {
+  const { address } = useAccount();
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="5xl">
+      <ModalOverlay />
+      <ModalContent>
       </ModalContent>
     </Modal>
   );
