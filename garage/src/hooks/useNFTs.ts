@@ -5,6 +5,7 @@ import {
   Alchemy,
   NftTokenType,
   Nft,
+  NftContract,
   NftExcludeFilters,
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
@@ -124,4 +125,38 @@ export const useOwnedNFTs = (
 
   // TODO support pagination
   return { nfts };
+};
+
+export interface Collection {
+  name: string;
+  contractAddress: string;
+  imageUrl?: string;
+}
+
+const toCollection = (c: NftContract): Collection => {
+  const { address, name = "", openSea } = c;
+
+  return { name, contractAddress: address, imageUrl: openSea?.imageUrl };
+};
+
+export const useNFTCollections = (search: string) => {
+  const [collections, setCollections] = useState<Collection[]>();
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!search) return;
+
+    alchemy.nft.searchContractMetadata(search).then((v) => {
+      if (isCancelled) return;
+
+      setCollections(v.map(toCollection));
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [search]);
+
+  return { collections };
 };
