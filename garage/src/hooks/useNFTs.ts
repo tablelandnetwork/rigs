@@ -5,6 +5,8 @@ import {
   Alchemy,
   NftTokenType,
   Nft,
+  NftExcludeFilters,
+  GetNftsForOwnerOptions,
 } from "alchemy-sdk";
 import { chain, deployment } from "../env";
 
@@ -76,5 +78,50 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
     };
   }, [input, setNFTs]);
 
+  return { nfts };
+};
+
+const isNotRig = (data: Nft): boolean => {
+  return data.contract.address !== deployment.contractAddress;
+};
+
+interface OwnedNFTsFilter {
+  contracts?: string[];
+}
+
+export const useOwnedNFTs = (
+  owner: string | undefined,
+  limit = 50,
+  after: string = "",
+  filter?: OwnedNFTsFilter
+) => {
+  const [nfts, setNFTs] = useState<NFT[]>();
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!owner) return;
+
+    let options: GetNftsForOwnerOptions = {
+      pageSize: limit,
+      pageKey: after,
+      omitMetadata: false,
+      excludeFilters: [NftExcludeFilters.SPAM],
+    };
+    if (filter?.contracts)
+      options = { ...options, contractAddresses: filter.contracts };
+
+    alchemy.nft.getNftsForOwner(owner, options).then((v) => {
+      if (isCancelled) return;
+
+      setNFTs(v.ownedNfts.filter(isNotRig).map(toNFT));
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [owner, limit, after, filter, setNFTs]);
+
+  // TODO support pagination
   return { nfts };
 };
