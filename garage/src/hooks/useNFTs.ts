@@ -1,12 +1,34 @@
 import { useEffect, useState } from "react";
-import { useZDK } from "./useZDK";
-import { ZDK } from "@zoralabs/zdk";
+import { Chain, chain as chains } from "wagmi";
+import {
+  Network,
+  Alchemy,
+  NftTokenType,
+  Nft,
+} from "alchemy-sdk";
+import { chain, deployment } from "../env";
 
-type TokensQuery = Awaited<ReturnType<ZDK["tokens"]>>;
+const wagmiChainToNetwork = (c: Chain): Network => {
+  switch (c) {
+    case chains.mainnet:
+      return Network.ETH_MAINNET;
+    case chains.goerli:
+      return Network.ETH_GOERLI;
+    case chains.polygon:
+      return Network.MATIC_MAINNET;
+    case chains.polygonMumbai:
+      return Network.MATIC_MUMBAI;
+    default:
+      throw new Error(`wagmiChainToNetwork unsupported chain, ${c}`);
+  }
+};
 
-type Unpacked<T> = T extends (infer U)[] ? U : T;
+const settings = {
+  apiKey: import.meta.env.VITE_ALCHEMY_ID,
+  network: wagmiChainToNetwork(chain),
+};
 
-type TokensQueryNode = Unpacked<TokensQuery["tokens"]["nodes"]>;
+const alchemy = new Alchemy(settings);
 
 export interface NFT {
   contract: string;
@@ -15,26 +37,18 @@ export interface NFT {
   imageUrl?: string;
 }
 
-const queryNodeToNFT = (node: TokensQueryNode): NFT => {
-  const { tokenId, collectionAddress } = node.token;
-  const tokenName = node?.token.name;
-  const fallbackName = node
-    ? `${node?.token?.tokenContract?.name} #${node?.token?.tokenId}`
-    : undefined;
-  const media = node?.token.image?.mediaEncoding as { thumbnail: string };
-  const imageUrl = media?.thumbnail;
+const toNFT = (data: Nft): NFT => {
+  const { contract, tokenId, title, media } = data;
 
   return {
-    contract: collectionAddress,
+    contract: contract.address,
     tokenId,
-    name: tokenName || fallbackName,
-    imageUrl,
+    name: title,
+    imageUrl: media.length ? media[0].gateway : undefined,
   };
 };
 
 export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
-  const { zdk } = useZDK();
-
   const [nfts, setNFTs] = useState<NFT[]>();
 
   useEffect(() => {
@@ -44,13 +58,14 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
 
     if (input.length) {
       const tokens = input.map(({ contract, tokenId }) => ({
-        address: contract,
+        contractAddress: contract,
         tokenId,
+        tokenType: NftTokenType.ERC721 as const,
       }));
-      zdk.tokens({ where: { tokens } }).then((v) => {
+      alchemy.nft.getNftMetadataBatch(tokens).then((v) => {
         if (isCancelled) return;
 
-        setNFTs(v.tokens.nodes.map(queryNodeToNFT));
+        setNFTs(v.map(toNFT));
       });
     } else {
       setNFTs([]);
@@ -59,7 +74,7 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
     return () => {
       isCancelled = true;
     };
-  }, [input, setNFTs, zdk]);
+  }, [input, setNFTs]);
 
   return { nfts };
 };
