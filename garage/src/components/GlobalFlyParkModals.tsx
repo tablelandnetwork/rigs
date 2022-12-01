@@ -1,5 +1,5 @@
 import React, { useCallback, useContext, useMemo, useState } from "react";
-import { TrainRigsModal, ParkRigsModal } from "./FlyParkModals";
+import { TrainRigsModal, PilotRigsModal, ParkRigsModal } from "./FlyParkModals";
 import { Rig } from "../types";
 
 type OnTransactionSubmittedCallback = (txHash: string) => void;
@@ -14,6 +14,7 @@ interface Modal {
 
 interface GlobalFlyParkModalContextData {
   trainRigsModal: Modal;
+  pilotRigsModal: Modal;
   parkRigsModal: Modal;
 }
 
@@ -26,6 +27,7 @@ const GlobalFlyParkModalContext = React.createContext<
   GlobalFlyParkModalContextData
 >({
   trainRigsModal: emptyModal,
+  pilotRigsModal: emptyModal,
   parkRigsModal: emptyModal,
 });
 
@@ -73,14 +75,16 @@ const useModalState = () => {
 
 export const GlobalFlyParkModals = ({ children }: React.PropsWithChildren) => {
   const trainRigsModal = useModalState();
+  const pilotRigsModal = useModalState();
   const parkRigsModal = useModalState();
 
   const value = useMemo(() => {
     return {
       trainRigsModal,
+      pilotRigsModal,
       parkRigsModal,
     };
-  }, [trainRigsModal, parkRigsModal]);
+  }, [trainRigsModal, pilotRigsModal, parkRigsModal]);
 
   return (
     <GlobalFlyParkModalContext.Provider value={value}>
@@ -89,6 +93,12 @@ export const GlobalFlyParkModals = ({ children }: React.PropsWithChildren) => {
         isOpen={trainRigsModal.open}
         onClose={trainRigsModal.closeModal}
         onTransactionSubmitted={trainRigsModal.onTransactionSubmitted}
+      />
+      <PilotRigsModal
+        rigs={pilotRigsModal.rigs}
+        isOpen={pilotRigsModal.open}
+        onClose={pilotRigsModal.closeModal}
+        onTransactionSubmitted={pilotRigsModal.onTransactionSubmitted}
       />
       <ParkRigsModal
         rigs={parkRigsModal.rigs}
