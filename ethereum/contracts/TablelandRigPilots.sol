@@ -413,11 +413,8 @@ contract TablelandRigPilots is
         } else {
             // Training is complete; update the row in the pilot sessions table with its `end_time`
             setters = string.concat(
-                "end_time=(",
-                StringsUpgradeable.toString(uint64(block.number)),
-                "-",
-                StringsUpgradeable.toString(startTime),
-                ")"
+                "end_time=",
+                StringsUpgradeable.toString(uint64(block.number))
             );
         }
 
