@@ -14,7 +14,13 @@ import {
   ModalBody,
   ModalCloseButton,
   Spinner,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tr,
 } from "@chakra-ui/react";
 import { ArrowBackIcon, ArrowForwardIcon } from "@chakra-ui/icons";
 import {
@@ -24,6 +30,7 @@ import {
   useWaitForTransaction,
 } from "wagmi";
 import { useOwnedNFTs, NFT } from "../hooks/useNFTs";
+import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
 import { Rig } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
@@ -221,6 +228,8 @@ const PilotTransactionStep = ({
     enabled: isOpen,
   });
 
+  const { sessions } = useActivePilotSessions(pairs.map(v => v.pilot));
+
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write: _write, reset } = contractWrite;
   const write = useTablelandTokenGatedContractWriteFn(_write);
@@ -252,13 +261,45 @@ const PilotTransactionStep = ({
           button below your wallet will request that you sign a transaction that
           will cost gas.
         </Text>
+        {!sessions && <Spinner />}
+        {sessions && sessions.length > 0 && (
+          <Box>
+            <Heading as="h2">WARNING</Heading>
+            <Text>
+              The following Pilots are already in use by other Rigs. Piloting
+              with these pilots will force park the rigs below.
+            </Text>
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>Rig #</Th>
+                  <Th>Owner</Th>
+                  <Th>Pilot Contract</Th>
+                  <Th>Pilot Token Id</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {sessions.map(({ rigId, owner, contract, tokenId }, index) => {
+                  return (
+                    <Tr key={`warning-${index}`}>
+                      <Td>{rigId}</Td>
+                      <Td>{owner}</Td>
+                      <Td>{contract}</Td>
+                      <Td>{tokenId}</Td>
+                    </Tr>
+                  );
+                })}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
         <TransactionStateAlert {...contractWrite} />
       </ModalBody>
       <ModalFooter>
         <Button
           mr={3}
           onClick={() => (write ? write() : undefined)}
-          isDisabled={isLoading || isSuccess}
+          isDisabled={isLoading || isSuccess || !sessions}
         >
           Pilot {pluralize("rig", pairs)}
         </Button>
