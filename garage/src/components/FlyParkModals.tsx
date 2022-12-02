@@ -1,7 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ethers } from "ethers";
 import {
+  Box,
   Button,
+  Flex,
+  Heading,
+  Image,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -9,17 +13,21 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
+  Spinner,
   Text,
 } from "@chakra-ui/react";
+import { ArrowBackIcon, ArrowForwardIcon } from "@chakra-ui/icons";
 import {
   useAccount,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
+import { useOwnedNFTs, NFT } from "../hooks/useNFTs";
 import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
 import { Rig } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
+import { RigDisplay } from "./RigDisplay";
 import { contractAddress, contractInterface } from "../contract";
 
 interface ModalProps {
@@ -183,18 +191,290 @@ export const ParkRigsModal = ({
   );
 };
 
+interface PilotTransactionProps {
+  pairs: { rig: Rig; pilot: NFT }[];
+  isOpen: boolean;
+  onClose: () => void;
+  onTransactionSubmitted?: (txHash: string) => void;
+}
+
+const toContractArgs = (pairs: { rig: Rig; pilot: NFT }[]) => {
+  return [
+    pairs.map(({ rig }) => ethers.BigNumber.from(rig.id)),
+    pairs.map(({ pilot }) => pilot.contract),
+    pairs.map(({ pilot }) => ethers.BigNumber.from(pilot.tokenId)),
+  ];
+};
+
+const PilotTransactionStep = ({
+  pairs,
+  isOpen,
+  onClose,
+  onTransactionSubmitted,
+}: PilotTransactionProps) => {
+  // TODO support calling pilotRig(uint256, address, uint256) for a single rig?
+  const { config } = usePrepareContractWrite({
+    addressOrName: contractAddress,
+    contractInterface,
+    functionName: "pilotRig(uint256[],address[],uint256[])",
+    args: toContractArgs(pairs),
+    enabled: isOpen,
+  });
+
+  const contractWrite = useContractWrite(config);
+  const { isLoading, isSuccess, write: _write, reset } = contractWrite;
+  const write = useTablelandTokenGatedContractWriteFn(_write);
+  const { isLoading: isTxLoading } = useWaitForTransaction({
+    hash: contractWrite.data?.hash,
+  });
+
+  useEffect(() => {
+    if (!isOpen) reset();
+  }, [isOpen, reset]);
+
+  useEffect(() => {
+    if (onTransactionSubmitted && isSuccess && contractWrite.data?.hash)
+      onTransactionSubmitted(contractWrite.data.hash);
+  }, [onTransactionSubmitted, contractWrite?.data, isSuccess]);
+
+  return (
+    <>
+      <ModalBody>
+        <Text>You are about to pilot your {pluralize("rig", pairs)}!</Text>
+        <Text mt={4} sx={{ fontStyle: "bold" }}>
+          In-flight Rigs ARE NOT sellable or transferable! Your Rig may be
+          auto-parked if it's listed on a marketplace. If your Rig has a real
+          pilot that you sold or transferred, your Rig will be auto-parked if
+          the new owner uses it as a pilot of a different Rig.
+        </Text>
+        <Text mt={4} sx={{ fontStyle: "italic" }}>
+          Piloting requires an on-chain transaction. When you click the Pilot
+          button below your wallet will request that you sign a transaction that
+          will cost gas.
+        </Text>
+        <TransactionStateAlert {...contractWrite} />
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          mr={3}
+          onClick={() => (write ? write() : undefined)}
+          isDisabled={isLoading || isSuccess}
+        >
+          Pilot {pluralize("rig", pairs)}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={onClose}
+          isDisabled={isLoading || (isSuccess && isTxLoading)}
+        >
+          {isSuccess && !isTxLoading ? "Close" : "Cancel"}
+        </Button>
+      </ModalFooter>
+    </>
+  );
+};
+
+const NFTDisplay = ({ nft, selected }: { nft: NFT; selected: boolean }) => {
+  return (
+    <Box width={{ base: "120px", md: "200px" }} position="relative">
+      <Image src={nft.imageUrl} />
+      <Box
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        bottom="0"
+        _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+        transition=".2s"
+      />
+      {nft.name} {selected && "√ SELECTED"}
+    </Box>
+  );
+};
+
+type RigPilotMap = { [rigId: string]: NFT };
+
+interface PickRigPilotStepProps {
+  rigs: Rig[];
+  pilots: RigPilotMap;
+  setPilot: (pilot: NFT, rigId: string) => void;
+  onNext: () => void;
+  onClose: () => void;
+}
+
+const PickRigPilotStep = ({
+  rigs,
+  pilots,
+  setPilot,
+  onNext,
+  onClose,
+}: PickRigPilotStepProps) => {
+  const { address } = useAccount();
+  const { nfts } = useOwnedNFTs(address, 20, "");
+
+  const [currentRig, setCurrentRig] = useState<number>(0);
+  const rig = useMemo(() => rigs[currentRig], [rigs, currentRig]);
+  const pilot = useMemo(() => pilots[rigs[currentRig].id], [pilots, rigs, currentRig]);
+
+  const next = useCallback(() => {
+    setCurrentRig((old) => {
+      if (old === rigs.length - 1) return old;
+
+      return old++;
+    });
+  }, [setCurrentRig, rigs]);
+
+  const prev = useCallback(() => {
+    setCurrentRig((old) => {
+      if (old === 0) return old;
+
+      return old--;
+    });
+  }, [setCurrentRig, rigs]);
+
+  const displayArrows = useMemo(() => {
+    return rigs.length > 1;
+  }, [rigs]);
+
+  return (
+    <>
+      <ModalBody>
+        <Flex direction="column">
+          <Flex justify="center" width="100%">
+            {displayArrows && (
+              <Button
+                leftIcon={<ArrowBackIcon />}
+                onClick={prev}
+                isDisabled={currentRig === 0}
+              >
+                Prev
+              </Button>
+            )}
+            <Flex
+              direction="row"
+              borderColor="primary"
+              borderWidth="1px"
+              borderRadius="5px"
+              p={4}
+            >
+              <RigDisplay rig={rig} pilotNFT={pilot} width="100px" />
+              <Flex direction="column" ml={3}>
+                <Heading as="h3">Rig #{rig.id}</Heading>
+              </Flex>
+            </Flex>
+          </Flex>
+          {displayArrows && (
+            <Button
+              leftIcon={<ArrowForwardIcon />}
+              onClick={next}
+              isDisabled={currentRig === rigs.length - 1}
+            >
+              Next
+            </Button>
+          )}
+        </Flex>
+
+        {/*<InputGroup>
+        <InputLeftElement
+          pointerEvents="none"
+          children={<SearchIcon color="gray.300" />}
+        />
+        <Input type="text" placeholder="Filter on Collection" />
+      </InputGroup>*/}
+        <Heading as="h4">Your NFTs (ERC721 only)</Heading>
+        <Flex direction="row" wrap="wrap" justify="space-between">
+          {nfts &&
+            nfts.map((nft, index) => {
+              return (
+                <Flex
+                  direction="column"
+                  key={index}
+                  onClick={() => setPilot(nft, rigs[currentRig].id)}
+                  _hover={{ cursor: "pointer" }}
+                >
+                  <NFTDisplay nft={nft} selected={pilot === nft} />
+                </Flex>
+              );
+            })}
+          {!nfts && <Spinner />}
+        </Flex>
+      </ModalBody>
+      <ModalFooter>
+        <Button
+          mr={3}
+          onClick={onNext}
+          isDisabled={
+            rigs.length === 0 || Object.keys(pilots).length !== rigs.length
+          }
+        >
+          Pilot {pluralize("rig", rigs)}
+        </Button>
+        <Button variant="ghost" onClick={onClose} isDisabled={false}>
+          Cancel
+        </Button>
+      </ModalFooter>
+    </>
+  );
+};
+
 export const PilotRigsModal = ({
   rigs,
   isOpen,
   onClose,
   onTransactionSubmitted,
 }: ModalProps) => {
-  const { address } = useAccount();
+  const [pilots, setPilots] = useState<RigPilotMap>({});
+  const setPilot = useCallback(
+    (pilot: NFT, rigId: string) => {
+      setPilots((old) => {
+        let addition: RigPilotMap = {};
+        addition[rigId] = pilot;
+        return {
+          ...old,
+          ...addition,
+        };
+      });
+    },
+    [setPilots]
+  );
+
+  const [step, setStep] = useState<"choose" | "confirm">("choose");
+
+  const pairs = useMemo(() => {
+    return rigs.map((rig, index) => ({ rig, pilot: pilots[rig.id] }));
+  }, [rigs, pilots]);
+
+  // Effect that resets the state when the modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setPilots({});
+      setStep("choose");
+    }
+  }, [isOpen, setPilots, setStep]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="5xl">
       <ModalOverlay />
       <ModalContent>
+        <ModalHeader>Choose Pilot</ModalHeader>
+        <ModalCloseButton />
+        {step === "choose" && (
+          <PickRigPilotStep
+            rigs={rigs}
+            setPilot={setPilot}
+            pilots={pilots}
+            onClose={onClose}
+            onNext={() => setStep("confirm")}
+          />
+        )}
+        {step === "confirm" && (
+          <PilotTransactionStep
+            pairs={pairs}
+            isOpen={isOpen}
+            onClose={onClose}
+            onTransactionSubmitted={onTransactionSubmitted}
+          />
+        )}
       </ModalContent>
     </Modal>
   );
