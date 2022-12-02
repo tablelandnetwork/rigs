@@ -327,7 +327,7 @@ contract TablelandRigPilots is
             string memory setters = string.concat(
                 "pilot_contract=",
                 SQLHelpers.quote(StringsUpgradeable.toHexString(pilotAddr)),
-                "pilot_id=",
+                ",pilot_id=",
                 StringsUpgradeable.toString(uint32(pilotId))
             );
             string memory filters = string.concat(
