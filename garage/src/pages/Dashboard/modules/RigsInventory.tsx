@@ -12,6 +12,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
+import { useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
 import { useNFTs, NFT } from "../../../hooks/useNFTs";
@@ -109,7 +110,8 @@ const toggleInSet = <T,>(s: Set<T>, v: T) => {
 };
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
-  const { rigs, refresh } = useOwnedRigs();
+  const { data: blockNumber } = useBlockNumber();
+  const { rigs, refresh } = useOwnedRigs(blockNumber);
   const { connection: tableland } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;

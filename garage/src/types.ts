@@ -23,6 +23,7 @@ export interface Rig {
   thumbAlpha: string;
   attributes: Attribute[];
   currentPilot?: Pilot;
+  isTrained: boolean;
 }
 
 export interface RigWithPilots extends Rig {

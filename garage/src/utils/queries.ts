@@ -7,7 +7,9 @@ const IMAGE_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||i
 const THUMB_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name`;
 const THUMB_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name`;
 
-export const selectRigs = (ids: string[]): string => {
+const PILOT_TRAINING_DURATION = 172800;
+
+export const selectRigs = (ids: string[], currentBlock: number): string => {
   return `
   SELECT
     cast(rig_id as text),
@@ -27,14 +29,28 @@ export const selectRigs = (ids: string[]): string => {
       )
       FROM ${pilotSessionsTable} AS session
       WHERE session.rig_id = attributes.rig_id AND session.end_time IS NULL
-    ) AS pilot
+    ) AS pilot,
+    EXISTS(
+      SELECT * FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = attributes.rig_id
+      AND (
+        (session.end_time IS NULL AND session.start_time <= ${
+          currentBlock - PILOT_TRAINING_DURATION
+        })
+        OR
+        (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
+      )
+    ) AS "isTrained"
   FROM ${attributesTable} AS attributes
   JOIN ${lookupsTable}
   WHERE rig_id IN ('${ids.join("', '")}')
   GROUP BY rig_id`;
 };
 
-export const selectRigWithPilots = (id: string): string => {
+export const selectRigWithPilots = (
+  id: string,
+  currentBlock: number
+): string => {
   return `
   SELECT
     '${id}' as "rig_id",
@@ -58,7 +74,18 @@ export const selectRigWithPilots = (id: string): string => {
         ))
       FROM ${pilotSessionsTable}
       WHERE rig_id = ${id}
-    ) AS piloting_sessions
+    ) AS "pilotSessions",
+    EXISTS(
+      SELECT * FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = ${id}
+      AND (
+        (session.end_time IS NULL AND session.start_time <= ${
+          currentBlock - PILOT_TRAINING_DURATION
+        })
+        OR
+        (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
+      )
+    ) AS "isTrained"
   FROM ${attributesTable}
   JOIN ${lookupsTable}
   WHERE rig_id = ${id}`;
