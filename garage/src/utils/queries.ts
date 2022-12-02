@@ -161,3 +161,18 @@ export const selectStats = (blockNumber: number): string => {
   FROM ${attributesTable}
   LIMIT 1;`;
 };
+
+export const selectActivePilotSessionsForPilots = (
+  pilots: { contract: string; tokenId: string }[]
+): string => {
+  const whereClauses = pilots.map(
+    ({ contract, tokenId }) =>
+      `(pilot_contract = '${contract}' AND pilot_id = ${tokenId})`
+  );
+
+  return `
+  SELECT cast(rig_id as text), owner, pilot_contract, cast(pilot_id as text), start_time, end_time
+  FROM ${pilotSessionsTable}
+  WHERE (${whereClauses.join(" OR ")}) AND end_time IS NULL;
+  `;
+};
