@@ -1,7 +1,6 @@
 import React from "react";
 import {
   Box,
-  Button,
   Heading,
   HStack,
   Image,
@@ -61,6 +60,7 @@ type PilotProps = React.ComponentProps<typeof Box> & {
   nfts: NFT[];
   isOwner: boolean;
   onOpenTrainModal: () => void;
+  onOpenPilotModal: () => void;
   onOpenParkModal: () => void;
 };
 
@@ -69,6 +69,7 @@ export const Pilots = ({
   nfts,
   isOwner,
   onOpenTrainModal,
+  onOpenPilotModal,
   onOpenParkModal,
   p,
   ...props
@@ -147,16 +148,36 @@ export const Pilots = ({
       )}
       {isOwner && (
         <StackItem px={4} pb={4}>
-          {!rig.currentPilot && (
-            <ChainAwareButton variant="outlined" onClick={onOpenTrainModal} width="100%">
-              Train
-            </ChainAwareButton>
-          )}
-          {rig.currentPilot && (
-            <ChainAwareButton variant="outlined" onClick={onOpenParkModal} width="100%">
-              Park
-            </ChainAwareButton>
-          )}
+          <HStack gap={3}>
+            {!rig.currentPilot && !rig.isTrained && (
+              <ChainAwareButton
+                variant="outlined"
+                onClick={onOpenTrainModal}
+                width="100%"
+              >
+                Train
+              </ChainAwareButton>
+            )}
+            {(rig.isTrained || rig.currentPilot) && (
+              <ChainAwareButton
+                variant="outlined"
+                isDisabled={!rig.isTrained || !!rig.currentPilot?.contract}
+                onClick={onOpenPilotModal}
+                width="100%"
+              >
+                Pilot
+              </ChainAwareButton>
+            )}
+            {rig.currentPilot && (
+              <ChainAwareButton
+                variant="outlined"
+                onClick={onOpenParkModal}
+                width="100%"
+              >
+                Park
+              </ChainAwareButton>
+            )}
+          </HStack>
         </StackItem>
       )}
     </VStack>

@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Flex,
-  Grid,
-  GridItem,
-  Spinner,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, Flex, Grid, GridItem, Spinner, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
@@ -77,10 +70,18 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const { trainRigsModal, parkRigsModal } = useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);
+  }, [rig, setPendingTx]);
+
+  const onOpenPilotModal = useCallback(() => {
+    if (rig) pilotRigsModal.openModal([rig], setPendingTx);
   }, [rig, setPendingTx]);
 
   const onOpenParkModal = useCallback(() => {
@@ -128,6 +129,7 @@ export const RigDetails = () => {
                   nfts={nfts}
                   isOwner={userOwnsRig}
                   onOpenParkModal={onOpenParkModal}
+                  onOpenPilotModal={onOpenPilotModal}
                   onOpenTrainModal={onOpenTrainModal}
                   {...MODULE_PROPS}
                 />
