@@ -22,6 +22,7 @@ import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals"
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { findNFT } from "../../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../../utils/async";
+import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
 
 interface RigListItemProps {
   rig: Rig;
@@ -90,24 +91,6 @@ enum Selectable {
   IN_FLIGHT,
   PARKED,
 }
-
-const firstSetValue = <T,>(s: Set<T>) => {
-  if (s.size) return s.values().next().value;
-};
-
-const copySet = <T,>(s: Set<T>): Set<T> => {
-  return new Set(Array.from(s));
-};
-
-const toggleInSet = <T,>(s: Set<T>, v: T) => {
-  if (s.has(v)) {
-    s.delete(v);
-  } else {
-    s.add(v);
-  }
-
-  return s;
-};
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { data: blockNumber } = useBlockNumber();
