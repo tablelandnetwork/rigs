@@ -43,3 +43,7 @@ export interface Event {
   pilot?: Pilot;
   timestamp: string;
 }
+
+export interface PilotSessionWithRigId extends PilotSession {
+  rigId: string;
+}

@@ -4,6 +4,7 @@ import {
   Attribute,
   Pilot,
   PilotSession,
+  PilotSessionWithRigId,
   Event,
   EventAction,
 } from "../types";
@@ -89,4 +90,29 @@ export const eventFromRow = ([
   pilot: { contract: pilotContract, tokenId: pilotId },
   action: endTime ? EventAction.Parked : EventAction.PilotedTrainer,
   timestamp,
+});
+
+type PilotSessionRow = [
+  string,
+  string,
+  string,
+  string,
+  number,
+  number | undefined
+];
+
+export const pilotSessionFromRow = ([
+  rigId,
+  owner,
+  contract,
+  tokenId,
+  startTime,
+  endTime,
+]: PilotSessionRow): PilotSessionWithRigId => ({
+  rigId,
+  contract,
+  tokenId,
+  owner,
+  startTime,
+  endTime,
 });
