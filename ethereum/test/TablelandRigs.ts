@@ -1155,6 +1155,7 @@ describe("Rigs", function () {
             BigNumber.from(pilotTokenId)
           );
         let pilotReceipt = await tx.wait();
+        blockNumber = tx.blockNumber;
         // Check the pilot info
         pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
         expect(pilotInfo.status).to.equal(3);
