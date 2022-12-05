@@ -25,15 +25,15 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
     .flatMap(({ startTime, endTime, owner, contract, tokenId }) => {
       const { name = "Trainer" } = findNFT({ tokenId, contract }, nfts) || {};
 
-      let events = [{ type: `Piloted ${name}`, timestamp: startTime, owner }];
+      let events = [{ type: `Piloted ${name}`, startTime, timestamp: startTime, owner }];
 
       if (endTime) {
-        events = [...events, { type: "Parked", timestamp: endTime, owner }];
+        events = [...events, { type: "Parked", startTime, timestamp: endTime, owner }];
       }
 
       return events;
     })
-    .sort((a, b) => b.timestamp - a.timestamp);
+    .sort((a, b) => (b.timestamp - a.timestamp) || (b.startTime - a.startTime));
 
   return (
     <VStack align="stretch" pt={p} {...props}>
