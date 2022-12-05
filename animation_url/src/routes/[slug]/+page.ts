@@ -2,9 +2,12 @@ import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
 import { default as trainer } from "../../assets/trainer.svg";
 
-const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
+const isDev =
+  import.meta.env.DEV || import.meta.env.VITE_VERCEL_ENV === "preview";
+
+const chain = isDev ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
-const ipfsGatewayUri = import.meta.env.DEV
+const ipfsGatewayUri = isDev
   ? "https://nftstorage.link/ipfs/"
   : "https://tableland.mypinata.cloud/ipfs/";
 
