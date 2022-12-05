@@ -6,6 +6,9 @@ import {
   Flex,
   Heading,
   Image,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -22,20 +25,27 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { ArrowBackIcon, ArrowForwardIcon } from "@chakra-ui/icons";
+import { ArrowBackIcon, ArrowForwardIcon, SearchIcon } from "@chakra-ui/icons";
 import {
   useAccount,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { useOwnedNFTs, NFT } from "../hooks/useNFTs";
+import {
+  useNFTCollections,
+  useOwnedNFTs,
+  Collection,
+  NFT,
+} from "../hooks/useNFTs";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
+import { useDebounce } from "../hooks/useDebounce";
 import { Rig } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
 import { contractAddress, contractInterface } from "../contract";
+import { copySet, toggleInSet } from "../utils/set";
 
 interface ModalProps {
   rigs: Rig[];
@@ -228,7 +238,7 @@ const PilotTransactionStep = ({
     enabled: isOpen,
   });
 
-  const { sessions } = useActivePilotSessions(pairs.map(v => v.pilot));
+  const { sessions } = useActivePilotSessions(pairs.map((v) => v.pilot));
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write: _write, reset } = contractWrite;
@@ -351,11 +361,35 @@ const PickRigPilotStep = ({
   onClose,
 }: PickRigPilotStepProps) => {
   const { address } = useAccount();
-  const { nfts } = useOwnedNFTs(address, 20, "");
+  const [collectionSearch, setCollectionSearch] = useState("");
+  const debouncedCollectionSearch = useDebounce(collectionSearch, 400);
+  const { collections: filteredCollections } = useNFTCollections(
+    debouncedCollectionSearch
+  );
+  const [collectionFilters, setCollectionFilters] = useState<Set<Collection>>(
+    new Set()
+  );
+  const toggleCollectionFilter = useCallback(
+    (collection: Collection) => {
+      setCollectionFilters((old) => toggleInSet(copySet(old), collection));
+    },
+    [setCollectionFilters]
+  );
+  const ownedNftsFilter = useMemo(() => {
+    return {
+      contracts: Array.from(collectionFilters).map((v) => v.contractAddress),
+    };
+  }, [collectionFilters]);
 
-  const [currentRig, setCurrentRig] = useState<number>(0);
+  const { nfts } = useOwnedNFTs(address, 20, "", ownedNftsFilter);
+
+  const [currentRig, setCurrentRig] = useState(0);
   const rig = useMemo(() => rigs[currentRig], [rigs, currentRig]);
-  const pilot = useMemo(() => pilots[rigs[currentRig].id], [pilots, rigs, currentRig]);
+  const pilot = useMemo(() => pilots[rigs[currentRig].id], [
+    pilots,
+    rigs,
+    currentRig,
+  ]);
 
   const next = useCallback(() => {
     setCurrentRig((old) => {
@@ -414,15 +448,36 @@ const PickRigPilotStep = ({
             </Button>
           )}
         </Flex>
-
-        {/*<InputGroup>
-        <InputLeftElement
-          pointerEvents="none"
-          children={<SearchIcon color="gray.300" />}
-        />
-        <Input type="text" placeholder="Filter on Collection" />
-      </InputGroup>*/}
-        <Heading as="h4">Your NFTs (ERC721 only)</Heading>
+        <Heading as="h5">Your NFTs (ERC721 only)</Heading>
+        <InputGroup>
+          <InputLeftElement
+            pointerEvents="none"
+            children={<SearchIcon color="gray.300" />}
+          />
+          <Input
+            type="text"
+            placeholder="Filter on Collection"
+            value={collectionSearch}
+            onChange={(e) => setCollectionSearch(e.target.value)}
+          />
+        </InputGroup>
+        {filteredCollections &&
+          filteredCollections.map((v) => {
+            return (
+              <Button onClick={() => toggleCollectionFilter(v)}>
+                {v.name}
+              </Button>
+            );
+          })}
+        Filters:{" "}
+        {Array.from(collectionFilters).map((collection) => {
+          const { name } = collection;
+          return (
+            <Button onClick={() => toggleCollectionFilter(collection)}>
+              {name}
+            </Button>
+          );
+        })}
         <Flex direction="row" wrap="wrap" justify="space-between">
           {nfts &&
             nfts.map((nft, index) => {
@@ -468,28 +523,25 @@ export const PilotRigsModal = ({
   const setPilot = useCallback(
     (pilot: NFT, rigId: string) => {
       setPilots((old) => {
-        let addition: RigPilotMap = {};
-        addition[rigId] = pilot;
-        return {
-          ...old,
-          ...addition,
-        };
+        const update = { ...old };
+        update[rigId] = pilot;
+        return update;
       });
     },
     [setPilots]
   );
 
-  const [step, setStep] = useState<"choose" | "confirm">("choose");
+  const [step, setStep] = useState<"pick" | "confirm">("pick");
 
   const pairs = useMemo(() => {
-    return rigs.map((rig, index) => ({ rig, pilot: pilots[rig.id] }));
+    return rigs.map((rig) => ({ rig, pilot: pilots[rig.id] }));
   }, [rigs, pilots]);
 
   // Effect that resets the state when the modal is closed
   useEffect(() => {
     if (!isOpen) {
       setPilots({});
-      setStep("choose");
+      setStep("pick");
     }
   }, [isOpen, setPilots, setStep]);
 
@@ -499,7 +551,7 @@ export const PilotRigsModal = ({
       <ModalContent>
         <ModalHeader>Choose Pilot</ModalHeader>
         <ModalCloseButton />
-        {step === "choose" && (
+        {step === "pick" && (
           <PickRigPilotStep
             rigs={rigs}
             setPilot={setPilot}
