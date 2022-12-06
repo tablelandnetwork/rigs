@@ -25,7 +25,12 @@ import {
   Thead,
   Tr,
 } from "@chakra-ui/react";
-import { ArrowBackIcon, ArrowForwardIcon, SearchIcon } from "@chakra-ui/icons";
+import {
+  ArrowBackIcon,
+  ArrowForwardIcon,
+  CheckCircleIcon,
+  NotAllowedIcon,
+} from "@chakra-ui/icons";
 import {
   useAccount,
   useContractWrite,
@@ -325,20 +330,63 @@ const PilotTransactionStep = ({
   );
 };
 
-const NFTDisplay = ({ nft, selected }: { nft: NFT; selected: boolean }) => {
+interface NFTDisplayProps {
+  nft: NFT;
+  onSelect: () => void;
+  selected: boolean;
+  supported: boolean;
+}
+
+const NFTDisplay = ({
+  nft,
+  onSelect,
+  selected,
+  supported,
+}: NFTDisplayProps) => {
   return (
-    <Box width={{ base: "120px", md: "200px" }} position="relative">
-      <Image src={nft.imageUrl} />
-      <Box
-        position="absolute"
-        top="0"
-        left="0"
-        right="0"
-        bottom="0"
-        _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}
-        transition=".2s"
+    <Box
+      width={{ base: "120px", md: "200px" }}
+      position="relative"
+      onClick={() => onSelect()}
+      _hover={{ cursor: supported ? "pointer" : "not-allowed" }}
+    >
+      <Image
+        src={nft.imageUrl || nft.imageSvgData}
+        width={{ base: "120px", md: "200px" }}
+        sx={{ aspectRatio: "1/1" }}
       />
-      {nft.name} {selected && "√ SELECTED"}
+      {supported && (
+        <Box
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          height={{ base: "120px", md: "200px" }}
+          _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+          transition=".2s"
+        />
+      )}
+      {!supported && (
+        <Flex
+          position="absolute"
+          top="0"
+          left="0"
+          right="0"
+          height={{ base: "120px", md: "200px" }}
+          backgroundColor={"rgba(0,0,0,0.35)"}
+          align="center"
+          justify="center"
+          zIndex="3"
+        >
+          <NotAllowedIcon color="#aaa" fontSize="60px" />
+        </Flex>
+      )}
+      {selected && (
+        <Box position="absolute" top={1} right={1}>
+          <CheckCircleIcon color="white" fontSize="25px" />
+        </Box>
+      )}
+      <Text noOfLines={1}>{nft.name}</Text>
     </Box>
   );
 };
@@ -481,15 +529,19 @@ const PickRigPilotStep = ({
         <Flex direction="row" wrap="wrap" justify="space-between">
           {nfts &&
             nfts.map((nft, index) => {
+              const supported =
+                nft.type === "ERC721" &&
+                nft.contract.toLowerCase() !== contractAddress.toLowerCase();
               return (
-                <Flex
-                  direction="column"
-                  key={index}
-                  onClick={() => setPilot(nft, rigs[currentRig].id)}
-                  _hover={{ cursor: "pointer" }}
-                >
-                  <NFTDisplay nft={nft} selected={pilot === nft} />
-                </Flex>
+                <NFTDisplay
+                  key={`nft-list-${index}`}
+                  nft={nft}
+                  onSelect={() =>
+                    supported && setPilot(nft, rigs[currentRig].id)
+                  }
+                  selected={pilot === nft}
+                  supported={supported}
+                />
               );
             })}
           {!nfts && <Spinner />}

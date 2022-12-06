@@ -34,6 +34,7 @@ const settings = {
 const alchemy = new Alchemy(settings);
 
 export interface NFT {
+  type: "ERC721" | "ERC1155" | "UNKNOWN";
   contract: string;
   tokenId: string;
   name?: string;
@@ -44,6 +45,7 @@ const toNFT = (data: Nft): NFT => {
   const { contract, tokenId, title, media } = data;
 
   return {
+    type: contract.tokenType,
     contract: contract.address,
     tokenId,
     name: title,
@@ -82,10 +84,6 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
   return { nfts };
 };
 
-const isNotRig = (data: Nft): boolean => {
-  return data.contract.address !== deployment.contractAddress;
-};
-
 interface OwnedNFTsFilter {
   contracts?: string[];
 }
@@ -115,7 +113,7 @@ export const useOwnedNFTs = (
     alchemy.nft.getNftsForOwner(owner, options).then((v) => {
       if (isCancelled) return;
 
-      setNFTs(v.ownedNfts.filter(isNotRig).map(toNFT));
+      setNFTs(v.ownedNfts.map(toNFT));
     });
 
     return () => {
