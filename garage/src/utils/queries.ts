@@ -123,7 +123,7 @@ export const selectRigsActivity = (
   FROM ${pilotSessionsTable} AS sessions
   JOIN ${lookupsTable}
   ${whereClause}
-  ORDER BY timestamp DESC
+  ORDER BY timestamp DESC, start_time DESC
   LIMIT ${first}
   OFFSET ${offset}`;
 };
