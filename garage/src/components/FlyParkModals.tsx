@@ -6,11 +6,6 @@ import {
   Flex,
   Heading,
   Image,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  List,
-  ListItem,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -37,20 +32,26 @@ import {
   SearchIcon,
 } from "@chakra-ui/icons";
 import {
+  AsyncSelect,
+  DropdownIndicatorProps,
+  chakraComponents,
+} from "chakra-react-select";
+import {
   useAccount,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
 import {
-  useNFTCollections,
   useOwnedNFTs,
   Collection,
   NFT,
+  alchemy,
+  toCollection,
 } from "../hooks/useNFTs";
+import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
-import { useDebounce } from "../hooks/useDebounce";
 import { Rig } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
@@ -406,6 +407,29 @@ interface PickRigPilotStepProps {
   onClose: () => void;
 }
 
+const searchCollections = (
+  inputValue: string,
+  callback: (data: Collection[]) => void
+) => {
+  alchemy.nft
+    .searchContractMetadata(inputValue)
+    .then((v) =>
+      callback(
+        v.map(toCollection).map((v) => ({ ...v, value: v.contractAddress }))
+      )
+    );
+};
+
+const debouncedSearchCollections = debounce(searchCollections, 400);
+
+const components = {
+  DropdownIndicator: (props: DropdownIndicatorProps<Collection>) => (
+    <chakraComponents.DropdownIndicator {...props}>
+      <SearchIcon />
+    </chakraComponents.DropdownIndicator>
+  ),
+};
+
 const PickRigPilotStep = ({
   rigs,
   pilots,
@@ -414,23 +438,14 @@ const PickRigPilotStep = ({
   onClose,
 }: PickRigPilotStepProps) => {
   const { address } = useAccount();
-  const [collectionSearch, setCollectionSearch] = useState("");
-  const [collectionSearchFocused, setCollectionSearchFocused] = useState(false);
-  const debouncedCollectionSearch = useDebounce(collectionSearch, 400);
-
-  const { isLoading: collectionsLoading, collections } = useNFTCollections(
-    debouncedCollectionSearch
-  );
   const [collectionFilters, setCollectionFilters] = useState<Set<Collection>>(
     new Set()
   );
-
   const toggleCollectionFilter = useCallback(
-    (collection: Collection, clearSearch: boolean) => {
+    (collection: Collection) => {
       setCollectionFilters((old) => toggleInSet(copySet(old), collection));
-      if (clearSearch) setCollectionSearch("");
     },
-    [setCollectionFilters, setCollectionSearch]
+    [setCollectionFilters]
   );
   const clearCollectionFilters = useCallback(() => {
     setCollectionFilters(new Set());
@@ -485,17 +500,9 @@ const PickRigPilotStep = ({
                 Prev
               </Button>
             )}
-            <Flex
-              direction="row"
-              borderColor="primary"
-              borderWidth="1px"
-              borderRadius="5px"
-              p={4}
-            >
-              <RigDisplay rig={rig} pilotNFT={pilot} width="100px" />
-              <Flex direction="column" ml={3}>
-                <Heading as="h3">Rig #{rig.id}</Heading>
-              </Flex>
+            <Flex direction="column" p={4}>
+              <RigDisplay rig={rig} pilotNFT={pilot} width="260px" />
+              Preview
             </Flex>
           </Flex>
           {displayArrows && (
@@ -508,63 +515,46 @@ const PickRigPilotStep = ({
             </Button>
           )}
         </Flex>
-        <Heading as="h5">Your NFTs (ERC721 only)</Heading>
-        <InputGroup>
-          <InputLeftElement
-            pointerEvents="none"
-            children={<SearchIcon color="gray.300" />}
+        <Box my={4}>
+          <AsyncSelect
+            name="collection"
+            placeholder="Filter by collection"
+            components={components}
+            controlShouldRenderValue={false}
+            loadOptions={debouncedSearchCollections}
+            formatOptionLabel={(v: Collection) => {
+              return (
+                <Flex onClick={() => toggleCollectionFilter(v)} align="center">
+                  <Image src={v.imageUrl} width="30px" mr={2} /> {v.name}
+                </Flex>
+              );
+            }}
           />
-          <Input
-            type="text"
-            placeholder="Filter on Collection"
-            value={collectionSearch}
-            onFocus={() => setCollectionSearchFocused(true)}
-            onBlur={() => setCollectionSearchFocused(false)}
-            onChange={(e) => setCollectionSearch(e.target.value)}
-          />
-        </InputGroup>
-        {collectionSearchFocused && (
-          <List>
-            {(debouncedCollectionSearch !== collectionSearch ||
-              collectionsLoading) && (
-              <ListItem>
-                <Spinner />
-              </ListItem>
-            )}
-            {collections &&
-              collections.map((v) => {
-                return (
-                  <ListItem onClick={() => toggleCollectionFilter(v, true)}>
-                    <Image src={v.imageUrl} width="30px" /> {v.name}
-                  </ListItem>
-                );
-              })}
-            {!collections && <ListItem>Search for a collection..</ListItem>}
-            {collections?.length === 0 && (
-              <ListItem>No results found.</ListItem>
-            )}
-          </List>
-        )}
-        <Flex direction="row" wrap="wrap" gap={4} align="center">
-          <Text>Filters:</Text>
-          {Array.from(collectionFilters).map((collection) => {
-            const { name } = collection;
-            return (
-              <Tag color="primary" py={2}>
-                {name}
-                <TagCloseButton
-                  onClick={() => toggleCollectionFilter(collection, false)}
-                />
-              </Tag>
-            );
-          })}
-          {collectionFilters.size > 0 && (
+        </Box>
+        {collectionFilters.size > 0 && (
+          <Flex direction="row" wrap="wrap" gap={4} my={4} align="center">
+            <Text>Filters:</Text>
+            {Array.from(collectionFilters).map((collection, index) => {
+              const { name } = collection;
+              return (
+                <Tag
+                  color="primary"
+                  py={2}
+                  key={`collection-filter-${name}-${index}`}
+                >
+                  {name}
+                  <TagCloseButton
+                    onClick={() => toggleCollectionFilter(collection)}
+                  />
+                </Tag>
+              );
+            })}
             <Button variant="ghost" onClick={clearCollectionFilters}>
               Clear all
             </Button>
-          )}
-        </Flex>
-        <Flex direction="row" wrap="wrap" justify="space-between">
+          </Flex>
+        )}
+        <Flex direction="row" wrap="wrap" justify="start" gap={4}>
           {nfts &&
             nfts.map((nft, index) => {
               const supported =
