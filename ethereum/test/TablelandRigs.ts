@@ -1691,6 +1691,18 @@ describe("Rigs", function () {
         // Check pilot is back to untrained
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(0);
+        // Start training again
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Advance 172800 blocks (30 days)
+        await network.provider.send("hardhat_mine", [
+          ethers.utils.hexValue(172800),
+        ]);
+        // Park the Rig as the contract owner
+        await expect(rigs.parkRigAsOwner(BigNumber.from(tokenId)))
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId));
       });
     });
   });
