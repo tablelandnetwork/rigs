@@ -461,8 +461,8 @@ contract TablelandRigs is
         // Verify `msg.sender` is authorized to park the specified Rig
         if (ownerOf(tokenId) != _msgSenderERC721A())
             revert ITablelandRigPilots.Unauthorized();
-
-        _pilots.parkRig(_msgSenderERC721A(), tokenId);
+        // Pass `false` to indicate a standard (non-force) park
+        _pilots.parkRig(tokenId, false);
     }
 
     /**
@@ -483,11 +483,19 @@ contract TablelandRigs is
     /**
      * @dev See {ITablelandRigs-parkRigAsOwner}.
      */
-    function parkRigAsOwner(uint256 tokenId) external onlyOwner {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
+        // Clients should restrict this further to avoid gas exceeding limits
+        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
+            revert ITablelandRigPilots.InvalidBatchPilotAction();
 
-        _pilots.parkRig(_msgSenderERC721A(), tokenId);
+        // For each token, call `parkRig`
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            // Check the Rig `tokenId` exists
+            if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
+            // Pass `true` to indicate a force park
+            _pilots.parkRig(tokenIds[i], true);
+        }
     }
 
     // =============================
