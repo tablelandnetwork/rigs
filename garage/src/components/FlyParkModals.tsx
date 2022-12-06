@@ -284,29 +284,31 @@ const PilotTransactionStep = ({
         </Text>
         {!sessions && <Spinner />}
         {sessions && sessions.length > 0 && (
-          <Box>
-            <Heading as="h2">WARNING</Heading>
-            <Text>
+          <Box my={8}>
+            <Heading as="h2" mb={3} color="red">
+              WARNING!
+            </Heading>
+            <Text mb={2}>
               The following Pilots are already in use by other Rigs. Piloting
-              with these pilots will force park the rigs below.
+              with these pilots will force park the rigs listed below.
             </Text>
             <Table>
               <Thead>
                 <Tr>
-                  <Th>Rig #</Th>
-                  <Th>Owner</Th>
-                  <Th>Pilot Contract</Th>
-                  <Th>Pilot Token Id</Th>
+                  <Th>Pilot</Th>
+                  <Th>Used By Owner</Th>
+                  <Th isNumeric>In Rig</Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {sessions.map(({ rigId, owner, contract, tokenId }, index) => {
                   return (
                     <Tr key={`warning-${index}`}>
-                      <Td>{rigId}</Td>
+                      <Td>
+                        {contract} #{tokenId}
+                      </Td>
                       <Td>{owner}</Td>
-                      <Td>{contract}</Td>
-                      <Td>{tokenId}</Td>
+                      <Td isNumeric>#{rigId}</Td>
                     </Tr>
                   );
                 })}
