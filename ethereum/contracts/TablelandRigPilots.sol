@@ -320,16 +320,15 @@ contract TablelandRigPilots is
             _pilotStatus(_pilotIndex[pilotData]) != GarageStatus.PARKED
         ) parkRig(sender, _pilotIndex[pilotData]);
 
-        // If the Rig is training, update its session (no parking required)
+        // If the Rig is training, end its training session (no parking required) to then open a new pilot session
         // Pilot has completed training at this point (training validation is checked above)
         if (_pilotStatus(tokenId) == GarageStatus.TRAINING) {
-            // Update the pilot's existing session with its new pilot data
+            // Update the pilot's existing training session with its `end_time`
             string memory setters = string.concat(
-                "pilot_contract=",
-                SQLHelpers.quote(StringsUpgradeable.toHexString(pilotAddr)),
-                "pilot_id=",
-                StringsUpgradeable.toString(uint32(pilotId))
+                "end_time=",
+                StringsUpgradeable.toString(uint64(block.number))
             );
+            // Only update the row with the matching `rig_id` and `start_time`
             string memory filters = string.concat(
                 "rig_id=",
                 StringsUpgradeable.toString(uint16(tokenId)),
@@ -347,34 +346,32 @@ contract TablelandRigPilots is
                     filters
                 )
             );
-        } else {
-            // The Rig is `PARKED`; set the start time for the new pilot session
-            _setStartTime(uint16(tokenId), uint64(block.number));
-
-            // Insert the pilot into the Tableland pilot sessions table
-            TablelandDeployments.get().runSQL(
-                address(this),
-                _pilotSessionsTableId,
-                SQLHelpers.toInsert(
-                    _PILOT_SESSIONS_PREFIX,
-                    _pilotSessionsTableId,
-                    "rig_id,owner,pilot_contract,pilot_id,start_time",
-                    string.concat(
-                        StringsUpgradeable.toString(uint16(tokenId)),
-                        ",",
-                        SQLHelpers.quote(
-                            StringsUpgradeable.toHexString(sender)
-                        ),
-                        ",",
-                        SQLHelpers.quote(Strings.toHexString(pilotAddr)),
-                        ",",
-                        StringsUpgradeable.toString(uint32(pilotId)),
-                        ",",
-                        StringsUpgradeable.toString(uint64(block.number))
-                    )
-                )
-            );
         }
+        // The Rig is either `PARKED` or setting its first pilot while in a `TRAINED` status
+        // Set the start time for the new pilot session
+        _setStartTime(uint16(tokenId), uint64(block.number));
+
+        // Insert the pilot into the Tableland pilot sessions table
+        TablelandDeployments.get().runSQL(
+            address(this),
+            _pilotSessionsTableId,
+            SQLHelpers.toInsert(
+                _PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId,
+                "rig_id,owner,pilot_contract,pilot_id,start_time",
+                string.concat(
+                    StringsUpgradeable.toString(uint16(tokenId)),
+                    ",",
+                    SQLHelpers.quote(StringsUpgradeable.toHexString(sender)),
+                    ",",
+                    SQLHelpers.quote(Strings.toHexString(pilotAddr)),
+                    ",",
+                    StringsUpgradeable.toString(uint32(pilotId)),
+                    ",",
+                    StringsUpgradeable.toString(uint64(block.number))
+                )
+            )
+        );
 
         // Avoid overwriting existing pilot if data is unchanged
         // (i.e., if most recent pilot is the same as the one specified)
@@ -413,11 +410,8 @@ contract TablelandRigPilots is
         } else {
             // Training is complete; update the row in the pilot sessions table with its `end_time`
             setters = string.concat(
-                "end_time=(",
-                StringsUpgradeable.toString(uint64(block.number)),
-                "-",
-                StringsUpgradeable.toString(startTime),
-                ")"
+                "end_time=",
+                StringsUpgradeable.toString(uint64(block.number))
             );
         }
 
