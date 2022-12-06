@@ -37,7 +37,7 @@ export const RigDisplay = ({
 }: Props) => {
   const { thumb } = useRigImageUrls(rig);
 
-  const showPilot = rig.currentPilot || loading;
+  const showPilot = pilotNFT || loading;
   const imageUrl = pilotNFT?.imageUrl;
 
   const borderWidth = pilotBorderWidth ?? "1px";
