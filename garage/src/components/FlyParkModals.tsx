@@ -351,16 +351,17 @@ const NFTDisplay = ({
   selected,
   supported,
 }: NFTDisplayProps) => {
+  const size = { base: "150px", md: "200px" };
   return (
     <Box
-      width={{ base: "120px", md: "200px" }}
+      width={size}
       position="relative"
       onClick={() => onSelect()}
       _hover={{ cursor: supported ? "pointer" : "not-allowed" }}
     >
       <Image
         src={nft.imageUrl || nft.imageSvgData}
-        width={{ base: "120px", md: "200px" }}
+        width={size}
         sx={{ aspectRatio: "1/1" }}
       />
       {supported && (
@@ -369,7 +370,7 @@ const NFTDisplay = ({
           top="0"
           left="0"
           right="0"
-          height={{ base: "120px", md: "200px" }}
+          height={size}
           _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}
           transition=".2s"
         />
@@ -380,7 +381,7 @@ const NFTDisplay = ({
           top="0"
           left="0"
           right="0"
-          height={{ base: "120px", md: "200px" }}
+          height={size}
           backgroundColor={"rgba(0,0,0,0.35)"}
           align="center"
           justify="center"
