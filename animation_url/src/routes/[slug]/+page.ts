@@ -1,5 +1,5 @@
 import { connect } from "@tableland/sdk";
-import { deployments } from "@tableland/rigs/deployments";
+import { deployments } from "../../../../ethereum/deployments.js";
 import { default as trainer } from "../../assets/trainer.svg";
 
 const isDev =
