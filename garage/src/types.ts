@@ -32,6 +32,7 @@ export interface RigWithPilots extends Rig {
 
 export enum EventAction {
   PilotedTrainer = "Piloted Trainer",
+  Piloted = "Piloted",
   Parked = "Parked",
 }
 

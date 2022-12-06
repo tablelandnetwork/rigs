@@ -88,7 +88,11 @@ export const eventFromRow = ([
   thumb,
   image,
   pilot: { contract: pilotContract, tokenId: pilotId },
-  action: endTime ? EventAction.Parked : EventAction.PilotedTrainer,
+  action: endTime
+    ? EventAction.Parked
+    : pilotContract
+    ? EventAction.Piloted
+    : EventAction.PilotedTrainer,
   timestamp,
 });
 
