@@ -472,6 +472,21 @@ const usePagination = () => {
   return { pagination, reset, gotoPrevious, gotoNext };
 };
 
+const useFilters = <T,>() => {
+  const [filters, setFilters] = useState<Set<T>>(new Set());
+  const toggleFilter = useCallback(
+    (value: T) => {
+      setFilters((old) => toggleInSet(copySet(old), value));
+    },
+    [setFilters]
+  );
+  const clearFilters = useCallback(() => {
+    setFilters(new Set());
+  }, [setFilters]);
+
+  return { filters, toggleFilter, clearFilters };
+};
+
 const PickRigPilotStep = ({
   rigs,
   pilots,
@@ -480,26 +495,14 @@ const PickRigPilotStep = ({
   onClose,
 }: PickRigPilotStepProps) => {
   const { address } = useAccount();
-  const [collectionFilters, setCollectionFilters] = useState<Set<Collection>>(
-    new Set()
-  );
-  const toggleCollectionFilter = useCallback(
-    (collection: Collection) => {
-      setCollectionFilters((old) => toggleInSet(copySet(old), collection));
-    },
-    [setCollectionFilters]
-  );
-  const clearCollectionFilters = useCallback(() => {
-    setCollectionFilters(new Set());
-  }, [setCollectionFilters]);
+  const { filters, toggleFilter, clearFilters } = useFilters<Collection>();
   const ownedNftsFilter = useMemo(() => {
     return {
-      contracts: Array.from(collectionFilters).map((v) => v.contractAddress),
+      contracts: Array.from(filters).map((v) => v.contractAddress),
     };
-  }, [collectionFilters]);
+  }, [filters]);
 
   const { pagination, reset, gotoNext, gotoPrevious } = usePagination();
-
   useEffect(() => {
     reset();
   }, [ownedNftsFilter]);
@@ -578,17 +581,17 @@ const PickRigPilotStep = ({
             loadOptions={debouncedSearchCollections}
             formatOptionLabel={(v: Collection) => {
               return (
-                <Flex onClick={() => toggleCollectionFilter(v)} align="center">
+                <Flex onClick={() => toggleFilter(v)} align="center">
                   <Image src={v.imageUrl} width="30px" mr={2} /> {v.name}
                 </Flex>
               );
             }}
           />
         </Box>
-        {collectionFilters.size > 0 && (
+        {filters.size > 0 && (
           <Flex direction="row" wrap="wrap" gap={4} my={4} align="center">
             <Text>Filters:</Text>
-            {Array.from(collectionFilters).map((collection, index) => {
+            {Array.from(filters).map((collection, index) => {
               const { name } = collection;
               return (
                 <Tag
@@ -597,13 +600,11 @@ const PickRigPilotStep = ({
                   key={`collection-filter-${name}-${index}`}
                 >
                   {name}
-                  <TagCloseButton
-                    onClick={() => toggleCollectionFilter(collection)}
-                  />
+                  <TagCloseButton onClick={() => toggleFilter(collection)} />
                 </Tag>
               );
             })}
-            <Button variant="ghost" onClick={clearCollectionFilters}>
+            <Button variant="ghost" onClick={clearFilters}>
               Clear all
             </Button>
           </Flex>
