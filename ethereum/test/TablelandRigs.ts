@@ -1618,7 +1618,11 @@ describe("Rigs", function () {
         const receipt = await tx.wait();
         const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Put the Rigs in-flight
+        rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256[])"]([BigNumber.from(tokenId)]);
+        // Park the Rig, but pass the same Rig `tokenId` twice -- the second parking attempt will fail
         await expect(
           rigs
             .connect(tokenOwner)
@@ -1647,9 +1651,9 @@ describe("Rigs", function () {
 
     describe("parkRigAsOwner", function () {
       it("Should not park Rig as owner for non-existent token", async function () {
-        await expect(rigs.parkRigAsOwner(BigNumber.from(0))).to.be.rejectedWith(
-          "OwnerQueryForNonexistentToken"
-        );
+        await expect(
+          rigs.parkRigAsOwner([BigNumber.from(0)])
+        ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
       });
 
       it("Should block contract non-owner", async function () {
@@ -1659,7 +1663,7 @@ describe("Rigs", function () {
           _rigs.initPilots(ethers.constants.AddressZero)
         ).to.be.rejectedWith("Ownable: caller is not the owner");
 
-        await expect(_rigs.parkRigAsOwner(1)).to.be.rejectedWith(
+        await expect(_rigs.parkRigAsOwner([1])).to.be.rejectedWith(
           "Ownable: caller is not the owner"
         );
       });
@@ -1685,7 +1689,7 @@ describe("Rigs", function () {
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(1);
         // Park the Rig as the contract owner
-        await expect(rigs.parkRigAsOwner(BigNumber.from(tokenId)))
+        await expect(rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Check pilot is back to untrained
@@ -1700,9 +1704,47 @@ describe("Rigs", function () {
           ethers.utils.hexValue(172800),
         ]);
         // Park the Rig as the contract owner
-        await expect(rigs.parkRigAsOwner(BigNumber.from(tokenId)))
+        await expect(rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
+      });
+
+      it("Should not batch park a duplicate Rig token value", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Put the Rigs in-flight
+        rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256[])"]([BigNumber.from(tokenId)]);
+        // Park the Rig, but pass the same Rig `tokenId` twice -- the second parking attempt will fail
+        await expect(
+          rigs.parkRigAsOwner([
+            BigNumber.from(tokenId),
+            BigNumber.from(tokenId),
+          ])
+        )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId))
+          .to.be.rejectedWith("InvalidPilotStatus");
+      });
+
+      it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
+        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        await expect(rigs.parkRigAsOwner([])).to.be.rejectedWith(
+          "InvalidBatchPilotAction"
+        );
+        // Try with an array of tokens exceeding 255 in length (the arbitrary limit)
+        const tokenIds = [...Array(256).keys()];
+        await expect(rigs.parkRigAsOwner(tokenIds)).to.be.rejectedWith(
+          "InvalidBatchPilotAction"
+        );
       });
     });
   });
