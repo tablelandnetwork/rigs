@@ -11,6 +11,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import "./ITablelandRigPilots.sol";
+import "./TablelandRigs.sol";
 
 /**
  * @dev Implementation of {ITablelandRigPilots}.
@@ -386,29 +387,35 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-parkRig}.
      */
-    function parkRig(address /*sender*/, uint256 tokenId) public onlyParent {
+    function parkRig(address sender, uint256 tokenId) public onlyParent {
         // Ensure Rig is currently in-flight
         GarageStatus status = _pilotStatus(tokenId);
         if (
             !(status == GarageStatus.TRAINING || status == GarageStatus.PILOTED)
         ) revert InvalidPilotStatus();
-
         // Session update type is dependent on training completion status
+        // Use `setters` for setting SQL update values, and `startTime` is used for checking training completion status
         string memory setters;
         uint64 startTime = pilotStartTime(tokenId);
-        if (
-            status == GarageStatus.TRAINING &&
-            !(block.number >= startTime + _PILOT_TRAINING_DURATION)
-        ) {
-            // Pilot training is incomplete; reset the training pilot such that the Rig must train again
-            _setPilotData(uint16(tokenId), 0, 0);
-            // Update the row in pilot sessions table with its `end_time` equal to the `start_time` (no flight time)
+        // Also, if the `sender` is *not* the token owner nor the parent contract, the caller is the parent contract's _owner_
+        // This *only* happens if the caller is force parking a Rig, thus, flight time rewards are revoked
+        // Check this by calling the parent contract and retrieving the `ownerOf(tokenId)`
+        TablelandRigs rigs = TablelandRigs(parent());
+        bool isForcePark = sender != rigs.ownerOf(tokenId);
+        bool isUntrained = status == GarageStatus.TRAINING &&
+            !(block.number >= startTime + _PILOT_TRAINING_DURATION);
+        // Pilot training is incomplete; reset the training pilot such that the Rig must train again
+        if (isUntrained) _setPilotData(uint16(tokenId), 0, 0);
+        // If the pilot is untrained or being force parked, there are zero flight time rewards
+        if (isUntrained || isForcePark) {
+            // Update the row in pilot sessions table with its `end_time` equal to the `start_time`
             setters = string.concat(
                 "end_time=",
                 StringsUpgradeable.toString(startTime)
             );
         } else {
-            // Training is complete; update the row in the pilot sessions table with its `end_time`
+            // Training is complete, and the Rig is being parked without "malicious" force park origins
+            // Update the row in the pilot sessions table with its `end_time` to accrue flight time rewards
             setters = string.concat(
                 "end_time=",
                 StringsUpgradeable.toString(uint64(block.number))
