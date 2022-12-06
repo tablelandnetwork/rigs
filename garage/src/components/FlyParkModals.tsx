@@ -18,6 +18,8 @@ import {
   ModalCloseButton,
   Spinner,
   Table,
+  Tag,
+  TagCloseButton,
   Tbody,
   Td,
   Text,

@@ -137,24 +137,44 @@ const toCollection = (c: NftContract): Collection => {
   return { name, contractAddress: address, imageUrl: openSea?.imageUrl };
 };
 
+interface NFTCollectionsData {
+  isLoading: boolean;
+  isError: boolean;
+  collections?: Collection[];
+}
+
 export const useNFTCollections = (search: string) => {
-  const [collections, setCollections] = useState<Collection[]>();
+  const [data, setData] = useState<NFTCollectionsData>({
+    isLoading: false,
+    isError: false,
+  });
 
   useEffect(() => {
     let isCancelled = false;
 
-    if (!search) return;
+    if (!search) {
+      setData({ isLoading: false, isError: false });
+      return;
+    }
+
+    setData((oldData) => {
+      return { ...oldData, isLoading: true, isError: false };
+    });
 
     alchemy.nft.searchContractMetadata(search).then((v) => {
       if (isCancelled) return;
 
-      setCollections(v.map(toCollection));
+      setData({
+        isLoading: false,
+        isError: false,
+        collections: v.map(toCollection),
+      });
     });
 
     return () => {
       isCancelled = true;
     };
-  }, [search]);
+  }, [search, setData]);
 
-  return { collections };
+  return data;
 };
