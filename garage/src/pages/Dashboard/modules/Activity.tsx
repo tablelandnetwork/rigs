@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Flex,
@@ -11,12 +11,42 @@ import {
   Text,
   Tr,
 } from "@chakra-ui/react";
+import { EventAction } from "../../../types";
 import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
 import { useRigsActivity } from "../../../hooks/useRigsActivity";
+import { useNFTCollections } from "../../../hooks/useNFTs";
+
+const getPilotedTitle = (
+  lookups: Record<string, string>,
+  contract: string,
+  tokenId: string
+) => {
+  const collectionName = lookups[contract.toLowerCase()] || contract;
+
+  return `Piloted ${collectionName} #${tokenId}`;
+};
 
 export const Activity = (props: React.ComponentProps<typeof Box>) => {
   const { events } = useRigsActivity();
   const { p = "8px", ...otherProps } = props;
+
+  const contracts = useMemo(() => {
+    return Array.from(
+      new Set(
+        events
+          ?.filter((v) => v.pilot)
+          .map((v) => v.pilot?.contract)
+          .filter((v) => v) as string[]
+      )
+    );
+  }, [events]);
+
+  const { collections } = useNFTCollections(contracts);
+  const collectionNameLookup = useMemo(() => {
+    return Object.fromEntries(
+      collections?.map((v) => [v.contractAddress.toLowerCase(), v.name]) || []
+    );
+  }, [collections]);
 
   return (
     <Flex
@@ -34,8 +64,16 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
       <Table>
         <Tbody>
           {events &&
-            events.map(({ rigId, thumb, action }, index) => {
+            events.map(({ rigId, thumb, action, pilot }, index) => {
               const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
+              const title =
+                pilot && action === EventAction.Piloted
+                  ? getPilotedTitle(
+                      collectionNameLookup,
+                      pilot.contract,
+                      pilot.tokenId
+                    )
+                  : action;
               return (
                 <Tr key={`activity-row-${index}`}>
                   <Td
@@ -60,7 +98,7 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                     }}
                     isNumeric
                   >
-                    {action}
+                    {title}
                   </Td>
                 </Tr>
               );
