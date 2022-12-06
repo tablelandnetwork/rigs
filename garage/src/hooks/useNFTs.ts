@@ -31,7 +31,7 @@ const settings = {
   network: wagmiChainToNetwork(chain),
 };
 
-const alchemy = new Alchemy(settings);
+export const alchemy = new Alchemy(settings);
 
 export interface NFT {
   type: "ERC721" | "ERC1155" | "UNKNOWN";
@@ -131,7 +131,7 @@ export interface Collection {
   imageUrl?: string;
 }
 
-const toCollection = (c: NftContract): Collection => {
+export const toCollection = (c: NftContract): Collection => {
   const { address, name = "", openSea } = c;
 
   return { name, contractAddress: address, imageUrl: openSea?.imageUrl };
