@@ -39,6 +39,7 @@ export const RigDisplay = ({
 
   const showPilot = pilotNFT || loading;
   const imageUrl = pilotNFT?.imageUrl;
+  const svgData = pilotNFT?.imageSvgData;
 
   const borderWidth = pilotBorderWidth ?? "1px";
 
@@ -57,8 +58,8 @@ export const RigDisplay = ({
         {showPilot ? (
           loading ? (
             <LoadingPilot {...pilotProps} />
-          ) : imageUrl ? (
-            <Image src={pilotNFT.imageUrl} {...pilotProps} bgColor="paper" />
+          ) : imageUrl || svgData ? (
+            <Image src={imageUrl || svgData} {...pilotProps} bgColor="paper" />
           ) : (
             <TrainerPilot {...pilotProps} />
           )

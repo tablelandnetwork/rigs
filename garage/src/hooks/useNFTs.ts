@@ -39,6 +39,7 @@ export interface NFT {
   tokenId: string;
   name?: string;
   imageUrl?: string;
+  imageSvgData?: string;
 }
 
 const toNFT = (data: Nft): NFT => {
@@ -50,6 +51,7 @@ const toNFT = (data: Nft): NFT => {
     tokenId,
     name: title,
     imageUrl: media.length ? media[0].gateway : undefined,
+    imageSvgData: data.rawMetadata?.svg_image_data,
   };
 };
 
