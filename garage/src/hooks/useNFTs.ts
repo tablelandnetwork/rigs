@@ -154,7 +154,7 @@ interface NFTCollectionsData {
   collections?: Collection[];
 }
 
-export const useNFTCollections = (search: string) => {
+export const useNFTCollectionSearch = (search: string) => {
   const [data, setData] = useState<NFTCollectionsData>({
     isLoading: false,
     isError: false,
@@ -186,6 +186,65 @@ export const useNFTCollections = (search: string) => {
       isCancelled = true;
     };
   }, [search, setData]);
+
+  return data;
+};
+
+export const useNFTCollections = (contracts: string[]) => {
+  const [data, setData] = useState<NFTCollectionsData>({
+    isLoading: false,
+    isError: false,
+  });
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!contracts.length) {
+      setData({ isLoading: false, isError: false });
+      return;
+    }
+
+    setData((oldData) => {
+      return { ...oldData, isLoading: true, isError: false };
+    });
+
+    const options = {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        contractAddresses: contracts,
+      }),
+    };
+
+    fetch(
+      `https://${settings.network}.g.alchemy.com/nft/v2/${
+        import.meta.env.VITE_ALCHEMY_ID
+      }/getContractMetadataBatch`,
+      options
+    )
+      .then((response) => response.json())
+      .then((response) => {
+        if (isCancelled) return;
+
+        const data = (response as any[]).filter((v) => v?.address);
+
+        setData({
+          isLoading: false,
+          isError: false,
+          collections: data.map(({ address, contractMetadata }) =>
+            toCollection({ address, ...contractMetadata })
+          ),
+        });
+      })
+      .catch((err) => console.error(err));
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [contracts, setData]);
 
   return data;
 };
