@@ -74,7 +74,7 @@ export const Pilots = ({
   p,
   ...props
 }: PilotProps) => {
-  const { data: blockNumber } = useBlockNumber({ watch: true });
+  const { data: blockNumber } = useBlockNumber();
   const pilots = getPilots(rig, nfts, blockNumber);
 
   const totalFlightTime = pilots.reduce(
