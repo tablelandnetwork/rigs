@@ -10,6 +10,7 @@ import {
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
 import { chain, deployment } from "../env";
+import { useQuery } from "@tanstack/react-query";
 
 const wagmiChainToNetwork = (c: Chain): Network => {
   switch (c) {
@@ -90,41 +91,49 @@ interface OwnedNFTsFilter {
   contracts?: string[];
 }
 
+const fetchNftsForOwner = async (
+  owner: string,
+  pageSize: number,
+  pageKey: string,
+  filter?: OwnedNFTsFilter
+) => {
+  let options: GetNftsForOwnerOptions = {
+    pageSize,
+    pageKey,
+    omitMetadata: false,
+    excludeFilters: [NftExcludeFilters.SPAM],
+  };
+  if (filter?.contracts) {
+    options = { ...options, contractAddresses: filter.contracts };
+  }
+
+  const res = await alchemy.nft.getNftsForOwner(owner, options);
+
+  return {
+    nfts: res.ownedNfts.map(toNFT),
+    pageKey: res.pageKey,
+    hasMore: res.ownedNfts.length === pageSize,
+  };
+};
+
+const getFilterKey = (filter?: OwnedNFTsFilter): string => {
+  return filter?.contracts?.join(":") ?? "";
+};
+
 export const useOwnedNFTs = (
   owner: string | undefined,
   limit = 50,
-  after: string = "",
+  pageKey: string = "",
   filter?: OwnedNFTsFilter
 ) => {
-  const [nfts, setNFTs] = useState<NFT[]>();
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    if (!owner) return;
-
-    let options: GetNftsForOwnerOptions = {
-      pageSize: limit,
-      pageKey: after,
-      omitMetadata: false,
-      excludeFilters: [NftExcludeFilters.SPAM],
-    };
-    if (filter?.contracts)
-      options = { ...options, contractAddresses: filter.contracts };
-
-    alchemy.nft.getNftsForOwner(owner, options).then((v) => {
-      if (isCancelled) return;
-
-      setNFTs(v.ownedNfts.map(toNFT));
-    });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [owner, limit, after, filter, setNFTs]);
-
-  // TODO support pagination
-  return { nfts };
+  return useQuery(
+    [`owned-nfts-${owner}-${getFilterKey(filter)}`, pageKey],
+    () =>
+      owner
+        ? fetchNftsForOwner(owner, limit, pageKey, filter)
+        : { nfts: [], hasMore: false, pageKey: "" },
+    { keepPreviousData: false, staleTime: 60_000 }
+  );
 };
 
 export interface Collection {

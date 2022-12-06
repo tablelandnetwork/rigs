@@ -430,6 +430,46 @@ const components = {
   ),
 };
 
+const usePagination = () => {
+  const [pagination, setPagination] = useState<{
+    index: number;
+    pages: string[];
+  }>({
+    index: 0,
+    pages: [""],
+  });
+
+  const reset = useCallback(() => {
+    setPagination({ index: 0, pages: [""] });
+  }, [setPagination]);
+
+  const gotoPrevious = useCallback(() => {
+    setPagination((old) => {
+      if (old.index < 1) return old;
+
+      return { ...old, index: old.index - 1 };
+    });
+  }, [setPagination]);
+
+  const gotoNext = useCallback(
+    (nextPageKey?: string) => {
+      setPagination((old) => {
+        if (old.index === old.pages.length - 1 && nextPageKey) {
+          return {
+            index: old.index + 1,
+            pages: old.pages.concat([nextPageKey]),
+          };
+        } else {
+          return { ...old, index: old.index + 1 };
+        }
+      });
+    },
+    [setPagination]
+  );
+
+  return { pagination, reset, gotoPrevious, gotoNext };
+};
+
 const PickRigPilotStep = ({
   rigs,
   pilots,
@@ -456,7 +496,19 @@ const PickRigPilotStep = ({
     };
   }, [collectionFilters]);
 
-  const { nfts } = useOwnedNFTs(address, 20, "", ownedNftsFilter);
+  const { pagination, reset, gotoNext, gotoPrevious } = usePagination();
+
+  useEffect(() => {
+    reset();
+  }, [ownedNftsFilter]);
+
+  const { data, isFetching } = useOwnedNFTs(
+    address,
+    20,
+    pagination.pages[pagination.index],
+    ownedNftsFilter
+  );
+  const nfts = data?.nfts;
 
   const [currentRig, setCurrentRig] = useState(0);
   const rig = useMemo(() => rigs[currentRig], [rigs, currentRig]);
@@ -572,7 +624,22 @@ const PickRigPilotStep = ({
                 />
               );
             })}
-          {!nfts && <Spinner />}
+          {isFetching && (
+            <Flex justify="center" align="center" p={8} width="100%">
+              <Spinner />
+            </Flex>
+          )}
+        </Flex>
+        <Flex gap={4} mt={2}>
+          <Button onClick={gotoPrevious} disabled={pagination.index === 0}>
+            Previous Page
+          </Button>
+          <Button
+            onClick={() => gotoNext(data?.pageKey)}
+            disabled={!data?.hasMore}
+          >
+            Next Page
+          </Button>
         </Flex>
       </ModalBody>
       <ModalFooter>
