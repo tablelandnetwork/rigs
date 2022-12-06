@@ -15,6 +15,7 @@ import {
 import { configureChains, createClient, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Topbar } from "./Topbar";
 import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
@@ -168,39 +169,46 @@ const theme = extendTheme(
   })
 );
 
+const queryClient = new QueryClient();
+
 function App() {
   return (
-    <ChakraProvider theme={theme}>
-      <WagmiConfig client={wagmiClient}>
-        <RainbowKitProvider chains={chains} theme={darkTheme()}>
-          <AccountWatcher />
-          <BrowserRouter>
-            <Topbar />
-            <GlobalFlyParkModals>
-              <Routes>
-                {routes().map(
-                  ({ requiresWalletConnection, element, ...props }, index) => (
-                    <Route
-                      {...props}
-                      key={`route-${index}`}
-                      element={
-                        requiresWalletConnection ? (
-                          <RequiresWalletConnection>
-                            {element}
-                          </RequiresWalletConnection>
-                        ) : (
-                          element
-                        )
-                      }
-                    />
-                  )
-                )}
-              </Routes>
-            </GlobalFlyParkModals>
-          </BrowserRouter>
-        </RainbowKitProvider>
-      </WagmiConfig>
-    </ChakraProvider>
+    <QueryClientProvider client={queryClient}>
+      <ChakraProvider theme={theme}>
+        <WagmiConfig client={wagmiClient}>
+          <RainbowKitProvider chains={chains} theme={darkTheme()}>
+            <AccountWatcher />
+            <BrowserRouter>
+              <Topbar />
+              <GlobalFlyParkModals>
+                <Routes>
+                  {routes().map(
+                    (
+                      { requiresWalletConnection, element, ...props },
+                      index
+                    ) => (
+                      <Route
+                        {...props}
+                        key={`route-${index}`}
+                        element={
+                          requiresWalletConnection ? (
+                            <RequiresWalletConnection>
+                              {element}
+                            </RequiresWalletConnection>
+                          ) : (
+                            element
+                          )
+                        }
+                      />
+                    )
+                  )}
+                </Routes>
+              </GlobalFlyParkModals>
+            </BrowserRouter>
+          </RainbowKitProvider>
+        </WagmiConfig>
+      </ChakraProvider>
+    </QueryClientProvider>
   );
 }
 
