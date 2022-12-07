@@ -125,8 +125,8 @@ interface ITablelandRigPilots {
     /**
      * @dev Parks a Rig and ends the current `Pilot` session.
      *
-     * sender - the initiator address
      * tokenId - the unique Rig token identifier
+     * force - boolean to force park a Rig (contract owner only)
      *
      * Requirements:
      *
@@ -135,5 +135,5 @@ interface ITablelandRigPilots {
      * - pilot status must be `TRAINING` or `PILOTED`
      * - pilot must have completed 30 days of training
      */
-    function parkRig(address sender, uint256 tokenId) external;
+    function parkRig(uint256 tokenId, bool force) external;
 }

@@ -272,7 +272,7 @@ interface ITablelandRigs {
     /**
      * @dev Parks multiple Rigs and ends the current pilot session.
      *
-     * tokenId - the unique Rig token identifier
+     * tokenIds - the unique Rig token identifiers
      *
      * Requirements:
      *
@@ -288,13 +288,13 @@ interface ITablelandRigs {
      * causing buyers to lose gas on sales that can't complete while the
      * Rig is in-flight.
      *
-     * tokenId - the unique Rig token identifier
+     * tokenIds - the unique Rig token identifiers
      *
      * Requirements:
      *
      * - `msg.sender` must be contract owner
      */
-    function parkRigAsOwner(uint256 tokenId) external;
+    function parkRigAsOwner(uint256[] calldata tokenIds) external;
 
     /**
      * @dev Pauses minting.
