@@ -59,47 +59,27 @@ export async function load({ url }) {
 }
 
 const getPilot = async function (rigId, pilotAddress, pilotId): Promise<string> {
-  // check if rig is parked first
-  const notParked = await tableland.read(
-    `SELECT end_time FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`, {
+  // Get the sessions where end_time is null, there should only ever be one of these
+  const sessions = await tableland.read(
+    `SELECT * FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`, {
       output: "objects"
     }
   );
 
-  // parked
-  if (!notParked || notParked.length === 0) {
+  if (!(sessions && sessions.length > 0)) {
+    // no session without an end_time, show nothing
     return "";
   }
 
-  // get the 2 newest sessions so we can decide if the rig is training or flying
-  const sessionArr = await tableland.read(
-    `SELECT * FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} ORDER BY start_time desc LIMIT 2;`, {
-      output: "objects"
-    }
-  );
+  // there's a session without an end_time, show a pilot
+  const session = sessions[0];
 
-  // If the rig only has one session and end_time is null, it's in training
-  if (sessionArr.length === 1 && sessionArr[0].end_time === null) {
-    return trainer;
-  }
-
-  const currentSession = sessionArr && sessionArr[0];
-  // no session means nothing to show because the rig has never been trained
-  if (!currentSession) {
-    return "";
-  }
-
-  // if end_time is greater than or equal to start_time it's parked or never finished training
-  if (currentSession.end_time >= currentSession.start_time) {
-    return "";
-  }
-
-  // If we get here it means the rig is piloted. NOTE: this will only show eth mainnet Pilots
-  if (currentSession.pilot_contract && currentSession.pilot_id) {
+  // show pilot
+  if (session.pilot_contract && session.pilot_id) {
     const pilotToken = await zdk.token({
       token: {
-        address: currentSession.pilot_contract, // "0x6c9343ca5c2ef3a35a83438344bb3cbe3c249f65",
-        tokenId: currentSession.pilot_id.toString(), // "903",
+        address: session.pilot_contract, // "0x6c9343ca5c2ef3a35a83438344bb3cbe3c249f65",
+        tokenId: session.pilot_id.toString(), // "903",
       }
     });
 
@@ -107,6 +87,6 @@ const getPilot = async function (rigId, pilotAddress, pilotId): Promise<string> 
     return image;
   }
 
-  // fall through case is show nothing
-  return "";
+  // else show trainer
+  return trainer;
 };
