@@ -263,7 +263,6 @@ interface ITablelandRigs {
      * Requirements:
      *
      * - `tokenId` must exist
-     * - `sender` must own the Rig
      * - pilot status must be `TRAINING` or `PILOTED`
      * - pilot must have completed 30 days of training
      */
@@ -295,6 +294,24 @@ interface ITablelandRigs {
      * - `msg.sender` must be contract owner
      */
     function parkRigAsOwner(uint256[] calldata tokenIds) external;
+
+    /**
+     * @dev Allows a token owner to transfer between accounts while in-flight
+     * but blocks transfers by an approved address or operator.
+     *
+     * from - owner of `tokenId`
+     * to - the address to transfer the token to
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - Caller must own `tokenId` and *cannot* be an approved address or operator
+     */
+    function safeTransferWhileFlying(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 
     /**
      * @dev Pauses minting.

@@ -52,6 +52,9 @@ contract TablelandRigs is
     // Pilots implementation.
     ITablelandRigPilots private _pilots;
 
+    // Allow transfers while flying, only by token owner
+    uint256 private _allowTransferWhileFlying;
+
     function initialize(
         uint256 _maxSupply,
         uint256 _mintPrice,
@@ -525,6 +528,26 @@ contract TablelandRigs is
     }
 
     /**
+     * @dev See {IERC721Metadata-safeTransferWhileFlying}.
+     */
+    function safeTransferWhileFlying(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external {
+        // Verify `msg.sender` is the token owner (prevent transfers by approved address or operator)
+        if (ownerOf(tokenId) != _msgSenderERC721A())
+            revert ITablelandRigPilots.Unauthorized();
+        // Temporaritly set the transfer flag to allow a transfer to occur
+        _allowTransferWhileFlying = 1;
+        safeTransferFrom(from, to, tokenId);
+        // Reset the transfer flag to block transfers
+        _allowTransferWhileFlying = 0;
+        // Update the value of `owner` in the current pilot's session
+        _pilots.updateSessionOwner(tokenId, to);
+    }
+
+    /**
      * @dev See {ERC721A-_beforeTokenTransfers}.
      */
     function _beforeTokenTransfers(
@@ -534,12 +557,14 @@ contract TablelandRigs is
         uint256 quantity
     ) internal virtual override {
         _requireNotPaused();
-        // Block transfers while a Rig is being piloted (i.e., is not `PARKED`)
+        // Block transfers by approved operators while a Rig is being piloted, but allow transfers *only* by the owner
         uint256 tokenId = startTokenId;
         for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
             // If the pilot's `startTime` is not zero, then the Rig is in-flight
-            if (_pilots.pilotStartTime(tokenId) > 0)
-                revert ITablelandRigPilots.InvalidPilotStatus();
+            if (
+                !(_pilots.pilotStartTime(tokenId) == 0 ||
+                    _allowTransferWhileFlying == 1)
+            ) revert ITablelandRigPilots.InvalidPilotStatus();
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
