@@ -107,4 +107,17 @@ describe("Pilots", function () {
       ).to.be.rejectedWith("Pilots: caller is not the parent");
     });
   });
+
+  describe("updateSessionOwner", function () {
+    it("Should only allow contract parent", async function () {
+      const _pilots = pilots.connect(accounts[2]);
+
+      await expect(
+        _pilots.updateSessionOwner(
+          BigNumber.from(1),
+          ethers.constants.AddressZero
+        )
+      ).to.be.rejectedWith("Pilots: caller is not the parent");
+    });
+  });
 });
