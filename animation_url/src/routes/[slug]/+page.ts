@@ -1,6 +1,7 @@
 import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
-import { ZDK, ZDKNetwork, ZDKChain } from "@zoralabs/zdk";
+import zora from "@zoralabs/zdk";
+const { ZDKNetwork, ZDKChain, ZDK } = zora;
 import { default as trainer } from "../../assets/trainer.svg";
 
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
