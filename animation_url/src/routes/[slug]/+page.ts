@@ -1,7 +1,6 @@
 import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
-import zora from "@zoralabs/zdk";
-const { ZDKNetwork, ZDKChain, ZDK } = zora;
+import { Network, Alchemy, NftTokenType } from "alchemy-sdk";
 import { default as trainer } from "../../assets/trainer.svg";
 
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
@@ -11,23 +10,11 @@ const ipfsGatewayUri = import.meta.env.DEV
   ? "https://nftstorage.link/ipfs/"
   : "https://tableland.mypinata.cloud/ipfs/";
 
-// NOTE: zdk docs say that only mainnet is supported currently. We could be
-//       supporting testnet here, but for the time being testnet localnet
-//       collections will show the pilot from mainnet.
-const networkInfo = {
-  network: ZDKNetwork.Ethereum,
-  chain: ZDKChain.Mainnet,
-};
-
-const API_ENDPOINT = "https://api.zora.co/graphql";
-const args = {
-  endPoint: API_ENDPOINT,
-  networks: [networkInfo],
-  apiKey: import.meta.env.VITE_ZORA_API_KEY,
-};
-
-const zdk = new ZDK(args);
 const tableland = connect({ chain, host: deployment.tablelandHost });
+const alchemy = new Alchemy({
+  apiKey: import.meta.env.VITE_ALCHEMY_ID,
+  network: import.meta.env.DEV ? Network.MATIC_MUMBAI : Network.ETH_MAINNET,
+});
 
 /** @type {import('./$types').PageLoad} */
 export async function load({ url }) {
@@ -74,14 +61,17 @@ const getPilot = async function (rigId: string): Promise<string | undefined> {
   // there's a session without an end_time, show a pilot
   const session = sessions[0];
   if (session.pilot_contract && session.pilot_id) {
-    const pilotToken = await zdk.token({
-      token: {
-        address: session.pilot_contract, // "0x6c9343ca5c2ef3a35a83438344bb3cbe3c249f65",
-        tokenId: session.pilot_id.toString(), // "903",
-      },
-    });
-    const image = pilotToken?.token?.token?.image?.url;
-    return image || undefined;
+    const pilotToken = await alchemy.nft.getNftMetadata(
+      session.pilot_contract,
+      session.pilot_id,
+      NftTokenType.ERC721
+    );
+    if (pilotToken.media.length > 0 && pilotToken.media[0].raw) {
+      return pilotToken.media[0].raw;
+    } else {
+      // TODO: Show question mark image?
+      return undefined;
+    }
   }
 
   // else show trainer
