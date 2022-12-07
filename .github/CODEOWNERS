@@ -2,4 +2,13 @@
 # the repo. Unless a later match takes precedence.
 # By convention in @tablelandnetwork repos, the first listed
 # CODEOWNER is the repo DRI (directly responsible individual)
-*       @sanderpick @asutula @dtbuchholz @joewagner @datadanne
+* @sanderpick
+/animation_url/ @joewagner
+/artifacts/ @asutula
+/cmd/ @asutula
+/ethereum/ @dtbuchholz @sanderpick
+/garage/ @datadanne
+/pkg/ @asutula
+/viewer/ @asutula
+/.golangci.yml @asutula
+/go.* @asutula
