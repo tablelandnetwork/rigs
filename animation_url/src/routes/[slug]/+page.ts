@@ -1,15 +1,12 @@
 import { connect } from "@tableland/sdk";
-import { deployments } from "../../../../ethereum/deployments.js";
+import { deployments } from "@tableland/rigs/deployments";
 import { ZDK, ZDKNetwork, ZDKChain } from "@zoralabs/zdk";
 import { default as trainer } from "../../assets/trainer.svg";
 
-const isDev =
-  import.meta.env.DEV || import.meta.env.VITE_VERCEL_ENV === "preview";
-
-const chain = isDev ? "polygon-mumbai" : "ethereum";
+const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
 
-const ipfsGatewayUri = isDev
+const ipfsGatewayUri = import.meta.env.DEV
   ? "https://nftstorage.link/ipfs/"
   : "https://tableland.mypinata.cloud/ipfs/";
 
