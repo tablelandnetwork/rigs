@@ -362,7 +362,7 @@ const NFTDisplay = ({
       <Image
         src={nft.imageUrl || nft.imageSvgData}
         width={size}
-        sx={{ aspectRatio: "1/1" }}
+        sx={{ aspectRatio: "1/1", objectFit: "contain" }}
       />
       {supported && (
         <Box
