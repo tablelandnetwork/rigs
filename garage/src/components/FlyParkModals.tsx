@@ -580,6 +580,7 @@ const PickRigPilotStep = ({
             components={components}
             controlShouldRenderValue={false}
             loadOptions={debouncedSearchCollections}
+            chakraStyles={{ menu: (base) => ({ ...base, zIndex: 10 }) }}
             formatOptionLabel={(v: Collection) => {
               return (
                 <Flex onClick={() => toggleFilter(v)} align="center">
