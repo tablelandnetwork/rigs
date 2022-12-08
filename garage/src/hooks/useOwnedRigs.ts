@@ -6,7 +6,7 @@ import { selectRigs } from "../utils/queries";
 import { rigFromRow } from "../utils/xforms";
 import { contractAddress, contractInterface } from "../contract";
 
-export const useOwnedRigs = () => {
+export const useOwnedRigs = (currentBlock?: number) => {
   const { address } = useAccount();
   const { connection: tableland } = useTablelandConnection();
 
@@ -26,10 +26,10 @@ export const useOwnedRigs = () => {
 
   useEffect(() => {
     let isCancelled = false;
-    if (data) {
+    if (data && currentBlock) {
       const ids = data.map((bn) => bn.toString());
 
-      tableland.read(selectRigs(ids)).then((result) => {
+      tableland.read(selectRigs(ids, currentBlock)).then((result) => {
         if (!isCancelled) setRigs(result.rows.map(rigFromRow));
       });
 
@@ -37,7 +37,7 @@ export const useOwnedRigs = () => {
         isCancelled = true;
       };
     }
-  }, [data, setRigs, /* effect dep */ shouldRefresh]);
+  }, [data, setRigs, currentBlock, /* effect dep */ shouldRefresh]);
 
   return { rigs, refresh };
 };

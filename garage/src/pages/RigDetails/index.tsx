@@ -1,13 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Box,
-  Flex,
-  Grid,
-  GridItem,
-  Spinner,
-  VStack,
-} from "@chakra-ui/react";
+import { Box, Flex, Grid, GridItem, Spinner, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
+import { useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
@@ -32,9 +26,10 @@ const MODULE_PROPS = {
 
 export const RigDetails = () => {
   const { id } = useParams();
-  const { rig, refresh } = useRig(id || "");
+  const { data: currentBlockNumber } = useBlockNumber();
+  const { rig, refresh } = useRig(id || "", currentBlockNumber);
   const { connection: tableland } = useTablelandConnection();
-  const { rigs } = useOwnedRigs();
+  const { rigs } = useOwnedRigs(currentBlockNumber);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
@@ -75,10 +70,18 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const { trainRigsModal, parkRigsModal } = useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);
+  }, [rig, setPendingTx]);
+
+  const onOpenPilotModal = useCallback(() => {
+    if (rig) pilotRigsModal.openModal([rig], setPendingTx);
   }, [rig, setPendingTx]);
 
   const onOpenParkModal = useCallback(() => {
@@ -126,6 +129,7 @@ export const RigDetails = () => {
                   nfts={nfts}
                   isOwner={userOwnsRig}
                   onOpenParkModal={onOpenParkModal}
+                  onOpenPilotModal={onOpenPilotModal}
                   onOpenTrainModal={onOpenTrainModal}
                   {...MODULE_PROPS}
                 />

@@ -12,6 +12,7 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { CheckIcon } from "@chakra-ui/icons";
+import { useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
 import { useNFTs, NFT } from "../../../hooks/useNFTs";
@@ -21,6 +22,7 @@ import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals"
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { findNFT } from "../../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../../utils/async";
+import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
 
 interface RigListItemProps {
   rig: Rig;
@@ -90,26 +92,9 @@ enum Selectable {
   PARKED,
 }
 
-const firstSetValue = <T,>(s: Set<T>) => {
-  if (s.size) return s.values().next().value;
-};
-
-const copySet = <T,>(s: Set<T>): Set<T> => {
-  return new Set(Array.from(s));
-};
-
-const toggleInSet = <T,>(s: Set<T>, v: T) => {
-  if (s.has(v)) {
-    s.delete(v);
-  } else {
-    s.add(v);
-  }
-
-  return s;
-};
-
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
-  const { rigs, refresh } = useOwnedRigs();
+  const { data: blockNumber } = useBlockNumber();
+  const { rigs, refresh } = useOwnedRigs(blockNumber);
   const { connection: tableland } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;

@@ -1,6 +1,8 @@
 import { NFT } from "../hooks/useNFTs";
 
-export const findNFT = (needle: NFT, haystack: NFT[]) => {
+type Data = Omit<NFT, "type">
+
+export const findNFT = (needle: Data, haystack: NFT[]) => {
   return haystack.find((v) => {
     return (
       v.tokenId === needle.tokenId &&

@@ -37,33 +37,47 @@ export const RigDisplay = ({
 }: Props) => {
   const { thumb } = useRigImageUrls(rig);
 
-  const showPilot = rig.currentPilot || loading;
+  const showPilot = pilotNFT || rig.currentPilot || loading;
   const imageUrl = pilotNFT?.imageUrl;
+  const svgData = pilotNFT?.imageSvgData;
 
   const borderWidth = pilotBorderWidth ?? "1px";
 
   const pilotProps = {
-    borderStyle: "solid",
-    borderTopWidth: borderWidth,
-    borderLeftWidth: borderWidth,
-    borderColor: "paper",
     borderTopLeftRadius: "3px",
+    flexGrow: "1",
   };
 
   return (
     <Box position="relative" overflow="hidden" {...props}>
       <Image src={thumb} minWidth="100%" />
-      <Box position="absolute" right="0" bottom="0" width="25%">
-        {showPilot ? (
-          loading ? (
+      {showPilot && (
+        <Flex
+          position="absolute"
+          bgColor="paper"
+          right="0"
+          bottom="0"
+          height="25%"
+          width="25%"
+          borderStyle="solid"
+          borderTopWidth={borderWidth}
+          borderLeftWidth={borderWidth}
+          borderColor={"paper"}
+          {...pilotProps}
+        >
+          {loading ? (
             <LoadingPilot {...pilotProps} />
-          ) : imageUrl ? (
-            <Image src={pilotNFT.imageUrl} {...pilotProps} bgColor="paper" />
+          ) : imageUrl || svgData ? (
+            <Image
+              src={imageUrl || svgData}
+              {...pilotProps}
+              objectFit="contain"
+            />
           ) : (
             <TrainerPilot {...pilotProps} />
-          )
-        ) : null}
-      </Box>
+          )}
+        </Flex>
+      )}
     </Box>
   );
 };

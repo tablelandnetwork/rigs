@@ -23,6 +23,7 @@ export interface Rig {
   thumbAlpha: string;
   attributes: Attribute[];
   currentPilot?: Pilot;
+  isTrained: boolean;
 }
 
 export interface RigWithPilots extends Rig {
@@ -31,6 +32,7 @@ export interface RigWithPilots extends Rig {
 
 export enum EventAction {
   PilotedTrainer = "Piloted Trainer",
+  Piloted = "Piloted",
   Parked = "Parked",
 }
 
@@ -41,4 +43,8 @@ export interface Event {
   action: EventAction;
   pilot?: Pilot;
   timestamp: string;
+}
+
+export interface PilotSessionWithRigId extends PilotSession {
+  rigId: string;
 }

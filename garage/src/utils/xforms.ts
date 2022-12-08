@@ -4,11 +4,12 @@ import {
   Attribute,
   Pilot,
   PilotSession,
+  PilotSessionWithRigId,
   Event,
   EventAction,
 } from "../types";
 
-type RigRow = [string, string, string, string, string, object, object];
+type RigRow = [string, string, string, string, string, object, object, boolean];
 
 export const rigFromRow = ([
   id,
@@ -18,6 +19,7 @@ export const rigFromRow = ([
   thumbAlpha,
   attributes,
   currentPilot,
+  isTrained,
 ]: RigRow): Rig => ({
   id,
   image,
@@ -26,6 +28,7 @@ export const rigFromRow = ([
   thumbAlpha,
   attributes: attributes as Attribute[],
   currentPilot: currentPilot as Pilot,
+  isTrained,
 });
 
 type RigWithPilotsRow = [
@@ -35,7 +38,8 @@ type RigWithPilotsRow = [
   string,
   string,
   object,
-  object
+  object,
+  boolean
 ];
 
 export const rigWithPilotsFromRow = ([
@@ -46,6 +50,7 @@ export const rigWithPilotsFromRow = ([
   thumbAlpha,
   attributes,
   pilotSessions,
+  isTrained,
 ]: RigWithPilotsRow): RigWithPilots => ({
   id,
   image,
@@ -53,8 +58,9 @@ export const rigWithPilotsFromRow = ([
   thumb,
   thumbAlpha,
   attributes: attributes as Attribute[],
-  currentPilot: (pilotSessions as PilotSession[]).find(v => !v.endTime),
+  currentPilot: (pilotSessions as PilotSession[]).find((v) => !v.endTime),
   pilotSessions: pilotSessions as PilotSession[],
+  isTrained,
 });
 
 type EventRow = [
@@ -82,6 +88,35 @@ export const eventFromRow = ([
   thumb,
   image,
   pilot: { contract: pilotContract, tokenId: pilotId },
-  action: endTime ? EventAction.Parked : EventAction.PilotedTrainer,
+  action: endTime
+    ? EventAction.Parked
+    : pilotContract
+    ? EventAction.Piloted
+    : EventAction.PilotedTrainer,
   timestamp,
+});
+
+type PilotSessionRow = [
+  string,
+  string,
+  string,
+  string,
+  number,
+  number | undefined
+];
+
+export const pilotSessionFromRow = ([
+  rigId,
+  owner,
+  contract,
+  tokenId,
+  startTime,
+  endTime,
+]: PilotSessionRow): PilotSessionWithRigId => ({
+  rigId,
+  contract,
+  tokenId,
+  owner,
+  startTime,
+  endTime,
 });
