@@ -86,6 +86,7 @@
     right: 0;
     max-height: 37%;
     max-width: 25%;
+    min-width: 25%;
     border-top: 0.1875rem solid #101e1e;
     border-left: 0.1875rem solid #101e1e;
     border-radius: 0.1875rem 0 0 0;
