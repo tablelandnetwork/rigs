@@ -54,12 +54,14 @@
 
   .container {
     position: relative;
+    width: 100vh;
+    height: 100vh;
+    margin: 0 auto;
   }
 
   .rig-image {
     display: block;
-    width: 100vw;
-    height: 100vw;
+    width: 100%;
   }
 
   .badges-container {
