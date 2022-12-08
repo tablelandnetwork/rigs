@@ -15,13 +15,15 @@
     {/each}
   </div>
   {#if data.pilot}
-    {#if data.pilot.type === "image"}
-      <img class="pilot" src={data.pilot.uri} alt="pilot" />
-    {:else}
-      <video class="pilot" playsinline autoplay muted loop>
-        <source src={data.pilot.uri}>
-      </video>
-    {/if}
+    <div class="pilot">
+      {#if data.pilot.type === "image"}
+        <img src={data.pilot.uri} alt="pilot" />
+      {:else}
+        <video playsinline autoplay muted loop>
+          <source src={data.pilot.uri}>
+        </video>
+      {/if}
+    </div>
     <span class="warning">Status: In-flight (not transferable).</span>
   {/if}
 </div>
@@ -55,7 +57,9 @@
   .container {
     position: relative;
     width: 100vh;
+    max-width: 100vw;
     height: 100vh;
+    max-height: 100vw;
     margin: 0 auto;
   }
 
@@ -87,12 +91,19 @@
     position: absolute;
     bottom: 0;
     right: 0;
-    max-height: 37%;
-    max-width: 25%;
-    min-width: 25%;
+    width: 25%;
+    height: 25%;
     border-top: 0.1875rem solid #101e1e;
     border-left: 0.1875rem solid #101e1e;
     border-radius: 0.1875rem 0 0 0;
+    background-color: #101e1e;
+  }
+
+  .pilot img, .pilot video {
+    object-fit: contain;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
   }
 
   .warning {
