@@ -58,7 +58,8 @@
 
   .rig-image {
     display: block;
-    width: 100%;
+    width: 100vw;
+    height: 100vw;
   }
 
   .badges-container {
