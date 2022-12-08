@@ -15,7 +15,13 @@
     {/each}
   </div>
   {#if data.pilot}
-    <img class="pilot" src={data.pilot} alt="pilot" />
+    {#if data.pilot.type === "image"}
+      <img class="pilot" src={data.pilot.uri} alt="pilot" />
+    {:else}
+      <video class="pilot" playsinline autoplay muted loop>
+        <source src={data.pilot.uri}>
+      </video>
+    {/if}
     <span class="warning">Status: In-flight (not transferable).</span>
   {/if}
 </div>
