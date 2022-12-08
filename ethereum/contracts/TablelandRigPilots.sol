@@ -454,7 +454,7 @@ contract TablelandRigPilots is
         uint64 startTime = pilotStartTime(tokenId);
         string memory setters = string.concat(
             "owner=",
-            StringsUpgradeable.toHexString(newOwner)
+            SQLHelpers.quote(StringsUpgradeable.toHexString(newOwner))
         );
         // Only update the row with the matching `rig_id` and `start_time`
         string memory filters = string.concat(
