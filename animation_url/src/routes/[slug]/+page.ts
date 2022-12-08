@@ -47,7 +47,7 @@ export async function load({ url }) {
 
 type Pilot = {
   uri: string;
-  type: MediaType;
+  type?: MediaType;
 };
 
 enum MediaType {
@@ -77,14 +77,12 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
       session.pilot_id,
       NftTokenType.ERC721
     );
-    if (pilotToken.media.length > 0 && pilotToken.media[0].gateway) {
-      const uri = pilotToken.media[0].gateway;
-      const type = getMediaType(uri);
-      console.info("token info:", uri, type);
-      if (!type) {
-        return { uri: unknown, type: MediaType.image };
-      }
-      return { uri, type };
+    if (pilotToken.media.length > 0) {
+      const media = pilotToken.media[0];
+      const pilot: Pilot = { uri: media.gateway || media.raw };
+      pilot.type = getMediaType(pilot.uri);
+      console.info("pilot token:", pilot);
+      return pilot.type ? pilot : { uri: unknown, type: MediaType.image };
     } else {
       return { uri: unknown, type: MediaType.image };
     }
@@ -98,6 +96,7 @@ const mediaTypes = new Map([
   ["jpg", MediaType.image],
   ["jpeg", MediaType.image],
   ["png", MediaType.image],
+  ["svg", MediaType.image],
   ["gif", MediaType.image],
   ["mp4", MediaType.video],
   ["mov", MediaType.video],
@@ -107,6 +106,9 @@ const mediaTypes = new Map([
 ]);
 
 const getMediaType = function (uri: string): MediaType | undefined {
+  if (uri.startsWith("data:image/")) {
+    return MediaType.image;
+  }
   const parts = uri.split(".");
   const extension = parts[parts.length - 1];
   return mediaTypes.get(extension);
