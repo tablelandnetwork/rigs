@@ -55,6 +55,19 @@ enum MediaType {
   video = "video",
 }
 
+const mediaTypes = new Map([
+  ["jpg", MediaType.image],
+  ["jpeg", MediaType.image],
+  ["png", MediaType.image],
+  ["svg", MediaType.image],
+  ["gif", MediaType.image],
+  ["mp4", MediaType.video],
+  ["mov", MediaType.video],
+  ["ogv", MediaType.video],
+  ["webm", MediaType.video],
+  ["3gp", MediaType.video],
+]);
+
 const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
   // Get the sessions where end_time is null, there should only ever be one of these
   const sessions = await tableland.read(
@@ -77,11 +90,21 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
       session.pilot_id,
       NftTokenType.ERC721
     );
+    console.info("pilot token:", pilotToken);
+
     if (pilotToken.media.length > 0) {
       const media = pilotToken.media[0];
-      const pilot: Pilot = { uri: media.gateway || media.raw };
-      pilot.type = getMediaType(pilot.uri);
-      console.info("pilot token:", pilot);
+      const pilot: Pilot = {
+        uri: media.thumbnail || media.gateway || media.raw,
+      };
+
+      if (media.format) {
+        pilot.type = mediaTypes.get(media.format);
+      } else {
+        pilot.type = getMediaType(pilot.uri);
+      }
+
+      console.info("pilot media:", pilot);
       return pilot.type ? pilot : { uri: unknown, type: MediaType.image };
     } else {
       return { uri: unknown, type: MediaType.image };
@@ -92,20 +115,10 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
   return { uri: trainer, type: MediaType.image };
 };
 
-const mediaTypes = new Map([
-  ["jpg", MediaType.image],
-  ["jpeg", MediaType.image],
-  ["png", MediaType.image],
-  ["svg", MediaType.image],
-  ["gif", MediaType.image],
-  ["mp4", MediaType.video],
-  ["mov", MediaType.video],
-  ["ogv", MediaType.video],
-  ["webm", MediaType.video],
-  ["3gp", MediaType.video],
-]);
-
-const getMediaType = function (uri: string): MediaType | undefined {
+const getMediaType = function (uri?: string): MediaType | undefined {
+  if (!uri) {
+    return undefined;
+  }
   if (uri.startsWith("data:image/")) {
     return MediaType.image;
   }
