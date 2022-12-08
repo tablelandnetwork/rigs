@@ -444,6 +444,40 @@ contract TablelandRigPilots is
     }
 
     /**
+     * @dev See {ITablelandRigPilots-updateSessionOwner}.
+     */
+    function updateSessionOwner(
+        uint256 tokenId,
+        address newOwner
+    ) external onlyParent {
+        // Update the row in pilot sessions table with its new `owner`
+        uint64 startTime = pilotStartTime(tokenId);
+        string memory setters = string.concat(
+            "owner=",
+            SQLHelpers.quote(StringsUpgradeable.toHexString(newOwner))
+        );
+        // Only update the row with the matching `rig_id` and `start_time`
+        string memory filters = string.concat(
+            "rig_id=",
+            StringsUpgradeable.toString(uint16(tokenId)),
+            " and ",
+            "start_time=",
+            StringsUpgradeable.toString(startTime)
+        );
+        // Update the pilot information in the Tableland pilot sessions table
+        TablelandDeployments.get().runSQL(
+            address(this),
+            _pilotSessionsTableId,
+            SQLHelpers.toUpdate(
+                _PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId,
+                setters,
+                filters
+            )
+        );
+    }
+
+    /**
      * @dev Required to create and receive an ERC-721 Tableland TABLE token for pilot sessions.
      */
     function onERC721Received(

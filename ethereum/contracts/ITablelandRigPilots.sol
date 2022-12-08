@@ -136,4 +136,16 @@ interface ITablelandRigPilots {
      * - pilot must have completed 30 days of training
      */
     function parkRig(uint256 tokenId, bool force) external;
+
+    /**
+     * @dev Updates the value of a pilot's `owner` in the current session, upon in-flight token transfers.
+     *
+     * tokenId - the unique Rig token identifier
+     * newOwner - address of the new token owner
+     *
+     * Requirements:
+     *
+     * - A parent method should implement a check to verify a caller owns `tokenId`, then call `updateSessionOwner`
+     */
+    function updateSessionOwner(uint256 tokenId, address newOwner) external;
 }

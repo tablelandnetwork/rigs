@@ -1524,7 +1524,7 @@ describe("Rigs", function () {
         const receipt = await tx.wait();
         const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
-        // Train both Rigs, putting them in-flight, and advance 1 block
+        // Train the Rig, putting it in-flight, and advance 1 block
         await rigs
           .connect(tokenOwner)
           ["trainRig(uint256)"](BigNumber.from(tokenId));
@@ -1745,6 +1745,83 @@ describe("Rigs", function () {
         await expect(rigs.parkRigAsOwner(tokenIds)).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
+      });
+    });
+
+    describe("safeTransferWhileFlying", function () {
+      it("Should block non-owner transfers", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Train the Rig, putting it in-flight, and advance 1 block
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Try to `safeTransferWhileFlying` by `sender`, who is not the owner
+        const sender = accounts[5];
+        await expect(
+          rigs
+            .connect(sender)
+            .safeTransferWhileFlying(
+              tokenOwner.address,
+              sender.address,
+              BigNumber.from(tokenId)
+            )
+        ).to.be.rejectedWith("Unauthorized");
+        // As the `tokenOwner`, approve an `operator` to manage its tokens
+        const operator = accounts[5];
+        await rigs
+          .connect(tokenOwner)
+          .setApprovalForAll(operator.address, true);
+        // Try to `safeTransferWhileFlying` by `operator`, who is not the owner
+        await expect(
+          rigs
+            .connect(sender)
+            .safeTransferWhileFlying(
+              tokenOwner.address,
+              operator.address,
+              BigNumber.from(tokenId)
+            )
+        ).to.be.rejectedWith("Unauthorized");
+      });
+
+      it("Should allow transfers while flying, only by token owner", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Train the Rig, putting it in-flight, and advance 1 block
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Successfully use`safeTransferWhileFlying` to transfer the Rig to `receiver`
+        const receiver = accounts[5];
+        await expect(
+          rigs
+            .connect(tokenOwner)
+            .safeTransferWhileFlying(
+              tokenOwner.address,
+              receiver.address,
+              BigNumber.from(tokenId)
+            )
+        )
+          .to.emit(rigs, "Transfer")
+          .withArgs(
+            tokenOwner.address,
+            receiver.address,
+            BigNumber.from(tokenId)
+          );
       });
     });
   });
