@@ -53,7 +53,7 @@ contract TablelandRigs is
     ITablelandRigPilots private _pilots;
 
     // Allow transfers while flying, only by token owner
-    uint256 private _allowTransferWhileFlying;
+    bool private _allowTransferWhileFlying;
 
     function initialize(
         uint256 _maxSupply,
@@ -539,10 +539,10 @@ contract TablelandRigs is
         if (ownerOf(tokenId) != _msgSenderERC721A())
             revert ITablelandRigPilots.Unauthorized();
         // Temporaritly set the transfer flag to allow a transfer to occur
-        _allowTransferWhileFlying = 1;
+        _allowTransferWhileFlying = true;
         safeTransferFrom(from, to, tokenId);
         // Reset the transfer flag to block transfers
-        _allowTransferWhileFlying = 0;
+        _allowTransferWhileFlying = false;
         // Update the value of `owner` in the current pilot's session
         _pilots.updateSessionOwner(tokenId, to);
     }
@@ -563,7 +563,7 @@ contract TablelandRigs is
             // If the pilot's `startTime` is not zero, then the Rig is in-flight
             if (
                 !(_pilots.pilotStartTime(tokenId) == 0 ||
-                    _allowTransferWhileFlying == 1)
+                    _allowTransferWhileFlying == true)
             ) revert ITablelandRigPilots.InvalidPilotStatus();
         }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
