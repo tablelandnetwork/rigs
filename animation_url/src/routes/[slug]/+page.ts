@@ -2,6 +2,7 @@ import { connect } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
 import { Network, Alchemy, NftTokenType } from "alchemy-sdk";
 import { default as trainer } from "../../assets/trainer.svg";
+import { default as unknown } from "../../assets/unknown.svg";
 
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
@@ -44,7 +45,17 @@ export async function load({ url }) {
   };
 }
 
-const getPilot = async function (rigId: string): Promise<string | undefined> {
+type Pilot = {
+  uri: string;
+  type: MediaType;
+};
+
+enum MediaType {
+  image = "image",
+  video = "video",
+}
+
+const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
   // Get the sessions where end_time is null, there should only ever be one of these
   const sessions = await tableland.read(
     `SELECT pilot_contract,pilot_id FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`,
@@ -66,14 +77,37 @@ const getPilot = async function (rigId: string): Promise<string | undefined> {
       session.pilot_id,
       NftTokenType.ERC721
     );
-    if (pilotToken.media.length > 0 && pilotToken.media[0].raw) {
-      return pilotToken.media[0].raw;
+    if (pilotToken.media.length > 0 && pilotToken.media[0].gateway) {
+      const uri = pilotToken.media[0].gateway;
+      const type = getMediaType(uri);
+      console.info("token info:", uri, type);
+      if (!type) {
+        return { uri: unknown, type: MediaType.image };
+      }
+      return { uri, type };
     } else {
-      // TODO: Show question mark image?
-      return undefined;
+      return { uri: unknown, type: MediaType.image };
     }
   }
 
   // else show trainer
-  return trainer;
+  return { uri: trainer, type: MediaType.image };
+};
+
+const mediaTypes = new Map([
+  ["jpg", MediaType.image],
+  ["jpeg", MediaType.image],
+  ["png", MediaType.image],
+  ["gif", MediaType.image],
+  ["mp4", MediaType.video],
+  ["mov", MediaType.video],
+  ["ogv", MediaType.video],
+  ["webm", MediaType.video],
+  ["3gp", MediaType.video],
+]);
+
+const getMediaType = function (uri: string): MediaType | undefined {
+  const parts = uri.split(".");
+  const extension = parts[parts.length - 1];
+  return mediaTypes.get(extension);
 };
