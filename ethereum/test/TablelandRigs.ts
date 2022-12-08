@@ -1774,6 +1774,21 @@ describe("Rigs", function () {
               BigNumber.from(tokenId)
             )
         ).to.be.rejectedWith("Unauthorized");
+        // As the `tokenOwner`, approve an `operator` to manage its tokens
+        const operator = accounts[5];
+        await rigs
+          .connect(tokenOwner)
+          .setApprovalForAll(operator.address, true);
+        // Try to `safeTransferWhileFlying` by `operator`, who is not the owner
+        await expect(
+          rigs
+            .connect(sender)
+            .safeTransferWhileFlying(
+              tokenOwner.address,
+              operator.address,
+              BigNumber.from(tokenId)
+            )
+        ).to.be.rejectedWith("Unauthorized");
       });
 
       it("Should allow transfers while flying, only by token owner", async function () {
@@ -1790,7 +1805,7 @@ describe("Rigs", function () {
         await rigs
           .connect(tokenOwner)
           ["trainRig(uint256)"](BigNumber.from(tokenId));
-        // Try to `safeTransferWhileFlying` the Rig to `receiver`
+        // Successfully use`safeTransferWhileFlying` to transfer the Rig to `receiver`
         const receiver = accounts[5];
         await expect(
           rigs
