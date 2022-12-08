@@ -46,7 +46,7 @@ export async function load({ url }) {
 }
 
 type Pilot = {
-  uri: string;
+  uri?: string;
   type?: MediaType;
 };
 
@@ -95,17 +95,24 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
     if (pilotToken.media.length > 0) {
       const media = pilotToken.media[0];
       const pilot: Pilot = {
-        uri: media.thumbnail || media.gateway || media.raw,
+        uri: encodeSVG(media.thumbnail || media.gateway || media.raw),
       };
-
       if (media.format) {
         pilot.type = mediaTypes.get(media.format);
       } else {
         pilot.type = getMediaType(pilot.uri);
       }
-
-      console.info("pilot media:", pilot);
       return pilot.type ? pilot : { uri: unknown, type: MediaType.image };
+    } else if (pilotToken.rawMetadata?.image_data) {
+      return {
+        uri: pilotToken.rawMetadata?.image_data,
+        type: MediaType.image,
+      };
+    } else if (pilotToken.rawMetadata?.svg_image_data) {
+      return {
+        uri: pilotToken.rawMetadata?.svg_image_data,
+        type: MediaType.image,
+      };
     } else {
       return { uri: unknown, type: MediaType.image };
     }
@@ -125,4 +132,16 @@ const getMediaType = function (uri?: string): MediaType | undefined {
   const parts = uri.split(".");
   const extension = parts[parts.length - 1];
   return mediaTypes.get(extension);
+};
+
+const encodeSVG = function (uri?: string): string | undefined {
+  if (!uri) {
+    return undefined;
+  }
+  if (uri.startsWith("data:image/svg+xml;utf8,")) {
+    const parts = uri.split("data:image/svg+xml;utf8,");
+    return "data:image/svg+xml;base64," + btoa(parts[1]);
+  } else {
+    return uri;
+  }
 };
