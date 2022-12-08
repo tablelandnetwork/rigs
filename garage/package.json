@@ -14,7 +14,7 @@
     "@emotion/react": "^11.10.4",
     "@emotion/styled": "^11.10.5",
     "@rainbow-me/rainbowkit": "^0.6.1",
-    "@tableland/rigs": "^0.1.1",
+    "@tableland/rigs": "^0.1.2",
     "@tableland/sdk": "^3.1.4",
     "@zoralabs/zdk": "^2.2.0",
     "ethers": "^5.7.2",
