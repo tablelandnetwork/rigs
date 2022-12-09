@@ -623,15 +623,21 @@ const PickRigPilotStep = ({
               const supported =
                 nft.type === "ERC721" &&
                 nft.contract.toLowerCase() !== contractAddress.toLowerCase();
+              const alreadySelected = Object.values(pilots).includes(nft);
+
+              const selectedForCurrentRig = pilot === nft;
+              const supportedForCurrentRig =
+                supported && (!alreadySelected || selectedForCurrentRig);
+
               return (
                 <NFTDisplay
                   key={`nft-list-${index}`}
                   nft={nft}
                   onSelect={() =>
-                    supported && setPilot(nft, rigs[currentRig].id)
+                    supportedForCurrentRig && setPilot(nft, rig.id)
                   }
-                  selected={pilot === nft}
-                  supported={supported}
+                  selected={selectedForCurrentRig}
+                  supported={supportedForCurrentRig}
                 />
               );
             })}
