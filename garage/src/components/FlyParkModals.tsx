@@ -528,7 +528,7 @@ const PickRigPilotStep = ({
     setCurrentRig((old) => {
       if (old === rigs.length - 1) return old;
 
-      return old++;
+      return old + 1;
     });
   }, [setCurrentRig, rigs]);
 
@@ -536,7 +536,7 @@ const PickRigPilotStep = ({
     setCurrentRig((old) => {
       if (old === 0) return old;
 
-      return old--;
+      return old - 1;
     });
   }, [setCurrentRig, rigs]);
 
