@@ -548,30 +548,36 @@ const PickRigPilotStep = ({
     <>
       <ModalBody>
         <Flex direction="column">
-          <Flex justify="center" width="100%">
+          <Flex justify="center" align="center" width="100%">
             {displayArrows && (
               <Button
                 leftIcon={<ArrowBackIcon />}
                 onClick={prev}
                 isDisabled={currentRig === 0}
+                mr={4}
               >
                 Prev
               </Button>
             )}
             <Flex direction="column" p={4}>
-              <RigDisplay rig={rig} pilotNFT={pilot} width="260px" />
+              <RigDisplay
+                rig={rig}
+                pilotNFT={pilot}
+                width={{ base: "150px", md: "260px" }}
+              />
               Preview
             </Flex>
+            {displayArrows && (
+              <Button
+                leftIcon={<ArrowForwardIcon />}
+                onClick={next}
+                isDisabled={currentRig === rigs.length - 1}
+                ml={4}
+              >
+                Next
+              </Button>
+            )}
           </Flex>
-          {displayArrows && (
-            <Button
-              leftIcon={<ArrowForwardIcon />}
-              onClick={next}
-              isDisabled={currentRig === rigs.length - 1}
-            >
-              Next
-            </Button>
-          )}
         </Flex>
         <Box my={4}>
           <AsyncSelect
