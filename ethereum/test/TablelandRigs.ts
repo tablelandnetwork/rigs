@@ -1361,6 +1361,124 @@ describe("Rigs", function () {
           )
         ).to.be.rejectedWith("InvalidBatchPilotAction");
       });
+
+      it("Should not allow batch piloting with the same pilot for different Rigs", async function () {
+        // First, mint two Rigs to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        let tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        let receipt = await tx.wait();
+        let [event] = receipt.events ?? [];
+        const rigTokenId1 = event.args?.tokenId;
+        tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        receipt = await tx.wait();
+        [event] = receipt.events ?? [];
+        const rigTokenId2 = event.args?.tokenId;
+        // Train both Rigs, putting them in-flight, and advance 1 block
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(rigTokenId1));
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(rigTokenId2));
+        // Advance 172800 blocks (30 days)
+        await network.provider.send("hardhat_mine", [
+          ethers.utils.hexValue(172800),
+        ]);
+        // Deploy a faux ERC721 token and mint a token to `tokenOwner`
+        const FauxERC721Factory = await ethers.getContractFactory(
+          "TestERC721Enumerable"
+        );
+        const fauxERC721 = await (await FauxERC721Factory.deploy()).deployed();
+        tx = await fauxERC721.connect(tokenOwner).mint();
+        receipt = await tx.wait();
+        [event] = receipt.events ?? [];
+        const pilotTokenId = event.args?.tokenId;
+        // Set the same pilot for both Rigs -- should pilot then park the first, and then pilot the second
+        await expect(
+          rigs
+            .connect(tokenOwner)
+            ["pilotRig(uint256[],address[],uint256[])"](
+              [BigNumber.from(rigTokenId1), BigNumber.from(rigTokenId2)],
+              [fauxERC721.address, fauxERC721.address],
+              [pilotTokenId, pilotTokenId]
+            )
+        )
+          .to.emit(pilots, "Piloted")
+          .withArgs(
+            BigNumber.from(rigTokenId1),
+            fauxERC721.address,
+            BigNumber.from(pilotTokenId)
+          )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(rigTokenId1))
+          .to.emit(pilots, "Piloted")
+          .withArgs(
+            BigNumber.from(rigTokenId2),
+            fauxERC721.address,
+            BigNumber.from(pilotTokenId)
+          );
+        // Check the pilot info for the first Rig -- it should be parked; it's latest pilot should still be accessible
+        let pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId1));
+        expect(pilotInfo.status).to.equal(2); // `2` is equivalent to `PARKED` (`GarageStatus` enum's 3rd value)
+        expect(pilotInfo.pilotable).to.equal(true);
+        expect(pilotInfo.started).to.be.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(fauxERC721.address); // Faux pilot should still exist since no new pilot has been set again
+        expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
+        // Check the pilot info for the second Rig
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId2));
+        expect(pilotInfo.status).to.equal(3); // `3` is equivalent to `PILOTED` (`GarageStatus` enum's 4th value)
+        expect(pilotInfo.pilotable).to.equal(false);
+        expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(fauxERC721.address);
+        expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
+        // Park the second Rig that's in-flight
+        rigs
+          .connect(tokenOwner)
+          ["parkRig(uint256)"](BigNumber.from(rigTokenId2));
+        // Set the same pilot for both Rigs -- should pilot then park the first, and then pilot the second
+        await expect(
+          rigs
+            .connect(tokenOwner)
+            ["pilotRig(uint256[],address[],uint256[])"](
+              [BigNumber.from(rigTokenId1), BigNumber.from(rigTokenId2)],
+              [fauxERC721.address, fauxERC721.address],
+              [pilotTokenId, pilotTokenId]
+            )
+        )
+          .to.emit(pilots, "Piloted")
+          .withArgs(
+            BigNumber.from(rigTokenId1),
+            fauxERC721.address,
+            BigNumber.from(pilotTokenId)
+          )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(rigTokenId1))
+          .to.emit(pilots, "Piloted")
+          .withArgs(
+            BigNumber.from(rigTokenId2),
+            fauxERC721.address,
+            BigNumber.from(pilotTokenId)
+          );
+        // Check the pilot info for the first Rig -- it should be parked; it's latest pilot should still be accessible
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId1));
+        expect(pilotInfo.status).to.equal(2); // `2` is equivalent to `PARKED` (`GarageStatus` enum's 3rd value)
+        expect(pilotInfo.pilotable).to.equal(true);
+        expect(pilotInfo.started).to.be.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(fauxERC721.address); // Faux pilot should still exist since no new pilot has been set again
+        expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
+        // Check the pilot info for the second Rig
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId2));
+        expect(pilotInfo.status).to.equal(3); // `3` is equivalent to `PILOTED` (`GarageStatus` enum's 4th value)
+        expect(pilotInfo.pilotable).to.equal(false);
+        expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(fauxERC721.address);
+        expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
+      });
     });
 
     describe("parkRig", function () {
