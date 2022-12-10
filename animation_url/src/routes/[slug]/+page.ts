@@ -45,11 +45,7 @@ export async function load({ url }) {
   };
 }
 
-type Pilot = {
-  uri?: string;
-};
-
-const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
+const getPilot = async function (rigId: string): Promise<string | undefined> {
   // Get the sessions where end_time is null, there should only ever be one of these
   const sessions = await tableland.read(
     `SELECT pilot_contract,pilot_id FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`,
@@ -65,6 +61,7 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
 
   // there's a session without an end_time, show a pilot
   const session = sessions[0];
+  let pilot: string;
   if (session.pilot_contract && session.pilot_id) {
     const pilotToken = await alchemy.nft.getNftMetadata(
       session.pilot_contract,
@@ -72,12 +69,29 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
       NftTokenType.ERC721
     );
 
-    const imageUrl = pilotToken?.media[0]?.gateway;
-    const rawSvg = pilotToken?.rawMetadata?.svg_image_data;
+    const imageUrl =
+      pilotToken?.media[0]?.thumbnail ||
+      pilotToken?.media[0]?.gateway ||
+      pilotToken?.media[0]?.raw;
+    const imageData = pilotToken?.rawMetadata?.image_data;
+    const svgImageData = pilotToken?.rawMetadata?.svg_image_data;
 
-    return { uri: imageUrl || rawSvg || unknown };
+    pilot = imageUrl || imageData || svgImageData || unknown;
+  } else {
+    // else show trainer
+    pilot = trainer;
   }
+  return encodeSVG(pilot);
+};
 
-  // else show trainer
-  return { uri: trainer };
+const encodeSVG = function (uri: string): string {
+  if (uri.startsWith("data:image/svg+xml;utf8,")) {
+    const parts = uri.split("data:image/svg+xml;utf8,");
+    if (parts.length !== 2) {
+      return unknown;
+    }
+    return "data:image/svg+xml;base64," + btoa(parts[1]);
+  } else {
+    return uri;
+  }
 };
