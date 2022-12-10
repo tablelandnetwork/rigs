@@ -16,13 +16,7 @@
   </div>
   {#if data.pilot}
     <div class="pilot">
-      {#if data.pilot.type === "image"}
-        <img src={data.pilot.uri} alt="pilot" />
-      {:else}
-        <video playsinline autoplay muted loop>
-          <source src={data.pilot.uri}>
-        </video>
-      {/if}
+      <img src={data.pilot.uri} alt="pilot" />
     </div>
     <span class="warning">Status: In-flight (not transferable).</span>
   {/if}
