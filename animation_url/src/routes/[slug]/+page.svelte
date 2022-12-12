@@ -16,7 +16,7 @@
   </div>
   {#if data.pilot}
     <div class="pilot">
-      <img src={data.pilot.uri} alt="pilot" />
+      <img src={data.pilot} alt="pilot" />
     </div>
     <span class="warning">Status: In-flight (not transferable).</span>
   {/if}
@@ -93,7 +93,7 @@
     background-color: #101e1e;
   }
 
-  .pilot img, .pilot video {
+  .pilot img {
     object-fit: contain;
     width: 100%;
     height: 100%;
