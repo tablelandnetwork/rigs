@@ -360,7 +360,7 @@ const NFTDisplay = ({
       _hover={{ cursor: supported ? "pointer" : "not-allowed" }}
     >
       <Image
-        src={nft.imageUrl || nft.imageSvgData}
+        src={nft.imageUrl || nft.imageData}
         width={size}
         sx={{ aspectRatio: "1/1", objectFit: "contain" }}
       />

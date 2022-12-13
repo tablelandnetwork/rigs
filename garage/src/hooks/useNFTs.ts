@@ -40,19 +40,22 @@ export interface NFT {
   tokenId: string;
   name?: string;
   imageUrl?: string;
-  imageSvgData?: string;
+  imageData?: string;
 }
 
 const toNFT = (data: Nft): NFT => {
-  const { contract, tokenId, title, media } = data;
+  const { contract, tokenId, title, media, rawMetadata } = data;
+
+  const imageUrl = media[0]?.thumbnail || media[0]?.gateway || media[0]?.raw;
+  const imageData = rawMetadata?.image_data || rawMetadata?.svg_image_data;
 
   return {
     type: contract.tokenType,
     contract: contract.address,
     tokenId,
     name: title,
-    imageUrl: media.length ? media[0].gateway : undefined,
-    imageSvgData: data.rawMetadata?.svg_image_data,
+    imageUrl,
+    imageData,
   };
 };
 
