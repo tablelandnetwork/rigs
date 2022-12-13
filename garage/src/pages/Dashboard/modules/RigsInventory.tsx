@@ -5,13 +5,15 @@ import {
   Button,
   Flex,
   Heading,
+  HStack,
   Grid,
   GridItem,
   Spinner,
   Text,
   VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { CheckIcon } from "@chakra-ui/icons";
+import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
 import { useAccount, useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
@@ -20,6 +22,7 @@ import { Rig, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
+import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../../utils/async";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
@@ -207,10 +210,24 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     }
   }, [rigs, parkRigsModal, selectedRigs, setPendingTx]);
 
+  const {
+    isOpen: isInfoOpen,
+    onClose: onCloseInfo,
+    onOpen: onOpenInfo,
+  } = useDisclosure();
+
   return (
     <VStack align="start" {...props} sx={{ height: "100%", width: "100%" }}>
-      <Heading mb={2}>Rigs {rigs && ` (${rigs.length})`}</Heading>
-
+      <HStack align="center" justify="space-between" width="100%">
+        <Heading mb={2}>Rigs {rigs && ` (${rigs.length})`}</Heading>
+        <Text
+          onClick={onOpenInfo}
+          sx={{ _hover: { textDecoration: "underline", cursor: "pointer" } }}
+        >
+          <QuestionIcon mr={2} />
+          Learn more about Rig pilots
+        </Text>
+      </HStack>
       {rigs && nfts && (
         <Grid
           gap={4}
@@ -270,6 +287,8 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
           <Spinner />
         </Flex>
       )}
+
+      <AboutPilotsModal isOpen={isInfoOpen} onClose={onCloseInfo} />
     </VStack>
   );
 };
