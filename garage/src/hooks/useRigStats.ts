@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import { selectStats } from "../utils/queries";
+import { selectStats, selectAccountStats } from "../utils/queries";
 import { useTablelandConnection } from "./useTablelandConnection";
 
-interface Stat {
+export interface Stat {
   name: string;
   value: number;
 }
 
-export const useStats = (currentBlockNumber: number | undefined) => {
+export const useStats = (currentBlockNumber?: number) => {
   const { connection: tableland } = useTablelandConnection();
 
   const [stats, setStats] = useState<Stat[]>();
@@ -43,6 +43,42 @@ export const useStats = (currentBlockNumber: number | undefined) => {
       isCancelled = true;
     };
   }, [currentBlockNumber, setStats]);
+
+  return { stats };
+};
+
+export const useAccountStats = (
+  currentBlockNumber?: number,
+  address?: string
+) => {
+  const { connection: tableland } = useTablelandConnection();
+
+  const [stats, setStats] = useState<Stat[]>();
+
+  useEffect(() => {
+    if (!currentBlockNumber || !address) return;
+
+    let isCancelled = false;
+
+    tableland
+      .read(selectAccountStats(currentBlockNumber, address))
+      .then((result) => {
+        if (isCancelled) return;
+
+        const [numRigsInFlight, numPilots, ftTotal, ftAvg] = result.rows[0];
+
+        setStats([
+          { name: "Rigs in-flight", value: numRigsInFlight },
+          { name: "Num. pilots", value: numPilots },
+          { name: "Average FT per flight", value: ftAvg },
+          { name: "Total FT earned", value: ftTotal },
+        ]);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentBlockNumber, address, setStats]);
 
   return { stats };
 };

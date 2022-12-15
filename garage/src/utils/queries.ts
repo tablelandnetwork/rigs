@@ -162,6 +162,40 @@ export const selectStats = (blockNumber: number): string => {
   LIMIT 1;`;
 };
 
+// NOTE(daniel):
+// `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
+export const selectAccountStats = (blockNumber: number, address: string): string => {
+  const lowerCaseAddress = address.toLowerCase()
+  return `
+  SELECT
+  (
+    SELECT count(*) FROM (
+      SELECT DISTINCT(rig_id)
+      FROM ${pilotSessionsTable}
+      WHERE lower(owner) = '${lowerCaseAddress}' AND end_time IS NULL
+    )
+  ) AS num_rigs_in_flight,
+  (
+    SELECT count(*) FROM (
+      SELECT DISTINCT pilot_contract, pilot_id
+      FROM ${pilotSessionsTable}
+      WHERE lower(owner) = '${lowerCaseAddress}'
+    )
+  ) AS num_pilots,
+  (
+    SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    FROM ${pilotSessionsTable}
+    WHERE lower(owner) = '${lowerCaseAddress}'
+  ) AS total_flight_time,
+  (
+    SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    FROM ${pilotSessionsTable}
+    WHERE lower(owner) = '${lowerCaseAddress}'
+  ) AS avg_flight_time
+  FROM ${attributesTable}
+  LIMIT 1;`;
+};
+
 export const selectActivePilotSessionsForPilots = (
   pilots: { contract: string; tokenId: string }[]
 ): string => {
