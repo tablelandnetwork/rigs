@@ -7,10 +7,15 @@ import {
   SimpleGrid,
   Spinner,
   Stack,
+  Tab,
+  Tabs,
+  TabList,
+  TabPanel,
+  TabPanels,
   Text,
 } from "@chakra-ui/react";
-import { useBlockNumber } from "wagmi";
-import { useStats } from "../../../hooks/useRigStats";
+import { useAccount, useBlockNumber } from "wagmi";
+import { useAccountStats, useStats, Stat } from "../../../hooks/useRigStats";
 import { prettyNumber } from "../../../utils/fmt";
 
 const StatItem = ({ name, value }: { name: string; value: number }) => {
@@ -35,28 +40,50 @@ const StatItem = ({ name, value }: { name: string; value: number }) => {
   );
 };
 
+const StatGrid = ({ stats }: { stats?: Stat[] }) => {
+  return (
+    <SimpleGrid minChildWidth="260px" gap={3}>
+      {stats &&
+        stats.map(({ name, value }) => {
+          return (
+            <GridItem key={name} bgColor="block">
+              <StatItem name={name} value={value} />
+            </GridItem>
+          );
+        })}
+      {!stats && (
+        <Flex justify="center">
+          <Spinner />
+        </Flex>
+      )}
+    </SimpleGrid>
+  );
+};
+
 export const Stats = (props: React.ComponentProps<typeof Box>) => {
+  const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
   const { stats } = useStats(currentBlockNumber);
+  const { stats: accountStats } = useAccountStats(currentBlockNumber, address);
 
   return (
     <Flex direction="column" sx={{ height: "100%" }} {...props}>
       <Heading mb={4}>Stats</Heading>
-      <SimpleGrid minChildWidth="260px" gap={3}>
-        {stats &&
-          stats.map(({ name, value }) => {
-            return (
-              <GridItem key={name} bgColor="block">
-                <StatItem name={name} value={value} />
-              </GridItem>
-            );
-          })}
-        {!stats && (
-          <Flex justify="center">
-            <Spinner />
-          </Flex>
-        )}
-      </SimpleGrid>
+      <Tabs>
+        <TabList>
+          <Tab>Global</Tab>
+          <Tab>You</Tab>
+        </TabList>
+
+        <TabPanels>
+          <TabPanel px={0}>
+            <StatGrid stats={stats} />
+          </TabPanel>
+          <TabPanel px={0}>
+            <StatGrid stats={accountStats} />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
     </Flex>
   );
 };
