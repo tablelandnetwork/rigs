@@ -229,3 +229,7 @@ export const selectActivePilotSessionsForPilots = (
   WHERE (${whereClauses.join(" OR ")}) AND end_time IS NULL;
   `;
 };
+
+export const selectTraitRarities = (): string => {
+  return `SELECT trait_type, value, count(*) as "count" FROM ${attributesTable} WHERE trait_type NOT IN ('VIN', '% Original') GROUP BY trait_type, value`;
+};
