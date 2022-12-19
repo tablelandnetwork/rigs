@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { selectStats, selectAccountStats } from "../utils/queries";
+import {
+  selectStats,
+  selectAccountStats,
+  selectTopActivePilotCollections,
+  selectTopFtPilotCollections,
+} from "../utils/queries";
 import { useTablelandConnection } from "./useTablelandConnection";
 
 export interface Stat {
@@ -79,6 +84,66 @@ export const useAccountStats = (
       isCancelled = true;
     };
   }, [currentBlockNumber, address, setStats]);
+
+  return { stats };
+};
+
+export const useTopActivePilotCollections = () => {
+  const { connection: tableland } = useTablelandConnection();
+
+  const [stats, setStats] = useState<
+    { contractAddress: string; count: number }[]
+  >();
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    tableland.read(selectTopActivePilotCollections()).then((result) => {
+      if (isCancelled) return;
+
+      const data = result.rows.map(([contractAddress, count]) => ({
+        contractAddress,
+        count,
+      }));
+      setStats(data);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [setStats]);
+
+  return { stats };
+};
+
+export const useTopFtPilotCollections = (currentBlockNumber?: number) => {
+  const { connection: tableland } = useTablelandConnection();
+
+  const [stats, setStats] = useState<
+    { contractAddress: string; ft: number }[]
+  >();
+
+  useEffect(() => {
+    if (!currentBlockNumber) return;
+
+    let isCancelled = false;
+
+    tableland
+      .read(selectTopFtPilotCollections(currentBlockNumber))
+      .then((result) => {
+        if (isCancelled) return;
+
+        const data = result.rows.map(([contractAddress, ft]) => ({
+          contractAddress,
+          ft,
+        }));
+        setStats(data);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [currentBlockNumber, setStats]);
 
   return { stats };
 };
