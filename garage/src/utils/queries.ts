@@ -196,6 +196,25 @@ export const selectAccountStats = (blockNumber: number, address: string): string
   LIMIT 1;`;
 };
 
+export const selectTopActivePilotCollections = (): string => {
+  return `
+  SELECT pilot_contract, count(*) as count
+  FROM ${pilotSessionsTable}
+  WHERE end_time IS NULL AND pilot_contract IS NOT NULL
+  GROUP BY pilot_contract
+  ORDER BY count DESC`;
+};
+
+
+export const selectTopFtPilotCollections = (blockNumber: number): string => {
+  return `
+  SELECT pilot_contract, sum(coalesce(end_time, ${blockNumber}) - start_time) as ft
+  FROM ${pilotSessionsTable}
+  WHERE pilot_contract IS NOT NULL
+  GROUP BY pilot_contract
+  ORDER BY ft DESC`;
+};
+
 export const selectActivePilotSessionsForPilots = (
   pilots: { contract: string; tokenId: string }[]
 ): string => {
