@@ -97,6 +97,16 @@ const theme = extendTheme(
           orbitron: { fontFamily: "'Orbitron', sans-serif", fontWeight: 900 },
         },
       },
+      Tabs: {
+        variants: {
+          line: {
+            tab: {
+              color: "primary",
+              _selected: { color: "primary" },
+            },
+          },
+        },
+      },
       Table: {
         variants: {
           simple: {

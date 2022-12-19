@@ -129,7 +129,7 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
   return (
     <Flex direction="column" sx={{ height: "100%" }} {...props}>
       <Heading mb={4}>Stats</Heading>
-      <Tabs>
+      <Tabs variant="line">
         <TabList>
           <Tab>Global</Tab>
           <Tab>You</Tab>
