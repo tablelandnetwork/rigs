@@ -193,7 +193,7 @@ export const useNFTCollectionSearch = (search: string) => {
   return data;
 };
 
-export const useNFTCollections = (contracts: string[]) => {
+export const useNFTCollections = (contracts?: string[]) => {
   const [data, setData] = useState<NFTCollectionsData>({
     isLoading: false,
     isError: false,
@@ -202,7 +202,7 @@ export const useNFTCollections = (contracts: string[]) => {
   useEffect(() => {
     let isCancelled = false;
 
-    if (!contracts.length) {
+    if (!contracts?.length) {
       setData({ isLoading: false, isError: false });
       return;
     }
