@@ -115,10 +115,16 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
   const { stats: pilotStats } = useTopActivePilotCollections();
   const { stats: ftStats } = useTopFtPilotCollections(currentBlockNumber);
 
-  const contracts = useMemo(
-    () => pilotStats?.slice(0, 10).map((v) => v.contractAddress),
-    [pilotStats]
-  );
+  const contracts = useMemo(() => {
+    if (!pilotStats || !ftStats) return;
+
+    return Array.from(
+      new Set([
+        ...pilotStats?.slice(0, 10).map((v) => v.contractAddress),
+        ...ftStats?.slice(0, 10).map((v) => v.contractAddress),
+      ])
+    );
+  }, [pilotStats, ftStats]);
   const { collections } = useNFTCollections(contracts);
   const collectionLookup = useMemo(() => {
     return Object.fromEntries(
