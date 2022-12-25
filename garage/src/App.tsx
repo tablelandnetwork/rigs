@@ -20,6 +20,7 @@ import { Topbar } from "./Topbar";
 import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 import { AccountWatcher } from "./components/AccountWatcher";
+import { RigAttributeStatsContextProvider } from "./components/RigAttributeStatsContext";
 import { routes } from "./routes";
 import { chain } from "./env";
 
@@ -188,33 +189,35 @@ function App() {
         <WagmiConfig client={wagmiClient}>
           <RainbowKitProvider chains={chains} theme={darkTheme()}>
             <AccountWatcher />
-            <BrowserRouter>
-              <Topbar />
-              <GlobalFlyParkModals>
-                <Routes>
-                  {routes().map(
-                    (
-                      { requiresWalletConnection, element, ...props },
-                      index
-                    ) => (
-                      <Route
-                        {...props}
-                        key={`route-${index}`}
-                        element={
-                          requiresWalletConnection ? (
-                            <RequiresWalletConnection>
-                              {element}
-                            </RequiresWalletConnection>
-                          ) : (
-                            element
-                          )
-                        }
-                      />
-                    )
-                  )}
-                </Routes>
-              </GlobalFlyParkModals>
-            </BrowserRouter>
+            <RigAttributeStatsContextProvider>
+              <BrowserRouter>
+                <Topbar />
+                <GlobalFlyParkModals>
+                  <Routes>
+                    {routes().map(
+                      (
+                        { requiresWalletConnection, element, ...props },
+                        index
+                      ) => (
+                        <Route
+                          {...props}
+                          key={`route-${index}`}
+                          element={
+                            requiresWalletConnection ? (
+                              <RequiresWalletConnection>
+                                {element}
+                              </RequiresWalletConnection>
+                            ) : (
+                              element
+                            )
+                          }
+                        />
+                      )
+                    )}
+                  </Routes>
+                </GlobalFlyParkModals>
+              </BrowserRouter>
+            </RigAttributeStatsContextProvider>
           </RainbowKitProvider>
         </WagmiConfig>
       </ChakraProvider>
