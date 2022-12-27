@@ -162,6 +162,59 @@ export const selectStats = (blockNumber: number): string => {
   LIMIT 1;`;
 };
 
+// NOTE(daniel):
+// `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
+export const selectAccountStats = (blockNumber: number, address: string): string => {
+  const lowerCaseAddress = address.toLowerCase()
+  return `
+  SELECT
+  (
+    SELECT count(*) FROM (
+      SELECT DISTINCT(rig_id)
+      FROM ${pilotSessionsTable}
+      WHERE lower(owner) = '${lowerCaseAddress}' AND end_time IS NULL
+    )
+  ) AS num_rigs_in_flight,
+  (
+    SELECT count(*) FROM (
+      SELECT DISTINCT pilot_contract, pilot_id
+      FROM ${pilotSessionsTable}
+      WHERE lower(owner) = '${lowerCaseAddress}'
+    )
+  ) AS num_pilots,
+  (
+    SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    FROM ${pilotSessionsTable}
+    WHERE lower(owner) = '${lowerCaseAddress}'
+  ) AS total_flight_time,
+  (
+    SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    FROM ${pilotSessionsTable}
+    WHERE lower(owner) = '${lowerCaseAddress}'
+  ) AS avg_flight_time
+  FROM ${attributesTable}
+  LIMIT 1;`;
+};
+
+export const selectTopActivePilotCollections = (): string => {
+  return `
+  SELECT pilot_contract, count(*) as count
+  FROM ${pilotSessionsTable}
+  WHERE end_time IS NULL AND pilot_contract IS NOT NULL
+  GROUP BY pilot_contract
+  ORDER BY count DESC`;
+};
+
+
+export const selectTopFtPilotCollections = (blockNumber: number): string => {
+  return `
+  SELECT pilot_contract, sum(coalesce(end_time, ${blockNumber}) - start_time) as ft
+  FROM ${pilotSessionsTable}
+  WHERE pilot_contract IS NOT NULL
+  GROUP BY pilot_contract
+  ORDER BY ft DESC`;
+};
+
 export const selectActivePilotSessionsForPilots = (
   pilots: { contract: string; tokenId: string }[]
 ): string => {
@@ -175,4 +228,8 @@ export const selectActivePilotSessionsForPilots = (
   FROM ${pilotSessionsTable}
   WHERE (${whereClauses.join(" OR ")}) AND end_time IS NULL;
   `;
+};
+
+export const selectTraitRarities = (): string => {
+  return `SELECT trait_type, value, count(*) as "count" FROM ${attributesTable} WHERE trait_type NOT IN ('VIN', '% Original') GROUP BY trait_type, value`;
 };

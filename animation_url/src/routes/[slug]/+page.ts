@@ -45,17 +45,7 @@ export async function load({ url }) {
   };
 }
 
-type Pilot = {
-  uri: string;
-  type?: MediaType;
-};
-
-enum MediaType {
-  image = "image",
-  video = "video",
-}
-
-const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
+const getPilot = async function (rigId: string): Promise<string | undefined> {
   // Get the sessions where end_time is null, there should only ever be one of these
   const sessions = await tableland.read(
     `SELECT pilot_contract,pilot_id FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`,
@@ -71,45 +61,37 @@ const getPilot = async function (rigId: string): Promise<Pilot | undefined> {
 
   // there's a session without an end_time, show a pilot
   const session = sessions[0];
+  let pilot: string;
   if (session.pilot_contract && session.pilot_id) {
     const pilotToken = await alchemy.nft.getNftMetadata(
       session.pilot_contract,
       session.pilot_id,
       NftTokenType.ERC721
     );
-    if (pilotToken.media.length > 0) {
-      const media = pilotToken.media[0];
-      const pilot: Pilot = { uri: media.gateway || media.raw };
-      pilot.type = getMediaType(pilot.uri);
-      console.info("pilot token:", pilot);
-      return pilot.type ? pilot : { uri: unknown, type: MediaType.image };
-    } else {
-      return { uri: unknown, type: MediaType.image };
-    }
-  }
 
-  // else show trainer
-  return { uri: trainer, type: MediaType.image };
+    const imageUrl =
+      pilotToken?.media[0]?.thumbnail ||
+      pilotToken?.media[0]?.gateway ||
+      pilotToken?.media[0]?.raw;
+    const imageData = pilotToken?.rawMetadata?.image_data;
+    const svgImageData = pilotToken?.rawMetadata?.svg_image_data;
+
+    pilot = imageUrl || imageData || svgImageData || unknown;
+  } else {
+    // else show trainer
+    pilot = trainer;
+  }
+  return encodeSVG(pilot);
 };
 
-const mediaTypes = new Map([
-  ["jpg", MediaType.image],
-  ["jpeg", MediaType.image],
-  ["png", MediaType.image],
-  ["svg", MediaType.image],
-  ["gif", MediaType.image],
-  ["mp4", MediaType.video],
-  ["mov", MediaType.video],
-  ["ogv", MediaType.video],
-  ["webm", MediaType.video],
-  ["3gp", MediaType.video],
-]);
-
-const getMediaType = function (uri: string): MediaType | undefined {
-  if (uri.startsWith("data:image/")) {
-    return MediaType.image;
+const encodeSVG = function (uri: string): string {
+  if (uri.startsWith("data:image/svg+xml;utf8,")) {
+    const parts = uri.split("data:image/svg+xml;utf8,");
+    if (parts.length !== 2) {
+      return unknown;
+    }
+    return "data:image/svg+xml;base64," + btoa(parts[1]);
+  } else {
+    return uri;
   }
-  const parts = uri.split(".");
-  const extension = parts[parts.length - 1];
-  return mediaTypes.get(extension);
 };
