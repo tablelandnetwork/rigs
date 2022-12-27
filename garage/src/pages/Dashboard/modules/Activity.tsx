@@ -1,4 +1,6 @@
 import React, { useMemo } from "react";
+import { Link } from "react-router-dom";
+import styled from "@emotion/styled";
 import {
   Box,
   Flex,
@@ -25,6 +27,12 @@ const getPilotedTitle = (
 
   return `Piloted ${collectionName} #${tokenId}`;
 };
+
+const UnderlineLink = styled(Link)`
+  &:hover {
+    text-decoration: underline;
+  }
+`;
 
 export const Activity = (props: React.ComponentProps<typeof Box>) => {
   const { events } = useRigsActivity();
@@ -81,13 +89,19 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                     pr={0}
                     width={`calc(var(--chakra-sizes-${p}) + 20px)`}
                   >
-                    <Image
-                      src={thumbUrl}
-                      alt={`Rig ${rigId}`}
-                      sx={{ width: "20px", height: "20px", maxWidth: "20px" }}
-                    />
+                    <Link to={`/rigs/${rigId}`}>
+                      <Image
+                        src={thumbUrl}
+                        alt={`Rig ${rigId}`}
+                        sx={{ width: "20px", height: "20px", maxWidth: "20px" }}
+                      />
+                    </Link>
                   </Td>
-                  <Td width="60px">{`#${rigId}`}</Td>
+                  <Td width="60px">
+                    <UnderlineLink
+                      to={`/rigs/${rigId}`}
+                    >{`#${rigId}`}</UnderlineLink>
+                  </Td>
                   <Td
                     pr={p}
                     sx={{

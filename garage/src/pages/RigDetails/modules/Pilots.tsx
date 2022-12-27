@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Heading,
@@ -43,7 +43,9 @@ const getPilots = (
     const { name = "Trainer", imageUrl = "" } = nft || {};
 
     const flightTime = sessions.reduce((acc, { startTime, endTime }) => {
-      return acc + ((endTime ?? blockNumber ?? startTime) - startTime);
+      return (
+        acc + Math.max((endTime ?? blockNumber ?? startTime) - startTime, 0)
+      );
     }, 0);
 
     return {
@@ -74,7 +76,10 @@ export const Pilots = ({
   p,
   ...props
 }: PilotProps) => {
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber, refetch } = useBlockNumber();
+  useEffect(() => {
+    refetch();
+  }, [rig, refetch]);
   const pilots = getPilots(rig, nfts, blockNumber);
 
   const totalFlightTime = pilots.reduce(

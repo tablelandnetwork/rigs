@@ -360,7 +360,7 @@ const NFTDisplay = ({
       _hover={{ cursor: supported ? "pointer" : "not-allowed" }}
     >
       <Image
-        src={nft.imageUrl || nft.imageSvgData}
+        src={nft.imageUrl || nft.imageData}
         width={size}
         sx={{ aspectRatio: "1/1", objectFit: "contain" }}
       />
@@ -528,7 +528,7 @@ const PickRigPilotStep = ({
     setCurrentRig((old) => {
       if (old === rigs.length - 1) return old;
 
-      return old++;
+      return old + 1;
     });
   }, [setCurrentRig, rigs]);
 
@@ -536,7 +536,7 @@ const PickRigPilotStep = ({
     setCurrentRig((old) => {
       if (old === 0) return old;
 
-      return old--;
+      return old - 1;
     });
   }, [setCurrentRig, rigs]);
 
@@ -548,30 +548,36 @@ const PickRigPilotStep = ({
     <>
       <ModalBody>
         <Flex direction="column">
-          <Flex justify="center" width="100%">
+          <Flex justify="center" align="center" width="100%">
             {displayArrows && (
               <Button
                 leftIcon={<ArrowBackIcon />}
                 onClick={prev}
                 isDisabled={currentRig === 0}
+                mr={4}
               >
                 Prev
               </Button>
             )}
             <Flex direction="column" p={4}>
-              <RigDisplay rig={rig} pilotNFT={pilot} width="260px" />
+              <RigDisplay
+                rig={rig}
+                pilotNFT={pilot}
+                width={{ base: "150px", md: "260px" }}
+              />
               Preview
             </Flex>
+            {displayArrows && (
+              <Button
+                leftIcon={<ArrowForwardIcon />}
+                onClick={next}
+                isDisabled={currentRig === rigs.length - 1}
+                ml={4}
+              >
+                Next
+              </Button>
+            )}
           </Flex>
-          {displayArrows && (
-            <Button
-              leftIcon={<ArrowForwardIcon />}
-              onClick={next}
-              isDisabled={currentRig === rigs.length - 1}
-            >
-              Next
-            </Button>
-          )}
         </Flex>
         <Box my={4}>
           <AsyncSelect
@@ -617,15 +623,21 @@ const PickRigPilotStep = ({
               const supported =
                 nft.type === "ERC721" &&
                 nft.contract.toLowerCase() !== contractAddress.toLowerCase();
+              const alreadySelected = Object.values(pilots).includes(nft);
+
+              const selectedForCurrentRig = pilot === nft;
+              const supportedForCurrentRig =
+                supported && (!alreadySelected || selectedForCurrentRig);
+
               return (
                 <NFTDisplay
                   key={`nft-list-${index}`}
                   nft={nft}
                   onSelect={() =>
-                    supported && setPilot(nft, rigs[currentRig].id)
+                    supportedForCurrentRig && setPilot(nft, rig.id)
                   }
-                  selected={pilot === nft}
-                  supported={supported}
+                  selected={selectedForCurrentRig}
+                  supported={supportedForCurrentRig}
                 />
               );
             })}

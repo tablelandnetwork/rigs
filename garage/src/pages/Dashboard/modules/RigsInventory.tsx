@@ -88,9 +88,28 @@ const RigListItem = ({
 
 enum Selectable {
   ALL,
-  IN_FLIGHT,
-  PARKED,
+  PARKABLE,
+  PILOTABLE,
+  TRAINABLE,
 }
+
+const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
+  const { isTrained, currentPilot } = rig;
+  const canPark = !!currentPilot;
+  const canTrain = !isTrained && !currentPilot;
+  const canPilot = isTrained && !currentPilot?.contract;
+
+  switch (selectable) {
+    case Selectable.TRAINABLE:
+      return canTrain;
+    case Selectable.PARKABLE:
+      return canPark;
+    case Selectable.PILOTABLE:
+      return canPilot;
+    case Selectable.ALL:
+      return true;
+  }
+};
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { data: blockNumber } = useBlockNumber();
@@ -109,12 +128,16 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
 
   const currentlySelectable = useMemo(() => {
     const selectedRig = rigs?.find((v) => v.id === firstSetValue(selectedRigs));
+    if (!selectedRig) return Selectable.ALL;
 
-    return selectedRig
-      ? selectedRig.currentPilot
-        ? Selectable.IN_FLIGHT
-        : Selectable.PARKED
-      : Selectable.ALL;
+    const { isTrained, currentPilot } = selectedRig;
+    const isPiloted = !!currentPilot?.contract;
+
+    if (isTrained) {
+      return isPiloted ? Selectable.PARKABLE : Selectable.PILOTABLE;
+    }
+
+    return currentPilot ? Selectable.PARKABLE : Selectable.TRAINABLE;
   }, [selectedRigs]);
 
   const toggleRigSelected = useCallback(
@@ -156,7 +179,11 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     }
   }, [pendingTx, refreshRigsAndClearPendingTx, tableland, clearPendingTx]);
 
-  const { trainRigsModal, parkRigsModal } = useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const openTrainModal = useCallback(() => {
     if (rigs?.length && selectedRigs.size) {
@@ -164,6 +191,13 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       trainRigsModal.openModal(modalRigs, setPendingTx);
     }
   }, [rigs, trainRigsModal, selectedRigs, setPendingTx]);
+
+  const openPilotModal = useCallback(() => {
+    if (rigs?.length && selectedRigs.size) {
+      const modalRigs = rigs.filter((v) => selectedRigs.has(v.id));
+      pilotRigsModal.openModal(modalRigs, setPendingTx);
+    }
+  }, [rigs, pilotRigsModal, selectedRigs, setPendingTx]);
 
   const openParkModal = useCallback(() => {
     if (rigs?.length && selectedRigs.size) {
@@ -188,11 +222,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         >
           {rigs.map((rig, index) => {
             const selected = selectedRigs.has(rig.id);
-            const hasPilot = !!rig.currentPilot;
-            const selectable =
-              currentlySelectable === Selectable.ALL ||
-              (currentlySelectable === Selectable.IN_FLIGHT && hasPilot) ||
-              (currentlySelectable === Selectable.PARKED && !hasPilot);
+            const selectable = isSelectable(rig, currentlySelectable);
             return (
               <RigListItem
                 rig={rig}
@@ -212,14 +242,18 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         <ChainAwareButton
           disabled={!!pendingTx || !selectedRigs.size}
           onClick={
-            currentlySelectable === Selectable.PARKED
-              ? openTrainModal
-              : openParkModal
+            currentlySelectable === Selectable.PARKABLE
+              ? openParkModal
+              : currentlySelectable === Selectable.PILOTABLE
+              ? openPilotModal
+              : openTrainModal
           }
         >
           {selectedRigs.size === 0
             ? "Select Rigs"
-            : currentlySelectable === Selectable.PARKED
+            : currentlySelectable === Selectable.PILOTABLE
+            ? "Pilot selected"
+            : currentlySelectable === Selectable.TRAINABLE
             ? "Train selected"
             : "Park selected"}
         </ChainAwareButton>
