@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Box, Flex, Grid, GridItem, Spinner, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { useBlockNumber } from "wagmi";
+import { useAccount, useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
@@ -26,10 +26,11 @@ const MODULE_PROPS = {
 
 export const RigDetails = () => {
   const { id } = useParams();
+  const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
   const { rig, refresh } = useRig(id || "", currentBlockNumber);
   const { connection: tableland } = useTablelandConnection();
-  const { rigs } = useOwnedRigs(currentBlockNumber);
+  const { rigs } = useOwnedRigs(address, currentBlockNumber);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
