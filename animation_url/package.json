@@ -21,7 +21,7 @@
     "@typescript-eslint/eslint-plugin": "^5.42.0",
     "@typescript-eslint/parser": "^5.42.0",
     "alchemy-sdk": "^2.2.3",
-    "eslint": "^8.16.0",
+    "eslint": "^8.31.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-svelte3": "^4.0.0",
     "ethers": "^5.7.1",
