@@ -127,6 +127,46 @@ export const selectRigsActivity = (
   LIMIT ${first}
   OFFSET ${offset}`;
 };
+export const selectOwnerActivity = (
+  owner: string,
+  first: number = 20,
+  offset: number = 0
+): string => {
+  return `
+  SELECT
+    cast(rig_id as text),
+    ${THUMB_IPFS_URI_SELECT} as "thumb",
+    ${IMAGE_IPFS_URI_SELECT} as "image",
+    pilot_contract,
+    pilot_id,
+    start_time,
+    end_time,
+    max(start_time, coalesce(end_time, 0)) as "timestamp"
+  FROM ${pilotSessionsTable} AS sessions
+  JOIN ${lookupsTable}
+  WHERE lower(owner) = '${owner.toLowerCase()}'
+  ORDER BY timestamp DESC, start_time DESC
+  LIMIT ${first}
+  OFFSET ${offset}`;
+};
+
+export const selectOwnerPilots = (
+  owner: string,
+  blockNumber: number
+): string => {
+  return `
+  SELECT
+    pilot_contract,
+    pilot_id,
+    sum(coalesce(end_time, ${blockNumber}) - start_time) as "flight_time",
+    min(coalesce(end_time, 0)) == 0 as "is_active"
+  FROM ${pilotSessionsTable} AS sessions
+  JOIN ${lookupsTable}
+  WHERE lower(owner) = '${owner.toLowerCase()}'
+  GROUP BY pilot_contract, pilot_id
+  ORDER BY flight_time DESC
+  `;
+};
 
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
@@ -164,8 +204,11 @@ export const selectStats = (blockNumber: number): string => {
 
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
-export const selectAccountStats = (blockNumber: number, address: string): string => {
-  const lowerCaseAddress = address.toLowerCase()
+export const selectAccountStats = (
+  blockNumber: number,
+  address: string
+): string => {
+  const lowerCaseAddress = address.toLowerCase();
   return `
   SELECT
   (
@@ -204,7 +247,6 @@ export const selectTopActivePilotCollections = (): string => {
   GROUP BY pilot_contract
   ORDER BY count DESC`;
 };
-
 
 export const selectTopFtPilotCollections = (blockNumber: number): string => {
   return `
