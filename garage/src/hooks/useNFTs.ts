@@ -67,6 +67,8 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
 
     if (!input) return;
 
+    input = input.filter(({ contract }) => contract);
+
     if (input.length) {
       const tokens = input.map(({ contract, tokenId }) => ({
         contractAddress: contract,
