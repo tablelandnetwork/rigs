@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Flex,
@@ -13,22 +13,60 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
-import { Event } from "../../../types";
+import { useNFTCollections } from "../../../hooks/useNFTs";
+import { Event, EventAction } from "../../../types";
 
 interface ActivityLogProps extends React.ComponentProps<typeof Box> {
   events?: Event[];
 }
 
+const getPilotedTitle = (
+  lookups: Record<string, string>,
+  contract: string,
+  tokenId: string
+) => {
+  const collectionName = lookups[contract.toLowerCase()] || contract;
+
+  return `Piloted ${collectionName} #${tokenId}`;
+};
+
 export const ActivityLog = ({ events, p, ...props }: ActivityLogProps) => {
   // TODO add table header? might look nicer since the pilots table has one
+
+  const contracts = useMemo(() => {
+    return Array.from(
+      new Set(
+        events
+          ?.filter((v) => v.pilot)
+          .map((v) => v.pilot?.contract)
+          .filter((v) => v) as string[]
+      )
+    );
+  }, [events]);
+  const { collections } = useNFTCollections(contracts);
+  const collectionNameLookup = useMemo(() => {
+    return Object.fromEntries(
+      collections?.map((v) => [v.contractAddress.toLowerCase(), v.name]) || []
+    );
+  }, [collections]);
+
   return (
     <VStack align="stretch" pt={p} {...props}>
       <Heading px={p}>Activity</Heading>
       <Table>
         <Tbody>
           {events &&
-            events.map(({ action, rigId, thumb }, index) => {
+            events.map(({ action, rigId, thumb, pilot }, index) => {
               const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
+
+              const title =
+                pilot && action === EventAction.Piloted
+                  ? getPilotedTitle(
+                      collectionNameLookup,
+                      pilot.contract,
+                      pilot.tokenId
+                    )
+                  : action;
               return (
                 <Tr key={`flight-log-${index}`}>
                   <Td
@@ -44,7 +82,7 @@ export const ActivityLog = ({ events, p, ...props }: ActivityLogProps) => {
                   </Td>
                   <Td>Rig #{rigId}</Td>
                   <Td pr={p} isNumeric>
-                    {action}
+                    {title}
                   </Td>
                 </Tr>
               );
