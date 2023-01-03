@@ -45,13 +45,9 @@ export const RigsGrid = ({ rigs, nfts, gap, p, ...props }: RigsGridProps) => {
                     style={{ position: "relative", display: "block" }}
                   >
                     <RigDisplay
-                      border={1}
-                      borderStyle="solid"
-                      borderColor="black"
                       borderRadius="3px"
                       rig={rig}
                       pilotNFT={currentNFT}
-                      pilotBorderWidth="3px"
                     />
                   </Link>
                   <Flex width="100%" justify="space-between">
