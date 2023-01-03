@@ -12,6 +12,7 @@ import {
   Td,
   VStack,
 } from "@chakra-ui/react";
+import { Link } from "react-router-dom";
 import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
 import { useNFTCollections } from "../../../hooks/useNFTs";
 import { Event, EventAction } from "../../../types";
@@ -80,7 +81,9 @@ export const ActivityLog = ({ events, p, ...props }: ActivityLogProps) => {
                       sx={{ width: "30px", height: "30px", maxWidth: "30px" }}
                     />
                   </Td>
-                  <Td>Rig #{rigId}</Td>
+                  <Td>
+                    <Link to={`/rigs/${rigId}`}>Rig #{rigId}</Link>
+                  </Td>
                   <Td pr={p} isNumeric>
                     {title}
                   </Td>
