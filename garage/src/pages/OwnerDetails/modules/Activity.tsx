@@ -31,14 +31,18 @@ export const ActivityLog = ({ events, p, ...props }: ActivityLogProps) => {
               const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
               return (
                 <Tr key={`flight-log-${index}`}>
-                  <Td pl={p} pr={0}>
+                  <Td
+                    pl={p}
+                    pr={0}
+                    width={`calc(var(--chakra-sizes-${p}) + 30px)`}
+                  >
                     <Image
                       src={thumbUrl}
                       alt={`Rig ${rigId}`}
-                      sx={{ width: "20px", height: "20px", maxWidth: "20px" }}
+                      sx={{ width: "30px", height: "30px", maxWidth: "30px" }}
                     />
                   </Td>
-                  <Td pl={0}>Rig #{rigId}</Td>
+                  <Td>Rig #{rigId}</Td>
                   <Td pr={p} isNumeric>
                     {action}
                   </Td>
