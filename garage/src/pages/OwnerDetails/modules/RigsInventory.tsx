@@ -27,8 +27,7 @@ export const RigsGrid = ({ rigs, nfts, gap, p, ...props }: RigsGridProps) => {
       <Heading pb={p}>Rigs ({rigs?.length ?? 0})</Heading>
       <Grid
         templateColumns={{
-          base: "repeat(1, 1fr)",
-          sm: "repeat(2, 1fr)",
+          base: "repeat(2, 1fr)",
           md: "repeat(3, 1fr)",
           xl: "repeat(4, 1fr)",
         }}
