@@ -2,6 +2,7 @@ import React from "react";
 import { Enter } from "./pages/Enter";
 import { Dashboard } from "./pages/Dashboard";
 import { RigDetails } from "./pages/RigDetails";
+import { OwnerDetails } from "./pages/OwnerDetails";
 
 export const routes = () => {
   return [
@@ -18,5 +19,11 @@ export const routes = () => {
       requiresWalletConnection: true,
       element: <RigDetails />,
     },
+    {
+      key: "OWNER_DETAILS",
+      path: "/owner/:owner",
+      requiresWalletConnection: true,
+      element: <OwnerDetails />,
+    }
   ];
 };
