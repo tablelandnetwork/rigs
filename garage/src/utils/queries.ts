@@ -127,6 +127,7 @@ export const selectRigsActivity = (
   LIMIT ${first}
   OFFSET ${offset}`;
 };
+
 export const selectOwnerActivity = (
   owner: string,
   first: number = 20,
@@ -157,7 +158,7 @@ export const selectOwnerPilots = (
   return `
   SELECT
     pilot_contract,
-    pilot_id,
+    cast(pilot_id as text),
     sum(coalesce(end_time, ${blockNumber}) - start_time) as "flight_time",
     min(coalesce(end_time, 0)) == 0 as "is_active"
   FROM ${pilotSessionsTable} AS sessions
