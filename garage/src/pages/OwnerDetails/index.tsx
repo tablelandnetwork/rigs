@@ -90,7 +90,7 @@ export const OwnerDetails = () => {
             gap={GRID_GAP}
             flexGrow="1"
           />
-          <VStack flexShrink="0" align="top">
+          <VStack flexShrink="0" align="top" spacing={GRID_GAP}>
             <Pilots pilots={pilots} nfts={nfts} {...MODULE_PROPS} />
             <ActivityLog events={events} {...MODULE_PROPS} />
           </VStack>
