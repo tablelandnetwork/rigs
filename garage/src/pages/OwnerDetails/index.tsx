@@ -1,5 +1,5 @@
-import React from "react";
-import { Flex, Heading, VStack } from "@chakra-ui/react";
+import React, { useMemo } from "react";
+import { Flex, Heading, Text, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
@@ -10,6 +10,7 @@ import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
 import { Pilots } from "./modules/Pilots";
+import { prettyNumber } from "../../utils/fmt";
 
 const GRID_GAP = 4;
 
@@ -46,6 +47,12 @@ export const OwnerDetails = () => {
   const { events } = useOwnerActivity(owner);
   const { nfts } = useNFTs(pilots);
 
+  const totalFt = useMemo(() => {
+    if (!pilots) return;
+
+    return pilots.map((p) => p.flightTime).reduce((a, b) => a + b, 0);
+  }, [pilots]);
+
   return isValidAddress(owner) ? (
     <CenterContainer>
       <Flex
@@ -59,7 +66,16 @@ export const OwnerDetails = () => {
       >
         <VStack {...MODULE_PROPS} width="100%" align="left">
           <Heading size="sm">Collector profile</Heading>
-          <Heading>{owner}</Heading>
+          <Heading pb={8}>{owner}</Heading>
+
+          {totalFt && (
+            <Heading size="sm">
+              Total FT earned:{" "}
+              <Text as="span" fontWeight="bold">
+                {prettyNumber(totalFt)}
+              </Text>
+            </Heading>
+          )}
         </VStack>
         <Flex
           direction={{ base: "column", lg: "row" }}
