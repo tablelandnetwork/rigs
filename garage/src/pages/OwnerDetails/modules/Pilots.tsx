@@ -29,7 +29,7 @@ interface PilotProps extends React.ComponentProps<typeof Box> {
 export const Pilots = ({ pilots, nfts, p, ...props }: PilotProps) => {
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
-      <Heading px={p}>Pilots</Heading>
+      <Heading px={p}>Pilots {pilots && `(${pilots.length})`}</Heading>
       <Table>
         <Thead>
           <Tr>
