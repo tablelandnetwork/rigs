@@ -6,6 +6,7 @@ import {
   Text,
   useBreakpointValue,
 } from "@chakra-ui/react";
+import { Link } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import exit from "../assets/exit.svg";
 
@@ -71,7 +72,9 @@ export const TablelandConnectButton = ({
               return (
                 <Flex align="center">
                   {showAddress && (
-                    <Text color="inactive">{account.displayName}</Text>
+                    <Link to={`/owner/${account.address}`}>
+                      <Text color="inactive">{account.displayName}</Text>
+                    </Link>
                   )}
                   <Button
                     leftIcon={<Image src={exit} />}
