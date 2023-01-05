@@ -92,6 +92,28 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
   return { nfts };
 };
 
+export const useNFTOwner = (contract?: string, tokenId?: string) => {
+  const [owner, setOwner] = useState<string>();
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!contract || !tokenId) return;
+
+    alchemy.nft.getOwnersForNft(contract, tokenId).then((v) => {
+      if (isCancelled) return;
+
+      setOwner(v.owners?.[0]);
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [contract, tokenId, setOwner]);
+
+  return owner;
+};
+
 interface OwnedNFTsFilter {
   contracts?: string[];
 }

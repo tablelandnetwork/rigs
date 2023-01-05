@@ -79,6 +79,16 @@ const theme = extendTheme(
           borderColor: "#1E3535 !important",
           borderTop: "var(--chakra-borders-1px)",
         },
+        a: {
+          ":not(.chakra-button)": {
+            textDecorationLine: "underline",
+            textUnderlinePosition: "under",
+            textDecorationColor: "inactive",
+          },
+          ":hover": {
+            textDecorationColor: "inherit",
+          },
+        },
       },
     },
     components: {

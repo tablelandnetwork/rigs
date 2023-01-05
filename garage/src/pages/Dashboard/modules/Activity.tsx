@@ -28,12 +28,6 @@ const getPilotedTitle = (
   return `Piloted ${collectionName} #${tokenId}`;
 };
 
-const UnderlineLink = styled(Link)`
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
 export const Activity = (props: React.ComponentProps<typeof Box>) => {
   const { events } = useRigsActivity();
   const { p = "8px", ...otherProps } = props;
@@ -98,9 +92,7 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                     </Link>
                   </Td>
                   <Td width="60px">
-                    <UnderlineLink
-                      to={`/rigs/${rigId}`}
-                    >{`#${rigId}`}</UnderlineLink>
+                    <Link to={`/rigs/${rigId}`}>{`#${rigId}`}</Link>
                   </Td>
                   <Td
                     pr={p}

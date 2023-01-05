@@ -1,19 +1,37 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Flex, Grid, GridItem, Spinner, VStack } from "@chakra-ui/react";
-import { useParams } from "react-router-dom";
+import {
+  Box,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Image,
+  Link,
+  Show,
+  Spinner,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
-import { useNFTs } from "../../hooks/useNFTs";
+import { useNFTs, useNFTOwner } from "../../hooks/useNFTs";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
+import { prettyNumber } from "../../utils/fmt";
 import { sleep, runUntilConditionMet } from "../../utils/async";
+import { contractAddress } from "../../contract";
+import { openseaBaseUrl } from "../../env";
+import { RigWithPilots } from "../../types";
+import openseaMark from "../../assets/opensea-mark.svg";
 
 const GRID_GAP = 4;
 
@@ -24,6 +42,56 @@ const MODULE_PROPS = {
   overflow: "hidden",
 };
 
+type RigHeaderProps = React.ComponentProps<typeof Box> & {
+  rig: RigWithPilots;
+  owner?: string;
+  currentBlockNumber?: number;
+};
+
+const RigHeader = ({
+  rig,
+  owner,
+  currentBlockNumber,
+  ...props
+}: RigHeaderProps) => {
+  const totalFlightTime = rig.pilotSessions.reduce(
+    (acc, { startTime, endTime }) => {
+      return (
+        acc +
+        Math.max((endTime ?? currentBlockNumber ?? startTime) - startTime, 0)
+      );
+    },
+    0
+  );
+
+  return (
+    <Box {...props}>
+      <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
+        <Heading size="xl">Rig {`#${rig.id}`}</Heading>
+        <Link
+          href={`${openseaBaseUrl}/${contractAddress}/${rig.id}`}
+          title={`View Rig #${rig.id} on OpenSea`}
+          isExternal
+        >
+          <Image src={openseaMark} />
+        </Link>
+      </HStack>
+      <Heading size="sm">
+        {rig.currentPilot ? "In-flight" : "Parked"}
+        {` (${prettyNumber(totalFlightTime)} FT)`}
+      </Heading>
+      <HStack pt={8}>
+        <Text>
+          Owned by{" "}
+          <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
+            {owner}
+          </RouterLink>
+        </Text>
+      </HStack>
+    </Box>
+  );
+};
+
 export const RigDetails = () => {
   const { id } = useParams();
   const { address } = useAccount();
@@ -31,6 +99,7 @@ export const RigDetails = () => {
   const { rig, refresh } = useRig(id || "", currentBlockNumber);
   const { connection: tableland } = useTablelandConnection();
   const { rigs } = useOwnedRigs(address, currentBlockNumber);
+  const owner = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
@@ -108,6 +177,14 @@ export const RigDetails = () => {
           <>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
+                <Show below="md">
+                  <RigHeader
+                    {...MODULE_PROPS}
+                    rig={rig}
+                    owner={owner}
+                    currentBlockNumber={currentBlockNumber}
+                  />
+                </Show>
                 <Box p={4} bgColor="paper" borderRadius="3px">
                   <RigDisplay
                     border={1}
@@ -125,6 +202,14 @@ export const RigDetails = () => {
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
+                <Show above="md">
+                  <RigHeader
+                    {...MODULE_PROPS}
+                    rig={rig}
+                    owner={owner}
+                    currentBlockNumber={currentBlockNumber}
+                  />
+                </Show>
                 <Pilots
                   rig={rig}
                   nfts={nfts}
