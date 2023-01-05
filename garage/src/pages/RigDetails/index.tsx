@@ -10,15 +10,16 @@ import {
   Link,
   Show,
   Spinner,
+  Text,
   VStack,
 } from "@chakra-ui/react";
-import { useParams } from "react-router-dom";
+import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
-import { useNFTs } from "../../hooks/useNFTs";
+import { useNFTs, useNFTOwner } from "../../hooks/useNFTs";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
@@ -43,9 +44,11 @@ const MODULE_PROPS = {
 
 const RigHeader = ({
   rig,
+  owner,
   currentBlockNumber,
 }: {
   rig: RigWithPilots;
+  owner?: string;
   currentBlockNumber?: number;
 }) => {
   const totalFlightTime = rig.pilotSessions.reduce(
@@ -74,6 +77,13 @@ const RigHeader = ({
         {rig.currentPilot ? "In-flight" : "Parked"}
         {` (${prettyNumber(totalFlightTime)} FT)`}
       </Heading>
+      <HStack pt={8}>
+        <Text>
+          Owned by{" "}
+          <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
+            {owner}
+          </RouterLink>
+        </Text>
       </HStack>
     </Box>
   );
@@ -86,6 +96,7 @@ export const RigDetails = () => {
   const { rig, refresh } = useRig(id || "", currentBlockNumber);
   const { connection: tableland } = useTablelandConnection();
   const { rigs } = useOwnedRigs(address, currentBlockNumber);
+  const owner = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
@@ -183,6 +194,7 @@ export const RigDetails = () => {
                 <RigHeader
                   {...MODULE_PROPS}
                   rig={rig}
+                  owner={owner}
                   currentBlockNumber={currentBlockNumber}
                 />
                 <Pilots
