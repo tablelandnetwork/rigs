@@ -82,25 +82,9 @@ export const Pilots = ({
   }, [rig, refetch]);
   const pilots = getPilots(rig, nfts, blockNumber);
 
-  const totalFlightTime = pilots.reduce(
-    (acc, { flightTime }) => acc + flightTime,
-    0
-  );
-
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
-      <HStack
-        px={p}
-        justify="space-between"
-        align="baseline"
-        sx={{ width: "100%" }}
-      >
-        <Heading size="xl">Rig {`#${rig.id}`}</Heading>
-        <Heading size="sm">
-          {rig.currentPilot ? "In-flight" : "Parked"}
-          {` (${prettyNumber(totalFlightTime)} FT)`}
-        </Heading>
-      </HStack>
+      <Heading px={p}>Pilots</Heading>
       <Table>
         <Thead>
           <Tr>

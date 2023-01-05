@@ -1,5 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Box, Flex, Grid, GridItem, Spinner, VStack } from "@chakra-ui/react";
+import {
+  Box,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  HStack,
+  Show,
+  Spinner,
+  VStack,
+} from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
 import { useAccount, useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
@@ -13,7 +23,9 @@ import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
+import { prettyNumber } from "../../utils/fmt";
 import { sleep, runUntilConditionMet } from "../../utils/async";
+import { RigWithPilots } from "../../types";
 
 const GRID_GAP = 4;
 
@@ -22,6 +34,36 @@ const MODULE_PROPS = {
   p: 8,
   bgColor: "paper",
   overflow: "hidden",
+};
+
+const RigHeader = ({
+  rig,
+  currentBlockNumber,
+}: {
+  rig: RigWithPilots;
+  currentBlockNumber?: number;
+}) => {
+  const totalFlightTime = rig.pilotSessions.reduce(
+    (acc, { startTime, endTime }) => {
+      return (
+        acc +
+        Math.max((endTime ?? currentBlockNumber ?? startTime) - startTime, 0)
+      );
+    },
+    0
+  );
+
+  return (
+    <Box {...MODULE_PROPS}>
+      <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
+        <Heading size="xl">Rig {`#${rig.id}`}</Heading>
+      <Heading size="sm">
+        {rig.currentPilot ? "In-flight" : "Parked"}
+        {` (${prettyNumber(totalFlightTime)} FT)`}
+      </Heading>
+      </HStack>
+    </Box>
+  );
 };
 
 export const RigDetails = () => {
@@ -125,6 +167,11 @@ export const RigDetails = () => {
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
+                <RigHeader
+                  {...MODULE_PROPS}
+                  rig={rig}
+                  currentBlockNumber={currentBlockNumber}
+                />
                 <Pilots
                   rig={rig}
                   nfts={nfts}
