@@ -82,7 +82,7 @@ export const ActivityLog = ({ events, p, ...props }: ActivityLogProps) => {
                     />
                   </Td>
                   <Td>
-                    <Link to={`/rigs/${rigId}`}>Rig #{rigId}</Link>
+                    <Link to={`/rigs/${rigId}`}>#{rigId}</Link>
                   </Td>
                   <Td pr={p} isNumeric>
                     {title}
