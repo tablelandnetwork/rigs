@@ -1,13 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { Rig } from "../types";
-import { useAccount, useContractRead } from "wagmi";
+import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
 import { rigFromRow } from "../utils/xforms";
 import { contractAddress, contractInterface } from "../contract";
 
-export const useOwnedRigs = (currentBlock?: number) => {
-  const { address } = useAccount();
+export const useOwnedRigs = (address?: string, currentBlock?: number) => {
   const { connection: tableland } = useTablelandConnection();
 
   const { data } = useContractRead({
@@ -26,7 +25,7 @@ export const useOwnedRigs = (currentBlock?: number) => {
 
   useEffect(() => {
     let isCancelled = false;
-    if (data && currentBlock) {
+    if (address && data && currentBlock) {
       const ids = data.map((bn) => bn.toString());
 
       tableland.read(selectRigs(ids, currentBlock)).then((result) => {
@@ -37,7 +36,7 @@ export const useOwnedRigs = (currentBlock?: number) => {
         isCancelled = true;
       };
     }
-  }, [data, setRigs, currentBlock, /* effect dep */ shouldRefresh]);
+  }, [address, data, setRigs, currentBlock, /* effect dep */ shouldRefresh]);
 
   return { rigs, refresh };
 };
