@@ -6,6 +6,8 @@ import {
   GridItem,
   Heading,
   HStack,
+  Image,
+  Link,
   Show,
   Spinner,
   VStack,
@@ -25,7 +27,10 @@ import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber } from "../../utils/fmt";
 import { sleep, runUntilConditionMet } from "../../utils/async";
+import { contractAddress } from "../../contract";
+import { openseaBaseUrl } from "../../env";
 import { RigWithPilots } from "../../types";
+import openseaMark from "../../assets/opensea-mark.svg";
 
 const GRID_GAP = 4;
 
@@ -57,6 +62,14 @@ const RigHeader = ({
     <Box {...MODULE_PROPS}>
       <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
         <Heading size="xl">Rig {`#${rig.id}`}</Heading>
+        <Link
+          href={`${openseaBaseUrl}/${contractAddress}/${rig.id}`}
+          title={`View Rig #${rig.id} on OpenSea`}
+          isExternal
+        >
+          <Image src={openseaMark} />
+        </Link>
+      </HStack>
       <Heading size="sm">
         {rig.currentPilot ? "In-flight" : "Parked"}
         {` (${prettyNumber(totalFlightTime)} FT)`}
