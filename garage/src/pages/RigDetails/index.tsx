@@ -42,15 +42,18 @@ const MODULE_PROPS = {
   overflow: "hidden",
 };
 
+type RigHeaderProps = React.ComponentProps<typeof Box> & {
+  rig: RigWithPilots;
+  owner?: string;
+  currentBlockNumber?: number;
+};
+
 const RigHeader = ({
   rig,
   owner,
   currentBlockNumber,
-}: {
-  rig: RigWithPilots;
-  owner?: string;
-  currentBlockNumber?: number;
-}) => {
+  ...props
+}: RigHeaderProps) => {
   const totalFlightTime = rig.pilotSessions.reduce(
     (acc, { startTime, endTime }) => {
       return (
@@ -62,7 +65,7 @@ const RigHeader = ({
   );
 
   return (
-    <Box {...MODULE_PROPS}>
+    <Box {...props}>
       <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
         <Heading size="xl">Rig {`#${rig.id}`}</Heading>
         <Link
