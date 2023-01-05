@@ -174,6 +174,14 @@ export const RigDetails = () => {
           <>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
+                <Show below="md">
+                  <RigHeader
+                    {...MODULE_PROPS}
+                    rig={rig}
+                    owner={owner}
+                    currentBlockNumber={currentBlockNumber}
+                  />
+                </Show>
                 <Box p={4} bgColor="paper" borderRadius="3px">
                   <RigDisplay
                     border={1}
@@ -191,12 +199,14 @@ export const RigDetails = () => {
             </GridItem>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
-                <RigHeader
-                  {...MODULE_PROPS}
-                  rig={rig}
-                  owner={owner}
-                  currentBlockNumber={currentBlockNumber}
-                />
+                <Show above="md">
+                  <RigHeader
+                    {...MODULE_PROPS}
+                    rig={rig}
+                    owner={owner}
+                    currentBlockNumber={currentBlockNumber}
+                  />
+                </Show>
                 <Pilots
                   rig={rig}
                   nfts={nfts}
