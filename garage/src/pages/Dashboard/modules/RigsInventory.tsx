@@ -5,7 +5,6 @@ import {
   Button,
   Flex,
   Heading,
-  HStack,
   Grid,
   GridItem,
   Spinner,
@@ -218,16 +217,22 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
 
   return (
     <VStack align="start" {...props} sx={{ height: "100%", width: "100%" }}>
-      <HStack align="center" justify="space-between" width="100%">
+      <Flex
+        direction={{ base: "column", sm: "row" }}
+        align={{ base: "start", sm: "center" }}
+        justify="space-between"
+        width="100%"
+      >
         <Heading mb={2}>Rigs {rigs && ` (${rigs.length})`}</Heading>
         <Text
           onClick={onOpenInfo}
           sx={{ _hover: { textDecoration: "underline", cursor: "pointer" } }}
+          mb={{ base: 6, sm: 0 }}
         >
           <QuestionIcon mr={2} />
           Learn more about Rig pilots
         </Text>
-      </HStack>
+      </Flex>
       {rigs && nfts && (
         <Grid
           gap={4}
