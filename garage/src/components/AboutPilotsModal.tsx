@@ -37,7 +37,7 @@ export const AboutPilotsModal = ({ isOpen, onClose }: ModalProps) => {
             </Heading>
             <Text pb={3}>
               Flight Time is a non-transferrable reputation metric for
-              the Tableland ecosystem (that is stored and tracked in Tableland!)
+              the Tableland ecosystem (that is stored and tracked in Tableland!).
             </Text>
             <Text>
               As a Rig owner you can earn FT by taking your Rigs flying.
@@ -55,7 +55,7 @@ export const AboutPilotsModal = ({ isOpen, onClose }: ModalProps) => {
             <Text>
               After training you can use any ERC721 token that you
               own to pilot your Rigs. Pilot history is stored on Tableland,
-              and can be queried and reflected in metadata
+              and can be queried and reflected in metadata.
             </Text>
             <Heading as="h4" pt={6}>
               How do I train/pilot my Rigs?
