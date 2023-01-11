@@ -9,6 +9,7 @@ import {
   NftExcludeFilters,
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
+import { useContractRead } from "wagmi";
 import { chain, deployment } from "../env";
 import { useQuery } from "@tanstack/react-query";
 
@@ -95,23 +96,23 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
 export const useNFTOwner = (contract?: string, tokenId?: string) => {
   const [owner, setOwner] = useState<string>();
 
+  const { data, refetch } = useContractRead({
+    addressOrName: contract || "",
+    contractInterface: [
+      "function ownerOf(uint256 tokenId) view returns (address)",
+    ],
+    functionName: "ownerOf",
+    args: tokenId,
+    enabled: !!contract && !!tokenId,
+  });
+
   useEffect(() => {
-    let isCancelled = false;
+    if (!data) return;
 
-    if (!contract || !tokenId) return;
+    setOwner((data as unknown) as string);
+  }, [data, setOwner]);
 
-    alchemy.nft.getOwnersForNft(contract, tokenId).then((v) => {
-      if (isCancelled) return;
-
-      setOwner(v.owners?.[0]);
-    });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [contract, tokenId, setOwner]);
-
-  return owner;
+  return { owner, refresh: refetch };
 };
 
 interface OwnedNFTsFilter {

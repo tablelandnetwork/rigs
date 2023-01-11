@@ -16,7 +16,6 @@ import {
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
-import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
 import { useNFTs, useNFTOwner } from "../../hooks/useNFTs";
@@ -96,18 +95,22 @@ export const RigDetails = () => {
   const { id } = useParams();
   const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
-  const { rig, refresh } = useRig(id || "", currentBlockNumber);
+  const { rig, refresh: refreshRig } = useRig(id || "", currentBlockNumber);
   const { connection: tableland } = useTablelandConnection();
-  const { rigs } = useOwnedRigs(address, currentBlockNumber);
-  const owner = useNFTOwner(contractAddress, id);
+  const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
   const { nfts } = useNFTs(pilots);
 
+  const refresh = useCallback(() => {
+    refreshRig();
+    refreshOwner();
+  }, [useRig, useMemo]);
+
   const userOwnsRig = useMemo(() => {
-    return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));
-  }, [rig, rigs]);
+    return !!address && address.toLowerCase() === owner?.toLowerCase();
+  }, [address, owner]);
 
   const [pendingTx, setPendingTx] = useState<string>();
   const clearPendingTx = useCallback(() => {
