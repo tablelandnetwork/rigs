@@ -272,26 +272,28 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         </Flex>
       )}
 
-      <Flex justify="flex-end" width="100%" pt={6}>
-        <ChainAwareButton
-          disabled={!!pendingTx || !selectedRigs.size}
-          onClick={
-            currentlySelectable === Selectable.PARKABLE
-              ? openParkModal
+      {rigs?.length && (
+        <Flex justify="flex-end" width="100%" pt={6}>
+          <ChainAwareButton
+            disabled={!!pendingTx || !selectedRigs.size}
+            onClick={
+              currentlySelectable === Selectable.PARKABLE
+                ? openParkModal
+                : currentlySelectable === Selectable.PILOTABLE
+                ? openPilotModal
+                : openTrainModal
+            }
+          >
+            {selectedRigs.size === 0
+              ? "Select Rigs"
               : currentlySelectable === Selectable.PILOTABLE
-              ? openPilotModal
-              : openTrainModal
-          }
-        >
-          {selectedRigs.size === 0
-            ? "Select Rigs"
-            : currentlySelectable === Selectable.PILOTABLE
-            ? "Pilot selected"
-            : currentlySelectable === Selectable.TRAINABLE
-            ? "Train selected"
-            : "Park selected"}
-        </ChainAwareButton>
-      </Flex>
+              ? "Pilot selected"
+              : currentlySelectable === Selectable.TRAINABLE
+              ? "Train selected"
+              : "Park selected"}
+          </ChainAwareButton>
+        </Flex>
+      )}
 
       <AboutPilotsModal isOpen={isInfoOpen} onClose={onCloseInfo} />
     </VStack>
