@@ -260,27 +260,6 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         </Grid>
       )}
 
-      <Flex justify="flex-end" width="100%" pt={6}>
-        <ChainAwareButton
-          disabled={!!pendingTx || !selectedRigs.size}
-          onClick={
-            currentlySelectable === Selectable.PARKABLE
-              ? openParkModal
-              : currentlySelectable === Selectable.PILOTABLE
-              ? openPilotModal
-              : openTrainModal
-          }
-        >
-          {selectedRigs.size === 0
-            ? "Select Rigs"
-            : currentlySelectable === Selectable.PILOTABLE
-            ? "Pilot selected"
-            : currentlySelectable === Selectable.TRAINABLE
-            ? "Train selected"
-            : "Park selected"}
-        </ChainAwareButton>
-      </Flex>
-
       {rigs && rigs.length === 0 && (
         <Text variant="emptyState" pt={8}>
           You don't own any Rigs.
@@ -290,6 +269,29 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       {!rigs && (
         <Flex width="100%" height="200px" align="center" justify="center">
           <Spinner />
+        </Flex>
+      )}
+
+      {rigs?.length && (
+        <Flex justify="flex-end" width="100%" pt={6}>
+          <ChainAwareButton
+            disabled={!!pendingTx || !selectedRigs.size}
+            onClick={
+              currentlySelectable === Selectable.PARKABLE
+                ? openParkModal
+                : currentlySelectable === Selectable.PILOTABLE
+                ? openPilotModal
+                : openTrainModal
+            }
+          >
+            {selectedRigs.size === 0
+              ? "Select Rigs"
+              : currentlySelectable === Selectable.PILOTABLE
+              ? "Pilot selected"
+              : currentlySelectable === Selectable.TRAINABLE
+              ? "Train selected"
+              : "Park selected"}
+          </ChainAwareButton>
         </Flex>
       )}
 

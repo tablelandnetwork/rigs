@@ -11,12 +11,15 @@ import {
   Show,
   Spinner,
   Text,
+  useDisclosure,
   VStack,
 } from "@chakra-ui/react";
+import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
-import { useOwnedRigs } from "../../hooks/useOwnedRigs";
+import { ChainAwareButton } from "../../components/ChainAwareButton";
+import { TransferRigModal } from "../../components/TransferRigModal";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
 import { useNFTs, useNFTOwner } from "../../hooks/useNFTs";
@@ -45,15 +48,20 @@ const MODULE_PROPS = {
 type RigHeaderProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
   owner?: string;
+  userOwnsRig?: boolean;
   currentBlockNumber?: number;
+  refresh: () => void;
 };
 
 const RigHeader = ({
   rig,
   owner,
+  userOwnsRig,
   currentBlockNumber,
+  refresh,
   ...props
 }: RigHeaderProps) => {
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const totalFlightTime = rig.pilotSessions.reduce(
     (acc, { startTime, endTime }) => {
       return (
@@ -65,30 +73,53 @@ const RigHeader = ({
   );
 
   return (
-    <Box {...props}>
-      <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
-        <Heading size="xl">Rig {`#${rig.id}`}</Heading>
-        <Link
-          href={`${openseaBaseUrl}/${contractAddress}/${rig.id}`}
-          title={`View Rig #${rig.id} on OpenSea`}
-          isExternal
-        >
-          <Image src={openseaMark} />
-        </Link>
-      </HStack>
-      <Heading size="sm">
-        {rig.currentPilot ? "In-flight" : "Parked"}
-        {` (${prettyNumber(totalFlightTime)} FT)`}
-      </Heading>
-      <HStack pt={8}>
-        <Text>
-          Owned by{" "}
-          <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
-            {owner}
-          </RouterLink>
-        </Text>
-      </HStack>
-    </Box>
+    <>
+      <TransferRigModal
+        rig={rig}
+        isOpen={isOpen}
+        onClose={onClose}
+        onTransactionCompleted={refresh}
+      />
+      <Box {...props}>
+        <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
+          <Heading size="xl">Rig {`#${rig.id}`}</Heading>
+
+          <HStack>
+            <Link
+              href={`${openseaBaseUrl}/${contractAddress}/${rig.id}`}
+              title={`View Rig #${rig.id} on OpenSea`}
+              isExternal
+            >
+              <Image src={openseaMark} />
+            </Link>
+          </HStack>
+        </HStack>
+        <Heading size="sm">
+          {rig.currentPilot ? "In-flight" : "Parked"}
+          {` (${prettyNumber(totalFlightTime)} FT)`}
+        </Heading>
+        <HStack pt={8} justify="space-between">
+          <Text>
+            Owned by{" "}
+            <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
+              {userOwnsRig ? "You" : owner}
+            </RouterLink>
+          </Text>
+
+          {userOwnsRig && (
+            <ChainAwareButton
+              variant="solid"
+              color="primary"
+              size="sm"
+              onClick={onOpen}
+              leftIcon={<ArrowForwardIcon />}
+            >
+              Transfer
+            </ChainAwareButton>
+          )}
+        </HStack>
+      </Box>
+    </>
   );
 };
 
@@ -96,18 +127,22 @@ export const RigDetails = () => {
   const { id } = useParams();
   const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
-  const { rig, refresh } = useRig(id || "", currentBlockNumber);
+  const { rig, refresh: refreshRig } = useRig(id || "", currentBlockNumber);
   const { connection: tableland } = useTablelandConnection();
-  const { rigs } = useOwnedRigs(address, currentBlockNumber);
-  const owner = useNFTOwner(contractAddress, id);
+  const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
   const { nfts } = useNFTs(pilots);
 
+  const refresh = useCallback(() => {
+    refreshRig();
+    refreshOwner();
+  }, [useRig, useMemo]);
+
   const userOwnsRig = useMemo(() => {
-    return !!(rigs && rig && rigs.map((v) => v.id).includes(rig.id));
-  }, [rig, rigs]);
+    return !!address && address.toLowerCase() === owner?.toLowerCase();
+  }, [address, owner]);
 
   const [pendingTx, setPendingTx] = useState<string>();
   const clearPendingTx = useCallback(() => {
@@ -182,7 +217,9 @@ export const RigDetails = () => {
                     {...MODULE_PROPS}
                     rig={rig}
                     owner={owner}
+                    userOwnsRig={userOwnsRig}
                     currentBlockNumber={currentBlockNumber}
+                    refresh={refresh}
                   />
                 </Show>
                 <Box p={4} bgColor="paper" borderRadius="3px">
@@ -207,7 +244,9 @@ export const RigDetails = () => {
                     {...MODULE_PROPS}
                     rig={rig}
                     owner={owner}
+                    userOwnsRig={userOwnsRig}
                     currentBlockNumber={currentBlockNumber}
+                    refresh={refresh}
                   />
                 </Show>
                 <Pilots
