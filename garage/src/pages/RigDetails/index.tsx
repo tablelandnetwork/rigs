@@ -11,6 +11,7 @@ import {
   Show,
   Spinner,
   Text,
+  useBreakpointValue,
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
@@ -29,7 +30,7 @@ import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
-import { prettyNumber } from "../../utils/fmt";
+import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep, runUntilConditionMet } from "../../utils/async";
 import { contractAddress } from "../../contract";
 import { openseaBaseUrl } from "../../env";
@@ -72,6 +73,13 @@ const RigHeader = ({
     0
   );
 
+  const shouldTruncate = useBreakpointValue({
+    base: true,
+    sm: false,
+  });
+
+  const truncatedOwner = owner ? truncateWalletAddress(owner) : "";
+
   return (
     <>
       <TransferRigModal
@@ -102,7 +110,7 @@ const RigHeader = ({
           <Text>
             Owned by{" "}
             <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
-              {userOwnsRig ? "You" : owner}
+              {userOwnsRig ? "You" : shouldTruncate ? truncatedOwner : owner}
             </RouterLink>
           </Text>
 
