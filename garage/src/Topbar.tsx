@@ -10,9 +10,13 @@ import {
   InputLeftElement,
   InputRightElement,
   Kbd,
+  Modal,
+  ModalOverlay,
+  ModalContent,
   Show,
   Spacer,
   Text,
+  useDisclosure,
 } from "@chakra-ui/react";
 import { SearchIcon } from "@chakra-ui/icons";
 import { TablelandConnectButton } from "./components/TablelandConnectButton";
@@ -30,13 +34,9 @@ const useFocus = () => {
   return { focused, onFocus, onBlur };
 };
 
-export const Topbar = () => {
-  const route = useCurrentRoute();
+const RigSearchForm = ({ onSubmit }: { onSubmit?: () => void }) => {
   const navigate = useNavigate();
   const keysDown = useKeysDown();
-
-  const isEnter = route?.route.key === "ENTER";
-  const bgColor = isEnter ? "primaryLight" : "primary";
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -66,6 +66,7 @@ export const Topbar = () => {
           setSearchValue("");
           inputRef.current?.blur();
           window.scrollTo(0, 0);
+          onSubmit?.();
         }
       }
     },
@@ -73,6 +74,81 @@ export const Topbar = () => {
   );
 
   const { focused, onFocus, onBlur } = useFocus();
+
+  return (
+    <InputGroup
+      maxWidth={{ base: "auto", md: "300px" }}
+      minWidth="120px"
+      flexGrow="1"
+    >
+      <InputLeftElement
+        pointerEvents="none"
+        children={<SearchIcon color="#FFFFFFAA" />}
+      />
+      <Input
+        type="number"
+        placeholder="Rig #"
+        color="#FFFFFFAA"
+        bgColor="#00000033"
+        borderColor="#00000033"
+        focusBorderColor="#00000022"
+        ref={inputRef}
+        value={searchValue}
+        onChange={onInputChanged}
+        onKeyPress={onInputKeypressed}
+        onFocus={onFocus}
+        onBlur={onBlur}
+        min="0"
+        max="3000"
+        pr={{ base: "12px", sm: "48px" }}
+        size="md"
+      />
+      <Show above="sm">
+        <InputRightElement
+          pointerEvents="none"
+          width="48px"
+          children={
+            <HStack color="#FFFFFFAA" mr={3}>
+              {focused ? (
+                <Kbd>Enter</Kbd>
+              ) : (
+                <>
+                  <Kbd>⌘</Kbd>
+                  <Kbd>K</Kbd>
+                </>
+              )}
+            </HStack>
+          }
+        />
+      </Show>
+    </InputGroup>
+  );
+};
+
+const SearchModal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  return (
+    <Modal size="sm" isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <RigSearchForm onSubmit={onClose} />
+      </ModalContent>
+    </Modal>
+  );
+};
+
+export const Topbar = () => {
+  const route = useCurrentRoute();
+
+  const isEnter = route?.route.key === "ENTER";
+  const bgColor = isEnter ? "primaryLight" : "primary";
+
+  const { isOpen, onClose, onOpen } = useDisclosure();
 
   return (
     <Flex
@@ -87,6 +163,7 @@ export const Topbar = () => {
       px={8}
       py={4}
     >
+      <SearchModal isOpen={isOpen} onClose={onClose} />
       <Link to="/dashboard">
         <Image
           src={logo}
@@ -108,7 +185,7 @@ export const Topbar = () => {
             flexGrow="1"
             justify="space-between"
           >
-            <Show above="md">
+            <Show above="sm">
               <Button
                 variant="solid"
                 as={Link}
@@ -119,48 +196,14 @@ export const Topbar = () => {
                 Dashboard
               </Button>
             </Show>
-            <InputGroup maxWidth="300px" minWidth="120px" flexGrow="1">
-              <InputLeftElement
-                pointerEvents="none"
-                children={<SearchIcon color="#FFFFFFAA" />}
-              />
-              <Input
-                type="number"
-                placeholder="Rig #"
-                color="#FFFFFFAA"
-                bgColor="#00000033"
-                borderColor="#00000033"
-                focusBorderColor="#00000022"
-                ref={inputRef}
-                value={searchValue}
-                onChange={onInputChanged}
-                onKeyPress={onInputKeypressed}
-                onFocus={onFocus}
-                onBlur={onBlur}
-                min="0"
-                max="3000"
-                pr={{ base: "12px", sm: "48px" }}
-                size="md"
-              />
-              <Show above="sm">
-                <InputRightElement
-                  pointerEvents="none"
-                  width="48px"
-                  children={
-                    <HStack color="#FFFFFFAA" mr={3}>
-                      {focused ? (
-                        <Kbd>Enter</Kbd>
-                      ) : (
-                        <>
-                          <Kbd>⌘</Kbd>
-                          <Kbd>K</Kbd>
-                        </>
-                      )}
-                    </HStack>
-                  }
-                />
-              </Show>
-            </InputGroup>
+            <Show below="md">
+              <Button onClick={onOpen} variant="ghost" color="paper">
+                <SearchIcon />
+              </Button>
+            </Show>
+            <Show above="md">
+              <RigSearchForm />
+            </Show>
           </Flex>
         ) : (
           <Spacer />
