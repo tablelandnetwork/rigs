@@ -1,7 +1,6 @@
-import React, { useEffect } from "react";
-import { Heading, Flex, Stack, Text } from "@chakra-ui/react";
+import React, { useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
-import { TablelandConnectButton } from "../components/TablelandConnectButton";
+import { Button, Heading, Flex, Stack, Text } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import desert from "../assets/desert-bg.png";
 import { TOPBAR_HEIGHT } from "../Topbar";
@@ -20,6 +19,10 @@ export const Enter = () => {
     };
   }, [isConnected, navigate]);
 
+  const navigateToDashboard = useCallback(() => {
+    navigate("/dashboard");
+  }, [navigate]);
+
   return (
     <Flex
       direction="column"
@@ -33,7 +36,13 @@ export const Enter = () => {
       width="100%"
       minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
     >
-      <Stack maxWidth="700px" align="center" color="white" px={4} textAlign="center">
+      <Stack
+        maxWidth="700px"
+        align="center"
+        color="white"
+        px={4}
+        textAlign="center"
+      >
         <Heading as="h1" variant="orbitron" fontSize="64">
           Enter the Garage.
         </Heading>
@@ -42,7 +51,15 @@ export const Enter = () => {
           with other Rig owners from across Tableland. Learn how to pilot your
           Rig to earn flight-time and badges in the Garage.
         </Text>
-        <TablelandConnectButton size="large" />
+        <Button
+          variant="connect"
+          height="70px"
+          minWidth="300px"
+          fontSize="20px"
+          onClick={navigateToDashboard}
+        >
+          Enter the garage
+        </Button>
       </Stack>
     </Flex>
   );
