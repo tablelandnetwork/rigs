@@ -20,6 +20,7 @@ import { useNFTs, NFT } from "../../../hooks/useNFTs";
 import { Rig, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
+import { TablelandConnectButton } from "../../../components/TablelandConnectButton";
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
@@ -266,9 +267,16 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         </Text>
       )}
 
-      {!rigs && (
+      {!rigs && address && (
         <Flex width="100%" height="200px" align="center" justify="center">
           <Spinner />
+        </Flex>
+      )}
+
+      {!address && (
+        <Flex width="100%" height="200px" align="center" justify="center" direction="column">
+          Not connected.
+          <TablelandConnectButton />
         </Flex>
       )}
 

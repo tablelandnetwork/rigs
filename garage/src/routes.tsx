@@ -10,20 +10,20 @@ export const routes = () => {
     {
       key: "DASHBOARD",
       path: "/dashboard",
-      requiresWalletConnection: true,
+      requiresWalletConnection: false,
       element: <Dashboard />,
     },
     {
       key: "RIG_DETAILS",
       path: "/rigs/:id",
-      requiresWalletConnection: true,
+      requiresWalletConnection: false,
       element: <RigDetails />,
     },
     {
       key: "OWNER_DETAILS",
       path: "/owner/:owner",
-      requiresWalletConnection: true,
+      requiresWalletConnection: false,
       element: <OwnerDetails />,
-    }
+    },
   ];
 };

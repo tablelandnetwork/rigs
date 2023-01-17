@@ -138,7 +138,7 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
       <Tabs variant="line">
         <TabList>
           <Tab>Global</Tab>
-          <Tab>You</Tab>
+          {address && <Tab>You</Tab>}
           <Tab>Pilots</Tab>
         </TabList>
 
@@ -146,9 +146,11 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
           <TabPanel px={0}>
             <StatGrid stats={stats} />
           </TabPanel>
-          <TabPanel px={0}>
-            <StatGrid stats={accountStats} />
-          </TabPanel>
+          {address && (
+            <TabPanel px={0}>
+              <StatGrid stats={accountStats} />
+            </TabPanel>
+          )}
           <TabPanel fontSize="0.8em" px={0}>
             <Flex
               width="100%"
