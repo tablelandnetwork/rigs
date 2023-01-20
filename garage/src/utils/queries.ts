@@ -12,7 +12,7 @@ const PILOT_TRAINING_DURATION = 172800;
 export const selectRigs = (ids: string[], currentBlock: number): string => {
   return `
   SELECT
-    cast(rig_id as text),
+    cast(rig_id as text) as "id",
     ${IMAGE_IPFS_URI_SELECT} as "image",
     ${IMAGE_ALPHA_IPFS_URI_SELECT} as "imageAlpha",
     ${THUMB_IPFS_URI_SELECT} as "thumb",
@@ -29,7 +29,7 @@ export const selectRigs = (ids: string[], currentBlock: number): string => {
       )
       FROM ${pilotSessionsTable} AS session
       WHERE session.rig_id = attributes.rig_id AND session.end_time IS NULL
-    ) AS pilot,
+    ) AS "currentPilot",
     EXISTS(
       SELECT * FROM ${pilotSessionsTable} AS session
       WHERE session.rig_id = attributes.rig_id
@@ -53,7 +53,7 @@ export const selectRigWithPilots = (
 ): string => {
   return `
   SELECT
-    '${id}' as "rig_id",
+    '${id}' as "id",
     ${IMAGE_IPFS_URI_SELECT} as "image",
     ${IMAGE_ALPHA_IPFS_URI_SELECT} as "imageAlpha",
     ${THUMB_IPFS_URI_SELECT} as "thumb",
@@ -112,13 +112,13 @@ export const selectRigsActivity = (
 
   return `
   SELECT
-    cast(rig_id as text),
+    cast(rig_id as text) as "rigId",
     ${THUMB_IPFS_URI_SELECT} as "thumb",
     ${IMAGE_IPFS_URI_SELECT} as "image",
-    pilot_contract,
-    pilot_id,
-    start_time,
-    end_time,
+    pilot_contract as "pilotContract",
+    pilot_id as "pilotId",
+    start_time as "startTime",
+    end_time as "endTime",
     max(start_time, coalesce(end_time, 0)) as "timestamp"
   FROM ${pilotSessionsTable} AS sessions
   JOIN ${lookupsTable}
@@ -135,13 +135,13 @@ export const selectOwnerActivity = (
 ): string => {
   return `
   SELECT
-    cast(rig_id as text),
+    cast(rig_id as text) as "rigId",
     ${THUMB_IPFS_URI_SELECT} as "thumb",
     ${IMAGE_IPFS_URI_SELECT} as "image",
-    pilot_contract,
-    pilot_id,
-    start_time,
-    end_time,
+    pilot_contract as "pilotContract",
+    pilot_id as "pilotId",
+    start_time as "startTime",
+    end_time as "endTime",
     max(start_time, coalesce(end_time, 0)) as "timestamp"
   FROM ${pilotSessionsTable} AS sessions
   JOIN ${lookupsTable}
@@ -157,15 +157,15 @@ export const selectOwnerPilots = (
 ): string => {
   return `
   SELECT
-    pilot_contract,
-    cast(pilot_id as text),
-    sum(coalesce(end_time, ${blockNumber}) - start_time) as "flight_time",
-    min(coalesce(end_time, 0)) == 0 as "is_active"
+    pilot_contract as "contract",
+    cast(pilot_id as text) as "tokenId",
+    sum(coalesce(end_time, ${blockNumber}) - start_time) as "flightTime",
+    min(coalesce(end_time, 0)) == 0 as "isActive"
   FROM ${pilotSessionsTable} AS sessions
   JOIN ${lookupsTable}
   WHERE lower(owner) = '${owner.toLowerCase()}'
   GROUP BY pilot_contract, pilot_id
-  ORDER BY flight_time DESC
+  ORDER BY "flightTime" DESC
   `;
 };
 
@@ -177,28 +177,28 @@ export const selectStats = (blockNumber: number): string => {
   (
     SELECT count(distinct(rig_id)) FROM
     ${attributesTable}
-  ) AS num_rigs,
+  ) AS "numRigs",
   (
     SELECT count(*) FROM (
       SELECT DISTINCT(rig_id)
       FROM ${pilotSessionsTable}
       WHERE end_time IS NULL
     )
-  ) AS num_rigs_in_flight,
+  ) AS "numRigsInFlight",
   (
     SELECT count(*) FROM (
       SELECT DISTINCT pilot_contract, pilot_id
       FROM ${pilotSessionsTable}
     )
-  ) AS num_pilots,
+  ) AS "numPilots",
   (
     SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
     FROM ${pilotSessionsTable}
-  ) AS total_flight_time,
+  ) AS "totalFlightTime",
   (
     SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
     FROM ${pilotSessionsTable}
-  ) AS avg_flight_time
+  ) AS "avgFlightTime"
   FROM ${attributesTable}
   LIMIT 1;`;
 };
@@ -218,31 +218,33 @@ export const selectAccountStats = (
       FROM ${pilotSessionsTable}
       WHERE lower(owner) = '${lowerCaseAddress}' AND end_time IS NULL
     )
-  ) AS num_rigs_in_flight,
+  ) AS "numRigsInFlight",
   (
     SELECT count(*) FROM (
       SELECT DISTINCT pilot_contract, pilot_id
       FROM ${pilotSessionsTable}
       WHERE lower(owner) = '${lowerCaseAddress}'
     )
-  ) AS num_pilots,
+  ) AS "numPilots",
   (
     SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
     FROM ${pilotSessionsTable}
     WHERE lower(owner) = '${lowerCaseAddress}'
-  ) AS total_flight_time,
+  ) AS "totalFlightTime",
   (
     SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
     FROM ${pilotSessionsTable}
     WHERE lower(owner) = '${lowerCaseAddress}'
-  ) AS avg_flight_time
+  ) AS "avgFlightTime"
   FROM ${attributesTable}
   LIMIT 1;`;
 };
 
 export const selectTopActivePilotCollections = (): string => {
   return `
-  SELECT pilot_contract, count(*) as count
+  SELECT
+    pilot_contract as "contractAddress",
+    count(*) as count
   FROM ${pilotSessionsTable}
   WHERE end_time IS NULL AND pilot_contract IS NOT NULL
   GROUP BY pilot_contract
@@ -251,7 +253,9 @@ export const selectTopActivePilotCollections = (): string => {
 
 export const selectTopFtPilotCollections = (blockNumber: number): string => {
   return `
-  SELECT pilot_contract, sum(coalesce(end_time, ${blockNumber}) - start_time) as ft
+  SELECT
+    pilot_contract as "contractAddress",
+    sum(coalesce(end_time, ${blockNumber}) - start_time) as ft
   FROM ${pilotSessionsTable}
   WHERE pilot_contract IS NOT NULL
   GROUP BY pilot_contract
@@ -267,7 +271,13 @@ export const selectActivePilotSessionsForPilots = (
   );
 
   return `
-  SELECT cast(rig_id as text), owner, pilot_contract, cast(pilot_id as text), start_time, end_time
+  SELECT
+    cast(rig_id as text) as "rigId",
+    owner,
+    pilot_contract as "pilotContract",
+    cast(pilot_id as text) as "pilotId",
+    start_time as "startTime",
+    end_time as "endTime"
   FROM ${pilotSessionsTable}
   WHERE (${whereClauses.join(" OR ")}) AND end_time IS NULL;
   `;

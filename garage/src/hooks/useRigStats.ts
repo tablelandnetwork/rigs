@@ -12,8 +12,16 @@ export interface Stat {
   value: number;
 }
 
+interface DbResult {
+  numRigs: number;
+  numRigsInFlight: number;
+  numPilots: number;
+  totalFlightTime: number;
+  avgFlightTime: number;
+}
+
 export const useStats = (currentBlockNumber?: number) => {
-  const { connection: tableland } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const [stats, setStats] = useState<Stat[]>();
 
@@ -22,27 +30,32 @@ export const useStats = (currentBlockNumber?: number) => {
 
     let isCancelled = false;
 
-    tableland.read(selectStats(currentBlockNumber)).then((result) => {
-      if (isCancelled) return;
+    db.prepare(selectStats(currentBlockNumber))
+      .first<DbResult>()
+      .then((result) => {
+        if (isCancelled) return;
 
-      const [
-        numRigs,
-        numRigsInFlight,
-        numPilots,
-        ftTotal,
-        ftAvg,
-      ] = result.rows[0];
+        const {
+          numRigs,
+          numRigsInFlight,
+          numPilots,
+          totalFlightTime,
+          avgFlightTime,
+        } = result;
 
-      setStats([
-        { name: "Rigs in-flight", value: numRigsInFlight },
-        { name: "Rigs parked", value: numRigs - numRigsInFlight },
-        { name: "Num. pilots", value: numPilots },
-        { name: "Average FT per flight", value: ftAvg },
-        { name: "Total FT earned", value: ftTotal },
-        // { name: "Badges earned", value: 0 },
-        // { name: "Badges visible", value: 0 },
-      ]);
-    });
+        setStats([
+          { name: "Rigs in-flight", value: numRigsInFlight },
+          {
+            name: "Rigs parked",
+            value: numRigs - numRigsInFlight,
+          },
+          { name: "Num. pilots", value: numPilots },
+          { name: "Average FT per flight", value: avgFlightTime },
+          { name: "Total FT earned", value: totalFlightTime as number },
+          // { name: "Badges earned", value: 0 },
+          // { name: "Badges visible", value: 0 },
+        ]);
+      });
 
     return () => {
       isCancelled = true;
@@ -56,7 +69,7 @@ export const useAccountStats = (
   currentBlockNumber?: number,
   address?: string
 ) => {
-  const { connection: tableland } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const [stats, setStats] = useState<Stat[]>();
 
@@ -65,18 +78,23 @@ export const useAccountStats = (
 
     let isCancelled = false;
 
-    tableland
-      .read(selectAccountStats(currentBlockNumber, address))
+    db.prepare(selectAccountStats(currentBlockNumber, address))
+      .first<Omit<DbResult, "numRigs">>()
       .then((result) => {
         if (isCancelled) return;
 
-        const [numRigsInFlight, numPilots, ftTotal, ftAvg] = result.rows[0];
+        const {
+          numRigsInFlight,
+          numPilots,
+          totalFlightTime,
+          avgFlightTime,
+        } = result;
 
         setStats([
           { name: "Rigs in-flight", value: numRigsInFlight },
           { name: "Num. pilots", value: numPilots },
-          { name: "Average FT per flight", value: ftAvg },
-          { name: "Total FT earned", value: ftTotal },
+          { name: "Average FT per flight", value: avgFlightTime },
+          { name: "Total FT earned", value: totalFlightTime },
         ]);
       });
 
@@ -88,25 +106,26 @@ export const useAccountStats = (
   return { stats };
 };
 
-export const useTopActivePilotCollections = () => {
-  const { connection: tableland } = useTablelandConnection();
+interface TopPilotCollection {
+  contractAddress: string;
+  count: number;
+}
 
-  const [stats, setStats] = useState<
-    { contractAddress: string; count: number }[]
-  >();
+export const useTopActivePilotCollections = () => {
+  const { db } = useTablelandConnection();
+
+  const [stats, setStats] = useState<TopPilotCollection[]>();
 
   useEffect(() => {
     let isCancelled = false;
 
-    tableland.read(selectTopActivePilotCollections()).then((result) => {
-      if (isCancelled) return;
+    db.prepare(selectTopActivePilotCollections())
+      .all<TopPilotCollection>()
+      .then(({ results }) => {
+        if (isCancelled) return;
 
-      const data = result.rows.map(([contractAddress, count]) => ({
-        contractAddress,
-        count,
-      }));
-      setStats(data);
-    });
+        setStats(results);
+      });
 
     return () => {
       isCancelled = true;
@@ -116,28 +135,27 @@ export const useTopActivePilotCollections = () => {
   return { stats };
 };
 
-export const useTopFtPilotCollections = (currentBlockNumber?: number) => {
-  const { connection: tableland } = useTablelandConnection();
+interface TopPilotFtCollection {
+  contractAddress: string;
+  ft: number;
+}
 
-  const [stats, setStats] = useState<
-    { contractAddress: string; ft: number }[]
-  >();
+export const useTopFtPilotCollections = (currentBlockNumber?: number) => {
+  const { db } = useTablelandConnection();
+
+  const [stats, setStats] = useState<TopPilotFtCollection[]>();
 
   useEffect(() => {
     if (!currentBlockNumber) return;
 
     let isCancelled = false;
 
-    tableland
-      .read(selectTopFtPilotCollections(currentBlockNumber))
-      .then((result) => {
+    db.prepare(selectTopFtPilotCollections(currentBlockNumber))
+      .all<TopPilotFtCollection>()
+      .then(({ results }) => {
         if (isCancelled) return;
 
-        const data = result.rows.map(([contractAddress, ft]) => ({
-          contractAddress,
-          ft,
-        }));
-        setStats(data);
+        setStats(results);
       });
 
     return () => {

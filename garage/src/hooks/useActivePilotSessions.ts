@@ -1,25 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { PilotSessionWithRigId } from "../types";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectActivePilotSessionsForPilots } from "../utils/queries";
-import { pilotSessionFromRow } from "../utils/xforms";
 
 export const useActivePilotSessions = (
   pilots: { contract: string; tokenId: string }[]
 ) => {
-  const { connection: tableland } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const [sessions, setSessions] = useState<PilotSessionWithRigId[]>();
 
   useEffect(() => {
     let isCancelled = false;
 
-    tableland
-      .read(selectActivePilotSessionsForPilots(pilots))
-      .then((result) => {
+    db.prepare(selectActivePilotSessionsForPilots(pilots))
+      .all<PilotSessionWithRigId>()
+      .then(({ results }) => {
         if (isCancelled) return;
 
-        setSessions(result.rows.map(pilotSessionFromRow));
+        setSessions(results);
       });
 
     return () => {

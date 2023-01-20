@@ -3,11 +3,10 @@ import { Rig, isValidAddress } from "../types";
 import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
-import { rigFromRow } from "../utils/xforms";
 import { address as contractAddress, abi } from "../contract";
 
 export const useOwnedRigs = (address?: string, currentBlock?: number) => {
-  const { connection: tableland } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const { data } = useContractRead({
     address: contractAddress,
@@ -29,9 +28,11 @@ export const useOwnedRigs = (address?: string, currentBlock?: number) => {
     if (address && data && currentBlock) {
       const ids = data.map((bn) => bn.toString());
 
-      tableland.read(selectRigs(ids, currentBlock)).then((result) => {
-        if (!isCancelled) setRigs(result.rows.map(rigFromRow));
-      });
+      db.prepare(selectRigs(ids, currentBlock))
+        .all<Rig>()
+        .then(({ results }) => {
+          if (!isCancelled) setRigs(results);
+        });
 
       return () => {
         isCancelled = true;
