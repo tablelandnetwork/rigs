@@ -26,6 +26,7 @@ import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../../utils/async";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
+import { chain } from "../../../env";
 
 interface RigListItemProps {
   rig: Rig;
@@ -118,7 +119,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { address } = useAccount();
   const { data: blockNumber } = useBlockNumber();
   const { rigs, refresh } = useOwnedRigs(address, blockNumber);
-  const { connection: tableland } = useTablelandConnection();
+  const { validator } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;
 
@@ -168,9 +169,13 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   // Effect that waits until a tableland receipt is available for a tx hash
   // and then refreshes the rig data
   useEffect(() => {
-    if (tableland && pendingTx) {
+    if (validator && pendingTx) {
       runUntilConditionMet(
-        () => tableland.receipt(pendingTx),
+        () =>
+          validator.receiptByTransactionHash({
+            chainId: chain.id,
+            transactionHash: pendingTx,
+          }),
         (data) => !!data,
         refreshRigsAndClearPendingTx,
         {
@@ -181,7 +186,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         }
       );
     }
-  }, [pendingTx, refreshRigsAndClearPendingTx, tableland, clearPendingTx]);
+  }, [pendingTx, refreshRigsAndClearPendingTx, validator, clearPendingTx]);
 
   const {
     trainRigsModal,

@@ -33,7 +33,7 @@ import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep, runUntilConditionMet } from "../../utils/async";
 import { address as contractAddress } from "../../contract";
-import { openseaBaseUrl } from "../../env";
+import { chain, openseaBaseUrl } from "../../env";
 import { RigWithPilots } from "../../types";
 import openseaMark from "../../assets/opensea-mark.svg";
 
@@ -136,7 +136,7 @@ export const RigDetails = () => {
   const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
   const { rig, refresh: refreshRig } = useRig(id || "", currentBlockNumber);
-  const { connection: tableland } = useTablelandConnection();
+  const { validator } = useTablelandConnection();
   const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
@@ -165,9 +165,13 @@ export const RigDetails = () => {
   // Effect that waits until a tableland receipt is available for a tx hash
   // and then refreshes the rig data
   useEffect(() => {
-    if (tableland && pendingTx) {
+    if (validator && pendingTx) {
       runUntilConditionMet(
-        () => tableland.receipt(pendingTx),
+        () =>
+          validator.receiptByTransactionHash({
+            chainId: chain.id,
+            transactionHash: pendingTx,
+          }),
         (data) => !!data,
         refreshRigAndClearPendingTx,
         {
@@ -178,7 +182,7 @@ export const RigDetails = () => {
         }
       );
     }
-  }, [pendingTx, refreshRigAndClearPendingTx, tableland, clearPendingTx]);
+  }, [pendingTx, refreshRigAndClearPendingTx, validator, clearPendingTx]);
 
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
