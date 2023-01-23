@@ -283,3 +283,78 @@ export const selectActivePilotSessionsForPilots = (
 export const selectTraitRarities = (): string => {
   return `SELECT trait_type, value, count(*) as "count" FROM ${attributesTable} WHERE trait_type NOT IN ('VIN', '% Original') GROUP BY trait_type, value`;
 };
+
+// TODO don't define Filters type twice
+export type Filters = Record<string, string[]>;
+export const selectFilteredRigs = (
+  filters: Filters,
+  limit: number = 20,
+  offset: number = 0
+): string => {
+  const outerQuery = `
+  SELECT
+    cast(rig_id as text) as "id",
+    ${IMAGE_IPFS_URI_SELECT} as "image",
+    ${IMAGE_ALPHA_IPFS_URI_SELECT} as "imageAlpha",
+    ${THUMB_IPFS_URI_SELECT} as "thumb",
+    ${THUMB_ALPHA_IPFS_URI_SELECT} as "thumbAlpha",
+    json_group_array(json_object(
+      'displayType', display_type,
+      'traitType', trait_type,
+      'value', value
+    )) AS attributes,
+    (
+      SELECT json_object(
+        'contract', session.pilot_contract,
+        'tokenId', cast(session.pilot_id as text)
+      )
+      FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = attributes.rig_id AND session.end_time IS NULL
+    ) AS "currentPilot",
+    EXISTS(
+      SELECT * FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = attributes.rig_id
+      AND (
+        (
+          session.end_time IS NULL AND
+          session.start_time <= (BLOCK_NUM(${
+            chain.id
+          }) - ${PILOT_TRAINING_DURATION})
+        )
+        OR
+        (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
+      )
+    ) AS "isTrained"
+  FROM ${attributesTable} AS attributes
+  JOIN ${lookupsTable}
+  WHERE rig_id IN (<subquery>)
+  GROUP BY rig_id`;
+
+  const quoteString = (v: string) => `'${v}'`;
+
+  let subQuery = `SELECT rig_id FROM ${attributesTable} AS attributes`;
+
+  let clauses: string[] = [];
+  for (const [trait, values] of Object.entries(filters)) {
+    const valuesList = values.map(quoteString).join(", ");
+    const clause = `
+    (
+      attributes.trait_type = '${trait}' AND
+      attributes.value IN (${valuesList})
+    )`;
+    clauses = [...clauses, clause];
+  }
+
+  if (clauses.length) {
+    subQuery +=`
+      WHERE (${clauses.join(") OR (")})
+      GROUP BY attributes.rig_id
+      HAVING count(attributes.trait_type) = ${clauses.length}`;
+  } else {
+    subQuery += ` GROUP BY attributes.rig_id`;
+  }
+
+  subQuery = subQuery + ` LIMIT ${limit} OFFSET ${offset}`;
+
+  return `${outerQuery.replace("<subquery>", subQuery)}`;
+};
