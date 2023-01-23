@@ -14,12 +14,7 @@ import {
   getListFromCSVs,
 } from "../helpers/allowlist";
 import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
-import {
-  connect,
-  ConnectOptions,
-  Connection,
-  SUPPORTED_CHAINS,
-} from "@tableland/sdk";
+import { Database, Statement } from "@tableland/sdk";
 import fetch, { Headers, Request, Response } from "node-fetch";
 import { getContractURI } from "../helpers/uris";
 import assert from "assert";
@@ -81,7 +76,7 @@ async function main() {
   );
 
   // Connect to tableland
-  let tbl: Connection | undefined;
+  let tbl: Database | undefined;
   if (
     rigsDeployment.contractTable === "" ||
     rigsDeployment.allowlistTable === ""
@@ -100,45 +95,52 @@ async function main() {
     }
     const wallet = new Wallet(privateKey);
     const provider = new providers.AlchemyProvider(
-      SUPPORTED_CHAINS[rigsDeployment.tablelandChain],
+      rigsDeployment.tablelandChain,
       alchemyKey
     );
-    const options: ConnectOptions = {
-      chain: rigsDeployment.tablelandChain,
-      host: rigsDeployment.tablelandHost,
-      signer: wallet.connect(provider),
-    };
-    tbl = connect(options);
+    tbl = new Database({ signer: wallet.connect(provider), autoWait: true });
   }
 
   // Create allow list table
   let allowlistTable: string;
   if (tbl && rigsDeployment.allowlistTable === "") {
-    const createRes = await tbl.create(
-      `address text, freeAllowance int, paidAllowance int, waitlist int`,
-      { prefix: "rigs_allowlist" }
-    );
-    allowlistTable = createRes.name!;
+    const { meta } = await tbl
+      .prepare(
+        "create table rigs_allowlist (address text, freeAllowance int, paidAllowance int, waitlist int)"
+      )
+      .run();
+    if (!meta.txn) {
+      throw new Error("no txn found in metadata");
+    }
+    allowlistTable = meta.txn.name;
     console.log("Allowlist table created as:", allowlistTable);
 
     // Insert allow list entries
     async function insertEntries(
-      tbl: Connection,
+      tbl: Database,
       list: [string, AllowListEntry][],
       waitlist: boolean
     ) {
+      const stmt = tbl.prepare(
+        `insert into ${allowlistTable} values (?, ?, ?, ?);`
+      );
       while (list.length > 0) {
         const entries = list.splice(0, 50);
-        let runStatement = "";
+        const runStatements: Statement[] = [];
         for (const [address, entry] of entries) {
-          runStatement += `insert into ${allowlistTable} values ('${address}', ${
-            entry.freeAllowance
-          }, ${entry.paidAllowance}, ${waitlist ? 1 : 0});`;
+          runStatements.push(
+            stmt.bind(
+              address,
+              entry.freeAllowance,
+              entry.paidAllowance,
+              waitlist ? 1 : 0
+            )
+          );
         }
-        const res = await tbl.write(runStatement);
+        const [res] = await tbl.batch(runStatements);
 
         console.log(
-          `Inserted ${entries.length} allowlist entries with txn '${res.hash}'`
+          `Inserted ${entries.length} allowlist entries with txn '${res.meta.txn?.transactionHash}'`
         );
       }
     }
@@ -160,18 +162,31 @@ async function main() {
   // Create contract table
   let contractTable: string;
   if (tbl && rigsDeployment.contractTable === "") {
-    const createRes = await tbl.create(
-      "name text, description text, image text, external_link text, seller_fee_basis_points int, fee_recipient text",
-      { prefix: "rigs_contract" }
-    );
-    contractTable = createRes.name!;
+    const { meta } = await tbl
+      .prepare(
+        "create table rigs_contract (name text, description text, image text, external_link text, seller_fee_basis_points int, fee_recipient text)"
+      )
+      .run();
+    if (!meta.txn) {
+      throw new Error("no txn found on metadata");
+    }
+    contractTable = meta.txn.name;
     console.log("Contract table created as:", contractTable);
 
     // Insert contract info
-    const runStatement = `insert into ${contractTable} values ('${rigsConfig.name}', '${rigsConfig.description}', '${rigsConfig.image}', '${rigsConfig.externalLink}', ${rigsConfig.sellerFeeBasisPoints}, '${splitter.address}');`;
-    const writeRes = await tbl.write(runStatement);
+    const { meta: insertMeta } = await tbl
+      .prepare(`insert into ${contractTable} values (?, ?, ?, ?, ?, ?);`)
+      .bind(
+        rigsConfig.name,
+        rigsConfig.description,
+        rigsConfig.image,
+        rigsConfig.externalLink,
+        rigsConfig.sellerFeeBasisPoints,
+        splitter.address
+      )
+      .run();
     console.log(
-      `Inserted contract info with txn '${writeRes.hash}': `,
+      `Inserted contract info with txn '${insertMeta.txn?.transactionHash}': `,
       rigsConfig.name,
       rigsConfig.description,
       rigsConfig.image,
