@@ -1,12 +1,403 @@
-import React from "react";
-import { Box, Flex, Heading, Image, Link } from "@chakra-ui/react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionIcon,
+  AccordionButton,
+  AccordionPanel,
+  Box,
+  Button,
+  Checkbox,
+  Flex,
+  Grid,
+  GridItem,
+  Heading,
+  Image,
+  Input,
+  InputGroup,
+  InputRightElement,
+  Link,
+  Spinner,
+  Switch,
+  Tag,
+  TagLabel,
+  TagCloseButton,
+  Text,
+  VStack,
+} from "@chakra-ui/react";
+import { Link as RouterLink } from "react-router-dom";
+import { SmallCloseIcon } from "@chakra-ui/icons";
 import { TOPBAR_HEIGHT } from "../../Topbar";
+import { RigDisplay } from "../../components/RigDisplay";
+import { Rig } from "../../types";
+import { useTablelandConnection } from "../../hooks/useTablelandConnection";
+import { selectFilteredRigs } from "../../utils/queries";
 import twitterMark from "../../assets/twitter-mark.svg";
 import openseaMark from "../../assets/opensea-mark.svg";
+import traitData from "../../traits.json";
+
+// TODO can we fetch this data dynamically or does that make the loading experience annoying?
+const {
+  fleets,
+  colors,
+  sharedTraits,
+  individualTraits,
+  traitValuesByType,
+} = traitData;
 
 const GRID_GAP = 4;
 
+const MODULE_PROPS = {
+  borderRadius: "3px",
+  p: 8,
+  bgColor: "paper",
+};
+
+const PAGE_LIMIT = 20;
+
+const overlaps = <T,>(a: T[], b: T[]) => {
+  return a.map((v) => b.includes(v)).reduce((p, c) => p || c);
+};
+
+// TODO rewrite using sets instead of arrays?
+export type Filters = Record<string, string[]>;
+
+const toggleValue = (
+  oldValue: Filters,
+  trait: string,
+  value: string
+): Filters => {
+  let newValue = { ...oldValue };
+  const traitFilters = newValue[trait];
+  delete newValue[trait];
+
+  if (!traitFilters || !traitFilters.includes(value)) {
+    newValue[trait] = [...(traitFilters || []), value];
+  } else {
+    const newFilters = traitFilters.filter((v) => v !== value);
+
+    if (newFilters.length) {
+      newValue[trait] = newFilters;
+    }
+  }
+
+  return newValue;
+};
+
+interface FiltersComponentProps {
+  filters: Filters;
+  toggleFilter: (key: string, value: string) => void;
+  clearFilters: () => void;
+}
+
+interface FilterSectionValue {
+  value: string;
+}
+
+interface FilterSectionProps {
+  traitType: string;
+  relevant: boolean;
+  values: FilterSectionValue[];
+
+  filters: Filters;
+  toggleFilter: (key: string, value: string) => void;
+}
+
+const FilterSectionCheckbox = ({
+  traitType,
+  value,
+  filters,
+  toggleFilter,
+}: Omit<FilterSectionProps, "values" | "relevant"> & {
+  value: FilterSectionValue;
+}) => {
+  const checked = useMemo(() => !!filters[traitType]?.includes(value.value), [
+    filters,
+    value.value,
+    traitType,
+  ]);
+
+  const onChange = useCallback(() => toggleFilter(traitType, value.value), [
+    toggleFilter,
+    traitType,
+    value.value,
+  ]);
+
+  return (
+    <Checkbox isChecked={checked} onChange={onChange}>
+      {value.value}
+    </Checkbox>
+  );
+};
+
+const FilterSection = ({
+  traitType,
+  relevant,
+  values,
+  filters,
+  toggleFilter,
+}: FilterSectionProps) => {
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredValues = useMemo(() => {
+    return values.filter((v) =>
+      v.value.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [values, searchQuery]);
+
+  const handleSearchChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setSearchQuery(event.target.value);
+    },
+    [setSearchQuery]
+  );
+
+  const clearSearch = useCallback(() => setSearchQuery(""), [setSearchQuery]);
+
+  return (
+    <AccordionItem style={{ opacity: relevant ? "100%" : "60%" }}>
+      <Heading as="h4">
+        <AccordionButton px="0">
+          <Box as="span" flex="1" textAlign="left">
+            {traitType}
+          </Box>
+          <AccordionIcon />
+        </AccordionButton>
+      </Heading>
+      <AccordionPanel px="0">
+        <InputGroup mb={2}>
+          <Input
+            size="md"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="Search"
+          />
+          <InputRightElement>
+            <Button size="sm" onClick={clearSearch} variant="ghost">
+              <SmallCloseIcon />
+            </Button>
+          </InputRightElement>
+        </InputGroup>
+        <VStack align="stretch">
+          {filteredValues
+            .sort((a, b) => a.value.localeCompare(b.value))
+            .map((value) => (
+              <FilterSectionCheckbox
+                traitType={traitType}
+                value={value}
+                filters={filters}
+                toggleFilter={toggleFilter}
+                key={`${traitType}:${value.value}`}
+              />
+            ))}
+        </VStack>
+      </AccordionPanel>
+    </AccordionItem>
+  );
+};
+
+const FilterPanelHeading = (props: React.ComponentProps<typeof Heading>) => {
+  return (
+    <Heading as="h4" mt={6} mb={2} {...props}>
+      {props.children}
+    </Heading>
+  );
+};
+
+const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
+  const toggleOriginalOnlyFilter = useCallback(() => {
+    toggleFilter("% Original", "100");
+  }, [toggleFilter]);
+
+  const originalOnlyEnabled = !!filters["% Original"]?.includes("100");
+
+  return (
+    <Flex {...MODULE_PROPS} width="300px" flexShrink="0">
+      <Accordion allowMultiple defaultIndex={[]} width="100%">
+        <Heading as="h4" fontWeight="bold" mb={10}>
+          Filters
+        </Heading>
+        <FilterPanelHeading>Properties</FilterPanelHeading>
+        <AccordionItem>
+          <Heading as="h4">
+            <AccordionButton
+              px="0"
+              onClick={(e) => {
+                toggleOriginalOnlyFilter();
+                e.preventDefault();
+              }}
+            >
+              <Box as="span" flex="1" textAlign="left">
+                Originals only
+              </Box>
+              <Switch isChecked={originalOnlyEnabled} />
+            </AccordionButton>
+          </Heading>
+        </AccordionItem>
+        <FilterSection
+          traitType="Color"
+          relevant
+          values={colors.map((v) => ({ value: v }))}
+          filters={filters}
+          toggleFilter={toggleFilter}
+        />
+        <FilterSection
+          traitType="Fleet"
+          relevant
+          values={fleets.map((v) => ({ value: v }))}
+          filters={filters}
+          toggleFilter={toggleFilter}
+        />
+        {sharedTraits.sort().map((trait) => {
+          const key = trait as keyof typeof traitValuesByType;
+          return (
+            <FilterSection
+              key={`FilterSection:${trait}`}
+              traitType={trait}
+              relevant
+              values={traitValuesByType[key]}
+              filters={filters}
+              toggleFilter={toggleFilter}
+            />
+          );
+        })}
+        <FilterPanelHeading>Parts</FilterPanelHeading>
+        {Object.entries(individualTraits)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([trait, relevantFleets]) => {
+            const key = trait as keyof typeof traitValuesByType;
+            const fleetFilters = filters["Fleet"];
+
+            const relevant =
+              !fleetFilters ||
+              fleetFilters.length === 0 ||
+              overlaps(fleetFilters, relevantFleets);
+
+            return (
+              <FilterSection
+                key={`FilterSection:${trait}`}
+                traitType={trait}
+                relevant={relevant}
+                values={traitValuesByType[key]}
+                filters={filters}
+                toggleFilter={toggleFilter}
+              />
+            );
+          })}
+      </Accordion>
+    </Flex>
+  );
+};
+
+export const ActiveFiltersBar = ({
+  filters,
+  toggleFilter,
+  clearFilters,
+}: FiltersComponentProps) => {
+  return (
+    <Flex gap={2} align="center" wrap="wrap">
+      <Text textTransform="uppercase" as="b">
+        Active Filters:
+      </Text>
+      {Object.keys(filters).map((attribute, i) => {
+        return (
+          <React.Fragment key={`FilterBarFragment${i}`}>
+            {filters[attribute].map((v) => (
+              <Tag key={`Chip:${attribute}:${v}`} size="lg">
+                <TagLabel>{`${attribute}: ${v}`}</TagLabel>
+                <TagCloseButton onClick={() => toggleFilter(attribute, v)} />
+              </Tag>
+            ))}
+          </React.Fragment>
+        );
+      })}
+      {Object.keys(filters).length > 0 && (
+        <Button
+          onClick={clearFilters}
+          color="primary"
+          variant="ghost"
+          size="sm"
+        >
+          Clear All
+        </Button>
+      )}
+      {Object.keys(filters).length === 0 && <Text color="inactive">None</Text>}
+    </Flex>
+  );
+};
+
+const RigGridItem = ({ rig }: { rig: Rig }) => {
+  const { currentPilot, ...rest } = rig;
+  return (
+    <RouterLink
+      to={`/rigs/${rig.id}`}
+      style={{ position: "relative", display: "block", textDecoration: "none" }}
+    >
+      <VStack _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}>
+        <RigDisplay rig={rest} borderRadius="3px" />
+        <Text>Rig #{rig.id} ({currentPilot ? "In-flight" : "Parked"})</Text>
+      </VStack>
+
+      <Box
+        position="absolute"
+        top="0"
+        left="0"
+        right="0"
+        bottom="0"
+        _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}
+        transition=".2s"
+      />
+    </RouterLink>
+  );
+};
+
 export const Gallery = () => {
+  const { db } = useTablelandConnection();
+
+  const [rigs, setRigs] = useState<Rig[]>([]);
+  const [filters, setFilters] = useState<Filters>({});
+  const [loading, setLoading] = useState(false);
+  const [allLoaded, setAllLoaded] = useState(false);
+
+  useEffect(() => {
+    setRigs([]);
+  }, [filters, setRigs]);
+
+  // Effect that fetches new results when filters change
+  useEffect(() => {
+    setLoading(true);
+    db.prepare(selectFilteredRigs(filters, PAGE_LIMIT, 0))
+      .all<Rig>()
+      .then((v) => {
+        setLoading(false);
+        setRigs((oldRigs) => [...oldRigs, ...v.results]);
+        setAllLoaded(v.results.length < PAGE_LIMIT);
+      });
+  }, [db, filters, setRigs]);
+
+  // Callback that is called to load more results for the current filters
+  const loadMore = useCallback(() => {
+    if (db) {
+      setLoading(true);
+      db.prepare(selectFilteredRigs(filters, PAGE_LIMIT, rigs.length))
+        .all<Rig>()
+        .then((v) => {
+          setLoading(false);
+          setRigs((oldRigs) => [...oldRigs, ...v.results]);
+          setAllLoaded(v.results.length < PAGE_LIMIT);
+        });
+    }
+  }, [db, filters, rigs, setRigs, setLoading]);
+
+  const toggleFilter = useCallback(
+    (trait: string, value: string) => {
+      setFilters((oldValue: Filters) => toggleValue(oldValue, trait, value));
+    },
+    [setFilters]
+  );
+
+  const clearFilters = useCallback(() => setFilters({}), [setFilters]);
+
   return (
     <>
       <Flex
@@ -16,17 +407,61 @@ export const Gallery = () => {
         minHeight={`calc(100vh - ${TOPBAR_HEIGHT} + 40px)`}
         mb="40px"
       >
-        <Flex
-          direction={{ base: "column", lg: "row" }}
+        <Box
           p={GRID_GAP}
-          gap={GRID_GAP}
-          align={{ base: "stretch", lg: "start" }}
           maxWidth="1385px"
           width="100%"
           minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
         >
           <Heading>Gallery</Heading>
-        </Flex>
+          <Flex
+            direction={{ base: "column", lg: "row" }}
+            p={GRID_GAP}
+            gap={GRID_GAP}
+            align={{ base: "stretch", lg: "start" }}
+          >
+            <FilterPanel
+              filters={filters}
+              toggleFilter={toggleFilter}
+              clearFilters={clearFilters}
+            />
+            <VStack {...MODULE_PROPS} align="start" flexGrow="1">
+              <ActiveFiltersBar
+                filters={filters}
+                toggleFilter={toggleFilter}
+                clearFilters={clearFilters}
+              />
+              <Grid
+                gap={4}
+                templateColumns={{
+                  base: "repeat(2, 1fr)",
+                  md: "repeat(3, 1fr)",
+                  xl: "repeat(4, 1fr)",
+                }}
+              >
+                {rigs.map((rig, index) => {
+                  return (
+                    <GridItem key={index}>
+                      <RigGridItem rig={rig} />
+                    </GridItem>
+                  );
+                })}
+              </Grid>
+              {rigs.length === 0 && loading && <Spinner />}
+              {!allLoaded && rigs.length > 0 && (
+                <Box mt={8} mx="auto">
+                  <Button
+                    size="md"
+                    onClick={loadMore}
+                    isLoading={loading || rigs.length === 0}
+                  >
+                    Load more Rigs
+                  </Button>
+                </Box>
+              )}
+            </VStack>
+          </Flex>
+        </Box>
       </Flex>
       <Flex
         position="fixed"
