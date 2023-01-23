@@ -51,7 +51,6 @@ import {
 } from "../hooks/useNFTs";
 import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
-import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
 import { Rig, WalletAddress, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
@@ -84,8 +83,7 @@ export const TrainRigsModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write: _write, reset } = contractWrite;
-  const write = useTablelandTokenGatedContractWriteFn(_write);
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
@@ -160,8 +158,7 @@ export const ParkRigsModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write: _write, reset } = contractWrite;
-  const write = useTablelandTokenGatedContractWriteFn(_write);
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
@@ -266,8 +263,7 @@ const PilotTransactionStep = ({
   const { sessions } = useActivePilotSessions(pairs.map((v) => v.pilot));
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write: _write, reset } = contractWrite;
-  const write = useTablelandTokenGatedContractWriteFn(_write);
+  const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: contractWrite.data?.hash,
   });
