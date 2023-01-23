@@ -5,7 +5,7 @@ import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
 import { address as contractAddress, abi } from "../contract";
 
-export const useOwnedRigs = (address?: string, currentBlock?: number) => {
+export const useOwnedRigs = (address?: string) => {
   const { db } = useTablelandConnection();
 
   const { data } = useContractRead({
@@ -25,10 +25,10 @@ export const useOwnedRigs = (address?: string, currentBlock?: number) => {
 
   useEffect(() => {
     let isCancelled = false;
-    if (address && data && currentBlock) {
+    if (address && data) {
       const ids = data.map((bn) => bn.toString());
 
-      db.prepare(selectRigs(ids, currentBlock))
+      db.prepare(selectRigs(ids))
         .all<Rig>()
         .then(({ results }) => {
           if (!isCancelled) setRigs(results);
@@ -38,7 +38,7 @@ export const useOwnedRigs = (address?: string, currentBlock?: number) => {
         isCancelled = true;
       };
     }
-  }, [address, data, setRigs, currentBlock, /* effect dep */ shouldRefresh]);
+  }, [address, data, setRigs, /* effect dep */ shouldRefresh]);
 
   return { rigs, refresh };
 };

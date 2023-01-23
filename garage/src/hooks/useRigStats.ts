@@ -20,17 +20,15 @@ interface DbResult {
   avgFlightTime: number;
 }
 
-export const useStats = (currentBlockNumber?: number) => {
+export const useStats = () => {
   const { db } = useTablelandConnection();
 
   const [stats, setStats] = useState<Stat[]>();
 
   useEffect(() => {
-    if (!currentBlockNumber) return;
-
     let isCancelled = false;
 
-    db.prepare(selectStats(currentBlockNumber))
+    db.prepare(selectStats())
       .first<DbResult>()
       .then((result) => {
         if (isCancelled) return;
@@ -60,13 +58,12 @@ export const useStats = (currentBlockNumber?: number) => {
     return () => {
       isCancelled = true;
     };
-  }, [currentBlockNumber, setStats]);
+  }, [setStats]);
 
   return { stats };
 };
 
 export const useAccountStats = (
-  currentBlockNumber?: number,
   address?: string
 ) => {
   const { db } = useTablelandConnection();
@@ -74,11 +71,11 @@ export const useAccountStats = (
   const [stats, setStats] = useState<Stat[]>();
 
   useEffect(() => {
-    if (!currentBlockNumber || !address) return;
+    if (!address) return;
 
     let isCancelled = false;
 
-    db.prepare(selectAccountStats(currentBlockNumber, address))
+    db.prepare(selectAccountStats(address))
       .first<Omit<DbResult, "numRigs">>()
       .then((result) => {
         if (isCancelled) return;
@@ -101,7 +98,7 @@ export const useAccountStats = (
     return () => {
       isCancelled = true;
     };
-  }, [currentBlockNumber, address, setStats]);
+  }, [address, setStats]);
 
   return { stats };
 };
@@ -140,17 +137,15 @@ interface TopPilotFtCollection {
   ft: number;
 }
 
-export const useTopFtPilotCollections = (currentBlockNumber?: number) => {
+export const useTopFtPilotCollections = () => {
   const { db } = useTablelandConnection();
 
   const [stats, setStats] = useState<TopPilotFtCollection[]>();
 
   useEffect(() => {
-    if (!currentBlockNumber) return;
-
     let isCancelled = false;
 
-    db.prepare(selectTopFtPilotCollections(currentBlockNumber))
+    db.prepare(selectTopFtPilotCollections())
       .all<TopPilotFtCollection>()
       .then(({ results }) => {
         if (isCancelled) return;
@@ -161,7 +156,7 @@ export const useTopFtPilotCollections = (currentBlockNumber?: number) => {
     return () => {
       isCancelled = true;
     };
-  }, [currentBlockNumber, setStats]);
+  }, [setStats]);
 
   return { stats };
 };

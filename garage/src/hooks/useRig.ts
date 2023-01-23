@@ -4,7 +4,7 @@ import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigWithPilots } from "../utils/queries";
 import { rigWithPilotsFromRow } from "../utils/xforms";
 
-export const useRig = (id: string, currentBlock?: number) => {
+export const useRig = (id: string) => {
   const { db } = useTablelandConnection();
 
   const [rig, setRig] = useState<RigWithPilots>();
@@ -17,9 +17,9 @@ export const useRig = (id: string, currentBlock?: number) => {
   useEffect(() => {
     let isCancelled = false;
 
-    if (!id || !currentBlock) return;
+    if (!id) return;
 
-    db.prepare(selectRigWithPilots(id, currentBlock))
+    db.prepare(selectRigWithPilots(id))
       .first<RigWithPilots>()
       .then((rig) => {
         if (!isCancelled && rig) setRig(rig);
@@ -28,7 +28,7 @@ export const useRig = (id: string, currentBlock?: number) => {
     return () => {
       isCancelled = true;
     };
-  }, [id, setRig, currentBlock, db, /* effect dep */ shouldRefresh]);
+  }, [id, setRig, db, /* effect dep */ shouldRefresh]);
 
   return { rig, refresh };
 };

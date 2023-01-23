@@ -1,4 +1,4 @@
-import { deployment } from "../env";
+import { chain, deployment } from "../env";
 
 const { attributesTable, lookupsTable, pilotSessionsTable } = deployment;
 
@@ -9,7 +9,7 @@ const THUMB_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||i
 
 const PILOT_TRAINING_DURATION = 172800;
 
-export const selectRigs = (ids: string[], currentBlock: number): string => {
+export const selectRigs = (ids: string[]): string => {
   return `
   SELECT
     cast(rig_id as text) as "id",
@@ -34,9 +34,12 @@ export const selectRigs = (ids: string[], currentBlock: number): string => {
       SELECT * FROM ${pilotSessionsTable} AS session
       WHERE session.rig_id = attributes.rig_id
       AND (
-        (session.end_time IS NULL AND session.start_time <= ${
-          currentBlock - PILOT_TRAINING_DURATION
-        })
+        (
+          session.end_time IS NULL AND
+          session.start_time <= (BLOCK_NUM(${
+            chain.id
+          }) - ${PILOT_TRAINING_DURATION})
+        )
         OR
         (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
       )
@@ -47,10 +50,7 @@ export const selectRigs = (ids: string[], currentBlock: number): string => {
   GROUP BY rig_id`;
 };
 
-export const selectRigWithPilots = (
-  id: string,
-  currentBlock: number
-): string => {
+export const selectRigWithPilots = (id: string): string => {
   return `
   SELECT
     '${id}' as "id",
@@ -79,9 +79,10 @@ export const selectRigWithPilots = (
       SELECT * FROM ${pilotSessionsTable} AS session
       WHERE session.rig_id = ${id}
       AND (
-        (session.end_time IS NULL AND session.start_time <= ${
-          currentBlock - PILOT_TRAINING_DURATION
-        })
+        (
+          session.end_time IS NULL AND
+          session.start_time <= (BLOCK_NUM(${chain.id}) - ${PILOT_TRAINING_DURATION})
+        )
         OR
         (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
       )
@@ -151,15 +152,14 @@ export const selectOwnerActivity = (
   OFFSET ${offset}`;
 };
 
-export const selectOwnerPilots = (
-  owner: string,
-  blockNumber: number
-): string => {
+export const selectOwnerPilots = (owner: string): string => {
   return `
   SELECT
     pilot_contract as "contract",
     cast(pilot_id as text) as "tokenId",
-    sum(coalesce(end_time, ${blockNumber}) - start_time) as "flightTime",
+    sum(coalesce(end_time, BLOCK_NUM(${
+      chain.id
+    })) - start_time) as "flightTime",
     min(coalesce(end_time, 0)) == 0 as "isActive"
   FROM ${pilotSessionsTable} AS sessions
   JOIN ${lookupsTable}
@@ -171,7 +171,7 @@ export const selectOwnerPilots = (
 
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
-export const selectStats = (blockNumber: number): string => {
+export const selectStats = (): string => {
   return `
   SELECT
   (
@@ -192,11 +192,11 @@ export const selectStats = (blockNumber: number): string => {
     )
   ) AS "numPilots",
   (
-    SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    SELECT coalesce(sum(coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time), 0)
     FROM ${pilotSessionsTable}
   ) AS "totalFlightTime",
   (
-    SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    SELECT coalesce(avg(coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time), 0)
     FROM ${pilotSessionsTable}
   ) AS "avgFlightTime"
   FROM ${attributesTable}
@@ -205,10 +205,7 @@ export const selectStats = (blockNumber: number): string => {
 
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
-export const selectAccountStats = (
-  blockNumber: number,
-  address: string
-): string => {
+export const selectAccountStats = (address: string): string => {
   const lowerCaseAddress = address.toLowerCase();
   return `
   SELECT
@@ -227,12 +224,12 @@ export const selectAccountStats = (
     )
   ) AS "numPilots",
   (
-    SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    SELECT coalesce(sum(coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time), 0)
     FROM ${pilotSessionsTable}
     WHERE lower(owner) = '${lowerCaseAddress}'
   ) AS "totalFlightTime",
   (
-    SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    SELECT coalesce(avg(coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time), 0)
     FROM ${pilotSessionsTable}
     WHERE lower(owner) = '${lowerCaseAddress}'
   ) AS "avgFlightTime"
@@ -251,11 +248,11 @@ export const selectTopActivePilotCollections = (): string => {
   ORDER BY count DESC`;
 };
 
-export const selectTopFtPilotCollections = (blockNumber: number): string => {
+export const selectTopFtPilotCollections = (): string => {
   return `
   SELECT
     pilot_contract as "contractAddress",
-    sum(coalesce(end_time, ${blockNumber}) - start_time) as ft
+    sum(coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time) as ft
   FROM ${pilotSessionsTable}
   WHERE pilot_contract IS NOT NULL
   GROUP BY pilot_contract

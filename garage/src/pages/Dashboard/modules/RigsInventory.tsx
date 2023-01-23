@@ -13,7 +13,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
 import { useNFTs, NFT } from "../../../hooks/useNFTs";
@@ -117,8 +117,7 @@ const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { address } = useAccount();
-  const { data: blockNumber } = useBlockNumber();
-  const { rigs, refresh } = useOwnedRigs(address, blockNumber);
+  const { rigs, refresh } = useOwnedRigs(address);
   const { validator } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;

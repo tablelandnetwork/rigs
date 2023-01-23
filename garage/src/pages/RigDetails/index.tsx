@@ -135,7 +135,7 @@ export const RigDetails = () => {
   const { id } = useParams();
   const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
-  const { rig, refresh: refreshRig } = useRig(id || "", currentBlockNumber);
+  const { rig, refresh: refreshRig } = useRig(id || "");
   const { validator } = useTablelandConnection();
   const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
