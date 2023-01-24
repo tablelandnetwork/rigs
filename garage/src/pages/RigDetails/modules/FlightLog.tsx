@@ -10,6 +10,7 @@ import {
   Tr,
   VStack,
 } from "@chakra-ui/react";
+import { Link } from "react-router-dom";
 import { RigWithPilots } from "../../../types";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
@@ -45,7 +46,9 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
               <Tr key={`flight-log-${index}`}>
                 <Td pl={p}>{type}</Td>
                 <Td pr={p} isNumeric>
-                  {truncateWalletAddress(owner)}
+                  <Link to={`/owner/${owner}`}>
+                    {truncateWalletAddress(owner)}
+                  </Link>
                 </Td>
               </Tr>
             );

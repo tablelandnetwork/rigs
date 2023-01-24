@@ -9,6 +9,7 @@ import {
   NftExcludeFilters,
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
+import { useContractRead } from "wagmi";
 import { chain, deployment } from "../env";
 import { useQuery } from "@tanstack/react-query";
 
@@ -40,19 +41,22 @@ export interface NFT {
   tokenId: string;
   name?: string;
   imageUrl?: string;
-  imageSvgData?: string;
+  imageData?: string;
 }
 
 const toNFT = (data: Nft): NFT => {
-  const { contract, tokenId, title, media } = data;
+  const { contract, tokenId, title, media, rawMetadata } = data;
+
+  const imageUrl = media[0]?.thumbnail || media[0]?.gateway || media[0]?.raw;
+  const imageData = rawMetadata?.image_data || rawMetadata?.svg_image_data;
 
   return {
     type: contract.tokenType,
     contract: contract.address,
     tokenId,
     name: title,
-    imageUrl: media.length ? media[0].gateway : undefined,
-    imageSvgData: data.rawMetadata?.svg_image_data,
+    imageUrl,
+    imageData,
   };
 };
 
@@ -63,6 +67,8 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
     let isCancelled = false;
 
     if (!input) return;
+
+    input = input.filter(({ contract }) => contract);
 
     if (input.length) {
       const tokens = input.map(({ contract, tokenId }) => ({
@@ -85,6 +91,28 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
   }, [input, setNFTs]);
 
   return { nfts };
+};
+
+export const useNFTOwner = (contract?: string, tokenId?: string) => {
+  const [owner, setOwner] = useState<string>();
+
+  const { data, refetch } = useContractRead({
+    addressOrName: contract || "",
+    contractInterface: [
+      "function ownerOf(uint256 tokenId) view returns (address)",
+    ],
+    functionName: "ownerOf",
+    args: tokenId,
+    enabled: !!contract && !!tokenId,
+  });
+
+  useEffect(() => {
+    if (!data) return;
+
+    setOwner((data as unknown) as string);
+  }, [data, setOwner]);
+
+  return { owner, refresh: refetch };
 };
 
 interface OwnedNFTsFilter {
@@ -190,7 +218,7 @@ export const useNFTCollectionSearch = (search: string) => {
   return data;
 };
 
-export const useNFTCollections = (contracts: string[]) => {
+export const useNFTCollections = (contracts?: string[]) => {
   const [data, setData] = useState<NFTCollectionsData>({
     isLoading: false,
     isError: false,
@@ -199,7 +227,7 @@ export const useNFTCollections = (contracts: string[]) => {
   useEffect(() => {
     let isCancelled = false;
 
-    if (!contracts.length) {
+    if (!contracts?.length) {
       setData({ isLoading: false, isError: false });
       return;
     }

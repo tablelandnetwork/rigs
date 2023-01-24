@@ -373,12 +373,9 @@ contract TablelandRigPilots is
             )
         );
 
-        // Avoid overwriting existing pilot if data is unchanged
-        // (i.e., if most recent pilot is the same as the one specified)
-        if (_pilotData(tokenId) != pilotData) {
-            _setPilotData(uint16(tokenId), uint160(pilotAddr), uint32(pilotId));
-            _pilotIndex[pilotData] = uint16(tokenId);
-        }
+        // Update the pilot data and index
+        _setPilotData(uint16(tokenId), uint160(pilotAddr), uint32(pilotId));
+        _pilotIndex[pilotData] = uint16(tokenId);
 
         emit Piloted(tokenId, pilotAddr, pilotId);
     }

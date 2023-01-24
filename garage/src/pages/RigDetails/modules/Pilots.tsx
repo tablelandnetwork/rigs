@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
+  Flex,
   Heading,
   HStack,
   Image,
@@ -14,10 +15,13 @@ import {
   Thead,
   Tr,
   VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
+import { QuestionIcon } from "@chakra-ui/icons";
 import { RigWithPilots, PilotSession } from "../../../types";
 import { TrainerPilot } from "../../../components/TrainerPilot";
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
+import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { useBlockNumber } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
@@ -43,7 +47,9 @@ const getPilots = (
     const { name = "Trainer", imageUrl = "" } = nft || {};
 
     const flightTime = sessions.reduce((acc, { startTime, endTime }) => {
-      return acc + ((endTime ?? blockNumber ?? startTime) - startTime);
+      return (
+        acc + Math.max((endTime ?? blockNumber ?? startTime) - startTime, 0)
+      );
     }, 0);
 
     return {
@@ -74,28 +80,21 @@ export const Pilots = ({
   p,
   ...props
 }: PilotProps) => {
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber, refetch } = useBlockNumber();
+  useEffect(() => {
+    refetch();
+  }, [rig, refetch]);
   const pilots = getPilots(rig, nfts, blockNumber);
 
-  const totalFlightTime = pilots.reduce(
-    (acc, { flightTime }) => acc + flightTime,
-    0
-  );
+  const {
+    isOpen: isInfoOpen,
+    onClose: onCloseInfo,
+    onOpen: onOpenInfo,
+  } = useDisclosure();
 
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
-      <HStack
-        px={p}
-        justify="space-between"
-        align="baseline"
-        sx={{ width: "100%" }}
-      >
-        <Heading size="xl">Rig {`#${rig.id}`}</Heading>
-        <Heading size="sm">
-          {rig.currentPilot ? "In-flight" : "Parked"}
-          {` (${prettyNumber(totalFlightTime)} FT)`}
-        </Heading>
-      </HStack>
+      <Heading px={p}>Pilots</Heading>
       <Table>
         <Thead>
           <Tr>
@@ -147,7 +146,7 @@ export const Pilots = ({
         </Text>
       )}
       {isOwner && (
-        <StackItem px={4} pb={4}>
+        <StackItem px={4}>
           <HStack gap={3}>
             {!rig.currentPilot && !rig.isTrained && (
               <ChainAwareButton
@@ -180,6 +179,18 @@ export const Pilots = ({
           </HStack>
         </StackItem>
       )}
+      <StackItem pb={2}>
+        <Flex justify="center">
+          <Text
+            onClick={onOpenInfo}
+            sx={{ _hover: { textDecoration: "underline", cursor: "pointer" } }}
+          >
+            <QuestionIcon mr={2} />
+            Learn more about Rig pilots
+          </Text>
+        </Flex>
+      </StackItem>
+      <AboutPilotsModal isOpen={isInfoOpen} onClose={onCloseInfo} />
     </VStack>
   );
 };

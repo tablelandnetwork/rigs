@@ -1,6 +1,4 @@
 import React, { useMemo } from "react";
-import { Link } from "react-router-dom";
-import styled from "@emotion/styled";
 import {
   Box,
   Flex,
@@ -9,14 +7,19 @@ import {
   Spinner,
   Table,
   Tbody,
-  Td,
   Text,
   Tr,
+  Td,
+  VStack,
 } from "@chakra-ui/react";
-import { EventAction } from "../../../types";
+import { Link } from "react-router-dom";
 import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
-import { useRigsActivity } from "../../../hooks/useRigsActivity";
 import { useNFTCollections } from "../../../hooks/useNFTs";
+import { Event, EventAction } from "../../../types";
+
+interface ActivityLogProps extends React.ComponentProps<typeof Box> {
+  events?: Event[];
+}
 
 const getPilotedTitle = (
   lookups: Record<string, string>,
@@ -28,9 +31,8 @@ const getPilotedTitle = (
   return `Piloted ${collectionName} #${tokenId}`;
 };
 
-export const Activity = (props: React.ComponentProps<typeof Box>) => {
-  const { events } = useRigsActivity();
-  const { p = "8px", ...otherProps } = props;
+export const ActivityLog = ({ events, p, ...props }: ActivityLogProps) => {
+  // TODO add table header? might look nicer since the pilots table has one
 
   const contracts = useMemo(() => {
     return Array.from(
@@ -42,7 +44,6 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
       )
     );
   }, [events]);
-
   const { collections } = useNFTCollections(contracts);
   const collectionNameLookup = useMemo(() => {
     return Object.fromEntries(
@@ -51,23 +52,14 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
   }, [collections]);
 
   return (
-    <Flex
-      direction="column"
-      pt={p}
-      sx={{ height: "100%", minWidth: { xl: "400px" } }}
-      {...otherProps}
-    >
+    <VStack align="stretch" pt={p} {...props}>
       <Heading px={p}>Activity</Heading>
-      {!events && (
-        <Flex align="center" justify="center">
-          <Spinner m={p} size="md" />
-        </Flex>
-      )}
       <Table>
         <Tbody>
           {events &&
-            events.map(({ rigId, thumb, action, pilot }, index) => {
+            events.map(({ action, rigId, thumb, pilot }, index) => {
               const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
+
               const title =
                 pilot && action === EventAction.Piloted
                   ? getPilotedTitle(
@@ -77,33 +69,22 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
                     )
                   : action;
               return (
-                <Tr key={`activity-row-${index}`}>
+                <Tr key={`flight-log-${index}`}>
                   <Td
                     pl={p}
                     pr={0}
-                    width={`calc(var(--chakra-sizes-${p}) + 20px)`}
+                    width={`calc(var(--chakra-sizes-${p}) + 30px)`}
                   >
-                    <Link to={`/rigs/${rigId}`}>
-                      <Image
-                        src={thumbUrl}
-                        alt={`Rig ${rigId}`}
-                        sx={{ width: "20px", height: "20px", maxWidth: "20px" }}
-                      />
-                    </Link>
+                    <Image
+                      src={thumbUrl}
+                      alt={`Rig ${rigId}`}
+                      sx={{ width: "30px", height: "30px", maxWidth: "30px" }}
+                    />
                   </Td>
-                  <Td width="60px">
-                    <Link to={`/rigs/${rigId}`}>{`#${rigId}`}</Link>
+                  <Td>
+                    <Link to={`/rigs/${rigId}`}>#{rigId}</Link>
                   </Td>
-                  <Td
-                    pr={p}
-                    sx={{
-                      maxWidth: { base: "200px", md: "300px" },
-                      textOverflow: "ellipsis",
-                      overflow: "hidden",
-                      whiteSpace: "nowrap",
-                    }}
-                    isNumeric
-                  >
+                  <Td pr={p} isNumeric>
                     {title}
                   </Td>
                 </Tr>
@@ -111,11 +92,16 @@ export const Activity = (props: React.ComponentProps<typeof Box>) => {
             })}
         </Tbody>
       </Table>
-      {events && events.length === 0 && (
+      {!events && (
+        <Flex p={p} justify="center">
+          <Spinner />
+        </Flex>
+      )}
+      {events?.length === 0 && (
         <Text p={p} variant="emptyState">
-          No activity yet.
+          This wallet has no Rigs activity yet.
         </Text>
       )}
-    </Flex>
+    </VStack>
   );
 };

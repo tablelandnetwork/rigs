@@ -128,6 +128,47 @@ export const selectRigsActivity = (
   OFFSET ${offset}`;
 };
 
+export const selectOwnerActivity = (
+  owner: string,
+  first: number = 20,
+  offset: number = 0
+): string => {
+  return `
+  SELECT
+    cast(rig_id as text),
+    ${THUMB_IPFS_URI_SELECT} as "thumb",
+    ${IMAGE_IPFS_URI_SELECT} as "image",
+    pilot_contract,
+    pilot_id,
+    start_time,
+    end_time,
+    max(start_time, coalesce(end_time, 0)) as "timestamp"
+  FROM ${pilotSessionsTable} AS sessions
+  JOIN ${lookupsTable}
+  WHERE lower(owner) = '${owner.toLowerCase()}'
+  ORDER BY timestamp DESC, start_time DESC
+  LIMIT ${first}
+  OFFSET ${offset}`;
+};
+
+export const selectOwnerPilots = (
+  owner: string,
+  blockNumber: number
+): string => {
+  return `
+  SELECT
+    pilot_contract,
+    cast(pilot_id as text),
+    sum(coalesce(end_time, ${blockNumber}) - start_time) as "flight_time",
+    min(coalesce(end_time, 0)) == 0 as "is_active"
+  FROM ${pilotSessionsTable} AS sessions
+  JOIN ${lookupsTable}
+  WHERE lower(owner) = '${owner.toLowerCase()}'
+  GROUP BY pilot_contract, pilot_id
+  ORDER BY flight_time DESC
+  `;
+};
+
 // NOTE(daniel):
 // `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
 export const selectStats = (blockNumber: number): string => {
@@ -162,6 +203,61 @@ export const selectStats = (blockNumber: number): string => {
   LIMIT 1;`;
 };
 
+// NOTE(daniel):
+// `FROM rigs LIMIT 1` is a hack to support selecting multiple results in one query
+export const selectAccountStats = (
+  blockNumber: number,
+  address: string
+): string => {
+  const lowerCaseAddress = address.toLowerCase();
+  return `
+  SELECT
+  (
+    SELECT count(*) FROM (
+      SELECT DISTINCT(rig_id)
+      FROM ${pilotSessionsTable}
+      WHERE lower(owner) = '${lowerCaseAddress}' AND end_time IS NULL
+    )
+  ) AS num_rigs_in_flight,
+  (
+    SELECT count(*) FROM (
+      SELECT DISTINCT pilot_contract, pilot_id
+      FROM ${pilotSessionsTable}
+      WHERE lower(owner) = '${lowerCaseAddress}'
+    )
+  ) AS num_pilots,
+  (
+    SELECT coalesce(sum(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    FROM ${pilotSessionsTable}
+    WHERE lower(owner) = '${lowerCaseAddress}'
+  ) AS total_flight_time,
+  (
+    SELECT coalesce(avg(coalesce(end_time, ${blockNumber}) - start_time), 0)
+    FROM ${pilotSessionsTable}
+    WHERE lower(owner) = '${lowerCaseAddress}'
+  ) AS avg_flight_time
+  FROM ${attributesTable}
+  LIMIT 1;`;
+};
+
+export const selectTopActivePilotCollections = (): string => {
+  return `
+  SELECT pilot_contract, count(*) as count
+  FROM ${pilotSessionsTable}
+  WHERE end_time IS NULL AND pilot_contract IS NOT NULL
+  GROUP BY pilot_contract
+  ORDER BY count DESC`;
+};
+
+export const selectTopFtPilotCollections = (blockNumber: number): string => {
+  return `
+  SELECT pilot_contract, sum(coalesce(end_time, ${blockNumber}) - start_time) as ft
+  FROM ${pilotSessionsTable}
+  WHERE pilot_contract IS NOT NULL
+  GROUP BY pilot_contract
+  ORDER BY ft DESC`;
+};
+
 export const selectActivePilotSessionsForPilots = (
   pilots: { contract: string; tokenId: string }[]
 ): string => {
@@ -175,4 +271,8 @@ export const selectActivePilotSessionsForPilots = (
   FROM ${pilotSessionsTable}
   WHERE (${whereClauses.join(" OR ")}) AND end_time IS NULL;
   `;
+};
+
+export const selectTraitRarities = (): string => {
+  return `SELECT trait_type, value, count(*) as "count" FROM ${attributesTable} WHERE trait_type NOT IN ('VIN', '% Original') GROUP BY trait_type, value`;
 };

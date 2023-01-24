@@ -10,16 +10,19 @@ import {
   Spinner,
   Text,
   VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
-import { CheckIcon } from "@chakra-ui/icons";
-import { useBlockNumber } from "wagmi";
+import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
+import { useAccount, useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
 import { useNFTs, NFT } from "../../../hooks/useNFTs";
 import { Rig, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
+import { TablelandConnectButton } from "../../../components/TablelandConnectButton";
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
+import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
 import { sleep, runUntilConditionMet } from "../../../utils/async";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
@@ -88,13 +91,33 @@ const RigListItem = ({
 
 enum Selectable {
   ALL,
-  IN_FLIGHT,
-  PARKED,
+  PARKABLE,
+  PILOTABLE,
+  TRAINABLE,
 }
 
+const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
+  const { isTrained, currentPilot } = rig;
+  const canPark = !!currentPilot;
+  const canTrain = !isTrained && !currentPilot;
+  const canPilot = isTrained && !currentPilot?.contract;
+
+  switch (selectable) {
+    case Selectable.TRAINABLE:
+      return canTrain;
+    case Selectable.PARKABLE:
+      return canPark;
+    case Selectable.PILOTABLE:
+      return canPilot;
+    case Selectable.ALL:
+      return true;
+  }
+};
+
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
+  const { address } = useAccount();
   const { data: blockNumber } = useBlockNumber();
-  const { rigs, refresh } = useOwnedRigs(blockNumber);
+  const { rigs, refresh } = useOwnedRigs(address, blockNumber);
   const { connection: tableland } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;
@@ -109,12 +132,16 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
 
   const currentlySelectable = useMemo(() => {
     const selectedRig = rigs?.find((v) => v.id === firstSetValue(selectedRigs));
+    if (!selectedRig) return Selectable.ALL;
 
-    return selectedRig
-      ? selectedRig.currentPilot
-        ? Selectable.IN_FLIGHT
-        : Selectable.PARKED
-      : Selectable.ALL;
+    const { isTrained, currentPilot } = selectedRig;
+    const isPiloted = !!currentPilot?.contract;
+
+    if (isTrained) {
+      return isPiloted ? Selectable.PARKABLE : Selectable.PILOTABLE;
+    }
+
+    return currentPilot ? Selectable.PARKABLE : Selectable.TRAINABLE;
   }, [selectedRigs]);
 
   const toggleRigSelected = useCallback(
@@ -156,7 +183,11 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     }
   }, [pendingTx, refreshRigsAndClearPendingTx, tableland, clearPendingTx]);
 
-  const { trainRigsModal, parkRigsModal } = useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const openTrainModal = useCallback(() => {
     if (rigs?.length && selectedRigs.size) {
@@ -165,6 +196,13 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     }
   }, [rigs, trainRigsModal, selectedRigs, setPendingTx]);
 
+  const openPilotModal = useCallback(() => {
+    if (rigs?.length && selectedRigs.size) {
+      const modalRigs = rigs.filter((v) => selectedRigs.has(v.id));
+      pilotRigsModal.openModal(modalRigs, setPendingTx);
+    }
+  }, [rigs, pilotRigsModal, selectedRigs, setPendingTx]);
+
   const openParkModal = useCallback(() => {
     if (rigs?.length && selectedRigs.size) {
       const modalRigs = rigs.filter((v) => selectedRigs.has(v.id));
@@ -172,27 +210,42 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     }
   }, [rigs, parkRigsModal, selectedRigs, setPendingTx]);
 
+  const {
+    isOpen: isInfoOpen,
+    onClose: onCloseInfo,
+    onOpen: onOpenInfo,
+  } = useDisclosure();
+
   return (
     <VStack align="start" {...props} sx={{ height: "100%", width: "100%" }}>
-      <Heading mb={2}>Rigs {rigs && ` (${rigs.length})`}</Heading>
-
+      <Flex
+        direction={{ base: "column", sm: "row" }}
+        align={{ base: "start", sm: "center" }}
+        justify="space-between"
+        width="100%"
+      >
+        <Heading mb={2}>Rigs {rigs && ` (${rigs.length})`}</Heading>
+        <Text
+          onClick={onOpenInfo}
+          sx={{ _hover: { textDecoration: "underline", cursor: "pointer" } }}
+          mb={{ base: 6, sm: 0 }}
+        >
+          <QuestionIcon mr={2} />
+          Learn more about Rig pilots
+        </Text>
+      </Flex>
       {rigs && nfts && (
         <Grid
           gap={4}
           templateColumns={{
-            base: "repeat(1, 1fr)",
-            sm: "repeat(2, 1fr)",
+            base: "repeat(2, 1fr)",
             md: "repeat(3, 1fr)",
             xl: "repeat(4, 1fr)",
           }}
         >
           {rigs.map((rig, index) => {
             const selected = selectedRigs.has(rig.id);
-            const hasPilot = !!rig.currentPilot;
-            const selectable =
-              currentlySelectable === Selectable.ALL ||
-              (currentlySelectable === Selectable.IN_FLIGHT && hasPilot) ||
-              (currentlySelectable === Selectable.PARKED && !hasPilot);
+            const selectable = isSelectable(rig, currentlySelectable);
             return (
               <RigListItem
                 rig={rig}
@@ -208,34 +261,49 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
         </Grid>
       )}
 
-      <Flex justify="flex-end" width="100%" pt={6}>
-        <ChainAwareButton
-          disabled={!!pendingTx || !selectedRigs.size}
-          onClick={
-            currentlySelectable === Selectable.PARKED
-              ? openTrainModal
-              : openParkModal
-          }
-        >
-          {selectedRigs.size === 0
-            ? "Select Rigs"
-            : currentlySelectable === Selectable.PARKED
-            ? "Train selected"
-            : "Park selected"}
-        </ChainAwareButton>
-      </Flex>
-
       {rigs && rigs.length === 0 && (
         <Text variant="emptyState" pt={8}>
           You don't own any Rigs.
         </Text>
       )}
 
-      {!rigs && (
+      {!rigs && address && (
         <Flex width="100%" height="200px" align="center" justify="center">
           <Spinner />
         </Flex>
       )}
+
+      {!address && (
+        <Flex width="100%" height="200px" align="center" justify="center" direction="column">
+          Not connected.
+          <TablelandConnectButton />
+        </Flex>
+      )}
+
+      {rigs?.length && (
+        <Flex justify="flex-end" width="100%" pt={6}>
+          <ChainAwareButton
+            disabled={!!pendingTx || !selectedRigs.size}
+            onClick={
+              currentlySelectable === Selectable.PARKABLE
+                ? openParkModal
+                : currentlySelectable === Selectable.PILOTABLE
+                ? openPilotModal
+                : openTrainModal
+            }
+          >
+            {selectedRigs.size === 0
+              ? "Select Rigs"
+              : currentlySelectable === Selectable.PILOTABLE
+              ? "Pilot selected"
+              : currentlySelectable === Selectable.TRAINABLE
+              ? "Train selected"
+              : "Park selected"}
+          </ChainAwareButton>
+        </Flex>
+      )}
+
+      <AboutPilotsModal isOpen={isInfoOpen} onClose={onCloseInfo} />
     </VStack>
   );
 };
