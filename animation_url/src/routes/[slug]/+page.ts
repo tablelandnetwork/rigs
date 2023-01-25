@@ -1,4 +1,4 @@
-import { connect } from "@tableland/sdk";
+import { Database } from "@tableland/sdk";
 import { deployments } from "@tableland/rigs/deployments";
 import { Network, Alchemy, NftTokenType } from "alchemy-sdk";
 import { default as trainer } from "../../assets/trainer.svg";
@@ -7,11 +7,20 @@ import { default as unknown } from "../../assets/unknown.svg";
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
 
+const lookups = "lookups_80001_4041";
+console.log("lookups table", `${lookups} : ${deployment.lookupsTable}`);
+
+const attributes = "rig_attributes_80001_4040"
+console.log("attributes table", `${attributes} : ${deployment.attributesTable}`);
+
+
+
 const ipfsGatewayUri = import.meta.env.DEV
   ? "https://nftstorage.link/ipfs/"
   : "https://tableland.mypinata.cloud/ipfs/";
 
-const tableland = connect({ chain, host: deployment.tablelandHost });
+// const tableland = connect({ chain, host: deployment.tablelandHost });
+const db = new Database();
 const alchemy = new Alchemy({
   apiKey: import.meta.env.VITE_ALCHEMY_ID,
   network: import.meta.env.DEV ? Network.MATIC_MUMBAI : Network.ETH_MAINNET,
@@ -27,13 +36,15 @@ export async function load({ url }) {
   // get image
   const stm = `SELECT json_object(
     'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name
-  ) FROM ${deployment.attributesTable} JOIN ${deployment.lookupsTable} WHERE rig_id=${rigId} GROUP BY rig_id;`;
-  const metadata = await tableland.read(stm, {
-    output: "objects",
-    extract: true,
-    unwrap: true,
-  });
-  const httpUri = ipfsGatewayUri + metadata.image.slice(7);
+  ) FROM ${attributes} JOIN ${lookups} WHERE rig_id=${rigId} GROUP BY rig_id;`;
+  const metadata = await db.prepare(stm).all();
+  const image = metadata.results[0][
+    "json_object('image', 'ipfs://' || renders_cid || '/' || rig_id || '/' || image_medium_name)"
+  ].image;
+
+console.log(image);
+
+  const httpUri = ipfsGatewayUri + image.slice(7);
 
   // get pilot
   const pilot = await getPilot(rigId);
@@ -47,12 +58,13 @@ export async function load({ url }) {
 
 const getPilot = async function (rigId: string): Promise<string | undefined> {
   // Get the sessions where end_time is null, there should only ever be one of these
-  const sessions = await tableland.read(
-    `SELECT pilot_contract,pilot_id FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`,
-    {
-      output: "objects",
-    }
-  );
+  const res = await db.prepare(
+    `SELECT pilot_contract,pilot_id FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`
+  ).all();
+
+console.log(res);
+
+  const sessions = res.results;
 
   if (!(sessions && sessions.length > 0)) {
     // no session without an end_time, show nothing
