@@ -14,6 +14,7 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { WarningTwoIcon } from "@chakra-ui/icons";
+import { ethers } from "ethers";
 import {
   useAccount,
   useContractWrite,
@@ -21,10 +22,10 @@ import {
   useWaitForTransaction,
 } from "wagmi";
 import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
-import { Rig } from "../types";
+import { Rig, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { contractAddress, contractInterface } from "../contract";
+import { address as contractAddress, abi } from "../contract";
 
 interface ModalProps {
   rig: Rig;
@@ -33,10 +34,6 @@ interface ModalProps {
   onTransactionSubmitted?: (txHash: string) => void;
   onTransactionCompleted?: (success: boolean) => void;
 }
-
-const isValidAddress = (address?: string): boolean => {
-  return /0x[0-9a-z]{40,40}/i.test(address || "");
-};
 
 export const TransferRigModal = ({
   rig,
@@ -53,12 +50,15 @@ export const TransferRigModal = ({
   }, [toAddress]);
 
   const { config } = usePrepareContractWrite({
-    addressOrName: contractAddress,
-    contractInterface,
+    address: contractAddress,
+    abi,
     functionName: rig.currentPilot
       ? "safeTransferWhileFlying"
-      : "safeTransferFrom(address,address,uint256)",
-    args: [address, toAddress, rig.id],
+      : "safeTransferFrom",
+    args:
+      address && isValidToAddress && isValidAddress(toAddress)
+        ? [address, toAddress, ethers.BigNumber.from(rig.id)]
+        : undefined,
     enabled: isOpen && isValidToAddress,
   });
 

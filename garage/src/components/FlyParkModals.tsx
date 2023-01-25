@@ -52,10 +52,10 @@ import {
 import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
-import { Rig } from "../types";
+import { Rig, WalletAddress, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { contractAddress, contractInterface } from "../contract";
+import { address as contractAddress, abi } from "../contract";
 import { copySet, toggleInSet } from "../utils/set";
 
 interface ModalProps {
@@ -76,14 +76,10 @@ export const TrainRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
-    addressOrName: contractAddress,
-    contractInterface,
-    functionName:
-      rigs.length === 1 ? "trainRig(uint256)" : "trainRig(uint256[])",
-    args:
-      rigs.length === 1
-        ? ethers.BigNumber.from(rigs[0].id)
-        : [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    address: contractAddress,
+    abi,
+    functionName: "trainRig",
+    args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
     enabled: isOpen,
   });
 
@@ -156,9 +152,9 @@ export const ParkRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
-    addressOrName: contractAddress,
-    contractInterface,
-    functionName: "parkRig(uint256[])",
+    address: contractAddress,
+    abi,
+    functionName: "parkRig",
     args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
     enabled: isOpen,
   });
@@ -226,11 +222,29 @@ interface PilotTransactionProps {
   onTransactionSubmitted?: (txHash: string) => void;
 }
 
-const toContractArgs = (pairs: { rig: Rig; pilot: NFT }[]) => {
+const isPresent = <T,>(t: T | undefined | null): t is T =>
+  t !== undefined && t !== null;
+
+const toContractArgs = (
+  pairs: { rig: Rig; pilot: NFT }[]
+): [ethers.BigNumber[], WalletAddress[], ethers.BigNumber[]] => {
+  const validPairs = pairs
+    .map(({ pilot, ...rest }) => {
+      if (isValidAddress(pilot.contract)) {
+        return {
+          ...rest,
+          pilotContract: pilot.contract,
+          pilotTokenId: pilot.tokenId,
+        };
+      }
+      return null;
+    })
+    .filter(isPresent);
+
   return [
-    pairs.map(({ rig }) => ethers.BigNumber.from(rig.id)),
-    pairs.map(({ pilot }) => pilot.contract),
-    pairs.map(({ pilot }) => ethers.BigNumber.from(pilot.tokenId)),
+    validPairs.map(({ rig }) => ethers.BigNumber.from(rig.id)),
+    validPairs.map(({ pilotContract }) => pilotContract),
+    validPairs.map(({ pilotTokenId }) => ethers.BigNumber.from(pilotTokenId)),
   ];
 };
 
@@ -242,9 +256,9 @@ const PilotTransactionStep = ({
 }: PilotTransactionProps) => {
   // TODO support calling pilotRig(uint256, address, uint256) for a single rig?
   const { config } = usePrepareContractWrite({
-    addressOrName: contractAddress,
-    contractInterface,
-    functionName: "pilotRig(uint256[],address[],uint256[])",
+    address: contractAddress,
+    abi,
+    functionName: "pilotRig",
     args: toContractArgs(pairs),
     enabled: isOpen,
   });
