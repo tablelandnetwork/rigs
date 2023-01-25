@@ -1,4 +1,4 @@
-import { chain as chains } from "wagmi";
+import * as chains from "wagmi/chains";
 import { deployments } from "@tableland/rigs/deployments";
 
 export const environment =

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
-import { Rig } from "../types";
+import { Rig, isValidAddress } from "../types";
 import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
 import { rigFromRow } from "../utils/xforms";
-import { contractAddress, contractInterface } from "../contract";
+import { address as contractAddress, abi } from "../contract";
 
 export const useOwnedRigs = (address?: string, currentBlock?: number) => {
   const { connection: tableland } = useTablelandConnection();
 
   const { data } = useContractRead({
-    addressOrName: contractAddress,
-    contractInterface,
+    address: contractAddress,
+    abi,
     functionName: "tokensOfOwner",
-    args: address,
+    args: isValidAddress(address) ? [address] : undefined,
+    enabled: !!address,
   });
 
   const [rigs, setRigs] = useState<Rig[]>();
