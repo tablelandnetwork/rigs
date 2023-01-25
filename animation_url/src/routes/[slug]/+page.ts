@@ -7,19 +7,10 @@ import { default as unknown } from "../../assets/unknown.svg";
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
 
-const lookups = "lookups_80001_4041";
-console.log("lookups table", `${lookups} : ${deployment.lookupsTable}`);
-
-const attributes = "rig_attributes_80001_4040"
-console.log("attributes table", `${attributes} : ${deployment.attributesTable}`);
-
-
-
 const ipfsGatewayUri = import.meta.env.DEV
   ? "https://nftstorage.link/ipfs/"
   : "https://tableland.mypinata.cloud/ipfs/";
 
-// const tableland = connect({ chain, host: deployment.tablelandHost });
 const db = new Database();
 const alchemy = new Alchemy({
   apiKey: import.meta.env.VITE_ALCHEMY_ID,
@@ -34,16 +25,14 @@ export async function load({ url }) {
   rigId = parts[0];
 
   // get image
-  const stm = `SELECT json_object(
-    'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name
-  ) FROM ${attributes} JOIN ${lookups} WHERE rig_id=${rigId} GROUP BY rig_id;`;
-  const metadata = await db.prepare(stm).all();
-  const image = metadata.results[0][
-    "json_object('image', 'ipfs://' || renders_cid || '/' || rig_id || '/' || image_medium_name)"
-  ].image;
+  const stm = `SELECT renders_cid, image_medium_name FROM ${deployment.lookupsTable}`
 
-console.log(image);
+  const {
+    renders_cid,
+    image_medium_name
+  } = await db.prepare(stm).first<{ renders_cid: string, image_medium_name: string }>();
 
+  const image = `ipfs://${renders_cid}/${rigId}/${image_medium_name}`;
   const httpUri = ipfsGatewayUri + image.slice(7);
 
   // get pilot
@@ -60,9 +49,7 @@ const getPilot = async function (rigId: string): Promise<string | undefined> {
   // Get the sessions where end_time is null, there should only ever be one of these
   const res = await db.prepare(
     `SELECT pilot_contract,pilot_id FROM ${deployment.pilotSessionsTable} WHERE rig_id = ${rigId} AND end_time is null;`
-  ).all();
-
-console.log(res);
+  ).all<{ pilot_contract: string; pilot_id: string; }>();
 
   const sessions = res.results;
 
