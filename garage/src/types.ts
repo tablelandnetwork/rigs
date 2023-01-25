@@ -1,3 +1,9 @@
+export type WalletAddress = `0x${string}`
+
+export const isValidAddress = (address?: string): address is WalletAddress => {
+  return /0x[0-9a-z]{40,40}/i.test(address || "");
+};
+
 export interface Attribute {
   displayType: string;
   traitType: string;

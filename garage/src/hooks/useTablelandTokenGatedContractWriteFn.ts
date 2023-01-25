@@ -1,11 +1,8 @@
 import { useCallback } from "react";
-import { useContractWrite } from "wagmi";
 import { connection } from "./useTablelandConnection";
 
-type ContractWriteFn = ReturnType<typeof useContractWrite>["write"];
-
 export const useTablelandTokenGatedContractWriteFn = (
-  write: ContractWriteFn
+  write?: () => void | any
 ) => {
   const wrapped = useCallback(async () => {
     const token = await connection.siwe();

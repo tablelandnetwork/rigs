@@ -32,7 +32,7 @@ import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep, runUntilConditionMet } from "../../utils/async";
-import { contractAddress } from "../../contract";
+import { address as contractAddress } from "../../contract";
 import { openseaBaseUrl } from "../../env";
 import { RigWithPilots } from "../../types";
 import openseaMark from "../../assets/opensea-mark.svg";
