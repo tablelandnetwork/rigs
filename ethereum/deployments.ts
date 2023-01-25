@@ -1,4 +1,4 @@
-import { ChainName } from "@tableland/sdk";
+import { helpers } from "@tableland/sdk";
 
 export interface RigsDeployment {
   // Contracts
@@ -7,7 +7,7 @@ export interface RigsDeployment {
   pilotsAddress: string;
 
   // Tables network
-  tablelandChain: ChainName;
+  tablelandChain: helpers.ChainName;
   tablelandHost:
     | "https://tableland.network"
     | "https://testnet.tableland.network"
@@ -51,7 +51,7 @@ export const deployments: RigsDeployments = {
     contractAddress: "0xfdD15E0Af08AF6b767bc85384698eda79f5AcAb4",
     royaltyContractAddress: "0xb61974afD4348DA16e45BC48d53883A281bc4A6e",
     pilotsAddress: "0x864655946432f52AE16BDE9af054380b3dE06789",
-    tablelandChain: "polygon-mumbai",
+    tablelandChain: "maticmum",
     tablelandHost: "https://testnet.tableland.network",
     contractTable: "rigs_contract_80001_3819",
     allowlistTable: "rigs_allowlist_80001_3820",
