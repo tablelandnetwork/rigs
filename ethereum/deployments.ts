@@ -1,4 +1,4 @@
-import { ChainName } from "@tableland/sdk";
+import { helpers } from "@tableland/sdk";
 
 export interface RigsDeployment {
   // Contracts
@@ -7,7 +7,7 @@ export interface RigsDeployment {
   pilotsAddress: string;
 
   // Tables network
-  tablelandChain: ChainName;
+  tablelandChain: helpers.ChainName;
   tablelandHost:
     | "https://tableland.network"
     | "https://testnet.tableland.network"
