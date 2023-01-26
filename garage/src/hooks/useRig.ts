@@ -21,6 +21,7 @@ export const useRig = (id: string) => {
     db.prepare(selectRigWithPilots(id))
       .first<RigWithPilots>()
       .then((rig) => {
+        rig.currentPilot = rig.pilotSessions.find((v) => !v.endTime);
         if (!isCancelled && rig) setRig(rig);
       });
 
