@@ -24,7 +24,7 @@ import { TablelandConnectButton } from "../../../components/TablelandConnectButt
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
-import { sleep, runUntilConditionMet } from "../../../utils/async";
+import { sleep } from "../../../utils/async";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
 import { chain } from "../../../env";
 
@@ -169,21 +169,27 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   // and then refreshes the rig data
   useEffect(() => {
     if (validator && pendingTx) {
-      runUntilConditionMet(
-        () =>
-          validator.receiptByTransactionHash({
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
             chainId: chain.id,
             transactionHash: pendingTx,
-          }),
-        (data) => !!data,
-        refreshRigsAndClearPendingTx,
-        {
-          initialDelay: 5_000,
-          wait: 2_000,
-          maxNumberOfAttempts: 10,
-          onMaxNumberOfAttemptsReached: clearPendingTx,
-        }
-      );
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          refreshRigsAndClearPendingTx();
+        })
+        .catch((_) => {
+          clearPendingTx();
+        });
+
+      return () => {
+        controller.abort();
+      };
     }
   }, [pendingTx, refreshRigsAndClearPendingTx, validator, clearPendingTx]);
 
