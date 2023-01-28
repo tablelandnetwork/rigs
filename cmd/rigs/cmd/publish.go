@@ -17,6 +17,7 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/tableland"
 	"github.com/textileio/go-tableland/pkg/client"
 	"github.com/textileio/go-tableland/pkg/wallet"
+	"github.com/web3-storage/go-w3s-client"
 )
 
 var (
@@ -33,6 +34,7 @@ func init() {
 	rootCmd.AddCommand(publishCmd)
 
 	publishCmd.PersistentFlags().String("nft-storage-key", "", "api key for nft.storage")
+	publishCmd.PersistentFlags().String("web3-storage-key", "", "api key for web3.storage")
 	publishCmd.PersistentFlags().Bool(
 		"to-tableland",
 		false,
@@ -96,7 +98,8 @@ var publishCmd = &cobra.Command{
 		var err error
 
 		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
-		dirPublisher = dirpublisher.NewDirPublisher(localStore, ipfsClient, nftStorage)
+		web3Storage, err := w3s.NewClient(w3s.WithToken(viper.GetString("web3-storage-key")))
+		dirPublisher = dirpublisher.NewDirPublisher(ipfsClient, nftStorage, web3Storage)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)

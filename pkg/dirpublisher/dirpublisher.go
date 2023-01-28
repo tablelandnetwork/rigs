@@ -17,33 +17,33 @@ import (
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	"github.com/ipld/go-car"
 	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
-	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
+	"github.com/web3-storage/go-w3s-client"
 	"golang.org/x/time/rate"
 )
 
 // DirPublisher publishes a directory to nft.storage.
 type DirPublisher struct {
-	localStore local.Store
-	ipfsClient *httpapi.HttpApi
-	nftStorage *nftstorage.Client
+	ipfsClient  *httpapi.HttpApi
+	nftStorage  *nftstorage.Client
+	web3Storage w3s.Client
 }
 
 // NewDirPublisher creates a DirPublisher.
 func NewDirPublisher(
-	localStore local.Store,
 	ipfsClient *httpapi.HttpApi,
 	nftStorage *nftstorage.Client,
+	web3Storage w3s.Client,
 ) *DirPublisher {
 	return &DirPublisher{
-		localStore: localStore,
-		ipfsClient: ipfsClient,
-		nftStorage: nftStorage,
+		ipfsClient:  ipfsClient,
+		nftStorage:  nftStorage,
+		web3Storage: web3Storage,
 	}
 }
 
 // DirToIpfs publishes the specified dir to IPFS.
-func (dp *DirPublisher) DirToIpfs(ctx context.Context, dir, label string) (cid.Cid, error) {
+func (dp *DirPublisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error) {
 	fi, err := os.Stat(dir)
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("stating dir: %v", err)
@@ -54,18 +54,14 @@ func (dp *DirPublisher) DirToIpfs(ctx context.Context, dir, label string) (cid.C
 		return cid.Cid{}, fmt.Errorf("creating node from dir: %v", err)
 	}
 
-	log.Default().Println("Adding folder to IPFS...")
+	log.Default().Printf("Adding %s to IPFS...\n", dir)
 
 	ipfsPath, err := dp.ipfsClient.Unixfs().Add(ctx, node, options.Unixfs.CidVersion(1))
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("adding dir to ipfs: %v", err)
 	}
 
-	if err := dp.localStore.TrackCid(ctx, label, ipfsPath.Cid().String()); err != nil {
-		return cid.Cid{}, fmt.Errorf("tracking cid: %v", err)
-	}
-
-	log.Default().Printf("Folder added with cid %s\n", ipfsPath.Cid().String())
+	log.Default().Printf("%s added to ipfs with cid %s\n", dir, ipfsPath.Cid().String())
 
 	return ipfsPath.Cid(), nil
 }
@@ -218,4 +214,60 @@ L1:
 	}
 	_ = os.RemoveAll(tmpDir)
 	return nil
+}
+
+func (dp *DirPublisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
+	carReader, carWriter := io.Pipe()
+
+	jobs := []wpool.Job{
+		{
+			ID:   1,
+			Desc: "write car",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				if err := car.WriteCar(ctx, dp.ipfsClient.Dag(), []cid.Cid{c}, carWriter); err != nil {
+					return nil, fmt.Errorf("writing car: %v", err)
+				}
+				_ = carWriter.Close()
+				return nil, nil
+			},
+		},
+		{
+			ID:   2,
+			Desc: "upload",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				c, err := dp.web3Storage.PutCar(ctx, carReader)
+				if err != nil {
+					return nil, fmt.Errorf("uploading car: %v", err)
+				}
+				return c, nil
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	pool := wpool.New(2, rate.Inf)
+	go pool.GenerateFrom(jobs)
+	go pool.Run(ctx)
+	var res cid.Cid
+L:
+	for {
+		select {
+		case r, ok := <-pool.Results():
+			if !ok {
+				continue
+			}
+			if r.Err != nil {
+				return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+			}
+			if r.ID == 2 {
+				res = r.Value.(cid.Cid)
+			}
+		case <-pool.Done:
+			break L
+		}
+	}
+	log.Default().Printf("%s uploaded to web3.storage", res.String())
+	return res, nil
 }
