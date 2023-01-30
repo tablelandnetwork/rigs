@@ -125,73 +125,75 @@ const FilterSectionCheckbox = ({
   );
 };
 
-const FilterSection = ({
-  traitType,
-  relevant,
-  values,
-  enabledFilters,
-  toggleFilter,
-}: FilterSectionProps) => {
-  const [searchQuery, setSearchQuery] = useState("");
+const FilterSection = React.memo(
+  ({
+    traitType,
+    relevant,
+    values,
+    enabledFilters,
+    toggleFilter,
+  }: FilterSectionProps) => {
+    const [searchQuery, setSearchQuery] = useState("");
 
-  const debouncedSearchQuery = useDebounce(searchQuery, 200);
+    const debouncedSearchQuery = useDebounce(searchQuery, 200);
 
-  const filteredValues = useMemo(() => {
-    return values
-      .filter((v) =>
-        v.value.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-      )
-      .sort((a, b) => a.value.localeCompare(b.value));
-  }, [values, debouncedSearchQuery]);
+    const filteredValues = useMemo(() => {
+      return values
+        .filter((v) =>
+          v.value.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+        )
+        .sort((a, b) => a.value.localeCompare(b.value));
+    }, [values, debouncedSearchQuery]);
 
-  const handleSearchChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setSearchQuery(event.target.value);
-    },
-    [setSearchQuery]
-  );
+    const handleSearchChange = useCallback(
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(event.target.value);
+      },
+      [setSearchQuery]
+    );
 
-  const clearSearch = useCallback(() => setSearchQuery(""), [setSearchQuery]);
+    const clearSearch = useCallback(() => setSearchQuery(""), [setSearchQuery]);
 
-  return (
-    <AccordionItem style={{ opacity: relevant ? "100%" : "60%" }}>
-      <Heading as="h4">
-        <AccordionButton px="0">
-          <Box as="span" flex="1" textAlign="left">
-            {traitType}
-          </Box>
-          <AccordionIcon />
-        </AccordionButton>
-      </Heading>
-      <AccordionPanel px="0">
-        <InputGroup mb={2}>
-          <Input
-            size="md"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            placeholder="Search"
-          />
-          <InputRightElement>
-            <Button size="sm" onClick={clearSearch} variant="ghost">
-              <SmallCloseIcon />
-            </Button>
-          </InputRightElement>
-        </InputGroup>
-        <VStack align="stretch">
-          {filteredValues.map((value) => (
-            <FilterSectionCheckbox
-              traitType={traitType}
-              value={value}
-              enabledFilters={enabledFilters}
-              toggleFilter={toggleFilter}
-              key={`${traitType}:${value.value}`}
+    return (
+      <AccordionItem style={{ opacity: relevant ? "100%" : "60%" }}>
+        <Heading as="h4">
+          <AccordionButton px="0">
+            <Box as="span" flex="1" textAlign="left">
+              {traitType}
+            </Box>
+            <AccordionIcon />
+          </AccordionButton>
+        </Heading>
+        <AccordionPanel px="0">
+          <InputGroup mb={2}>
+            <Input
+              size="md"
+              value={searchQuery}
+              onChange={handleSearchChange}
+              placeholder="Search"
             />
-          ))}
-        </VStack>
-      </AccordionPanel>
-    </AccordionItem>
-  );
-};
+            <InputRightElement>
+              <Button size="sm" onClick={clearSearch} variant="ghost">
+                <SmallCloseIcon />
+              </Button>
+            </InputRightElement>
+          </InputGroup>
+          <VStack align="stretch">
+            {filteredValues.map((value) => (
+              <FilterSectionCheckbox
+                traitType={traitType}
+                value={value}
+                enabledFilters={enabledFilters}
+                toggleFilter={toggleFilter}
+                key={`${traitType}:${value.value}`}
+              />
+            ))}
+          </VStack>
+        </AccordionPanel>
+      </AccordionItem>
+    );
+  }
+);
 
 const FilterPanelHeading = (props: React.ComponentProps<typeof Heading>) => {
   return (
