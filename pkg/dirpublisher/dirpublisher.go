@@ -16,7 +16,13 @@ import (
 	httpapi "github.com/ipfs/go-ipfs-http-client"
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	"github.com/ipld/go-car"
+	"github.com/ipld/go-ipld-prime/codec/dagcbor"
+	"github.com/ipld/go-ipld-prime/datamodel"
+	"github.com/ipld/go-ipld-prime/fluent/qp"
+	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	"github.com/ipld/go-ipld-prime/node/basicnode"
 	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
+	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
 	"github.com/web3-storage/go-w3s-client"
 	"golang.org/x/time/rate"
@@ -269,5 +275,73 @@ L:
 		}
 	}
 	log.Default().Printf("%s uploaded to web3.storage", res.String())
+	return res, nil
+}
+
+func (dp *DirPublisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
+	n, err := qp.BuildMap(basicnode.Prototype.Any, int64(len(rigs)), func(ma datamodel.MapAssembler) {
+		for _, rig := range rigs {
+			c, err := cid.Decode(*rig.RendersCid)
+			if err != nil {
+				log.Default().Printf("error decoding rig cid string: %v", err)
+				continue
+			}
+			qp.MapEntry(ma, fmt.Sprintf("%d", rig.ID), qp.Link(cidlink.Link{Cid: c}))
+		}
+	})
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("building map: %v", err)
+	}
+
+	reader, writer := io.Pipe()
+	jobs := []wpool.Job{
+		{
+			ID:   1,
+			Desc: "encode ipld",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				if err := dagcbor.Encode(n, writer); err != nil {
+					return nil, fmt.Errorf("encoding ipld: %v", err)
+				}
+				_ = writer.Close()
+				return nil, nil
+			},
+		},
+		{
+			ID:   2,
+			Desc: "upload ipld",
+			ExecFn: func(ctx context.Context) (interface{}, error) {
+				c, err := dp.web3Storage.PutCar(ctx, reader)
+				if err != nil {
+					return nil, fmt.Errorf("uploading ipld: %v", err)
+				}
+				return c, nil
+			},
+		},
+	}
+
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	pool := wpool.New(2, rate.Inf)
+	go pool.GenerateFrom(jobs)
+	go pool.Run(ctx)
+	var res cid.Cid
+L:
+	for {
+		select {
+		case r, ok := <-pool.Results():
+			if !ok {
+				continue
+			}
+			if r.Err != nil {
+				return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+			}
+			if r.ID == 2 {
+				res = r.Value.(cid.Cid)
+			}
+		case <-pool.Done:
+			break L
+		}
+	}
 	return res, nil
 }

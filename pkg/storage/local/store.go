@@ -3,6 +3,7 @@ package local
 import (
 	"context"
 
+	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/rigs/pkg/nullable"
 )
 
@@ -31,6 +32,7 @@ type Layer struct {
 type Rig struct {
 	ID                int     `json:"id"`
 	Original          bool    `json:"original"`
+	RendersCid        *string `json:"renders_cid" db:"renders_cid"`
 	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
 	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
 	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
@@ -229,6 +231,9 @@ type Store interface {
 
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
+
+	// UpdateRigRendersCid sets the cid for the rig.
+	UpdateRigRendersCid(ctx context.Context, rigID int, cid cid.Cid) error
 
 	// TrackCid stores the IPFS cid for a label.
 	TrackCid(ctx context.Context, label, cid string) error

@@ -8,6 +8,7 @@ import (
 
 	"github.com/doug-martin/goqu/v9"
 	"github.com/doug-martin/goqu/v9/exp"
+	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 
 	// Importing the SQLite driver.
@@ -43,6 +44,7 @@ const (
 		create table if not exists rigs (
 			id integer primary key,
 			original boolean,
+			renders_cid text,
 			percent_original float,
 			percent_original_50 float,
 			percent_original_75 float,
@@ -189,6 +191,18 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 		return fmt.Errorf("committing tx: %v", err)
 	}
 
+	return nil
+}
+
+func (s *Store) UpdateRigRendersCid(ctx context.Context, rigID int, cid cid.Cid) error {
+	if _, err := s.db.ExecContext(
+		ctx,
+		"update rigs set renders_cid = ? where id = ?",
+		cid.String(),
+		rigID,
+	); err != nil {
+		return fmt.Errorf("executing query: %v", err)
+	}
 	return nil
 }
 

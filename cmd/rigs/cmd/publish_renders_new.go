@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -29,7 +30,7 @@ var rendersNewCmd = &cobra.Command{
 
 		rendersPath := viper.GetString("renders-path")
 
-		execFcn := func(dir string) wpool.ExecutionFn {
+		execFcn := func(dir string, rigID int) wpool.ExecutionFn {
 			return func(ctx context.Context) (interface{}, error) {
 				c, err := dirPublisher.DirToIpfs(ctx, dir)
 				if err != nil {
@@ -41,6 +42,9 @@ var rendersNewCmd = &cobra.Command{
 				}
 				if !c.Equals(c2) {
 					return nil, fmt.Errorf("ipfs cid %s is not equal to web3.storage cid %s", c.String(), c2.String())
+				}
+				if err := localStore.UpdateRigRendersCid(ctx, rigID, c); err != nil {
+					return nil, fmt.Errorf("updating rig id in store: %v", err)
 				}
 				return c, nil
 			}
@@ -55,9 +59,11 @@ var rendersNewCmd = &cobra.Command{
 			if !folder.IsDir() {
 				continue
 			}
+			rigID, err := strconv.Atoi(folder.Name())
+			checkErr(err)
 			jobs = append(jobs, wpool.Job{
 				ID:     wpool.JobID(i),
-				ExecFn: execFcn(path.Join(rendersPath, folder.Name())),
+				ExecFn: execFcn(path.Join(rendersPath, folder.Name()), rigID),
 			})
 		}
 
@@ -79,5 +85,11 @@ var rendersNewCmd = &cobra.Command{
 			}
 			count++
 		}
+
+		rigs, err := localStore.Rigs(ctx)
+		checkErr(err)
+		c, err := dirPublisher.RigsIndexToWeb3Storage(ctx, rigs)
+		checkErr(err)
+		fmt.Printf("uploaded index with cid - %s", c.String())
 	},
 }
