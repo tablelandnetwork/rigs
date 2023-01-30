@@ -14,6 +14,11 @@ const config: UserConfig = {
       allow: [".."],
     },
   },
+  optimizeDeps: {
+    exclude: [
+      "@tableland/sqlparser"
+    ]
+  }
 };
 
 export default config;
