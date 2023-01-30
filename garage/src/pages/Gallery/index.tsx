@@ -31,6 +31,7 @@ import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { Rig } from "../../types";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
+import { useDebounce } from "../../hooks/useDebounce";
 import { selectFilteredRigs } from "../../utils/queries";
 import { copySet, toggleInSet, intersection } from "../../utils/set";
 import twitterMark from "../../assets/twitter-mark.svg";
@@ -133,12 +134,15 @@ const FilterSection = ({
 }: FilterSectionProps) => {
   const [searchQuery, setSearchQuery] = useState("");
 
+  const debouncedSearchQuery = useDebounce(searchQuery, 200);
+
   const filteredValues = useMemo(() => {
-    return values.filter((v) =>
-      v.value.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-    .sort((a, b) => a.value.localeCompare(b.value));
-  }, [values, searchQuery]);
+    return values
+      .filter((v) =>
+        v.value.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+      )
+      .sort((a, b) => a.value.localeCompare(b.value));
+  }, [values, debouncedSearchQuery]);
 
   const handleSearchChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -335,7 +339,9 @@ const RigGridItem = ({ rig }: { rig: Rig }) => {
     >
       <VStack _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}>
         <RigDisplay rig={rest} borderRadius="3px" />
-        <Text>Rig #{rig.id} ({currentPilot ? "In-flight" : "Parked"})</Text>
+        <Text>
+          Rig #{rig.id} ({currentPilot ? "In-flight" : "Parked"})
+        </Text>
       </VStack>
 
       <Box
