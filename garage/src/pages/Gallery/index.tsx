@@ -32,6 +32,7 @@ import { RigDisplay } from "../../components/RigDisplay";
 import { Rig } from "../../types";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { selectFilteredRigs } from "../../utils/queries";
+import { copySet, toggleInSet, intersection } from "../../utils/set";
 import twitterMark from "../../assets/twitter-mark.svg";
 import openseaMark from "../../assets/opensea-mark.svg";
 import traitData from "../../traits.json";
@@ -55,12 +56,11 @@ const MODULE_PROPS = {
 
 const PAGE_LIMIT = 20;
 
-const overlaps = <T,>(a: T[], b: T[]) => {
-  return a.map((v) => b.includes(v)).reduce((p, c) => p || c);
+const overlaps = <T,>(a: Set<T>, b: Set<T>) => {
+  return intersection(a, b).size > 0;
 };
 
-// TODO rewrite using sets instead of arrays?
-export type Filters = Record<string, string[]>;
+export type Filters = Record<string, Set<string>>;
 
 const toggleValue = (
   oldValue: Filters,
@@ -68,18 +68,13 @@ const toggleValue = (
   value: string
 ): Filters => {
   let newValue = { ...oldValue };
-  const traitFilters = newValue[trait];
+  let traitFilters = newValue[trait];
   delete newValue[trait];
 
-  if (!traitFilters || !traitFilters.includes(value)) {
-    newValue[trait] = [...(traitFilters || []), value];
-  } else {
-    const newFilters = traitFilters.filter((v) => v !== value);
+  traitFilters = traitFilters ? copySet(traitFilters) : new Set();
 
-    if (newFilters.length) {
-      newValue[trait] = newFilters;
-    }
-  }
+  const newSet = toggleInSet(traitFilters, value);
+  if (newSet.size) newValue[trait] = newSet;
 
   return newValue;
 };
@@ -99,22 +94,21 @@ interface FilterSectionProps {
   relevant: boolean;
   values: FilterSectionValue[];
 
-  filters: Filters;
+  enabledFilters: Set<string>;
   toggleFilter: (key: string, value: string) => void;
 }
 
 const FilterSectionCheckbox = ({
   traitType,
   value,
-  filters,
+  enabledFilters,
   toggleFilter,
 }: Omit<FilterSectionProps, "values" | "relevant"> & {
   value: FilterSectionValue;
 }) => {
-  const checked = useMemo(() => !!filters[traitType]?.includes(value.value), [
-    filters,
+  const checked = useMemo(() => !!enabledFilters?.has(value.value), [
+    enabledFilters,
     value.value,
-    traitType,
   ]);
 
   const onChange = useCallback(() => toggleFilter(traitType, value.value), [
@@ -134,7 +128,7 @@ const FilterSection = ({
   traitType,
   relevant,
   values,
-  filters,
+  enabledFilters,
   toggleFilter,
 }: FilterSectionProps) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -185,7 +179,7 @@ const FilterSection = ({
               <FilterSectionCheckbox
                 traitType={traitType}
                 value={value}
-                filters={filters}
+                enabledFilters={enabledFilters}
                 toggleFilter={toggleFilter}
                 key={`${traitType}:${value.value}`}
               />
@@ -209,7 +203,7 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
     toggleFilter("% Original", "100");
   }, [toggleFilter]);
 
-  const originalOnlyEnabled = !!filters["% Original"]?.includes("100");
+  const originalOnlyEnabled = !!filters["% Original"]?.has("100");
 
   return (
     <Flex {...MODULE_PROPS} width="300px" flexShrink="0">
@@ -238,14 +232,14 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
           traitType="Color"
           relevant
           values={colors.map((v) => ({ value: v }))}
-          filters={filters}
+          enabledFilters={filters["Color"]}
           toggleFilter={toggleFilter}
         />
         <FilterSection
           traitType="Fleet"
           relevant
           values={fleets.map((v) => ({ value: v }))}
-          filters={filters}
+          enabledFilters={filters["Fleet"]}
           toggleFilter={toggleFilter}
         />
         {sharedTraits.sort().map((trait) => {
@@ -256,7 +250,7 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
               traitType={trait}
               relevant
               values={traitValuesByType[key]}
-              filters={filters}
+              enabledFilters={filters[trait]}
               toggleFilter={toggleFilter}
             />
           );
@@ -271,7 +265,7 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
             const relevant =
               !fleetFilters ||
               fleetFilters.length === 0 ||
-              overlaps(fleetFilters, relevantFleets);
+              overlaps(fleetFilters, new Set(relevantFleets));
 
             return (
               <FilterSection
@@ -279,7 +273,7 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
                 traitType={trait}
                 relevant={relevant}
                 values={traitValuesByType[key]}
-                filters={filters}
+                enabledFilters={filters[trait]}
                 toggleFilter={toggleFilter}
               />
             );
@@ -302,7 +296,7 @@ export const ActiveFiltersBar = ({
       {Object.keys(filters).map((attribute, i) => {
         return (
           <React.Fragment key={`FilterBarFragment${i}`}>
-            {filters[attribute].map((v) => (
+            {Array.from(filters[attribute]).map((v) => (
               <Tag key={`Chip:${attribute}:${v}`} size="lg">
                 <TagLabel>{`${attribute}: ${v}`}</TagLabel>
                 <TagCloseButton onClick={() => toggleFilter(attribute, v)} />

@@ -284,10 +284,8 @@ export const selectTraitRarities = (): string => {
   return `SELECT trait_type, value, count(*) as "count" FROM ${attributesTable} WHERE trait_type NOT IN ('VIN', '% Original') GROUP BY trait_type, value`;
 };
 
-// TODO don't define Filters type twice
-export type Filters = Record<string, string[]>;
 export const selectFilteredRigs = (
-  filters: Filters,
+  filters: Record<string, Set<string>>,
   limit: number = 20,
   offset: number = 0
 ): string => {
@@ -336,7 +334,7 @@ export const selectFilteredRigs = (
 
   let clauses: string[] = [];
   for (const [trait, values] of Object.entries(filters)) {
-    const valuesList = values.map(quoteString).join(", ");
+    const valuesList = Array.from(values).map(quoteString).join(", ");
     const clause = `
     (
       attributes.trait_type = '${trait}' AND
