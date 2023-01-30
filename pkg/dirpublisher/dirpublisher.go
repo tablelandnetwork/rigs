@@ -278,6 +278,7 @@ L:
 	return res, nil
 }
 
+// RigsIndexToWeb3Storage creates a dagcbor index from the provided Rigs and adds it to web3.storage.
 func (dp *DirPublisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
 	n, err := qp.BuildMap(basicnode.Prototype.Any, int64(len(rigs)), func(ma datamodel.MapAssembler) {
 		for _, rig := range rigs {
