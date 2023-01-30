@@ -136,7 +136,8 @@ const FilterSection = ({
   const filteredValues = useMemo(() => {
     return values.filter((v) =>
       v.value.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    )
+    .sort((a, b) => a.value.localeCompare(b.value));
   }, [values, searchQuery]);
 
   const handleSearchChange = useCallback(
@@ -173,17 +174,15 @@ const FilterSection = ({
           </InputRightElement>
         </InputGroup>
         <VStack align="stretch">
-          {filteredValues
-            .sort((a, b) => a.value.localeCompare(b.value))
-            .map((value) => (
-              <FilterSectionCheckbox
-                traitType={traitType}
-                value={value}
-                enabledFilters={enabledFilters}
-                toggleFilter={toggleFilter}
-                key={`${traitType}:${value.value}`}
-              />
-            ))}
+          {filteredValues.map((value) => (
+            <FilterSectionCheckbox
+              traitType={traitType}
+              value={value}
+              enabledFilters={enabledFilters}
+              toggleFilter={toggleFilter}
+              key={`${traitType}:${value.value}`}
+            />
+          ))}
         </VStack>
       </AccordionPanel>
     </AccordionItem>
@@ -197,6 +196,15 @@ const FilterPanelHeading = (props: React.ComponentProps<typeof Heading>) => {
     </Heading>
   );
 };
+
+const attributeSections = sharedTraits.sort();
+
+const partsSections = Object.entries(individualTraits).sort(([a], [b]) =>
+  a.localeCompare(b)
+);
+
+const colorValues = colors.map((v) => ({ value: v }));
+const fleetsValues = fleets.map((v) => ({ value: v }));
 
 const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
   const toggleOriginalOnlyFilter = useCallback(() => {
@@ -231,18 +239,18 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
         <FilterSection
           traitType="Color"
           relevant
-          values={colors.map((v) => ({ value: v }))}
+          values={colorValues}
           enabledFilters={filters["Color"]}
           toggleFilter={toggleFilter}
         />
         <FilterSection
           traitType="Fleet"
           relevant
-          values={fleets.map((v) => ({ value: v }))}
+          values={fleetsValues}
           enabledFilters={filters["Fleet"]}
           toggleFilter={toggleFilter}
         />
-        {sharedTraits.sort().map((trait) => {
+        {attributeSections.map((trait) => {
           const key = trait as keyof typeof traitValuesByType;
           return (
             <FilterSection
@@ -256,28 +264,26 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
           );
         })}
         <FilterPanelHeading>Parts</FilterPanelHeading>
-        {Object.entries(individualTraits)
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([trait, relevantFleets]) => {
-            const key = trait as keyof typeof traitValuesByType;
-            const fleetFilters = filters["Fleet"];
+        {partsSections.map(([trait, relevantFleets]) => {
+          const key = trait as keyof typeof traitValuesByType;
+          const fleetFilters = filters["Fleet"];
 
-            const relevant =
-              !fleetFilters ||
-              fleetFilters.length === 0 ||
-              overlaps(fleetFilters, new Set(relevantFleets));
+          const relevant =
+            !fleetFilters ||
+            fleetFilters.size === 0 ||
+            overlaps(fleetFilters, new Set(relevantFleets));
 
-            return (
-              <FilterSection
-                key={`FilterSection:${trait}`}
-                traitType={trait}
-                relevant={relevant}
-                values={traitValuesByType[key]}
-                enabledFilters={filters[trait]}
-                toggleFilter={toggleFilter}
-              />
-            );
-          })}
+          return (
+            <FilterSection
+              key={`FilterSection:${trait}`}
+              traitType={trait}
+              relevant={relevant}
+              values={traitValuesByType[key]}
+              enabledFilters={filters[trait]}
+              toggleFilter={toggleFilter}
+            />
+          );
+        })}
       </Accordion>
     </Flex>
   );
