@@ -119,23 +119,14 @@ func (dp *DirPublisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (str
 	p0 := wpool.New(2, rate.Inf)
 	go p0.GenerateFrom(jobs0)
 	go p0.Run(ctx0)
-L0:
-	for {
-		select {
-		case r, ok := <-p0.Results():
-			if !ok {
-				continue
-			}
-			if r.Err != nil {
-				_ = os.RemoveAll(tmpDir)
-				return "", fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
-			}
-			log.Default().Printf("processed job %d. %s\n", r.ID, r.Desc)
-			if r.ID == 2 {
-				s = r.Value.(carbites.Splitter)
-			}
-		case <-p0.Done:
-			break L0
+	for r := range p0.Results() {
+		if r.Err != nil {
+			_ = os.RemoveAll(tmpDir)
+			return "", fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+		}
+		log.Default().Printf("processed job %d. %s\n", r.ID, r.Desc)
+		if r.ID == 2 {
+			s = r.Value.(carbites.Splitter)
 		}
 	}
 
@@ -203,20 +194,11 @@ func (dp *DirPublisher) CarChunksToNftStorage(
 	p1 := wpool.New(concurrency, rate.Every(rateLimit))
 	go p1.GenerateFrom(jobs1)
 	go p1.Run(ctx1)
-L1:
-	for {
-		select {
-		case r, ok := <-p1.Results():
-			if !ok {
-				continue
-			}
-			if r.Err != nil {
-				return fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
-			}
-			log.Default().Printf("processed job %d: %s, %v", r.ID, r.Desc, r.Value)
-		case <-p1.Done:
-			break L1
+	for r := range p1.Results() {
+		if r.Err != nil {
+			return fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
 		}
+		log.Default().Printf("processed job %d: %s, %v", r.ID, r.Desc, r.Value)
 	}
 	_ = os.RemoveAll(tmpDir)
 	return nil
@@ -257,21 +239,12 @@ func (dp *DirPublisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Ci
 	go pool.GenerateFrom(jobs)
 	go pool.Run(ctx)
 	var res cid.Cid
-L:
-	for {
-		select {
-		case r, ok := <-pool.Results():
-			if !ok {
-				continue
-			}
-			if r.Err != nil {
-				return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
-			}
-			if r.ID == 2 {
-				res = r.Value.(cid.Cid)
-			}
-		case <-pool.Done:
-			break L
+	for r := range pool.Results() {
+		if r.Err != nil {
+			return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+		}
+		if r.ID == 2 {
+			res = r.Value.(cid.Cid)
 		}
 	}
 	log.Default().Printf("%s uploaded to web3.storage", res.String())
@@ -327,21 +300,12 @@ func (dp *DirPublisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local
 	go pool.GenerateFrom(jobs)
 	go pool.Run(ctx)
 	var res cid.Cid
-L:
-	for {
-		select {
-		case r, ok := <-pool.Results():
-			if !ok {
-				continue
-			}
-			if r.Err != nil {
-				return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
-			}
-			if r.ID == 2 {
-				res = r.Value.(cid.Cid)
-			}
-		case <-pool.Done:
-			break L
+	for r := range pool.Results() {
+		if r.Err != nil {
+			return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+		}
+		if r.ID == 2 {
+			res = r.Value.(cid.Cid)
 		}
 	}
 	return res, nil
