@@ -99,6 +99,7 @@ var publishCmd = &cobra.Command{
 
 		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
 		web3Storage, err := w3s.NewClient(w3s.WithToken(viper.GetString("web3-storage-key")))
+		checkErr(err)
 		dirPublisher = dirpublisher.NewDirPublisher(ipfsClient, nftStorage, web3Storage)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))

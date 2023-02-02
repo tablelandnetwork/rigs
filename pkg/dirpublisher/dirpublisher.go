@@ -204,6 +204,7 @@ func (dp *DirPublisher) CarChunksToNftStorage(
 	return nil
 }
 
+// CidToWeb3Storage writes a car file from a cid and uploads it to web3.storage.
 func (dp *DirPublisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
 	carReader, carWriter := io.Pipe()
 

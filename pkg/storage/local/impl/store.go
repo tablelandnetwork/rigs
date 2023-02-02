@@ -194,6 +194,7 @@ func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	return nil
 }
 
+// UpdateRigRendersCid implements UpdateRigRendersCid.
 func (s *Store) UpdateRigRendersCid(ctx context.Context, rigID int, cid cid.Cid) error {
 	if _, err := s.db.ExecContext(
 		ctx,
