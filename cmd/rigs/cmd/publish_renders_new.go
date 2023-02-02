@@ -69,20 +69,13 @@ var rendersNewCmd = &cobra.Command{
 
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(viper.GetDuration("rate-limit")))
 		go pool.GenerateFrom(jobs)
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
 		go pool.Run(ctx)
 		count := 1
-	Loop:
-		for {
-			select {
-			case r, ok := <-pool.Results():
-				if !ok {
-					continue
-				}
-				fmt.Printf("%d/%d. %v\n", count, len(jobs), r.Value)
-				checkErr(r.Err)
-			case <-pool.Done:
-				break Loop
-			}
+		for r := range pool.Results() {
+			fmt.Printf("%d/%d. %v\n", count, len(jobs), r.Value)
+			checkErr(r.Err)
 			count++
 		}
 
