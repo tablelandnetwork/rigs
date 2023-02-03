@@ -12,11 +12,9 @@ import {
   Grid,
   GridItem,
   Heading,
-  Image,
   Input,
   InputGroup,
   InputRightElement,
-  Link,
   Spinner,
   Switch,
   Tag,
@@ -30,13 +28,12 @@ import { Link as RouterLink } from "react-router-dom";
 import { SmallCloseIcon } from "@chakra-ui/icons";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
+import { Footer } from "../../components/Footer";
 import { Rig } from "../../types";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useDebounce } from "../../hooks/useDebounce";
 import { selectFilteredRigs } from "../../utils/queries";
 import { copySet, toggleInSet, intersection } from "../../utils/set";
-import twitterMark from "../../assets/twitter-mark.svg";
-import openseaMark from "../../assets/opensea-mark.svg";
 import traitData from "../../traits.json";
 
 // TODO can we fetch this data dynamically or does that make the loading experience annoying?
@@ -506,35 +503,7 @@ export const Gallery = () => {
           </Flex>
         </Box>
       </Flex>
-      <Flex
-        position="fixed"
-        bottom="0"
-        bgColor="paper"
-        zIndex="2"
-        left="0"
-        right="0"
-        height="40px"
-        justify="center"
-        align="center"
-        gap={2}
-        borderTopColor="bg"
-        borderTopWidth="1px"
-      >
-        <Link
-          href="https://twitter.com/tableland__"
-          title="Tableland on Twitter"
-          isExternal
-        >
-          <Image src={twitterMark} color="primary" />
-        </Link>
-        <Link
-          href="https://opensea.io/collection/tableland-rigs"
-          title="Rigs on OpenSea"
-          isExternal
-        >
-          <Image src={openseaMark} color="primary" />
-        </Link>
-      </Flex>
+      <Footer />
     </>
   );
 };
