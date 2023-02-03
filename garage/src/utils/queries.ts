@@ -315,9 +315,7 @@ export const selectFilteredRigs = (
       AND (
         (
           session.end_time IS NULL AND
-          session.start_time <= (BLOCK_NUM(${
-            chain.id
-          }) - ${PILOT_TRAINING_DURATION})
+          session.start_time <= (BLOCK_NUM(${chain.id}) - ${PILOT_TRAINING_DURATION})
         )
         OR
         (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
@@ -344,7 +342,7 @@ export const selectFilteredRigs = (
   }
 
   if (clauses.length) {
-    subQuery +=`
+    subQuery += `
       WHERE (${clauses.join(") OR (")})
       GROUP BY attributes.rig_id
       HAVING count(attributes.trait_type) = ${clauses.length}`;
