@@ -24,6 +24,7 @@ import {
   TagCloseButton,
   Text,
   VStack,
+  useBreakpointValue,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
 import { SmallCloseIcon } from "@chakra-ui/icons";
@@ -220,78 +221,73 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
   const originalOnlyEnabled = !!filters["% Original"]?.has("100");
 
   return (
-    <Flex {...MODULE_PROPS} width="300px" flexShrink="0">
-      <Accordion allowMultiple defaultIndex={[]} width="100%">
-        <Heading as="h4" fontWeight="bold" mb={10}>
-          Filters
+    <Accordion allowMultiple defaultIndex={[]} width="100%">
+      <FilterPanelHeading>Properties</FilterPanelHeading>
+      <AccordionItem>
+        <Heading as="h4">
+          <AccordionButton
+            px="0"
+            onClick={(e) => {
+              toggleOriginalOnlyFilter();
+              e.preventDefault();
+            }}
+          >
+            <Box as="span" flex="1" textAlign="left">
+              Originals only
+            </Box>
+            <Switch isChecked={originalOnlyEnabled} />
+          </AccordionButton>
         </Heading>
-        <FilterPanelHeading>Properties</FilterPanelHeading>
-        <AccordionItem>
-          <Heading as="h4">
-            <AccordionButton
-              px="0"
-              onClick={(e) => {
-                toggleOriginalOnlyFilter();
-                e.preventDefault();
-              }}
-            >
-              <Box as="span" flex="1" textAlign="left">
-                Originals only
-              </Box>
-              <Switch isChecked={originalOnlyEnabled} />
-            </AccordionButton>
-          </Heading>
-        </AccordionItem>
-        <FilterSection
-          traitType="Color"
-          relevant
-          values={colorValues}
-          enabledFilters={filters["Color"]}
-          toggleFilter={toggleFilter}
-        />
-        <FilterSection
-          traitType="Fleet"
-          relevant
-          values={fleetsValues}
-          enabledFilters={filters["Fleet"]}
-          toggleFilter={toggleFilter}
-        />
-        {attributeSections.map((trait) => {
-          const key = trait as keyof typeof traitValuesByType;
-          return (
-            <FilterSection
-              key={`FilterSection:${trait}`}
-              traitType={trait}
-              relevant
-              values={traitValuesByType[key]}
-              enabledFilters={filters[trait]}
-              toggleFilter={toggleFilter}
-            />
-          );
-        })}
-        <FilterPanelHeading>Parts</FilterPanelHeading>
-        {partsSections.map(([trait, relevantFleets]) => {
-          const key = trait as keyof typeof traitValuesByType;
-          const fleetFilters = filters["Fleet"];
+      </AccordionItem>
+      <FilterSection
+        traitType="Color"
+        relevant
+        values={colorValues}
+        enabledFilters={filters["Color"]}
+        toggleFilter={toggleFilter}
+      />
+      <FilterSection
+        traitType="Fleet"
+        relevant
+        values={fleetsValues}
+        enabledFilters={filters["Fleet"]}
+        toggleFilter={toggleFilter}
+      />
+      {attributeSections.map((trait) => {
+        const key = trait as keyof typeof traitValuesByType;
+        return (
+          <FilterSection
+            key={`FilterSection:${trait}`}
+            traitType={trait}
+            relevant
+            values={traitValuesByType[key]}
+            enabledFilters={filters[trait]}
+            toggleFilter={toggleFilter}
+          />
+        );
+      })}
+      <FilterPanelHeading>Parts</FilterPanelHeading>
+      {partsSections.map(([trait, relevantFleets]) => {
+        const key = trait as keyof typeof traitValuesByType;
+        const fleetFilters = filters["Fleet"];
 
-          const relevant =
-            !fleetFilters ||
-            fleetFilters.size === 0 ||
-            overlaps(fleetFilters, new Set(relevantFleets));
+        const relevant =
+          !fleetFilters ||
+          fleetFilters.size === 0 ||
+          overlaps(fleetFilters, new Set(relevantFleets));
 
-          return (
-            <FilterSection
-              key={`FilterSection:${trait}`}
-              traitType={trait}
-              relevant={relevant}
-              values={traitValuesByType[key]}
-              enabledFilters={filters[trait]}
-              toggleFilter={toggleFilter}
-            />
-          );
-        })}
-      </Accordion>
-    </Flex>
+        return (
+          <FilterSection
+            key={`FilterSection:${trait}`}
+            traitType={trait}
+            relevant={relevant}
+            values={traitValuesByType[key]}
+            enabledFilters={filters[trait]}
+            toggleFilter={toggleFilter}
+          />
+        );
+      })}
+    </Accordion>
   );
 };
 
@@ -367,6 +363,11 @@ export const Gallery = () => {
   const [loading, setLoading] = useState(false);
   const [allLoaded, setAllLoaded] = useState(false);
 
+  const isMobile = useBreakpointValue(
+    { base: true, lg: false },
+    { ssr: false }
+  );
+
   useEffect(() => {
     setRigs([]);
   }, [filters, setRigs]);
@@ -421,18 +422,51 @@ export const Gallery = () => {
           width="100%"
           minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
         >
-          <Heading>Gallery</Heading>
           <Flex
             direction={{ base: "column", lg: "row" }}
             p={GRID_GAP}
             gap={GRID_GAP}
             align={{ base: "stretch", lg: "start" }}
           >
-            <FilterPanel
-              filters={filters}
-              toggleFilter={toggleFilter}
-              clearFilters={clearFilters}
-            />
+            <Box
+              {...MODULE_PROPS}
+              width={{ base: "100%", lg: "300px" }}
+              flexShrink="0"
+            >
+              {isMobile && (
+                <Accordion allowToggle width="100%">
+                  <AccordionItem border="none">
+                    <Heading as="h4" fontWeight="bold">
+                      <AccordionButton px="0" fontSize="2xl" fontWeight="bold">
+                        <Box as="span" flex="1" textAlign="left">
+                          Filters
+                        </Box>
+                        <AccordionIcon />
+                      </AccordionButton>
+                    </Heading>
+                    <AccordionPanel px="0">
+                      <FilterPanel
+                        filters={filters}
+                        toggleFilter={toggleFilter}
+                        clearFilters={clearFilters}
+                      />
+                    </AccordionPanel>
+                  </AccordionItem>
+                </Accordion>
+              )}
+              {!isMobile && (
+                <>
+                  <Heading as="h4" fontWeight="bold" mb={10}>
+                    Filters
+                  </Heading>
+                  <FilterPanel
+                    filters={filters}
+                    toggleFilter={toggleFilter}
+                    clearFilters={clearFilters}
+                  />
+                </>
+              )}
+            </Box>
             <VStack {...MODULE_PROPS} align="start" flexGrow="1">
               <ActiveFiltersBar
                 filters={filters}
@@ -440,7 +474,8 @@ export const Gallery = () => {
                 clearFilters={clearFilters}
               />
               <Grid
-                gap={4}
+                pt={4}
+                gap={GRID_GAP}
                 templateColumns={{
                   base: "repeat(2, 1fr)",
                   md: "repeat(3, 1fr)",
