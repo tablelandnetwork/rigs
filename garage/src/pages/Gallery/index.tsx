@@ -489,15 +489,15 @@ export const Gallery = () => {
               </Grid>
               {rigs.length === 0 && loading && <Spinner />}
               {!allLoaded && rigs.length > 0 && (
-                <Box mt={8} mx="auto">
+                <Flex pt={8} width="100%" justify="center">
                   <Button
                     size="md"
                     onClick={loadMore}
                     isLoading={loading || rigs.length === 0}
                   >
-                    Load more Rigs
+                    Load more
                   </Button>
-                </Box>
+                </Flex>
               )}
             </VStack>
           </Flex>
