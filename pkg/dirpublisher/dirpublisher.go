@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"io/ioutil"
 	"log"
 	"os"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/alanshaw/go-carbites"
@@ -30,6 +32,7 @@ import (
 
 // DirPublisher publishes a directory to nft.storage.
 type DirPublisher struct {
+	localStore  local.Store
 	ipfsClient  *httpapi.HttpApi
 	nftStorage  *nftstorage.Client
 	web3Storage w3s.Client
@@ -37,11 +40,13 @@ type DirPublisher struct {
 
 // NewDirPublisher creates a DirPublisher.
 func NewDirPublisher(
+	localStore local.Store,
 	ipfsClient *httpapi.HttpApi,
 	nftStorage *nftstorage.Client,
 	web3Storage w3s.Client,
 ) *DirPublisher {
 	return &DirPublisher{
+		localStore:  localStore,
 		ipfsClient:  ipfsClient,
 		nftStorage:  nftStorage,
 		web3Storage: web3Storage,
@@ -310,4 +315,78 @@ func (dp *DirPublisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local
 		}
 	}
 	return res, nil
+}
+
+// RendersToWeb3Storage publishes a directory of renders to web3.storage.
+func (dp *DirPublisher) RendersToWeb3Storage(
+	ctx context.Context,
+	rendersPath string,
+	concurrency int,
+	rateLimit rate.Limit,
+) error {
+	execFcn := func(rigDir string, rigID int) wpool.ExecutionFn {
+		return func(ctx context.Context) (interface{}, error) {
+			c, err := dp.DirToIpfs(ctx, rigDir)
+			if err != nil {
+				return nil, fmt.Errorf("adding dir to ipfs: %v", err)
+			}
+			c2, err := dp.CidToWeb3Storage(ctx, c)
+			if err != nil {
+				return nil, fmt.Errorf("uploading car to web3.storage: %v", err)
+			}
+			if !c.Equals(c2) {
+				return nil, fmt.Errorf("ipfs cid %s is not equal to web3.storage cid %s", c.String(), c2.String())
+			}
+			if err := dp.localStore.UpdateRigRendersCid(ctx, rigID, c); err != nil {
+				return nil, fmt.Errorf("updating rig id in store: %v", err)
+			}
+			return c, nil
+		}
+	}
+
+	var jobs []wpool.Job
+
+	folders, err := ioutil.ReadDir(rendersPath)
+	if err != nil {
+		return fmt.Errorf("reading renders dir: %v", err)
+	}
+
+	for i, folder := range folders {
+		if !folder.IsDir() {
+			continue
+		}
+		rigID, err := strconv.Atoi(folder.Name())
+		if err != nil {
+			return fmt.Errorf("parsing rig dir name to rig id: %v", err)
+		}
+		jobs = append(jobs, wpool.Job{
+			ID:     wpool.JobID(i),
+			ExecFn: execFcn(path.Join(rendersPath, folder.Name()), rigID),
+		})
+	}
+
+	pool := wpool.New(concurrency, rateLimit)
+	go pool.GenerateFrom(jobs)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go pool.Run(ctx)
+	count := 1
+	for r := range pool.Results() {
+		fmt.Printf("%d/%d. %v\n", count, len(jobs), r.Value)
+		if r.Err != nil {
+			return fmt.Errorf("executing job: %v", err)
+		}
+		count++
+	}
+
+	rigs, err := dp.localStore.Rigs(ctx)
+	if err != nil {
+		return fmt.Errorf("querying local store for rigs: %v", err)
+	}
+	c, err := dp.RigsIndexToWeb3Storage(ctx, rigs)
+	if err != nil {
+		return fmt.Errorf("publishing rigs index to web3.storage: %v", err)
+	}
+	fmt.Printf("uploaded index with cid - %s", c.String())
+	return nil
 }
