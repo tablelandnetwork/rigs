@@ -61,6 +61,16 @@ const overlaps = <T,>(a: Set<T>, b: Set<T>) => {
 
 export type Filters = Record<string, Set<string>>;
 
+interface FlightTimeFilters {
+  isTrained: boolean;
+  isInFlight: boolean;
+}
+
+const DEFAULT_FLIGHT_TIME_FILTERS = {
+  isTrained: false,
+  isInFlight: false,
+};
+
 const toggleValue = (
   oldValue: Filters,
   trait: string,
@@ -82,6 +92,9 @@ interface FiltersComponentProps {
   filters: Filters;
   toggleFilter: (key: string, value: string) => void;
   clearFilters: () => void;
+
+  flightTimeFilters: FlightTimeFilters;
+  setFlightTimeFilters: React.Dispatch<React.SetStateAction<FlightTimeFilters>>;
 }
 
 interface FilterSectionValue {
@@ -241,12 +254,31 @@ const AccordionItemWithSwitch = ({
   );
 };
 
-const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
+const FilterPanel = ({
+  filters,
+  toggleFilter,
+  flightTimeFilters,
+  setFlightTimeFilters,
+}: FiltersComponentProps) => {
   const toggleOriginalOnlyFilter = useCallback(() => {
     toggleFilter("% Original", "100");
   }, [toggleFilter]);
 
   const originalOnlyEnabled = !!filters["% Original"]?.has("100");
+
+  const toggleFlightTimeFilter = useCallback(
+    (key: keyof FlightTimeFilters) => {
+      setFlightTimeFilters((old) => {
+        const toggle = old[key];
+
+        let update = { ...old };
+        update[key] = !toggle;
+
+        return update;
+      });
+    },
+    [setFlightTimeFilters]
+  );
 
   return (
     <Accordion allowMultiple defaultIndex={[]} width="100%">
@@ -283,6 +315,17 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
           />
         );
       })}
+      <FilterPanelHeading>In-flight</FilterPanelHeading>
+      <AccordionItemWithSwitch
+        title="Is in-flight"
+        value={flightTimeFilters.isInFlight}
+        toggleValue={() => toggleFlightTimeFilter("isInFlight")}
+      />
+      <AccordionItemWithSwitch
+        title="Is trained"
+        value={flightTimeFilters.isTrained}
+        toggleValue={() => toggleFlightTimeFilter("isTrained")}
+      />
       <FilterPanelHeading>Parts</FilterPanelHeading>
       {partsSections.map(([trait, relevantFleets]) => {
         const key = trait as keyof typeof traitValuesByType;
@@ -312,7 +355,27 @@ export const ActiveFiltersBar = ({
   filters,
   toggleFilter,
   clearFilters,
+  flightTimeFilters,
+  setFlightTimeFilters,
 }: FiltersComponentProps) => {
+  const hasFilters =
+    Object.keys(filters).length > 0 ||
+    Object.values(flightTimeFilters).some((v) => v);
+
+  const toggleFlightTimeFilter = useCallback(
+    (key: keyof FlightTimeFilters) => {
+      setFlightTimeFilters((old) => {
+        const toggle = old[key];
+
+        let update = { ...old };
+        update[key] = !toggle;
+
+        return update;
+      });
+    },
+    [setFlightTimeFilters]
+  );
+
   return (
     <Flex gap={2} align="center" wrap="wrap">
       <Text textTransform="uppercase" as="b">
@@ -330,17 +393,37 @@ export const ActiveFiltersBar = ({
           </React.Fragment>
         );
       })}
-      {Object.keys(filters).length > 0 && (
+      {flightTimeFilters.isInFlight && (
+        <Tag size="lg">
+          <TagLabel>Is in-flight</TagLabel>
+          <TagCloseButton
+            onClick={() => toggleFlightTimeFilter("isInFlight")}
+          />
+        </Tag>
+      )}
+      {flightTimeFilters.isTrained && (
+        <Tag size="lg">
+          <TagLabel>Is trained</TagLabel>
+          <TagCloseButton onClick={() => toggleFlightTimeFilter("isTrained")} />
+        </Tag>
+      )}
+      {hasFilters ? (
         <Button
-          onClick={clearFilters}
+          onClick={() => {
+            clearFilters();
+            setFlightTimeFilters((_) => {
+              return DEFAULT_FLIGHT_TIME_FILTERS;
+            });
+          }}
           color="primary"
           variant="ghost"
           size="sm"
         >
           Clear All
         </Button>
+      ) : (
+        <Text color="inactive">None</Text>
       )}
-      {Object.keys(filters).length === 0 && <Text color="inactive">None</Text>}
     </Flex>
   );
 };
@@ -385,27 +468,33 @@ export const Gallery = () => {
     { ssr: false }
   );
 
+  const [flightTimeFilters, setFlightTimeFilters] = useState<FlightTimeFilters>(
+    DEFAULT_FLIGHT_TIME_FILTERS
+  );
+
   useEffect(() => {
     setRigs([]);
-  }, [filters, setRigs]);
+  }, [filters, flightTimeFilters, setRigs]);
 
   // Effect that fetches new results when filters change
   useEffect(() => {
     setLoading(true);
-    db.prepare(selectFilteredRigs(filters, PAGE_LIMIT, 0))
+    db.prepare(selectFilteredRigs(filters, flightTimeFilters, PAGE_LIMIT, 0))
       .all<Rig>()
       .then((v) => {
         setLoading(false);
         setRigs((oldRigs) => [...oldRigs, ...v.results]);
         setAllLoaded(v.results.length < PAGE_LIMIT);
       });
-  }, [db, filters, setRigs]);
+  }, [db, filters, flightTimeFilters, setRigs]);
 
   // Callback that is called to load more results for the current filters
   const loadMore = useCallback(() => {
     if (db) {
       setLoading(true);
-      db.prepare(selectFilteredRigs(filters, PAGE_LIMIT, rigs.length))
+      db.prepare(
+        selectFilteredRigs(filters, flightTimeFilters, PAGE_LIMIT, rigs.length)
+      )
         .all<Rig>()
         .then((v) => {
           setLoading(false);
@@ -413,7 +502,7 @@ export const Gallery = () => {
           setAllLoaded(v.results.length < PAGE_LIMIT);
         });
     }
-  }, [db, filters, rigs, setRigs, setLoading]);
+  }, [db, filters, flightTimeFilters, rigs, setRigs, setLoading]);
 
   const toggleFilter = useCallback(
     (trait: string, value: string) => {
@@ -466,6 +555,8 @@ export const Gallery = () => {
                         filters={filters}
                         toggleFilter={toggleFilter}
                         clearFilters={clearFilters}
+                        flightTimeFilters={flightTimeFilters}
+                        setFlightTimeFilters={setFlightTimeFilters}
                       />
                     </AccordionPanel>
                   </AccordionItem>
@@ -480,6 +571,8 @@ export const Gallery = () => {
                     filters={filters}
                     toggleFilter={toggleFilter}
                     clearFilters={clearFilters}
+                    flightTimeFilters={flightTimeFilters}
+                    setFlightTimeFilters={setFlightTimeFilters}
                   />
                 </>
               )}
@@ -489,6 +582,8 @@ export const Gallery = () => {
                 filters={filters}
                 toggleFilter={toggleFilter}
                 clearFilters={clearFilters}
+                flightTimeFilters={flightTimeFilters}
+                setFlightTimeFilters={setFlightTimeFilters}
               />
               <Grid
                 pt={4}
