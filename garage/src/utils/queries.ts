@@ -285,11 +285,12 @@ export const selectTraitRarities = (): string => {
 };
 
 export const selectFilteredRigs = (
-  filters: Record<string, Set<string>>,
+  attributeFilters: Record<string, Set<string>>,
+  filters: { isTrained?: boolean; isInFlight?: boolean },
   limit: number = 20,
   offset: number = 0
 ): string => {
-  const outerQuery = `
+  let outerQuery = `
   SELECT
     cast(rig_id as text) as "id",
     ${IMAGE_IPFS_URI_SELECT} as "image",
@@ -323,15 +324,15 @@ export const selectFilteredRigs = (
     ) AS "isTrained"
   FROM ${attributesTable} AS attributes
   JOIN ${lookupsTable}
-  WHERE rig_id IN (<subquery>)
-  GROUP BY rig_id`;
+  WHERE rig_id IN (<subquery>)`;
 
-  const quoteString = (v: string) => `'${v}'`;
+  outerQuery += ` GROUP BY rig_id LIMIT ${limit} OFFSET ${offset}`;
 
   let subQuery = `SELECT rig_id FROM ${attributesTable} AS attributes`;
 
+  const quoteString = (v: string) => `'${v}'`;
   let clauses: string[] = [];
-  for (const [trait, values] of Object.entries(filters)) {
+  for (const [trait, values] of Object.entries(attributeFilters)) {
     const valuesList = Array.from(values).map(quoteString).join(", ");
     const clause = `
     (
@@ -341,16 +342,54 @@ export const selectFilteredRigs = (
     clauses = [...clauses, clause];
   }
 
+  let whereAdded = false;
   if (clauses.length) {
-    subQuery += `
-      WHERE (${clauses.join(") OR (")})
-      GROUP BY attributes.rig_id
-      HAVING count(attributes.trait_type) = ${clauses.length}`;
-  } else {
-    subQuery += ` GROUP BY attributes.rig_id`;
+    whereAdded = true;
+    subQuery += ` WHERE (${clauses.join(") OR (")})`;
   }
 
-  subQuery = subQuery + ` LIMIT ${limit} OFFSET ${offset}`;
+  if (filters.isTrained) {
+    if (!whereAdded) {
+      whereAdded = true;
+      subQuery += " WHERE ";
+    } else {
+      subQuery += " AND ";
+    }
+
+    subQuery += `EXISTS(
+      SELECT * FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = attributes.rig_id
+      AND (
+        (
+          session.end_time IS NULL AND
+          session.start_time <= (BLOCK_NUM(${chain.id}) - ${PILOT_TRAINING_DURATION})
+        )
+        OR
+        (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
+      )
+    )`;
+  }
+
+  if (filters.isInFlight) {
+    if (!whereAdded) {
+      whereAdded = true;
+      subQuery += " WHERE ";
+    } else {
+      subQuery += " AND ";
+    }
+
+    subQuery += `EXISTS(
+      SELECT 1
+      FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = attributes.rig_id AND session.end_time IS NULL
+    )`;
+  }
+
+  subQuery += ` GROUP BY attributes.rig_id`;
+
+  if (clauses.length) {
+    subQuery += ` HAVING count(attributes.trait_type) = ${clauses.length}`;
+  }
 
   return `${outerQuery.replace("<subquery>", subQuery)}`;
 };
