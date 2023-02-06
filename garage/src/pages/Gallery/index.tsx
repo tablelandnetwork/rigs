@@ -210,6 +210,37 @@ const partsSections = Object.entries(individualTraits).sort(([a], [b]) =>
 const colorValues = colors.map((v) => ({ value: v }));
 const fleetsValues = fleets.map((v) => ({ value: v }));
 
+interface AccordionItemWithSwitchProps {
+  title: string;
+  value: boolean;
+  toggleValue: () => void;
+}
+
+const AccordionItemWithSwitch = ({
+  title,
+  value,
+  toggleValue,
+}: AccordionItemWithSwitchProps) => {
+  return (
+    <AccordionItem>
+      <Heading as="h4">
+        <AccordionButton
+          px="0"
+          onClick={(e) => {
+            toggleValue();
+            e.preventDefault();
+          }}
+        >
+          <Box as="span" flex="1" textAlign="left">
+            {title}
+          </Box>
+          <Switch isChecked={value} />
+        </AccordionButton>
+      </Heading>
+    </AccordionItem>
+  );
+};
+
 const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
   const toggleOriginalOnlyFilter = useCallback(() => {
     toggleFilter("% Original", "100");
@@ -220,22 +251,11 @@ const FilterPanel = ({ filters, toggleFilter }: FiltersComponentProps) => {
   return (
     <Accordion allowMultiple defaultIndex={[]} width="100%">
       <FilterPanelHeading>Properties</FilterPanelHeading>
-      <AccordionItem>
-        <Heading as="h4">
-          <AccordionButton
-            px="0"
-            onClick={(e) => {
-              toggleOriginalOnlyFilter();
-              e.preventDefault();
-            }}
-          >
-            <Box as="span" flex="1" textAlign="left">
-              Originals only
-            </Box>
-            <Switch isChecked={originalOnlyEnabled} />
-          </AccordionButton>
-        </Heading>
-      </AccordionItem>
+      <AccordionItemWithSwitch
+        title="Originals only"
+        value={originalOnlyEnabled}
+        toggleValue={toggleOriginalOnlyFilter}
+      />
       <FilterSection
         traitType="Color"
         relevant
