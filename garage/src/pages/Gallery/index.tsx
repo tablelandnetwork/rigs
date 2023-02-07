@@ -458,51 +458,58 @@ const RigGridItem = ({ rig }: { rig: Rig }) => {
 export const Gallery = () => {
   const { db } = useTablelandConnection();
 
-  const [rigs, setRigs] = useState<Rig[]>([]);
+  const [{ loading, allLoaded, rigs }, setState] = useState({
+    loading: false,
+    allLoaded: false,
+    rigs: [] as Rig[],
+  });
+
   const [filters, setFilters] = useState<Filters>({});
-  const [loading, setLoading] = useState(false);
-  const [allLoaded, setAllLoaded] = useState(false);
+  const [flightTimeFilters, setFlightTimeFilters] = useState<FlightTimeFilters>(
+    DEFAULT_FLIGHT_TIME_FILTERS
+  );
 
   const isMobile = useBreakpointValue(
     { base: true, lg: false },
     { ssr: false }
   );
 
-  const [flightTimeFilters, setFlightTimeFilters] = useState<FlightTimeFilters>(
-    DEFAULT_FLIGHT_TIME_FILTERS
-  );
-
-  useEffect(() => {
-    setRigs([]);
-  }, [filters, flightTimeFilters, setRigs]);
-
   // Effect that fetches new results when filters change
   useEffect(() => {
-    setLoading(true);
+    setState({ rigs: [], allLoaded: false, loading: true });
     db.prepare(selectFilteredRigs(filters, flightTimeFilters, PAGE_LIMIT, 0))
       .all<Rig>()
       .then((v) => {
-        setLoading(false);
-        setRigs((oldRigs) => [...oldRigs, ...v.results]);
-        setAllLoaded(v.results.length < PAGE_LIMIT);
+        setState({
+          loading: false,
+          rigs: v.results,
+          allLoaded: v.results.length < PAGE_LIMIT,
+        });
       });
-  }, [db, filters, flightTimeFilters, setRigs]);
+  }, [db, filters, flightTimeFilters, setState]);
 
   // Callback that is called to load more results for the current filters
   const loadMore = useCallback(() => {
     if (db) {
-      setLoading(true);
+      setState((old) => {
+        return { ...old, loading: true };
+      });
       db.prepare(
         selectFilteredRigs(filters, flightTimeFilters, PAGE_LIMIT, rigs.length)
       )
         .all<Rig>()
         .then((v) => {
-          setLoading(false);
-          setRigs((oldRigs) => [...oldRigs, ...v.results]);
-          setAllLoaded(v.results.length < PAGE_LIMIT);
+          setState((old) => {
+            return {
+              ...old,
+              rigs: [...old.rigs, ...v.results],
+              loading: false,
+              allLoaded: v.results.length < PAGE_LIMIT,
+            };
+          });
         });
     }
-  }, [db, filters, flightTimeFilters, rigs, setRigs, setLoading]);
+  }, [db, filters, flightTimeFilters, rigs, setState]);
 
   const toggleFilter = useCallback(
     (trait: string, value: string) => {
