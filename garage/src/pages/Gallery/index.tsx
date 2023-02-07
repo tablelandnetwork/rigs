@@ -435,13 +435,19 @@ const RigGridItem = ({ rig, pilotNFT }: { rig: Rig; pilotNFT?: NFT }) => {
       to={`/rigs/${rig.id}`}
       style={{ position: "relative", display: "block", textDecoration: "none" }}
     >
-      <VStack _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}>
-        <RigDisplay rig={rig} pilotNFT={pilotNFT} borderRadius="3px" />
+      <VStack>
+        <RigDisplay
+          rig={rig}
+          pilotNFT={pilotNFT}
+          border={1}
+          borderStyle="solid"
+          borderColor="black"
+          borderRadius="3px"
+        />
         <Text>
           Rig #{rig.id} ({rig.currentPilot ? "In-flight" : "Parked"})
         </Text>
       </VStack>
-
       <Box
         position="absolute"
         top="0"
