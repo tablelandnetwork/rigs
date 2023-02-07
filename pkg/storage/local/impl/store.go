@@ -55,9 +55,24 @@ const (
 		create table if not exists rig_parts (
 			rig_id integer not null,
 			part_id integer not null,
-			primary key(rig_id,part_id),
+			primary key(rig_id, part_id),
 			foreign key (rig_id) references rigs (id)
 			foreign key (part_id) references parts (id)
+		);
+
+		create table if not exists rig_deals (
+			rig_id integer not null,
+			deal_id integer not null,
+			storage_provider text not null,
+			status text not null,
+			piece_cid text not null,
+			data_cid text not null,
+			data_model_selector text not null,
+			activation timestamp,
+			created timestamp not null,
+			updated timestamp not null,
+			primary key(rig_id, deal_id),
+			foreign key (rig_id) references rigs (id)
 		);
 
 		create table if not exists cids (
@@ -87,6 +102,7 @@ const (
 		delete from layers;
 	`
 	clearRigsSQL = `
+		delete from rig_deals;
 		delete from rig_parts;
 		delete from rigs;
 	`
@@ -95,6 +111,11 @@ const (
 		drop table if exists layers;
 		drop table if exists rigs;
 		drop table if exists rig_parts;
+		drop table if exists rig_deals;
+		// TODO: Investigate what we want here.
+		// drop table if exists cids;
+		// drop table if exists table_names;
+		// drop table if exists txns;
 	`
 )
 
@@ -203,6 +224,50 @@ func (s *Store) UpdateRigRendersCid(ctx context.Context, rigID int, cid cid.Cid)
 		rigID,
 	); err != nil {
 		return fmt.Errorf("executing query: %v", err)
+	}
+	return nil
+}
+
+// UpdateRigDeals implements UpdateRigDeals.
+func (s *Store) UpdateRigDeals(ctx context.Context, rigID int, deals []local.Deal) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("starting tx: %v", err)
+	}
+	for _, deal := range deals {
+		if _, err := tx.ExecContext(
+			ctx,
+			`replace into rig_deals (
+				rig_id, 
+				deal_id, 
+				storage_provider, 
+				status, 
+				piece_cid, 
+				data_cid, 
+				data_model_selector, 
+				activation, 
+				created, 
+				updated
+			) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			rigID,
+			deal.DealID,
+			deal.StorageProvider,
+			deal.Status,
+			deal.PieceCid,
+			deal.DataCid,
+			deal.DataModelSelector,
+			deal.Activation,
+			deal.Created,
+			deal.Updated,
+		); err != nil {
+			if err := tx.Rollback(); err != nil {
+				return fmt.Errorf("rolling back txn: %v", err)
+			}
+			return fmt.Errorf("replacing deal: %v", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("replacing deals: %v", err)
 	}
 	return nil
 }
@@ -395,6 +460,12 @@ func (s *Store) Rigs(ctx context.Context, opts ...local.RigsOption) ([]local.Rig
 			return nil, fmt.Errorf("querying parts for rig: %v", err)
 		}
 		rigs[i].Parts = parts
+
+		var deals []local.Deal
+		if err := s.db.From("rig_deals").Where(goqu.C("rig_id").Eq(rigs[i].ID)).ScanStructsContext(ctx, &deals); err != nil {
+			return nil, fmt.Errorf("querying deals: %v", err)
+		}
+		rigs[i].Deals = deals
 	}
 	return rigs, nil
 }

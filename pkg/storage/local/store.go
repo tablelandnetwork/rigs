@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"time"
 
 	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/rigs/pkg/nullable"
@@ -15,6 +16,19 @@ type Part struct {
 	Type     string          `json:"type"`
 	Name     string          `json:"name"`
 	Color    nullable.String `json:"color"`
+}
+
+// Deal describes a Filecoin storage deal.
+type Deal struct {
+	DealID            uint64     `json:"deal_id" db:"deal_id"`
+	StorageProvider   string     `json:"storage_provider" db:"storage_provider"`
+	Status            string     `json:"status" db:"status"`
+	PieceCid          string     `json:"piece_cid" db:"piece_cid"`
+	DataCid           string     `json:"data_cid" db:"data_cid"`
+	DataModelSelector string     `json:"data_model_selector" db:"data_model_selector"`
+	Activation        *time.Time `json:"activation" db:"activation"`
+	Created           time.Time  `json:"created" db:"created"`
+	Updated           time.Time  `json:"updated" db:"updated"`
 }
 
 // Layer describes an image layer used for rendering a rig.
@@ -39,6 +53,7 @@ type Rig struct {
 	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
 	VIN               string  `json:"vin"`
 	Parts             []Part  `json:"parts"`
+	Deals             []Deal  `json:"deals"`
 }
 
 // OriginalRig represents an original rig.
@@ -234,6 +249,9 @@ type Store interface {
 
 	// UpdateRigRendersCid sets the cid for the rig.
 	UpdateRigRendersCid(ctx context.Context, rigID int, cid cid.Cid) error
+
+	// UpdateRigDeals sets the deals for the rig.
+	UpdateRigDeals(ctx context.Context, rigID int, deals []Deal) error
 
 	// TrackCid stores the IPFS cid for a label.
 	TrackCid(ctx context.Context, label, cid string) error

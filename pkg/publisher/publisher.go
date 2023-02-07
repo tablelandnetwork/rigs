@@ -54,7 +54,7 @@ func NewPublisher(
 }
 
 // DirToIpfs publishes the specified dir to IPFS.
-func (dp *Publisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error) {
+func (p *Publisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error) {
 	fi, err := os.Stat(dir)
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("stating dir: %v", err)
@@ -67,7 +67,7 @@ func (dp *Publisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error)
 
 	log.Default().Printf("Adding %s to IPFS...\n", dir)
 
-	ipfsPath, err := dp.ipfsClient.Unixfs().Add(ctx, node, options.Unixfs.CidVersion(1))
+	ipfsPath, err := p.ipfsClient.Unixfs().Add(ctx, node, options.Unixfs.CidVersion(1))
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("adding dir to ipfs: %v", err)
 	}
@@ -78,7 +78,7 @@ func (dp *Publisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error)
 }
 
 // CidToCarChunks publishes the cid already in IPFS to nft.storage.
-func (dp *Publisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string, error) {
+func (p *Publisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "rigs-uploader")
 	if err != nil {
 		_ = os.RemoveAll(tmpDir)
@@ -94,7 +94,7 @@ func (dp *Publisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string
 			ID:   1,
 			Desc: "write car",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				if err := car.WriteCar(ctx, dp.ipfsClient.Dag(), []cid.Cid{dirCid}, carWriter); err != nil {
+				if err := car.WriteCar(ctx, p.ipfsClient.Dag(), []cid.Cid{dirCid}, carWriter); err != nil {
 					return nil, fmt.Errorf("writing car: %v", err)
 				}
 				_ = carWriter.Close()
@@ -161,7 +161,7 @@ func (dp *Publisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string
 }
 
 // CarChunksToNftStorage publishes the car chunks in the specified dir to nft.storage.
-func (dp *Publisher) CarChunksToNftStorage(
+func (p *Publisher) CarChunksToNftStorage(
 	ctx context.Context,
 	tmpDir string,
 	concurrency int,
@@ -183,7 +183,7 @@ func (dp *Publisher) CarChunksToNftStorage(
 					if err != nil {
 						return nil, fmt.Errorf("opening chunk file: %v", err)
 					}
-					res, err := dp.nftStorage.UploadCar(ctx, f)
+					res, err := p.nftStorage.UploadCar(ctx, f)
 					if err != nil {
 						return nil, fmt.Errorf("uploading car chunk: %v", err)
 					}
@@ -210,7 +210,7 @@ func (dp *Publisher) CarChunksToNftStorage(
 }
 
 // CidToWeb3Storage writes a car file from a cid and uploads it to web3.storage.
-func (dp *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
+func (p *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
 	carReader, carWriter := io.Pipe()
 
 	jobs := []wpool.Job{
@@ -218,7 +218,7 @@ func (dp *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, 
 			ID:   1,
 			Desc: "write car",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				if err := car.WriteCar(ctx, dp.ipfsClient.Dag(), []cid.Cid{c}, carWriter); err != nil {
+				if err := car.WriteCar(ctx, p.ipfsClient.Dag(), []cid.Cid{c}, carWriter); err != nil {
 					return nil, fmt.Errorf("writing car: %v", err)
 				}
 				_ = carWriter.Close()
@@ -229,7 +229,7 @@ func (dp *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, 
 			ID:   2,
 			Desc: "upload",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				c, err := dp.web3Storage.PutCar(ctx, carReader)
+				c, err := p.web3Storage.PutCar(ctx, carReader)
 				if err != nil {
 					return nil, fmt.Errorf("uploading car: %v", err)
 				}
@@ -258,7 +258,7 @@ func (dp *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, 
 }
 
 // RigsIndexToWeb3Storage creates a dagcbor index from the provided Rigs and adds it to web3.storage.
-func (dp *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
+func (p *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
 	n, err := qp.BuildMap(basicnode.Prototype.Any, int64(len(rigs)), func(ma datamodel.MapAssembler) {
 		for _, rig := range rigs {
 			c, err := cid.Decode(*rig.RendersCid)
@@ -290,7 +290,7 @@ func (dp *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Ri
 			ID:   2,
 			Desc: "upload ipld",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				c, err := dp.web3Storage.PutCar(ctx, reader)
+				c, err := p.web3Storage.PutCar(ctx, reader)
 				if err != nil {
 					return nil, fmt.Errorf("uploading ipld: %v", err)
 				}
@@ -318,7 +318,7 @@ func (dp *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Ri
 }
 
 // RendersToWeb3Storage publishes a directory of renders to web3.storage.
-func (dp *Publisher) RendersToWeb3Storage(
+func (p *Publisher) RendersToWeb3Storage(
 	ctx context.Context,
 	rendersPath string,
 	concurrency int,
@@ -326,18 +326,18 @@ func (dp *Publisher) RendersToWeb3Storage(
 ) error {
 	execFcn := func(rigDir string, rigID int) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
-			c, err := dp.DirToIpfs(ctx, rigDir)
+			c, err := p.DirToIpfs(ctx, rigDir)
 			if err != nil {
 				return nil, fmt.Errorf("adding dir to ipfs: %v", err)
 			}
-			c2, err := dp.CidToWeb3Storage(ctx, c)
+			c2, err := p.CidToWeb3Storage(ctx, c)
 			if err != nil {
 				return nil, fmt.Errorf("uploading car to web3.storage: %v", err)
 			}
 			if !c.Equals(c2) {
 				return nil, fmt.Errorf("ipfs cid %s is not equal to web3.storage cid %s", c.String(), c2.String())
 			}
-			if err := dp.localStore.UpdateRigRendersCid(ctx, rigID, c); err != nil {
+			if err := p.localStore.UpdateRigRendersCid(ctx, rigID, c); err != nil {
 				return nil, fmt.Errorf("updating rig id in store: %v", err)
 			}
 			return c, nil
@@ -379,14 +379,77 @@ func (dp *Publisher) RendersToWeb3Storage(
 		count++
 	}
 
-	rigs, err := dp.localStore.Rigs(ctx)
+	rigs, err := p.localStore.Rigs(ctx)
 	if err != nil {
 		return fmt.Errorf("querying local store for rigs: %v", err)
 	}
-	c, err := dp.RigsIndexToWeb3Storage(ctx, rigs)
+	c, err := p.RigsIndexToWeb3Storage(ctx, rigs)
 	if err != nil {
 		return fmt.Errorf("publishing rigs index to web3.storage: %v", err)
 	}
 	fmt.Printf("uploaded index with cid - %s", c.String())
+	return nil
+}
+
+// UpdateWeb3StorageDeals updates the local db with the latest storage deals from web3.storage.
+func (p *Publisher) UpdateWeb3StorageDeals(ctx context.Context, concurrency int, rateLimit rate.Limit) error {
+	execFn := func(rig local.Rig) wpool.ExecutionFn {
+		return func(ctx context.Context) (interface{}, error) {
+			c, err := cid.Decode(*rig.RendersCid)
+			if err != nil {
+				return nil, fmt.Errorf("decoding rig cid: %v", err)
+			}
+			s, err := p.web3Storage.Status(ctx, c)
+			if err != nil {
+				return nil, fmt.Errorf("getting web3.storage status: %v", err)
+			}
+			var deals []local.Deal
+			for _, deal := range s.Deals {
+				var activation *time.Time
+				if !deal.Activation.IsZero() {
+					activation = &deal.Activation
+				}
+				deals = append(deals, local.Deal{
+					DealID:            deal.DealID,
+					StorageProvider:   deal.StorageProvider.String(),
+					Status:            deal.Status.String(),
+					PieceCid:          deal.PieceCid.String(),
+					DataCid:           deal.DataCid.String(),
+					DataModelSelector: deal.DataModelSelector,
+					Activation:        activation,
+					Created:           deal.Created,
+					Updated:           deal.Updated,
+				})
+			}
+			if err := p.localStore.UpdateRigDeals(ctx, rig.ID, deals); err != nil {
+				return nil, fmt.Errorf("updating rig deals in local store: %v", err)
+			}
+			return nil, nil
+		}
+	}
+	rigs, err := p.localStore.Rigs(ctx)
+	if err != nil {
+		return fmt.Errorf("querying rigs: %v", err)
+	}
+	var jobs []wpool.Job
+	for _, rig := range rigs {
+		jobs = append(jobs, wpool.Job{
+			ID:     wpool.JobID(rig.ID),
+			ExecFn: execFn(rig),
+		})
+	}
+	pool := wpool.New(concurrency, rateLimit)
+	go pool.GenerateFrom(jobs)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go pool.Run(ctx)
+	count := 1
+	for r := range pool.Results() {
+		if r.Err != nil {
+			return fmt.Errorf("executing job %d: %v", r.ID, err)
+		}
+		fmt.Printf("%d/%d. complete\n", count, len(jobs))
+		count++
+	}
 	return nil
 }
