@@ -3,11 +3,16 @@ import { Link } from "react-router-dom";
 import {
   Box,
   Button,
+  Divider,
   Flex,
   Heading,
+  Hide,
   Grid,
   GridItem,
+  Show,
+  Spacer,
   Spinner,
+  Stack,
   Text,
   VStack,
   useDisclosure,
@@ -272,9 +277,20 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       {rigs && rigs.length === 0 && (
-        <Text variant="emptyState" pt={8}>
-          You don't own any Rigs.
-        </Text>
+        <Flex
+          width="100%"
+          height="200px"
+          align="center"
+          justify="center"
+          direction="column"
+        >
+          <Text variant="emptyState" pt={8} pb={4}>
+            You don't own any Rigs.
+          </Text>
+          <Button as={Link} to="/gallery" height="40px">
+            Browse Rigs gallery
+          </Button>
+        </Flex>
       )}
 
       {!rigs && address && (
@@ -284,9 +300,28 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       {!address && (
-        <Flex width="100%" height="200px" align="center" justify="center" direction="column">
-          Not connected.
-          <TablelandConnectButton />
+        <Flex
+          width="100%"
+          height="200px"
+          align="center"
+          justify="center"
+          direction="column"
+        >
+          <Text variant="emptyState">No wallet connected.</Text>
+          <Stack pt={8} direction={{ base: "column", sm: "row" }}>
+            <TablelandConnectButton size="small" />
+            <Spacer width={3} />
+            <Show below="sm">
+              <Divider orientation="horizontal" />
+            </Show>
+            <Hide below="sm">
+              <Divider orientation="vertical" />
+            </Hide>
+            <Spacer width={3} />
+            <Button as={Link} to="/gallery" height={{ base: "40px", sm: "100%" }}>
+              Browse Rigs gallery
+            </Button>
+          </Stack>
         </Flex>
       )}
 

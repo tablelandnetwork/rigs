@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  Box,
   Button,
   Flex,
   HStack,
@@ -34,7 +35,14 @@ export const TablelandConnectButton = ({
         const connected = mounted && account && chain;
 
         return (
-          <div
+          <Box
+            display="flex"
+            alignItems="center"
+            sx={{
+              height: size === "small" ? "50px" : "70px",
+              minWidth: size === "large" ? "300px" : undefined,
+              fontSize: size === "small" ? "16px" : "20px",
+            }}
             {...(!mounted && {
               "aria-hidden": true,
               style: {
@@ -56,6 +64,7 @@ export const TablelandConnectButton = ({
                       minWidth: size === "large" ? "300px" : undefined,
                       fontSize: size === "small" ? "16px" : "20px",
                     }}
+                    width="100%"
                   >
                     Connect Wallet
                   </Button>
@@ -91,7 +100,7 @@ export const TablelandConnectButton = ({
                 </Flex>
               );
             })()}
-          </div>
+          </Box>
         );
       }}
     </ConnectButton.Custom>
