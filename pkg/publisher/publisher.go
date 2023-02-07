@@ -1,4 +1,4 @@
-package dirpublisher
+package publisher
 
 import (
 	"context"
@@ -30,22 +30,22 @@ import (
 	"golang.org/x/time/rate"
 )
 
-// DirPublisher publishes a directory to nft.storage.
-type DirPublisher struct {
+// Publisher publishes Rigs data.
+type Publisher struct {
 	localStore  local.Store
 	ipfsClient  *httpapi.HttpApi
 	nftStorage  *nftstorage.Client
 	web3Storage w3s.Client
 }
 
-// NewDirPublisher creates a DirPublisher.
-func NewDirPublisher(
+// NewPublisher creates a publisher.
+func NewPublisher(
 	localStore local.Store,
 	ipfsClient *httpapi.HttpApi,
 	nftStorage *nftstorage.Client,
 	web3Storage w3s.Client,
-) *DirPublisher {
-	return &DirPublisher{
+) *Publisher {
+	return &Publisher{
 		localStore:  localStore,
 		ipfsClient:  ipfsClient,
 		nftStorage:  nftStorage,
@@ -54,7 +54,7 @@ func NewDirPublisher(
 }
 
 // DirToIpfs publishes the specified dir to IPFS.
-func (dp *DirPublisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error) {
+func (dp *Publisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error) {
 	fi, err := os.Stat(dir)
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("stating dir: %v", err)
@@ -78,7 +78,7 @@ func (dp *DirPublisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, err
 }
 
 // CidToCarChunks publishes the cid already in IPFS to nft.storage.
-func (dp *DirPublisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string, error) {
+func (dp *Publisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (string, error) {
 	tmpDir, err := os.MkdirTemp("", "rigs-uploader")
 	if err != nil {
 		_ = os.RemoveAll(tmpDir)
@@ -161,7 +161,7 @@ func (dp *DirPublisher) CidToCarChunks(ctx context.Context, dirCid cid.Cid) (str
 }
 
 // CarChunksToNftStorage publishes the car chunks in the specified dir to nft.storage.
-func (dp *DirPublisher) CarChunksToNftStorage(
+func (dp *Publisher) CarChunksToNftStorage(
 	ctx context.Context,
 	tmpDir string,
 	concurrency int,
@@ -210,7 +210,7 @@ func (dp *DirPublisher) CarChunksToNftStorage(
 }
 
 // CidToWeb3Storage writes a car file from a cid and uploads it to web3.storage.
-func (dp *DirPublisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
+func (dp *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
 	carReader, carWriter := io.Pipe()
 
 	jobs := []wpool.Job{
@@ -258,7 +258,7 @@ func (dp *DirPublisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Ci
 }
 
 // RigsIndexToWeb3Storage creates a dagcbor index from the provided Rigs and adds it to web3.storage.
-func (dp *DirPublisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
+func (dp *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
 	n, err := qp.BuildMap(basicnode.Prototype.Any, int64(len(rigs)), func(ma datamodel.MapAssembler) {
 		for _, rig := range rigs {
 			c, err := cid.Decode(*rig.RendersCid)
@@ -318,7 +318,7 @@ func (dp *DirPublisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local
 }
 
 // RendersToWeb3Storage publishes a directory of renders to web3.storage.
-func (dp *DirPublisher) RendersToWeb3Storage(
+func (dp *Publisher) RendersToWeb3Storage(
 	ctx context.Context,
 	rendersPath string,
 	concurrency int,

@@ -20,7 +20,7 @@ var rendersNewCmd = &cobra.Command{
 	Use:   "renders-new",
 	Short: "Publish rig renders to web3.storage",
 	Run: func(cmd *cobra.Command, args []string) {
-		checkErr(dirPublisher.RendersToWeb3Storage(
+		checkErr(pub.RendersToWeb3Storage(
 			cmd.Context(),
 			viper.GetString("renders-path"),
 			viper.GetInt("concurrency"),

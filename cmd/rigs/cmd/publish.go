@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/rigs/pkg/dirpublisher"
 	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
+	"github.com/tablelandnetwork/rigs/pkg/publisher"
 	storage "github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/files"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/sqlite"
@@ -23,11 +23,11 @@ import (
 var (
 	_db *sql.DB
 
-	ethClient    *ethclient.Client
-	dirPublisher *dirpublisher.DirPublisher
-	store        storage.Store
-	tblClient    *client.Client
-	chain        client.Chain
+	ethClient *ethclient.Client
+	pub       *publisher.Publisher
+	store     storage.Store
+	tblClient *client.Client
+	chain     client.Chain
 )
 
 func init() {
@@ -100,7 +100,7 @@ var publishCmd = &cobra.Command{
 		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
 		web3Storage, err := w3s.NewClient(w3s.WithToken(viper.GetString("web3-storage-key")))
 		checkErr(err)
-		dirPublisher = dirpublisher.NewDirPublisher(localStore, ipfsClient, nftStorage, web3Storage)
+		pub = publisher.NewPublisher(localStore, ipfsClient, nftStorage, web3Storage)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)
