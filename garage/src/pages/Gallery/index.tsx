@@ -32,8 +32,11 @@ import { Footer } from "../../components/Footer";
 import { Rig } from "../../types";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useDebounce } from "../../hooks/useDebounce";
+import { useNFTs, NFT } from "../../hooks/useNFTs";
 import { selectFilteredRigs } from "../../utils/queries";
 import { copySet, toggleInSet, intersection } from "../../utils/set";
+import { isPresent } from "../../utils/types";
+import { findNFT } from "../../utils/nfts";
 import traitData from "../../traits.json";
 
 // TODO can we fetch this data dynamically or does that make the loading experience annoying?
@@ -428,17 +431,16 @@ export const ActiveFiltersBar = ({
   );
 };
 
-const RigGridItem = ({ rig }: { rig: Rig }) => {
-  const { currentPilot, ...rest } = rig;
+const RigGridItem = ({ rig, pilotNFT }: { rig: Rig; pilotNFT?: NFT }) => {
   return (
     <RouterLink
       to={`/rigs/${rig.id}`}
       style={{ position: "relative", display: "block", textDecoration: "none" }}
     >
       <VStack _hover={{ backgroundColor: "rgba(0,0,0,0.15)" }}>
-        <RigDisplay rig={rest} borderRadius="3px" />
+        <RigDisplay rig={rig} pilotNFT={pilotNFT} borderRadius="3px" />
         <Text>
-          Rig #{rig.id} ({currentPilot ? "In-flight" : "Parked"})
+          Rig #{rig.id} ({rig.currentPilot ? "In-flight" : "Parked"})
         </Text>
       </VStack>
 
@@ -463,6 +465,14 @@ export const Gallery = () => {
     allLoaded: false,
     rigs: [] as Rig[],
   });
+
+  const currentPilots = useMemo(() => {
+    return rigs.map((v) => v.currentPilot).filter(isPresent);
+  }, [rigs]);
+
+  // NOTE: all pilot NFTs are refected everytime the rig data changes so if the user
+  // paginates through data it will refecth nfts all the time
+  const { nfts } = useNFTs(currentPilots);
 
   const [filters, setFilters] = useState<Filters>({});
   const [flightTimeFilters, setFlightTimeFilters] = useState<FlightTimeFilters>(
@@ -602,9 +612,11 @@ export const Gallery = () => {
                 }}
               >
                 {rigs.map((rig, index) => {
+                  const currentNFT =
+                    rig.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
                   return (
                     <GridItem key={index}>
-                      <RigGridItem rig={rig} />
+                      <RigGridItem rig={rig} pilotNFT={currentNFT} />
                     </GridItem>
                   );
                 })}
