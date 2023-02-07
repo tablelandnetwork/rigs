@@ -211,9 +211,9 @@ const FilterSection = React.memo(
 
 const FilterPanelHeading = (props: React.ComponentProps<typeof Heading>) => {
   return (
-    <Heading as="h4" mt={6} mb={2} {...props}>
+    <Text mt={6} mb={2} {...props} fontSize="lg" fontWeight="bold">
       {props.children}
-    </Heading>
+    </Text>
   );
 };
 
@@ -381,9 +381,7 @@ export const ActiveFiltersBar = ({
 
   return (
     <Flex gap={2} align="center" wrap="wrap">
-      <Text textTransform="uppercase" as="b">
-        Active Filters:
-      </Text>
+      <Text fontSize="lg">Active Filters:</Text>
       {Object.keys(filters).map((attribute, i) => {
         return (
           <React.Fragment key={`FilterBarFragment${i}`}>
@@ -559,8 +557,8 @@ export const Gallery = () => {
               {isMobile && (
                 <Accordion allowToggle width="100%">
                   <AccordionItem border="none">
-                    <Heading as="h4" fontWeight="bold">
-                      <AccordionButton px="0" fontSize="2xl" fontWeight="bold">
+                    <Heading>
+                      <AccordionButton px="0" fontSize="2xl">
                         <Box as="span" flex="1" textAlign="left">
                           Filters
                         </Box>
@@ -581,9 +579,7 @@ export const Gallery = () => {
               )}
               {!isMobile && (
                 <>
-                  <Heading as="h4" fontWeight="bold" mb={10}>
-                    Filters
-                  </Heading>
+                  <Heading mb={10}>Filters</Heading>
                   <FilterPanel
                     filters={filters}
                     toggleFilter={toggleFilter}
