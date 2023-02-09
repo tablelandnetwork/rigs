@@ -10,17 +10,17 @@ import (
 
 func init() {
 	rendersNewCmd.Flags().String("renders-path", "./renders", "path to the rendered images")
-	rendersNewCmd.Flags().Int("concurrency", 10, "number of concurrent uploads to web3.storage")
-	rendersNewCmd.Flags().Duration("rate-limit", time.Millisecond*350, "rate limit for uploads to web3.storage")
+	rendersNewCmd.Flags().Int("concurrency", 10, "number of concurrent uploads to car storage service")
+	rendersNewCmd.Flags().Duration("rate-limit", time.Millisecond*350, "rate limit for uploads to car storage service")
 
 	publishCmd.AddCommand(rendersNewCmd)
 }
 
 var rendersNewCmd = &cobra.Command{
 	Use:   "renders-new",
-	Short: "Publish rig renders to web3.storage",
+	Short: "Publish rig renders to a car storage service",
 	Run: func(cmd *cobra.Command, args []string) {
-		checkErr(pub.RendersToWeb3Storage(
+		checkErr(pub.RendersToCarStorage(
 			cmd.Context(),
 			viper.GetString("renders-path"),
 			viper.GetInt("concurrency"),

@@ -9,17 +9,17 @@ import (
 )
 
 func init() {
-	updateDealsCmd.Flags().Int("concurrency", 10, "number of concurrent uploads to web3.storage")
-	updateDealsCmd.Flags().Duration("rate-limit", time.Millisecond*350, "rate limit for requests to web3.storage")
+	updateDealsCmd.Flags().Int("concurrency", 10, "number of concurrent requests to car storage service")
+	updateDealsCmd.Flags().Duration("rate-limit", time.Millisecond*350, "rate limit for requests to car storage service")
 
 	publishCmd.AddCommand(updateDealsCmd)
 }
 
 var updateDealsCmd = &cobra.Command{
 	Use:   "update-deals",
-	Short: "Update deal information from web3.storage",
+	Short: "Update deal information from car storage service",
 	Run: func(cmd *cobra.Command, args []string) {
-		checkErr(pub.UpdateWeb3StorageDeals(
+		checkErr(pub.UpdateCarStorageDeals(
 			cmd.Context(),
 			viper.GetInt("concurrency"),
 			rate.Every(viper.GetDuration("rate-limit")),

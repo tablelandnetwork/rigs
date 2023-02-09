@@ -205,8 +205,8 @@ func (p *Publisher) CarChunksToNftStorage(
 	return nil
 }
 
-// CidToWeb3Storage writes a car file from a cid and uploads it to web3.storage.
-func (p *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
+// CidToCarStorage writes a car file from a cid and uploads it to car storage service.
+func (p *Publisher) CidToCarStorage(ctx context.Context, c cid.Cid) (cid.Cid, error) {
 	carReader, carWriter := io.Pipe()
 
 	jobs := []wpool.Job{
@@ -249,12 +249,12 @@ func (p *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, e
 			res = r.Value.(cid.Cid)
 		}
 	}
-	log.Default().Printf("%s uploaded to web3.storage", res.String())
+	log.Default().Printf("%s uploaded to car storage service", res.String())
 	return res, nil
 }
 
-// RigsIndexToWeb3Storage creates a dagcbor index from the provided Rigs and adds it to web3.storage.
-func (p *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
+// RigsIndexToCarStorage creates a dagcbor index from the provided Rigs and adds it to car storage service.
+func (p *Publisher) RigsIndexToCarStorage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
 	n, err := qp.BuildMap(basicnode.Prototype.Any, int64(len(rigs)), func(ma datamodel.MapAssembler) {
 		for _, rig := range rigs {
 			c, err := cid.Decode(*rig.RendersCid)
@@ -313,8 +313,8 @@ func (p *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig
 	return res, nil
 }
 
-// RendersToWeb3Storage publishes a directory of renders to web3.storage.
-func (p *Publisher) RendersToWeb3Storage(
+// RendersToCarStorage publishes a directory of renders to car storage service.
+func (p *Publisher) RendersToCarStorage(
 	ctx context.Context,
 	rendersPath string,
 	concurrency int,
@@ -326,12 +326,12 @@ func (p *Publisher) RendersToWeb3Storage(
 			if err != nil {
 				return nil, fmt.Errorf("adding dir to ipfs: %v", err)
 			}
-			c2, err := p.CidToWeb3Storage(ctx, c)
+			c2, err := p.CidToCarStorage(ctx, c)
 			if err != nil {
-				return nil, fmt.Errorf("uploading car to web3.storage: %v", err)
+				return nil, fmt.Errorf("uploading car to car storage service: %v", err)
 			}
 			if !c.Equals(c2) {
-				return nil, fmt.Errorf("ipfs cid %s is not equal to web3.storage cid %s", c.String(), c2.String())
+				return nil, fmt.Errorf("ipfs cid %s is not equal to car storage service cid %s", c.String(), c2.String())
 			}
 			if err := p.localStore.UpdateRigRendersCid(ctx, rigID, c); err != nil {
 				return nil, fmt.Errorf("updating rig id in store: %v", err)
@@ -379,16 +379,16 @@ func (p *Publisher) RendersToWeb3Storage(
 	if err != nil {
 		return fmt.Errorf("querying local store for rigs: %v", err)
 	}
-	c, err := p.RigsIndexToWeb3Storage(ctx, rigs)
+	c, err := p.RigsIndexToCarStorage(ctx, rigs)
 	if err != nil {
-		return fmt.Errorf("publishing rigs index to web3.storage: %v", err)
+		return fmt.Errorf("publishing rigs index to car storage service: %v", err)
 	}
 	fmt.Printf("uploaded index with cid - %s", c.String())
 	return nil
 }
 
-// UpdateWeb3StorageDeals updates the local db with the latest storage deals from web3.storage.
-func (p *Publisher) UpdateWeb3StorageDeals(ctx context.Context, concurrency int, rateLimit rate.Limit) error {
+// UpdateCarStorageDeals updates the local db with the latest storage deals from car storage service.
+func (p *Publisher) UpdateCarStorageDeals(ctx context.Context, concurrency int, rateLimit rate.Limit) error {
 	execFn := func(rig local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			c, err := cid.Decode(*rig.RendersCid)
@@ -397,7 +397,7 @@ func (p *Publisher) UpdateWeb3StorageDeals(ctx context.Context, concurrency int,
 			}
 			s, err := p.carStorage.Status(ctx, c)
 			if err != nil {
-				return nil, fmt.Errorf("getting web3.storage status: %v", err)
+				return nil, fmt.Errorf("getting car storage service status: %v", err)
 			}
 			var deals []local.Deal
 			for _, deal := range s.Deals {
