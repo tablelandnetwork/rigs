@@ -69,7 +69,6 @@ const (
 			data_cid text not null,
 			data_model_selector text not null,
 			activation timestamp,
-			created timestamp not null,
 			updated timestamp not null,
 			primary key(rig_id, deal_id),
 			foreign key (rig_id) references rigs (id)
@@ -246,9 +245,8 @@ func (s *Store) UpdateRigDeals(ctx context.Context, rigID int, deals []local.Dea
 				data_cid, 
 				data_model_selector, 
 				activation, 
-				created, 
 				updated
-			) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			) values (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			rigID,
 			deal.DealID,
 			deal.StorageProvider,
@@ -257,7 +255,6 @@ func (s *Store) UpdateRigDeals(ctx context.Context, rigID int, deals []local.Dea
 			deal.DataCid,
 			deal.DataModelSelector,
 			deal.Activation,
-			deal.Created,
 			deal.Updated,
 		); err != nil {
 			if err := tx.Rollback(); err != nil {

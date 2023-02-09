@@ -27,7 +27,6 @@ type Deal struct {
 	DataCid           string     `json:"data_cid" db:"data_cid"`
 	DataModelSelector string     `json:"data_model_selector" db:"data_model_selector"`
 	Activation        *time.Time `json:"activation" db:"activation"`
-	Created           time.Time  `json:"created" db:"created"`
 	Updated           time.Time  `json:"updated" db:"updated"`
 }
 

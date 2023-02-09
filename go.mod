@@ -7,6 +7,7 @@ require (
 	github.com/doug-martin/goqu/v9 v9.18.0
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/fatih/camelcase v1.0.0
+	github.com/filecoin-project/go-address v1.0.0
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/gorilla/mux v1.8.0
 	github.com/ipfs/go-cid v0.3.2
@@ -28,7 +29,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/felixge/httpsnoop v1.0.2 // indirect
-	github.com/filecoin-project/go-address v1.0.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect

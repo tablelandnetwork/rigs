@@ -23,33 +23,29 @@ import (
 	"github.com/ipld/go-ipld-prime/fluent/qp"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
-	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
+	"github.com/tablelandnetwork/rigs/pkg/carstorage"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
-	"github.com/web3-storage/go-w3s-client"
 	"golang.org/x/time/rate"
 )
 
 // Publisher publishes Rigs data.
 type Publisher struct {
-	localStore  local.Store
-	ipfsClient  *httpapi.HttpApi
-	nftStorage  *nftstorage.Client
-	web3Storage w3s.Client
+	localStore local.Store
+	ipfsClient *httpapi.HttpApi
+	carStorage carstorage.CarStorage
 }
 
 // NewPublisher creates a publisher.
 func NewPublisher(
 	localStore local.Store,
 	ipfsClient *httpapi.HttpApi,
-	nftStorage *nftstorage.Client,
-	web3Storage w3s.Client,
+	carStorage carstorage.CarStorage,
 ) *Publisher {
 	return &Publisher{
-		localStore:  localStore,
-		ipfsClient:  ipfsClient,
-		nftStorage:  nftStorage,
-		web3Storage: web3Storage,
+		localStore: localStore,
+		ipfsClient: ipfsClient,
+		carStorage: carStorage,
 	}
 }
 
@@ -183,7 +179,7 @@ func (p *Publisher) CarChunksToNftStorage(
 					if err != nil {
 						return nil, fmt.Errorf("opening chunk file: %v", err)
 					}
-					res, err := p.nftStorage.UploadCar(ctx, f)
+					res, err := p.carStorage.PutCar(ctx, f)
 					if err != nil {
 						return nil, fmt.Errorf("uploading car chunk: %v", err)
 					}
@@ -229,7 +225,7 @@ func (p *Publisher) CidToWeb3Storage(ctx context.Context, c cid.Cid) (cid.Cid, e
 			ID:   2,
 			Desc: "upload",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				c, err := p.web3Storage.PutCar(ctx, carReader)
+				c, err := p.carStorage.PutCar(ctx, carReader)
 				if err != nil {
 					return nil, fmt.Errorf("uploading car: %v", err)
 				}
@@ -290,7 +286,7 @@ func (p *Publisher) RigsIndexToWeb3Storage(ctx context.Context, rigs []local.Rig
 			ID:   2,
 			Desc: "upload ipld",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				c, err := p.web3Storage.PutCar(ctx, reader)
+				c, err := p.carStorage.PutCar(ctx, reader)
 				if err != nil {
 					return nil, fmt.Errorf("uploading ipld: %v", err)
 				}
@@ -399,25 +395,20 @@ func (p *Publisher) UpdateWeb3StorageDeals(ctx context.Context, concurrency int,
 			if err != nil {
 				return nil, fmt.Errorf("decoding rig cid: %v", err)
 			}
-			s, err := p.web3Storage.Status(ctx, c)
+			s, err := p.carStorage.Status(ctx, c)
 			if err != nil {
 				return nil, fmt.Errorf("getting web3.storage status: %v", err)
 			}
 			var deals []local.Deal
 			for _, deal := range s.Deals {
-				var activation *time.Time
-				if !deal.Activation.IsZero() {
-					activation = &deal.Activation
-				}
 				deals = append(deals, local.Deal{
 					DealID:            deal.DealID,
 					StorageProvider:   deal.StorageProvider.String(),
-					Status:            deal.Status.String(),
+					Status:            deal.Status,
 					PieceCid:          deal.PieceCid.String(),
 					DataCid:           deal.DataCid.String(),
 					DataModelSelector: deal.DataModelSelector,
-					Activation:        activation,
-					Created:           deal.Created,
+					Activation:        deal.Activation,
 					Updated:           deal.Updated,
 				})
 			}

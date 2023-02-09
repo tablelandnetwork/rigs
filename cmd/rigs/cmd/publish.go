@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -9,7 +10,9 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/tablelandnetwork/rigs/pkg/nftstorage"
+	"github.com/tablelandnetwork/rigs/pkg/carstorage"
+	"github.com/tablelandnetwork/rigs/pkg/carstorage/nftstorage"
+	"github.com/tablelandnetwork/rigs/pkg/carstorage/web3storage"
 	"github.com/tablelandnetwork/rigs/pkg/publisher"
 	storage "github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/files"
@@ -17,7 +20,6 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/tableland"
 	"github.com/textileio/go-tableland/pkg/client"
 	"github.com/textileio/go-tableland/pkg/wallet"
-	"github.com/web3-storage/go-w3s-client"
 )
 
 var (
@@ -97,10 +99,22 @@ var publishCmd = &cobra.Command{
 
 		var err error
 
-		nftStorage := nftstorage.NewClient(viper.GetString("nft-storage-key"))
-		web3Storage, err := w3s.NewClient(w3s.WithToken(viper.GetString("web3-storage-key")))
-		checkErr(err)
-		pub = publisher.NewPublisher(localStore, ipfsClient, nftStorage, web3Storage)
+		nftStorageKey := viper.GetString("nft-storage-key")
+		web3StorageKey := viper.GetString("web3-storage-key")
+
+		if (nftStorageKey == "" && web3StorageKey == "") || (nftStorageKey != "" && web3StorageKey != "") {
+			checkErr(errors.New("must provide either --nft-storage-key or --web3-storage-key"))
+		}
+
+		var carStorage carstorage.CarStorage
+		if nftStorageKey != "" {
+			carStorage = nftstorage.NewClient(nftStorageKey)
+		} else {
+			carStorage, err = web3storage.NewClient(web3StorageKey)
+			checkErr(err)
+		}
+
+		pub = publisher.NewPublisher(localStore, ipfsClient, carStorage)
 
 		wallet, err := wallet.NewWallet(viper.GetString("private-key"))
 		checkErr(err)
