@@ -84,7 +84,7 @@ func (c *Client) PutCar(ctx context.Context, payload io.Reader) (cid.Cid, error)
 	return resCid, nil
 }
 
-type dealJson struct {
+type dealJSON struct {
 	ChainDealID       uint64 `json:"chainDealID,omitempty"`
 	Miner             string `json:"miner,omitempty"`
 	Status            string `json:"status"`
@@ -97,16 +97,16 @@ type dealJson struct {
 	LastChanged       string `json:"lastChanged"`
 }
 
-type statusJson struct {
+type statusJSON struct {
 	Cid     string     `json:"cid"`
 	Size    uint64     `json:"size"`
 	Created string     `json:"created"`
-	Deals   []dealJson `json:"deals"`
+	Deals   []dealJSON `json:"deals"`
 }
 
 type statusResponse struct {
 	OK    bool           `json:"ok"`
-	Value statusJson     `json:"value,omitempty"`
+	Value statusJSON     `json:"value,omitempty"`
 	Error *responseError `json:"error,omitempty"`
 }
 
@@ -142,7 +142,7 @@ func (c *Client) Status(ctx context.Context, cid cid.Cid) (*carstorage.Status, e
 		return nil, fmt.Errorf("%s: %s", statusResponse.Error.Name, statusResponse.Error.Message)
 	}
 
-	status, err := statusJsonToStatus(statusResponse.Value)
+	status, err := statusJSONToStatus(statusResponse.Value)
 	if err != nil {
 		return nil, fmt.Errorf("converting response to status: %v", err)
 	}
@@ -156,41 +156,41 @@ func (c *Client) setAuthHeader(req *http.Request) {
 
 const iso8601 = "2006-01-02T15:04:05.999Z07:00"
 
-func dealJsonToDeal(dealJson dealJson) (*carstorage.Deal, error) {
+func dealJSONToDeal(dj dealJSON) (*carstorage.Deal, error) {
 	d := &carstorage.Deal{}
-	d.DealID = dealJson.ChainDealID
+	d.DealID = dj.ChainDealID
 	var err error
-	d.StorageProvider, err = address.NewFromString(dealJson.Miner)
+	d.StorageProvider, err = address.NewFromString(dj.Miner)
 	if err != nil {
 		return nil, err
 	}
-	d.Status = dealJson.Status
-	if dealJson.PieceCid != "" {
-		d.PieceCid, err = cid.Parse(dealJson.PieceCid)
+	d.Status = dj.Status
+	if dj.PieceCid != "" {
+		d.PieceCid, err = cid.Parse(dj.PieceCid)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		d.PieceCid = cid.Undef
 	}
-	if dealJson.BatchRootCid != "" {
-		d.DataCid, err = cid.Parse(dealJson.BatchRootCid)
+	if dj.BatchRootCid != "" {
+		d.DataCid, err = cid.Parse(dj.BatchRootCid)
 		if err != nil {
 			return nil, err
 		}
 	} else {
 		d.DataCid = cid.Undef
 	}
-	d.DataModelSelector = dealJson.DataModelSelector
-	if dealJson.DealActivation != "" {
-		t, err := time.Parse(iso8601, dealJson.DealActivation)
+	d.DataModelSelector = dj.DataModelSelector
+	if dj.DealActivation != "" {
+		t, err := time.Parse(iso8601, dj.DealActivation)
 		if err != nil {
 			return nil, err
 		}
 		d.Activation = &t
 	}
-	if dealJson.LastChanged != "" {
-		d.Updated, err = time.Parse(iso8601, dealJson.LastChanged)
+	if dj.LastChanged != "" {
+		d.Updated, err = time.Parse(iso8601, dj.LastChanged)
 		if err != nil {
 			return nil, err
 		}
@@ -198,21 +198,21 @@ func dealJsonToDeal(dealJson dealJson) (*carstorage.Deal, error) {
 	return d, nil
 }
 
-func statusJsonToStatus(statusJson statusJson) (*carstorage.Status, error) {
+func statusJSONToStatus(sj statusJSON) (*carstorage.Status, error) {
 	status := &carstorage.Status{}
 	var err error
-	status.Cid, err = cid.Parse(statusJson.Cid)
+	status.Cid, err = cid.Parse(sj.Cid)
 	if err != nil {
 		return nil, err
 	}
-	status.DagSize = statusJson.Size
-	status.Created, err = time.Parse(iso8601, statusJson.Created)
+	status.DagSize = sj.Size
+	status.Created, err = time.Parse(iso8601, sj.Created)
 	if err != nil {
 		return nil, err
 	}
 	var deals []carstorage.Deal
-	for _, dealJson := range statusJson.Deals {
-		deal, err := dealJsonToDeal(dealJson)
+	for _, dealJSON := range sj.Deals {
+		deal, err := dealJSONToDeal(dealJSON)
 		if err != nil {
 			return nil, err
 		}
