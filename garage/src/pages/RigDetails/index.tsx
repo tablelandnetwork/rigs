@@ -31,9 +31,9 @@ import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
-import { sleep, runUntilConditionMet } from "../../utils/async";
+import { sleep } from "../../utils/async";
 import { address as contractAddress } from "../../contract";
-import { openseaBaseUrl } from "../../env";
+import { chain, openseaBaseUrl } from "../../env";
 import { RigWithPilots } from "../../types";
 import openseaMark from "../../assets/opensea-mark.svg";
 
@@ -135,8 +135,8 @@ export const RigDetails = () => {
   const { id } = useParams();
   const { address } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
-  const { rig, refresh: refreshRig } = useRig(id || "", currentBlockNumber);
-  const { connection: tableland } = useTablelandConnection();
+  const { rig, refresh: refreshRig } = useRig(id || "");
+  const { validator } = useTablelandConnection();
   const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
@@ -165,20 +165,30 @@ export const RigDetails = () => {
   // Effect that waits until a tableland receipt is available for a tx hash
   // and then refreshes the rig data
   useEffect(() => {
-    if (tableland && pendingTx) {
-      runUntilConditionMet(
-        () => tableland.receipt(pendingTx),
-        (data) => !!data,
-        refreshRigAndClearPendingTx,
-        {
-          initialDelay: 5_000,
-          wait: 2_000,
-          maxNumberOfAttempts: 10,
-          onMaxNumberOfAttemptsReached: clearPendingTx,
-        }
-      );
+    if (validator && pendingTx) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
+            chainId: chain.id,
+            transactionHash: pendingTx,
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          refreshRigAndClearPendingTx();
+        })
+        .catch((_) => {
+          clearPendingTx();
+        });
+
+      return () => {
+        controller.abort();
+      };
     }
-  }, [pendingTx, refreshRigAndClearPendingTx, tableland, clearPendingTx]);
+  }, [pendingTx, refreshRigAndClearPendingTx, validator, clearPendingTx]);
 
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);

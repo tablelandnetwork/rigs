@@ -13,7 +13,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
 import { useNFTs, NFT } from "../../../hooks/useNFTs";
@@ -24,8 +24,9 @@ import { TablelandConnectButton } from "../../../components/TablelandConnectButt
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
-import { sleep, runUntilConditionMet } from "../../../utils/async";
+import { sleep } from "../../../utils/async";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
+import { chain } from "../../../env";
 
 interface RigListItemProps {
   rig: Rig;
@@ -116,9 +117,8 @@ const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { address } = useAccount();
-  const { data: blockNumber } = useBlockNumber();
-  const { rigs, refresh } = useOwnedRigs(address, blockNumber);
-  const { connection: tableland } = useTablelandConnection();
+  const { rigs, refresh } = useOwnedRigs(address);
+  const { validator } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;
 
@@ -168,20 +168,30 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   // Effect that waits until a tableland receipt is available for a tx hash
   // and then refreshes the rig data
   useEffect(() => {
-    if (tableland && pendingTx) {
-      runUntilConditionMet(
-        () => tableland.receipt(pendingTx),
-        (data) => !!data,
-        refreshRigsAndClearPendingTx,
-        {
-          initialDelay: 5_000,
-          wait: 2_000,
-          maxNumberOfAttempts: 10,
-          onMaxNumberOfAttemptsReached: clearPendingTx,
-        }
-      );
+    if (validator && pendingTx) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
+            chainId: chain.id,
+            transactionHash: pendingTx,
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          refreshRigsAndClearPendingTx();
+        })
+        .catch((_) => {
+          clearPendingTx();
+        });
+
+      return () => {
+        controller.abort();
+      };
     }
-  }, [pendingTx, refreshRigsAndClearPendingTx, tableland, clearPendingTx]);
+  }, [pendingTx, refreshRigsAndClearPendingTx, validator, clearPendingTx]);
 
   const {
     trainRigsModal,
