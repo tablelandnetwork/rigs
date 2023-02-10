@@ -1,6 +1,7 @@
 package publisher
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -16,11 +17,12 @@ import (
 	"github.com/ipfs/go-cid"
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	httpapi "github.com/ipfs/go-ipfs-http-client"
+	blocks "github.com/ipfs/go-libipfs/blocks"
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	"github.com/ipld/go-car"
-	"github.com/ipld/go-ipld-prime/codec/dagcbor"
-	"github.com/ipld/go-ipld-prime/datamodel"
-	"github.com/ipld/go-ipld-prime/fluent/qp"
+	"github.com/ipld/go-car/v2/blockstore"
+	dagpb "github.com/ipld/go-codec-dagpb"
+	"github.com/ipld/go-ipld-prime/fluent"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
 	"github.com/tablelandnetwork/rigs/pkg/carstorage"
@@ -255,19 +257,21 @@ func (p *Publisher) CidToCarStorage(ctx context.Context, c cid.Cid) (cid.Cid, er
 
 // RigsIndexToCarStorage creates a dagcbor index from the provided Rigs and adds it to car storage service.
 func (p *Publisher) RigsIndexToCarStorage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
-	n, err := qp.BuildMap(basicnode.Prototype.Any, int64(len(rigs)), func(ma datamodel.MapAssembler) {
-		for _, rig := range rigs {
-			c, err := cid.Decode(*rig.RendersCid)
-			if err != nil {
-				log.Default().Printf("error decoding rig cid string: %v", err)
-				continue
+	n := fluent.MustBuildMap(basicnode.Prototype.Map, 1, func(fma fluent.MapAssembler) {
+		fma.AssembleEntry("Links").CreateList(int64(len(rigs)), func(fla fluent.ListAssembler) {
+			for _, rig := range rigs {
+				c, err := cid.Decode(*rig.RendersCid)
+				if err != nil {
+					log.Default().Printf("error decoding rig cid string: %v", err)
+					continue
+				}
+				fla.AssembleValue().CreateMap(2, func(fma fluent.MapAssembler) {
+					fma.AssembleEntry("Name").AssignString(fmt.Sprintf("%d", rig.ID))
+					fma.AssembleEntry("Hash").AssignLink(cidlink.Link{Cid: c})
+				})
 			}
-			qp.MapEntry(ma, fmt.Sprintf("%d", rig.ID), qp.Link(cidlink.Link{Cid: c}))
-		}
+		})
 	})
-	if err != nil {
-		return cid.Cid{}, fmt.Errorf("building map: %v", err)
-	}
 
 	reader, writer := io.Pipe()
 	jobs := []wpool.Job{
@@ -275,7 +279,7 @@ func (p *Publisher) RigsIndexToCarStorage(ctx context.Context, rigs []local.Rig)
 			ID:   1,
 			Desc: "encode ipld",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				if err := dagcbor.Encode(n, writer); err != nil {
+				if err := dagpb.Encode(n, writer); err != nil {
 					return nil, fmt.Errorf("encoding ipld: %v", err)
 				}
 				_ = writer.Close()
@@ -284,12 +288,50 @@ func (p *Publisher) RigsIndexToCarStorage(ctx context.Context, rigs []local.Rig)
 		},
 		{
 			ID:   2,
-			Desc: "upload ipld",
+			Desc: "upload ipld car",
 			ExecFn: func(ctx context.Context) (interface{}, error) {
-				c, err := p.carStorage.PutCar(ctx, reader)
+				r := bufio.NewReader(reader)
+				buf := make([]byte, 256)
+				var res []byte
+				for {
+					_, err := r.Read(buf)
+					if err != nil {
+						if err != io.EOF {
+							fmt.Println(err)
+						}
+						break
+					}
+					res = append(res, buf...)
+					if err != nil {
+						return nil, fmt.Errorf("writing buffer to file: %v", err)
+					}
+				}
+				block := blocks.NewBlock(res)
+
+				f, err := os.Create("my.car")
+				defer f.Close()
+				if err != nil {
+					return nil, fmt.Errorf("creating car file: %v", err)
+				}
+
+				carRw, err := blockstore.OpenReadWriteFile(f, []cid.Cid{block.Cid()}, blockstore.WriteAsCarV1(true))
+				if err != nil {
+					return nil, fmt.Errorf("opening car file rw: %v", err)
+				}
+
+				if err := carRw.Put(ctx, block); err != nil {
+					return nil, fmt.Errorf("putting block: %v", err)
+				}
+
+				if err := carRw.Finalize(); err != nil {
+					return nil, fmt.Errorf("finalizing car: %v", err)
+				}
+
+				c, err := p.carStorage.PutCar(ctx, f)
 				if err != nil {
 					return nil, fmt.Errorf("uploading ipld: %v", err)
 				}
+
 				return c, nil
 			},
 		},
@@ -437,7 +479,7 @@ func (p *Publisher) UpdateCarStorageDeals(ctx context.Context, concurrency int, 
 	count := 1
 	for r := range pool.Results() {
 		if r.Err != nil {
-			return fmt.Errorf("executing job %d: %v", r.ID, err)
+			return fmt.Errorf("executing job %d: %v", r.ID, r.Err)
 		}
 		fmt.Printf("%d/%d. complete\n", count, len(jobs))
 		count++
