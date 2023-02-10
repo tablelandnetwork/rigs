@@ -426,6 +426,11 @@ func (p *Publisher) RendersToCarStorage(
 		return fmt.Errorf("publishing rigs index to car storage service: %v", err)
 	}
 	fmt.Printf("uploaded index with cid - %s", c.String())
+
+	if err := p.localStore.TrackCid(ctx, "renders", c.String()); err != nil {
+		return fmt.Errorf("tracking renders cid: %v", err)
+	}
+
 	return nil
 }
 

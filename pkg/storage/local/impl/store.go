@@ -479,7 +479,7 @@ func (s *Store) Cid(ctx context.Context, label string) (string, error) {
 		return "", fmt.Errorf("scanning cid result: %v", err)
 	}
 	if !found {
-		return "", errors.New("layers cid not found")
+		return "", fmt.Errorf("cid not found for label %s", label)
 	}
 	return res, nil
 }
