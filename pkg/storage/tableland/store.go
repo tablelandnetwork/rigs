@@ -64,6 +64,7 @@ var (
 			deal_id integer not null,
 			storage_provider text not null,
 			data_model_selector text not null,
+			deal_number integer not null,
 			primary key(rig_id, deal_id)
 		)`,
 	}

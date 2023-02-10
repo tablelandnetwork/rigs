@@ -131,14 +131,15 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 func (s *SQLFactory) SQLForInsertingDeals(table string, rigs []local.Rig) (string, error) {
 	var vals [][]interface{}
 	for _, rig := range rigs {
-		for _, deal := range rig.Deals {
+		for i, deal := range rig.Deals {
 			vals = append(
 				vals,
-				goqu.Vals{rig.ID, deal.DealID, deal.StorageProvider, deal.DataModelSelector},
+				// TODO: Is using i here the best way to get deal number?
+				goqu.Vals{rig.ID, deal.DealID, deal.StorageProvider, deal.DataModelSelector, i},
 			)
 		}
 	}
-	ds := s.d.Insert(table).Cols("rig_id", "deal_id", "storage_provider", "data_model_selector").Vals(vals...)
+	ds := s.d.Insert(table).Cols("rig_id", "deal_id", "storage_provider", "data_model_selector", "deal_number").Vals(vals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert deals: %v", err)
