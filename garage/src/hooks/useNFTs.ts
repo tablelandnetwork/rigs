@@ -46,7 +46,7 @@ export interface NFT {
   imageData?: string;
 }
 
-const toNFT = (data: Nft): NFT => {
+export const toNFT = (data: Nft): NFT => {
   const { contract, tokenId, title, media, rawMetadata } = data;
 
   const imageUrl = media[0]?.thumbnail || media[0]?.gateway || media[0]?.raw;
