@@ -1,7 +1,6 @@
 package publisher
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -17,14 +16,15 @@ import (
 	"github.com/ipfs/go-cid"
 	ipfsfiles "github.com/ipfs/go-ipfs-files"
 	httpapi "github.com/ipfs/go-ipfs-http-client"
-	blocks "github.com/ipfs/go-libipfs/blocks"
 	"github.com/ipfs/interface-go-ipfs-core/options"
 	"github.com/ipld/go-car"
-	"github.com/ipld/go-car/v2/blockstore"
-	dagpb "github.com/ipld/go-codec-dagpb"
+	v2car "github.com/ipld/go-car/v2"
+	v2storage "github.com/ipld/go-car/v2/storage"
+	"github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/fluent"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
+	"github.com/multiformats/go-multicodec"
 	"github.com/tablelandnetwork/rigs/pkg/carstorage"
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/wpool"
@@ -63,14 +63,14 @@ func (p *Publisher) DirToIpfs(ctx context.Context, dir string) (cid.Cid, error) 
 		return cid.Cid{}, fmt.Errorf("creating node from dir: %v", err)
 	}
 
-	log.Default().Printf("Adding %s to IPFS...\n", dir)
+	// log.Default().Printf("Adding %s to IPFS...\n", dir)
 
 	ipfsPath, err := p.ipfsClient.Unixfs().Add(ctx, node, options.Unixfs.CidVersion(1))
 	if err != nil {
 		return cid.Cid{}, fmt.Errorf("adding dir to ipfs: %v", err)
 	}
 
-	log.Default().Printf("%s added to ipfs with cid %s\n", dir, ipfsPath.Cid().String())
+	// log.Default().Printf("%s added to ipfs with cid %s\n", dir, ipfsPath.Cid().String())
 
 	return ipfsPath.Cid(), nil
 }
@@ -251,108 +251,161 @@ func (p *Publisher) CidToCarStorage(ctx context.Context, c cid.Cid) (cid.Cid, er
 			res = r.Value.(cid.Cid)
 		}
 	}
-	log.Default().Printf("%s uploaded to car storage service", res.String())
+	// log.Default().Printf("%s uploaded to car storage service", res.String())
 	return res, nil
 }
 
-// RigsIndexToCarStorage creates a dagcbor index from the provided Rigs and adds it to car storage service.
-func (p *Publisher) RigsIndexToCarStorage(ctx context.Context, rigs []local.Rig) (cid.Cid, error) {
+// RendersIndexToCarStorage creates a car index from the saved Rigs and adds it to car storage service.
+func (p *Publisher) RendersIndexToCarStorage(ctx context.Context) (cid.Cid, error) {
+	rigs, err := p.localStore.Rigs(ctx)
+	if err != nil {
+		return cid.Undef, fmt.Errorf("querying local store for rigs: %v", err)
+	}
+
+	out, err := os.Create("my.car")
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("creating file: %v", err)
+	}
+	defer func() {
+		_ = out.Close()
+	}()
+
+	dummy, err := cid.Decode("bafybeidpcvznz6jbsanyw4xn7vomhqkkbkfinf7p72tf6pjsik4vhs3hvy")
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("creating dummy cid: %v", err)
+	}
+
+	writableCar, err := v2storage.NewWritable(out, []cid.Cid{dummy}, v2car.WriteAsCarV1(true))
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("creating writable car: %v", err)
+	}
+
+	// Setup a LinkSystem
+	ls := cidlink.DefaultLinkSystem()
+	ls.SetWriteStorage(writableCar)
+	lp := cidlink.LinkPrototype{Prefix: cid.Prefix{
+		Version:  1,
+		Codec:    uint64(multicodec.DagPb),
+		MhType:   uint64(multicodec.Sha2_256),
+		MhLength: 32,
+	}}
+
+	var innerError error
 	n := fluent.MustBuildMap(basicnode.Prototype.Map, 1, func(fma fluent.MapAssembler) {
 		fma.AssembleEntry("Links").CreateList(int64(len(rigs)), func(fla fluent.ListAssembler) {
-			for _, rig := range rigs {
+			for ii, rig := range rigs {
 				c, err := cid.Decode(*rig.RendersCid)
 				if err != nil {
-					log.Default().Printf("error decoding rig cid string: %v", err)
-					continue
+					innerError = fmt.Errorf("decoding rig cid string %d: %v", rig.RendersCid, err)
+					break
 				}
 				fla.AssembleValue().CreateMap(2, func(fma fluent.MapAssembler) {
-					fma.AssembleEntry("Name").AssignString(fmt.Sprintf("%d", rig.ID))
+					fma.AssembleEntry("Name").AssignString(fmt.Sprintf("%d", ii))
 					fma.AssembleEntry("Hash").AssignLink(cidlink.Link{Cid: c})
 				})
 			}
 		})
 	})
-
-	reader, writer := io.Pipe()
-	jobs := []wpool.Job{
-		{
-			ID:   1,
-			Desc: "encode ipld",
-			ExecFn: func(ctx context.Context) (interface{}, error) {
-				if err := dagpb.Encode(n, writer); err != nil {
-					return nil, fmt.Errorf("encoding ipld: %v", err)
-				}
-				_ = writer.Close()
-				return nil, nil
-			},
-		},
-		{
-			ID:   2,
-			Desc: "upload ipld car",
-			ExecFn: func(ctx context.Context) (interface{}, error) {
-				r := bufio.NewReader(reader)
-				buf := make([]byte, 256)
-				var res []byte
-				for {
-					_, err := r.Read(buf)
-					if err != nil {
-						if err != io.EOF {
-							fmt.Println(err)
-						}
-						break
-					}
-					res = append(res, buf...)
-					if err != nil {
-						return nil, fmt.Errorf("writing buffer to file: %v", err)
-					}
-				}
-				block := blocks.NewBlock(res)
-
-				f, err := os.Create("my.car")
-				defer f.Close()
-				if err != nil {
-					return nil, fmt.Errorf("creating car file: %v", err)
-				}
-
-				carRw, err := blockstore.OpenReadWriteFile(f, []cid.Cid{block.Cid()}, blockstore.WriteAsCarV1(true))
-				if err != nil {
-					return nil, fmt.Errorf("opening car file rw: %v", err)
-				}
-
-				if err := carRw.Put(ctx, block); err != nil {
-					return nil, fmt.Errorf("putting block: %v", err)
-				}
-
-				if err := carRw.Finalize(); err != nil {
-					return nil, fmt.Errorf("finalizing car: %v", err)
-				}
-
-				c, err := p.carStorage.PutCar(ctx, f)
-				if err != nil {
-					return nil, fmt.Errorf("uploading ipld: %v", err)
-				}
-
-				return c, nil
-			},
-		},
+	if innerError != nil {
+		return cid.Cid{}, fmt.Errorf("assembing node: %v", err)
 	}
 
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	pool := wpool.New(2, rate.Inf)
-	go pool.GenerateFrom(jobs)
-	go pool.Run(ctx)
-	var res cid.Cid
-	for r := range pool.Results() {
-		if r.Err != nil {
-			return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
-		}
-		if r.ID == 2 {
-			res = r.Value.(cid.Cid)
-		}
+	// Write the single block
+	link, err := ls.Store(ipld.LinkContext{}, lp, n)
+	if err != nil {
+		return cid.Cid{}, fmt.Errorf("writing node to store: %v", err)
 	}
-	return res, nil
+	log.Default().Println("Wrote single block to CAR:", link.String())
+
+	log.Default().Println("Link cid: ", link.(cidlink.Link).Cid.String())
+
+	if err := v2car.ReplaceRootsInFile("my.car", []cid.Cid{link.(cidlink.Link).Cid}); err != nil {
+		log.Default().Println("error replacing cid ", err)
+	}
+
+	// reader, writer := io.Pipe()
+	// jobs := []wpool.Job{
+	// 	{
+	// 		ID:   1,
+	// 		Desc: "encode ipld",
+	// 		ExecFn: func(ctx context.Context) (interface{}, error) {
+	// 			if err := dagpb.Encode(n, writer); err != nil {
+	// 				return nil, fmt.Errorf("encoding ipld: %v", err)
+	// 			}
+	// 			_ = writer.Close()
+	// 			return nil, nil
+	// 		},
+	// 	},
+	// 	{
+	// 		ID:   2,
+	// 		Desc: "upload ipld car",
+	// 		ExecFn: func(ctx context.Context) (interface{}, error) {
+	// 			r := bufio.NewReader(reader)
+	// 			buf := make([]byte, 256)
+	// 			var res []byte
+	// 			for {
+	// 				_, err := r.Read(buf)
+	// 				if err != nil {
+	// 					if err != io.EOF {
+	// 						fmt.Println(err)
+	// 					}
+	// 					break
+	// 				}
+	// 				res = append(res, buf...)
+	// 				if err != nil {
+	// 					return nil, fmt.Errorf("writing buffer to file: %v", err)
+	// 				}
+	// 			}
+	// 			block := blocks.NewBlock(res)
+
+	// 			f, err := os.Create("my.car")
+	// 			defer f.Close()
+	// 			if err != nil {
+	// 				return nil, fmt.Errorf("creating car file: %v", err)
+	// 			}
+
+	// 			carRw, err := blockstore.OpenReadWriteFile(f, []cid.Cid{block.Cid()}, blockstore.WriteAsCarV1(true))
+	// 			if err != nil {
+	// 				return nil, fmt.Errorf("opening car file rw: %v", err)
+	// 			}
+
+	// 			if err := carRw.Put(ctx, block); err != nil {
+	// 				return nil, fmt.Errorf("putting block: %v", err)
+	// 			}
+
+	// 			if err := carRw.Finalize(); err != nil {
+	// 				return nil, fmt.Errorf("finalizing car: %v", err)
+	// 			}
+
+	// 			c, err := p.carStorage.PutCar(ctx, f)
+	// 			if err != nil {
+	// 				return nil, fmt.Errorf("uploading ipld: %v", err)
+	// 			}
+
+	// 			return c, nil
+	// 		},
+	// 	},
+	// }
+
+	// ctx, cancel := context.WithCancel(ctx)
+	// defer cancel()
+
+	// pool := wpool.New(2, rate.Inf)
+	// go pool.GenerateFrom(jobs)
+	// go pool.Run(ctx)
+	// var res cid.Cid
+	// for r := range pool.Results() {
+	// 	if r.Err != nil {
+	// 		return cid.Cid{}, fmt.Errorf("executing job %d, %s: %v", r.ID, r.Desc, r.Err)
+	// 	}
+	// 	if r.ID == 2 {
+	// 		res = r.Value.(cid.Cid)
+	// 	}
+	// }
+	// if err := p.localStore.TrackCid(ctx, "renders", res.String()); err != nil {
+	// 	return cid.Undef, fmt.Errorf("tracking renders cid: %v", err)
+	// }
+	return cid.Cid{}, nil
 }
 
 // RendersToCarStorage publishes a directory of renders to car storage service.
@@ -399,6 +452,7 @@ func (p *Publisher) RendersToCarStorage(
 		}
 		jobs = append(jobs, wpool.Job{
 			ID:     wpool.JobID(i),
+			Desc:   path.Join(rendersPath, folder.Name()),
 			ExecFn: execFcn(path.Join(rendersPath, folder.Name()), rigID),
 		})
 	}
@@ -410,27 +464,12 @@ func (p *Publisher) RendersToCarStorage(
 	go pool.Run(ctx)
 	count := 1
 	for r := range pool.Results() {
-		fmt.Printf("%d/%d. %v\n", count, len(jobs), r.Value)
 		if r.Err != nil {
-			return fmt.Errorf("executing job: %v", err)
+			return fmt.Errorf("executing job %d (%s): %v", r.ID, r.Desc, r.Err)
 		}
+		fmt.Printf("%d/%d. finished job %d (%s) with cid %v\n", count, len(jobs), r.ID, r.Desc, r.Value)
 		count++
 	}
-
-	rigs, err := p.localStore.Rigs(ctx)
-	if err != nil {
-		return fmt.Errorf("querying local store for rigs: %v", err)
-	}
-	c, err := p.RigsIndexToCarStorage(ctx, rigs)
-	if err != nil {
-		return fmt.Errorf("publishing rigs index to car storage service: %v", err)
-	}
-	fmt.Printf("uploaded index with cid - %s", c.String())
-
-	if err := p.localStore.TrackCid(ctx, "renders", c.String()); err != nil {
-		return fmt.Errorf("tracking renders cid: %v", err)
-	}
-
 	return nil
 }
 

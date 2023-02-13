@@ -139,7 +139,9 @@ func (s *SQLFactory) SQLForInsertingDeals(table string, rigs []local.Rig) (strin
 			)
 		}
 	}
-	ds := s.d.Insert(table).Cols("rig_id", "deal_id", "storage_provider", "data_model_selector", "deal_number").Vals(vals...)
+	ds := s.d.Insert(table).
+		Cols("rig_id", "deal_id", "storage_provider", "data_model_selector", "deal_number").
+		Vals(vals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert deals: %v", err)

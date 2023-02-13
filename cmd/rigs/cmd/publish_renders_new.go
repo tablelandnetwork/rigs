@@ -10,8 +10,8 @@ import (
 
 func init() {
 	rendersNewCmd.Flags().String("renders-path", "./renders", "path to the rendered images")
-	rendersNewCmd.Flags().Int("concurrency", 10, "number of concurrent uploads to car storage service")
-	rendersNewCmd.Flags().Duration("rate-limit", time.Millisecond*350, "rate limit for uploads to car storage service")
+	rendersNewCmd.Flags().Int("concurrency", 5, "number of concurrent uploads to car storage service")
+	rendersNewCmd.Flags().Duration("rate-limit", time.Millisecond*1000, "rate limit for uploads to car storage service")
 
 	publishCmd.AddCommand(rendersNewCmd)
 }

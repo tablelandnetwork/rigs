@@ -99,6 +99,7 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	return s.trackTxn(ctx, hash, tableland.LayersDefinition.Prefix, sql)
 }
 
+// InsertRigs implements InsertRigs.
 func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
 	tableName, err := s.localStore.TableName(ctx, tableland.RigsDefinition.Prefix, s.chainID)
 	if err != nil {
@@ -132,6 +133,7 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	return s.trackTxn(ctx, hash, tableland.RigAttributesDefinition.Prefix, sql)
 }
 
+// InsertDeals implements InsertDeals.
 func (s *Store) InsertDeals(ctx context.Context, rigs []local.Rig) error {
 	tableName, err := s.localStore.TableName(ctx, tableland.DealsDefinition.Prefix, s.chainID)
 	if err != nil {
