@@ -72,7 +72,7 @@ var (
 	LookupsDefinition = TableDefinition{
 		Prefix: "lookups",
 		Schema: `(
-			key text not null,
+			label text not null,
 			value text not null
 		)`,
 	}

@@ -19,6 +19,7 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/sqlite"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/tableland"
 	"github.com/textileio/go-tableland/pkg/client"
+	v1 "github.com/textileio/go-tableland/pkg/client/v1"
 	"github.com/textileio/go-tableland/pkg/wallet"
 )
 
@@ -28,7 +29,7 @@ var (
 	ethClient *ethclient.Client
 	pub       *publisher.Publisher
 	store     storage.Store
-	tblClient *client.Client
+	tblClient *v1.Client
 	chain     client.Chain
 )
 
@@ -85,8 +86,6 @@ func init() {
 	publishCmd.PersistentFlags().String("alchemy-key", "", "api key for Alchemy")
 
 	publishCmd.MarkFlagsMutuallyExclusive("eth-api-url", "infura-key", "alchemy-key")
-
-	publishCmd.PersistentFlags().Bool("relay-writes", false, "whether or not to relay writes through the validator")
 }
 
 var publishCmd = &cobra.Command{
@@ -131,9 +130,8 @@ var publishCmd = &cobra.Command{
 			chain = c
 		}
 
-		opts := []client.NewClientOption{
-			client.NewClientChain(chain),
-			client.NewClientRelayWrites(viper.GetBool("relay-writes")),
+		opts := []v1.NewClientOption{
+			v1.NewClientChain(chain),
 		}
 
 		ethURL := viper.GetString("eth-api-url")
@@ -142,13 +140,13 @@ var publishCmd = &cobra.Command{
 		if ethURL != "" {
 			ethClient, err = ethclient.DialContext(ctx, ethURL)
 			checkErr(err)
-			opts = append(opts, client.NewClientContractBackend(ethClient))
+			opts = append(opts, v1.NewClientContractBackend(ethClient))
 		} else if infuraKey != "" {
-			opts = append(opts, client.NewClientInfuraAPIKey(infuraKey))
+			opts = append(opts, v1.NewClientInfuraAPIKey(infuraKey))
 			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(infuraURLs[chain.ID], infuraKey))
 			checkErr(err)
 		} else if alchemyKey != "" {
-			opts = append(opts, client.NewClientAlchemyAPIKey(alchemyKey))
+			opts = append(opts, v1.NewClientAlchemyAPIKey(alchemyKey))
 			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(alchemyURLs[chain.ID], alchemyKey))
 			checkErr(err)
 		} else if chain.ID == client.ChainIDs.Local {
@@ -156,7 +154,7 @@ var publishCmd = &cobra.Command{
 			checkErr(err)
 		}
 
-		tblClient, err = client.NewClient(ctx, wallet, opts...)
+		tblClient, err = v1.NewClient(ctx, wallet, opts...)
 		checkErr(err)
 
 		if viper.GetBool("to-tableland") {
@@ -183,7 +181,6 @@ var publishCmd = &cobra.Command{
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		rootCmd.PersistentPostRun(cmd, args)
-		tblClient.Close()
 		if _db != nil {
 			_ = _db.Close()
 		}
@@ -197,23 +194,23 @@ func getChain() (client.Chain, error) {
 	chain := viper.GetString("chain")
 	switch chain {
 	case "ethereum":
-		return client.Chains.Ethereum, nil
+		return client.Chains[client.ChainIDs.Ethereum], nil
 	case "optimism":
-		return client.Chains.Optimism, nil
+		return client.Chains[client.ChainIDs.Optimism], nil
 	case "arbitrum":
-		return client.Chains.Arbitrum, nil
+		return client.Chains[client.ChainIDs.Arbitrum], nil
 	case "polygon":
-		return client.Chains.Polygon, nil
+		return client.Chains[client.ChainIDs.Polygon], nil
 	case "ethereum-goerli":
-		return client.Chains.EthereumGoerli, nil
+		return client.Chains[client.ChainIDs.EthereumGoerli], nil
 	case "optimism-goerli":
-		return client.Chains.OptimismGoerli, nil
+		return client.Chains[client.ChainIDs.OptimismGoerli], nil
 	case "arbitrum-goerli":
-		return client.Chains.ArbitrumGoerli, nil
+		return client.Chains[client.ChainIDs.ArbitrumGoerli], nil
 	case "polygon-mumbai":
-		return client.Chains.PolygonMumbai, nil
+		return client.Chains[client.ChainIDs.PolygonMumbai], nil
 	case "local":
-		return client.Chains.Local, nil
+		return client.Chains[client.ChainIDs.Local], nil
 	default:
 		return client.Chain{}, fmt.Errorf("%s is not a valid chain", chain)
 	}

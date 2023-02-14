@@ -135,7 +135,7 @@ func (s *SQLFactory) SQLForInsertingDeals(table string, rigs []local.Rig) (strin
 			vals = append(
 				vals,
 				// TODO: Is using i here the best way to get deal number?
-				goqu.Vals{rig.ID, deal.DealID, deal.StorageProvider, deal.DataModelSelector, i},
+				goqu.Vals{rig.ID, deal.DealID, deal.StorageProvider, deal.DataModelSelector, i + 1},
 			)
 		}
 	}
@@ -181,7 +181,7 @@ func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tablela
 		},
 	}
 	ds := s.d.Insert(lookupsTable).Cols(
-		"key",
+		"label",
 		"value",
 	).Vals(vals...)
 	sql, _, err := ds.ToSQL()

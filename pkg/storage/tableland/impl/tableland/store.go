@@ -12,7 +12,7 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/common"
-	"github.com/textileio/go-tableland/pkg/client"
+	v1 "github.com/textileio/go-tableland/pkg/client/v1"
 )
 
 const dialect = "sqlite3"
@@ -20,7 +20,7 @@ const dialect = "sqlite3"
 // Store implements Store using the Tableland client.
 type Store struct {
 	chainID        int64
-	tblClient      *client.Client
+	tblClient      *v1.Client
 	ethClient      *ethclient.Client
 	localStore     local.Store
 	receiptTimeout time.Duration
@@ -30,7 +30,7 @@ type Store struct {
 // Config confitures a new Store.
 type Config struct {
 	ChainID        int64
-	TblClient      *client.Client
+	TblClient      *v1.Client
 	EthClient      *ethclient.Client
 	LocalStore     local.Store
 	ReceiptTimeout time.Duration
@@ -53,8 +53,8 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 	_, tableName, err := s.tblClient.Create(
 		ctx,
 		definition.Schema,
-		client.WithPrefix(definition.Prefix),
-		client.WithReceiptTimeout(s.receiptTimeout),
+		v1.WithPrefix(definition.Prefix),
+		v1.WithReceiptTimeout(s.receiptTimeout),
 	)
 	if err != nil {
 		return "", fmt.Errorf("creating table with client: %v", err)
@@ -291,15 +291,15 @@ func (s *Store) writeSQL(ctx context.Context, sql string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("calling write: %v", err)
 	}
-	receipt, found, err := s.tblClient.Receipt(ctx, hash, client.WaitFor(s.receiptTimeout))
+	receipt, found, err := s.tblClient.Receipt(ctx, hash, v1.WaitFor(s.receiptTimeout))
 	if err != nil {
 		return "", fmt.Errorf("getting receipt for txn %s: %v", hash, err)
 	}
 	if !found {
 		return "", fmt.Errorf("timed out before getting receipt for txn %s", hash)
 	}
-	if receipt.Error != "" {
-		return "", fmt.Errorf("error processing txn %s: %s", receipt.TxnHash, receipt.Error)
+	if receipt.Error_ != "" {
+		return "", fmt.Errorf("error processing txn %s: %s", receipt.TransactionHash, receipt.Error_)
 	}
 	return hash, nil
 }
