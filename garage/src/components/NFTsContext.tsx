@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useMemo, useReducer } from "react";
+import take from "lodash/take";
 import isEqual from "lodash/isEqual";
 import { NftTokenType } from "alchemy-sdk";
 import { NFT, alchemy, toNFT } from "../hooks/useNFTs";
@@ -25,7 +26,7 @@ export const NFTsContextProvider = ({ children }: React.PropsWithChildren) => {
   useEffect(() => {
     let isCancelled = false;
 
-    const tokens = loadingNfts.map(({ contract, tokenId }) => {
+    const tokens = take(loadingNfts, 100).map(({ contract, tokenId }) => {
       return {
         tokenId,
         contractAddress: contract,
