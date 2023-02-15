@@ -544,7 +544,6 @@ export const Gallery = () => {
         mb="40px"
       >
         <Box
-          p={GRID_GAP}
           maxWidth="1385px"
           width="100%"
           minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
