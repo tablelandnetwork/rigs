@@ -32,11 +32,12 @@ import { Footer } from "../../components/Footer";
 import { Rig } from "../../types";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useDebounce } from "../../hooks/useDebounce";
-import { useNFTs, NFT } from "../../hooks/useNFTs";
+import { NFT } from "../../hooks/useNFTs";
 import { selectFilteredRigs } from "../../utils/queries";
 import { copySet, toggleInSet, intersection } from "../../utils/set";
 import { isPresent } from "../../utils/types";
 import { findNFT } from "../../utils/nfts";
+import { useNFTsCached } from "../../components/NFTsContext";
 import traitData from "../../traits.json";
 
 // TODO can we fetch this data dynamically or does that make the loading experience annoying?
@@ -439,6 +440,7 @@ const RigGridItem = ({ rig, pilotNFT }: { rig: Rig; pilotNFT?: NFT }) => {
         <RigDisplay
           rig={rig}
           pilotNFT={pilotNFT}
+          loading={!!rig.currentPilot?.contract && !pilotNFT}
           border={1}
           borderStyle="solid"
           borderColor="black"
@@ -474,9 +476,7 @@ export const Gallery = () => {
     return rigs.map((v) => v.currentPilot).filter(isPresent);
   }, [rigs]);
 
-  // NOTE: all pilot NFTs are refected everytime the rig data changes so if the user
-  // paginates through data it will refecth nfts all the time
-  const { nfts } = useNFTs(currentPilots);
+  const { nfts } = useNFTsCached(currentPilots);
 
   const [filters, setFilters] = useState<Filters>({});
   const [flightTimeFilters, setFlightTimeFilters] = useState<FlightTimeFilters>(
