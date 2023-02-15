@@ -279,6 +279,7 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 				ImageThumbName:       "image_thumb.png",
 				ImageThumbAlphaName:  "image_thumb_alpha.png",
 				AnimationBaseURL:     "https://rigs.tableland.xyz/",
+				FilecoinBaseURL:      "https://filecoin.io/",
 			}
 			if err := store.InsertLookups(ctx, lookups); err != nil {
 				return nil, fmt.Errorf("calling insert lookups: %v", err)

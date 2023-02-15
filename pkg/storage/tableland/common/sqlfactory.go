@@ -179,6 +179,9 @@ func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tablela
 		{
 			"animation_base_url", lookups.AnimationBaseURL,
 		},
+		{
+			"filecoin_base_url", lookups.FilecoinBaseURL,
+		},
 	}
 	ds := s.d.Insert(lookupsTable).Cols(
 		"label",

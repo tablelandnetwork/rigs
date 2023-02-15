@@ -35,6 +35,7 @@ async function main() {
   const uriTemplate = getURITemplate(
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
+    rigsDeployment.dealsTable,
     rigsDeployment.lookupsTable,
     rigsDeployment.pilotSessionsTable,
     rigsDeployment.displayAttributes

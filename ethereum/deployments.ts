@@ -20,6 +20,7 @@ export interface RigsDeployment {
   partsTable: string;
   layersTable: string;
   attributesTable: string;
+  dealsTable: string;
   lookupsTable: string;
   pilotSessionsTable: string;
   displayAttributes: boolean;
@@ -42,6 +43,7 @@ export const deployments: RigsDeployments = {
     partsTable: "parts_42161_7",
     layersTable: "layers_42161_8",
     attributesTable: "rig_attributes_42161_15",
+    dealsTable: "",
     lookupsTable: "lookups_42161_10",
     pilotSessionsTable: "pilot_sessions_1_7",
     displayAttributes: true,
@@ -58,6 +60,7 @@ export const deployments: RigsDeployments = {
     partsTable: "parts_80001_4038",
     layersTable: "layers_80001_4039",
     attributesTable: "rig_attributes_80001_4040",
+    dealsTable: "",
     lookupsTable: "lookups_80001_4041",
     pilotSessionsTable: "pilot_sessions_80001_4078",
     displayAttributes: true,
@@ -73,6 +76,7 @@ export const deployments: RigsDeployments = {
     partsTable: "",
     layersTable: "",
     attributesTable: "",
+    dealsTable: "",
     lookupsTable: "",
     pilotSessionsTable: "",
     displayAttributes: true,

@@ -89,6 +89,7 @@ type Lookups struct {
 	ImageThumbName       string
 	ImageThumbAlphaName  string
 	AnimationBaseURL     string
+	FilecoinBaseURL      string
 }
 
 // Store defines a data store interface for rigs.

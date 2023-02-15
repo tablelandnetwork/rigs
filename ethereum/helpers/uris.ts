@@ -1,6 +1,7 @@
 export function getURITemplate(
   tablelandHost: string,
   attributesTable: string,
+  dealsTable: string,
   lookupsTable: string,
   pilotsTable: string,
   displayAttributes: boolean
@@ -62,12 +63,39 @@ export function getURITemplate(
                 (select coalesce(end_time, 'in-flight') from ${pilotsTable} where rig_id=ID and end_time is null),
                 'parked'
               )
+            ),
+            '$[#]',
+            json_object(
+              'display_type','string',
+              'trait_type','Deal 1',
+              'value',filecoin_base_url||deal_1
+            ),
+            '$[#]',
+            json_object(
+              'display_type','string',
+              'trait_type','Deal 2',
+              'value',filecoin_base_url||deal_2
             )
           )
-        ) from ${attributesTable} join ${lookupsTable} where rig_id=ID group by rig_id;`.replace(
-          /(\r\n|\n|\r|\s\s+)/gm,
-          ""
-        )
+        ) from ${attributesTable} join (
+          select
+            max(case label when 'renders_cid' then value end) renders_cid,
+            max(case label when 'layers_cid' then value end) layers_cid,
+            max(case label when 'image_full_name' then value end) image_full_name,
+            max(case label when 'image_full_alpha_name' then value end) image_full_alpha_name,
+            max(case label when 'image_medium_name' then value end) image_medium_name,
+            max(case label when 'image_medium_alpha_name' then value end) image_medium_alpha_name,
+            max(case label when 'image_thumb_name' then value end) image_thumb_name,
+            max(case label when 'image_thumb_alpha_name' then value end) image_thumb_alpha_name,
+            max(case label when 'animation_base_url' then value end) animation_base_url,
+            max(case label when 'filecoin_base_url' then value end) filecoin_base_url
+          from ${lookupsTable}
+        ) join (
+          select
+            max(case deal_number when 1 then deal_id end) deal_1,
+            max(case deal_number when 2 then deal_id end) deal_2
+          from ${dealsTable}
+        ) where rig_id=ID group by rig_id;`.replace(/(\r\n|\n|\r|\s\s+)/gm, "")
       );
     return uri.split("ID");
   }
