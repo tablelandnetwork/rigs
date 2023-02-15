@@ -21,7 +21,8 @@ import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
 import { useAccount } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
-import { useNFTs, NFT } from "../../../hooks/useNFTs";
+import { NFT } from "../../../hooks/useNFTs";
+import { useNFTsCached } from "../../../components/NFTsContext";
 import { Rig, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
@@ -131,7 +132,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       .map((v) => v.currentPilot)
       .filter((v) => v?.contract) as Pilot[];
   }, [rigs]);
-  const { nfts } = useNFTs(pilots);
+  const { nfts } = useNFTsCached(pilots);
 
   const [selectedRigs, setSelectedRigs] = useState<Set<string>>(new Set());
 

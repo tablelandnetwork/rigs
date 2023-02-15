@@ -23,7 +23,8 @@ import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { TransferRigModal } from "../../components/TransferRigModal";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
-import { useNFTs, useNFTOwner } from "../../hooks/useNFTs";
+import { useNFTOwner } from "../../hooks/useNFTs";
+import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
@@ -141,7 +142,7 @@ export const RigDetails = () => {
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
-  const { nfts } = useNFTs(pilots);
+  const { nfts } = useNFTsCached(pilots);
 
   const refresh = useCallback(() => {
     refreshRig();
