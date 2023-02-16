@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -41,6 +42,7 @@ const getPilots = (
   }, accumulator);
 
   return Object.values(pilots).map((sessions) => {
+    const { tokenId, contract } = sessions[0];
     const status = sessions.find((v) => !v.endTime) ? "Active" : "Garaged";
 
     const nft = findNFT(sessions[0], nfts);
@@ -57,6 +59,8 @@ const getPilots = (
       status,
       imageUrl: imageUrl,
       pilot: name || "Trainer",
+      contract,
+      tokenId,
     };
   });
 };
@@ -109,35 +113,47 @@ export const Pilots = ({
           </Tr>
         </Thead>
         <Tbody>
-          {pilots.map(({ pilot, imageUrl, flightTime, status }, index) => {
-            return (
-              <Tr key={`pilots-${index}`}>
-                <Td
-                  pl={p}
-                  pr={0}
-                  width={`calc(var(--chakra-sizes-${p}) + 30px)`}
-                >
-                  {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      width="30px"
-                      height="30px"
-                      backgroundColor="primary"
-                    />
-                  ) : (
-                    <TrainerPilot width="30px" height="30px" />
-                  )}
-                </Td>
-                <Td pl={3} wordBreak="break-all">
-                  {pilot}
-                </Td>
-                <Td>{prettyNumber(flightTime)}</Td>
-                <Td pr={p} color={status == "Garaged" ? "inactive" : "inherit"}>
-                  {status}
-                </Td>
-              </Tr>
-            );
-          })}
+          {pilots.map(
+            (
+              { pilot, imageUrl, flightTime, status, contract, tokenId },
+              index
+            ) => {
+              return (
+                <Tr key={`pilots-${index}`}>
+                  <Td
+                    pl={p}
+                    pr={0}
+                    width={`calc(var(--chakra-sizes-${p}) + 30px)`}
+                  >
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        width="30px"
+                        height="30px"
+                        backgroundColor="primary"
+                      />
+                    ) : (
+                      <TrainerPilot width="30px" height="30px" />
+                    )}
+                  </Td>
+                  <Td pl={3} wordBreak="break-all">
+                    {contract && tokenId ? (
+                      <Link to={`/pilot/${contract}/${tokenId}`}>{pilot}</Link>
+                    ) : (
+                      pilot
+                    )}
+                  </Td>
+                  <Td>{prettyNumber(flightTime)}</Td>
+                  <Td
+                    pr={p}
+                    color={status == "Garaged" ? "inactive" : "inherit"}
+                  >
+                    {status}
+                  </Td>
+                </Tr>
+              );
+            }
+          )}
         </Tbody>
       </Table>
       {pilots.length === 0 && (
