@@ -99,9 +99,15 @@ const NFTHeader = ({
 };
 
 const NFTDisplay = ({ nft }: { nft: NFT }) => {
-  const { imageUrl, imageData } = nft;
+  const { highResImageUrl, imageUrl, imageData } = nft;
 
-  return <Image src={imageUrl || imageData} objectFit="contain" width="100%" />;
+  return (
+    <Image
+      src={highResImageUrl || imageUrl || imageData}
+      objectFit="contain"
+      width="100%"
+    />
+  );
 };
 
 type FlightLogProps = React.ComponentProps<typeof Box> & {
