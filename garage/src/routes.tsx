@@ -2,6 +2,7 @@ import React from "react";
 import { Enter } from "./pages/Enter";
 import { Dashboard } from "./pages/Dashboard";
 import { RigDetails } from "./pages/RigDetails";
+import { PilotDetails } from "./pages/PilotDetails";
 import { OwnerDetails } from "./pages/OwnerDetails";
 import { Gallery } from "./pages/Gallery";
 
@@ -31,6 +32,12 @@ export const routes = () => {
       path: "/gallery",
       requiresWalletConnection: false,
       element: <Gallery />,
+    },
+    {
+      key: "PILOT_DETAILS",
+      path: "/pilot/:collection/:id",
+      requiresWalletConnection: false,
+      element: <PilotDetails />,
     },
   ];
 };

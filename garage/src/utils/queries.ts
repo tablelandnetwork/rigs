@@ -259,6 +259,25 @@ export const selectTopFtPilotCollections = (): string => {
   ORDER BY ft DESC`;
 };
 
+export const selectPilotSessionsForPilot = (
+  contract: string,
+  tokenId: string
+): string => {
+  return `
+  SELECT
+    cast(rig_id as text) as "rigId",
+    ${THUMB_IPFS_URI_SELECT} as "thumb",
+    owner,
+    pilot_contract as "pilotContract",
+    cast(pilot_id as text) as "pilotId",
+    start_time as "startTime",
+    end_time as "endTime"
+  FROM ${pilotSessionsTable}
+  JOIN ${lookupsTable}
+  WHERE pilot_contract = '${contract}' AND pilot_id = ${tokenId}
+  GROUP BY rig_id`;
+};
+
 export const selectActivePilotSessionsForPilots = (
   pilots: { contract: string; tokenId: string }[]
 ): string => {
