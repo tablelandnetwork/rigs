@@ -225,6 +225,7 @@ export const RigDetails = () => {
         p={GRID_GAP}
         gap={GRID_GAP}
         maxWidth="1385px"
+        width="100%"
         height="100%"
       >
         {rig && nfts && (
@@ -282,9 +283,8 @@ export const RigDetails = () => {
             </GridItem>
           </>
         )}
-
-        {!rig && <Spinner />}
       </Grid>
+      {!rig && <Spinner />}
     </Flex>
   );
 };
