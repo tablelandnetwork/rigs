@@ -138,7 +138,7 @@ export const Pilots = ({
                   </Td>
                   <Td pl={3} wordBreak="break-all">
                     {contract && tokenId ? (
-                      <Link to={`/pilot/${contract}/${tokenId}`}>{pilot}</Link>
+                      <Link to={`/pilots/${contract}/${tokenId}`}>{pilot}</Link>
                     ) : (
                       pilot
                     )}

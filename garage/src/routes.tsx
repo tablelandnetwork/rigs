@@ -35,7 +35,7 @@ export const routes = () => {
     },
     {
       key: "PILOT_DETAILS",
-      path: "/pilot/:collection/:id",
+      path: "/pilots/:collection/:id",
       requiresWalletConnection: false,
       element: <PilotDetails />,
     },
