@@ -81,7 +81,7 @@
 </template>
 
 <script>
-import VLazyImage from 'v-lazy-image/v2';
+import VLazyImage from 'v-lazy-image';
 
 export default {
   components: {
@@ -110,7 +110,7 @@ export default {
     addEventListener('resize', this.resizeImages);
   },
 
-  destroyed: function () {
+  unmounted: function () {
     removeEventListener('resize', this.resizeImages);
   },
 
