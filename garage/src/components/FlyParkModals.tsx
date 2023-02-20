@@ -56,6 +56,7 @@ import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
 import { address as contractAddress, abi } from "../contract";
 import { copySet, toggleInSet } from "../utils/set";
+import { isPresent } from "../utils/types";
 
 interface ModalProps {
   rigs: Rig[];
@@ -218,9 +219,6 @@ interface PilotTransactionProps {
   onClose: () => void;
   onTransactionSubmitted?: (txHash: string) => void;
 }
-
-const isPresent = <T,>(t: T | undefined | null): t is T =>
-  t !== undefined && t !== null;
 
 const toContractArgs = (
   pairs: { rig: Rig; pilot: NFT }[]

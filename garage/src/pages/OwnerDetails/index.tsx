@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useOwnerPilots } from "../../hooks/useOwnerPilots";
 import { useOwnerActivity } from "../../hooks/useOwnerActivity";
-import { useNFTs } from "../../hooks/useNFTs";
+import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
@@ -43,7 +43,7 @@ export const OwnerDetails = () => {
   const { rigs } = useOwnedRigs(owner);
   const { pilots } = useOwnerPilots(owner);
   const { events } = useOwnerActivity(owner);
-  const { nfts } = useNFTs(pilots);
+  const { nfts } = useNFTsCached(pilots);
 
   const totalFt = useMemo(() => {
     if (!pilots) return;

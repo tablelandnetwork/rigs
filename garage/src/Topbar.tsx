@@ -2,14 +2,23 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Button,
+  Divider,
+  Drawer,
+  DrawerBody,
+  DrawerHeader,
+  DrawerOverlay,
+  DrawerContent,
   Flex,
   HStack,
+  IconButton,
   Image,
   Input,
   InputGroup,
   InputLeftElement,
   InputRightElement,
   Kbd,
+  List,
+  ListItem,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -18,8 +27,11 @@ import {
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
-import { TablelandConnectButton } from "./components/TablelandConnectButton";
+import { SearchIcon, HamburgerIcon } from "@chakra-ui/icons";
+import {
+  TablelandConnectButton,
+  MobileNavTablelandConnectButton,
+} from "./components/TablelandConnectButton";
 import logo from "./assets/tableland.svg";
 import { useCurrentRoute } from "./hooks/useCurrentRoute";
 import { useKeysDown } from "./hooks/useKeysDown";
@@ -142,74 +154,199 @@ const SearchModal = ({
   );
 };
 
+interface NavButtonProps extends React.ComponentProps<typeof Button> {
+  active: boolean;
+  route: string;
+  title: string;
+}
+
+const inactiveProps = {
+  variant: "ghost",
+  color: "bg",
+  _hover: { color: "primary", bgColor: "paper" },
+};
+
+const activeProps = {
+  variant: "solid",
+};
+
+const NavButton = ({ active, route, title, ref, ...rest }: NavButtonProps) => {
+  const props = active ? activeProps : inactiveProps;
+  return (
+    <Button
+      {...props}
+      {...rest}
+      as={Link}
+      to={route}
+      flexGrow="0"
+      flexShrink="0"
+    >
+      {title}
+    </Button>
+  );
+};
+
+const MobileDrawer = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const route = useCurrentRoute();
+
+  return (
+    <Drawer isOpen={isOpen} placement="top" onClose={onClose}>
+      <DrawerOverlay />
+      <DrawerContent bgColor="primary">
+        <DrawerHeader>
+          <Flex>
+            <Image
+              src={logo}
+              sx={{ maxWidth: { base: "50px", md: "100%" } }}
+              mr={3}
+            />
+            <Text variant="orbitron" fontSize="20" color="paper">
+              Garage
+            </Text>
+          </Flex>
+        </DrawerHeader>
+
+        <DrawerBody>
+          <List color="paper">
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
+              <NavButton
+                active={route?.route.key === "DASHBOARD"}
+                route="/dashboard"
+                title="Dashboard"
+                onClick={onClose}
+              />
+            </ListItem>
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
+              <NavButton
+                active={route?.route.key === "GALLERY"}
+                route="/gallery"
+                title="Gallery"
+                onClick={onClose}
+              />
+            </ListItem>
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
+              <MobileNavTablelandConnectButton onClick={onClose} />
+            </ListItem>
+          </List>
+        </DrawerBody>
+      </DrawerContent>
+    </Drawer>
+  );
+};
+
 export const Topbar = () => {
   const route = useCurrentRoute();
 
   const isEnter = route?.route.key === "ENTER";
   const bgColor = isEnter ? "primaryLight" : "primary";
 
-  const { isOpen, onClose, onOpen } = useDisclosure();
+  const {
+    isOpen: isSearchOpen,
+    onClose: onSearchClose,
+    onOpen: onSearchOpen,
+  } = useDisclosure();
+  const {
+    isOpen: isDrawerOpen,
+    onClose: onDrawerClose,
+    onOpen: onDrawerOpen,
+  } = useDisclosure();
 
   return (
-    <Flex
-      height={TOPBAR_HEIGHT}
-      width="100%"
-      bg={bgColor}
-      color="black"
-      align="center"
-      position="sticky"
-      top="0"
-      zIndex={2}
-      px={8}
-      py={4}
-    >
-      <SearchModal isOpen={isOpen} onClose={onClose} />
-      <Link to="/dashboard">
-        <Image
-          src={logo}
-          sx={{ maxWidth: { base: "50px", md: "100%" } }}
-          mr={2}
-        />
-      </Link>
-      <Show above="md">
-        <Text variant="orbitron" fontSize="20">
-          Garage
-        </Text>
-      </Show>
-      <Flex justify="space-between" align="center" width="100%" ml={8}>
-        {!isEnter ? (
+    <>
+      <MobileDrawer isOpen={isDrawerOpen} onClose={onDrawerClose} />
+      <Flex
+        height={TOPBAR_HEIGHT}
+        width="100%"
+        bg={bgColor}
+        color="black"
+        align="center"
+        position="sticky"
+        top="0"
+        zIndex={2}
+        px={8}
+        py={4}
+      >
+        <SearchModal isOpen={isSearchOpen} onClose={onSearchClose} />
+        <Link to="/dashboard">
+          <Image
+            src={logo}
+            sx={{ maxWidth: { base: "50px", md: "100%" } }}
+            mr={2}
+          />
+        </Link>
+        <Show above="lg">
+          <Text variant="orbitron" fontSize="20">
+            Garage
+          </Text>
+        </Show>
+        <Show below="md">
+          <Text variant="orbitron" fontSize="20">
+            Garage
+          </Text>
+        </Show>
+        {isEnter && (
+          <>
+            <Spacer />
+            <TablelandConnectButton />
+          </>
+        )}
+        {!isEnter && (
           <Flex
+            justify={{ base: "end", md: "space-between" }}
             align="center"
-            gap={4}
-            mr={4}
-            flexGrow="1"
-            justify="space-between"
+            width="100%"
+            gap={2}
+            ml={{ base: 2, md: 8 }}
           >
-            <Show above="sm">
-              <Button
-                variant="solid"
-                as={Link}
-                to="/dashboard"
-                flexGrow="0"
-                flexShrink="0"
-              >
-                Dashboard
-              </Button>
+            <Show above="md">
+              <HStack>
+                <NavButton
+                  active={route?.route.key === "DASHBOARD"}
+                  route="/dashboard"
+                  title="Dashboard"
+                />
+                <NavButton
+                  active={route?.route.key === "GALLERY"}
+                  route="/gallery"
+                  title="Gallery"
+                />
+              </HStack>
+              <HStack flexShrink="0" flexGrow="1" justify="end">
+                <RigSearchForm />
+                <TablelandConnectButton />
+              </HStack>
             </Show>
             <Show below="md">
-              <Button onClick={onOpen} variant="ghost" color="paper">
-                <SearchIcon />
-              </Button>
-            </Show>
-            <Show above="md">
-              <RigSearchForm />
+              <IconButton
+                aria-label="Search rig"
+                onClick={onSearchOpen}
+                variant="outline"
+                color="paper"
+                borderColor="inactive"
+                icon={<SearchIcon />}
+              />
+              <IconButton
+                aria-label="Open menu"
+                onClick={onDrawerOpen}
+                variant="outline"
+                color="primary"
+                bgColor="paper"
+                _hover={{ bgColor: "bg", color: "primary" }}
+                icon={<HamburgerIcon />}
+              />
             </Show>
           </Flex>
-        ) : (
-          <Spacer />
         )}
-        <TablelandConnectButton />
       </Flex>
-    </Flex>
+    </>
   );
 };
