@@ -8,32 +8,28 @@ export interface PilotWithFT extends Pilot {
   isActive: boolean;
 }
 
-export const useOwnerPilots = (owner?: string, currentBlockNumber?: number) => {
-  const { connection: tableland } = useTablelandConnection();
+export const useOwnerPilots = (owner?: string) => {
+  const { db } = useTablelandConnection();
 
   const [pilots, setPilots] = useState<PilotWithFT[]>();
 
   useEffect(() => {
-    if (!owner || !currentBlockNumber) return;
+    if (!owner) return;
 
     let isCancelled = false;
 
-    tableland
-      .read(selectOwnerPilots(owner, currentBlockNumber))
-      .then((result) => {
+    db.prepare(selectOwnerPilots(owner))
+      .all<PilotWithFT>()
+      .then(({ results }) => {
         if (isCancelled) return;
 
-        setPilots(
-          result.rows.map(([contract, tokenId, flightTime, isActive]) => {
-            return { contract, tokenId, flightTime, isActive };
-          })
-        );
+        setPilots(results);
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [owner, currentBlockNumber, setPilots]);
+  }, [owner, setPilots]);
 
   return { pilots };
 };

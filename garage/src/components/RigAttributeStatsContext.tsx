@@ -21,33 +21,35 @@ interface RawResult {
 export const RigAttributeStatsContextProvider = ({
   children,
 }: React.PropsWithChildren) => {
-  const { connection } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const [traits, setTraits] = useState<RigAttributeStats>();
 
   useEffect(() => {
-    if (!connection) return;
+    if (!db) return;
 
     let isCancelled = false;
 
-    connection.read(selectTraitRarities(), { output: "objects" }).then((v) => {
-      if (isCancelled) return;
+    db.prepare(selectTraitRarities())
+      .all<RawResult>()
+      .then(({ results }) => {
+        if (isCancelled) return;
 
-      setTraits(
-        mapValues(
-          groupBy((v as unknown) as RawResult[], "trait_type"),
-          (traits) =>
-            Object.fromEntries(
-              traits.map(({ value, count }) => [value, count as number])
-            )
-        )
-      );
-    });
+        setTraits(
+          mapValues(
+            groupBy(results, "trait_type"),
+            (traits) =>
+              Object.fromEntries(
+                traits.map(({ value, count }) => [value, count as number])
+              )
+          )
+        );
+      });
 
     return () => {
       isCancelled = true;
     };
-  }, [connection, setTraits]);
+  }, [db, setTraits]);
 
   return (
     <RigAttributeStatsContext.Provider value={traits}>

@@ -1,17 +1,9 @@
-import { connect, ChainName, SUPPORTED_CHAINS } from "@tableland/sdk";
-import { chain as envChain, deployment } from "../env";
+import { Database, Validator } from "@tableland/sdk";
+import { chain } from "../env";
 
-const chain = Object.entries(SUPPORTED_CHAINS).find(
-  ([_, chain]) => chain.chainId === envChain.id
-)![0] as ChainName;
-
-export const connection = connect({
-  network: "testnet",
-  chain,
-  host: deployment.tablelandHost,
-});
-
-const data = { connection };
+const db = Database.readOnly(chain.id);
+const validator = new Validator(db.config);
+const data = { db, validator };
 
 export const useTablelandConnection = () => {
   return data;
