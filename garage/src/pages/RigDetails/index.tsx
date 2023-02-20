@@ -6,7 +6,6 @@ import {
   GridItem,
   Heading,
   HStack,
-  Image,
   Link,
   Show,
   Spinner,
@@ -20,9 +19,8 @@ import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber, useEnsName } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
+import { RoundSvgIcon } from "../../components/RoundSvgIcon";
 import { TransferRigModal } from "../../components/TransferRigModal";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
-import { useRig } from "../../hooks/useRig";
 import { useNFTOwner } from "../../hooks/useNFTs";
 import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
@@ -30,13 +28,15 @@ import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
+import { useTablelandConnection } from "../../hooks/useTablelandConnection";
+import { useRig } from "../../hooks/useRig";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
 import { address as contractAddress } from "../../contract";
 import { chain, openseaBaseUrl } from "../../env";
 import { RigWithPilots, isValidAddress } from "../../types";
-import openseaMark from "../../assets/opensea-mark.svg";
+import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 
 const GRID_GAP = 4;
 
@@ -103,7 +103,7 @@ const RigHeader = ({
               title={`View Rig #${rig.id} on OpenSea`}
               isExternal
             >
-              <Image src={openseaMark} />
+              <RoundSvgIcon size={20} Component={OpenseaMark} />
             </Link>
           </HStack>
         </HStack>

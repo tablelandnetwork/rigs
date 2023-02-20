@@ -22,6 +22,7 @@ import {
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber, useEnsName } from "wagmi";
+import { RoundSvgIcon } from "../../components/RoundSvgIcon";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useNFTs, useNFTOwner, NFT } from "../../hooks/useNFTs";
 import { useRigImageUrls } from "../../hooks/useRigImageUrls";
@@ -29,7 +30,7 @@ import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { openseaBaseUrl } from "../../env";
 import { PilotSessionWithRigId, isValidAddress } from "../../types";
-import openseaMark from "../../assets/opensea-mark.svg";
+import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { selectPilotSessionsForPilot } from "../../utils/queries";
 
 const GRID_GAP = 4;
@@ -84,7 +85,7 @@ const NFTHeader = ({
               title={`View ${nft.name} on OpenSea`}
               isExternal
             >
-              <Image src={openseaMark} />
+              <RoundSvgIcon Component={OpenseaMark} size={20} />
             </Link>
           </HStack>
         </HStack>
