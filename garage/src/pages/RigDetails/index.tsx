@@ -14,14 +14,19 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
+import { ethers } from "ethers";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import { useAccount, useBlockNumber, useEnsName } from "wagmi";
+import {
+  useAccount,
+  useBlockNumber,
+  useContractReads,
+  useEnsName,
+} from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { RoundSvgIcon } from "../../components/RoundSvgIcon";
 import { TransferRigModal } from "../../components/TransferRigModal";
-import { useNFTOwner } from "../../hooks/useNFTs";
 import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
@@ -33,10 +38,12 @@ import { useRig } from "../../hooks/useRig";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
-import { address as contractAddress } from "../../contract";
-import { chain, openseaBaseUrl } from "../../env";
+import { chain, openseaBaseUrl, deployment } from "../../env";
 import { RigWithPilots, isValidAddress } from "../../types";
+import { abi } from "../../abis/ERC721";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
+
+const { contractAddress } = deployment;
 
 const GRID_GAP = 4;
 
@@ -144,7 +151,20 @@ export const RigDetails = () => {
   const { data: currentBlockNumber } = useBlockNumber();
   const { rig, refresh: refreshRig } = useRig(id || "");
   const { validator } = useTablelandConnection();
-  const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
+
+  const { data: contractData, refetch } = useContractReads({
+    contracts: [
+      {
+        address: contractAddress,
+        abi,
+        functionName: "ownerOf",
+        args: [ethers.BigNumber.from(id)],
+      },
+    ],
+  });
+
+  const [owner] = contractData ?? [];
+
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);

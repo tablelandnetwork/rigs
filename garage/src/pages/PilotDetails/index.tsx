@@ -21,10 +21,11 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import { useAccount, useBlockNumber, useEnsName } from "wagmi";
+import { ethers } from "ethers";
+import { useAccount, useBlockNumber, useContractRead, useEnsName } from "wagmi";
 import { RoundSvgIcon } from "../../components/RoundSvgIcon";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
-import { useNFTs, useNFTOwner, NFT } from "../../hooks/useNFTs";
+import { useNFTs, NFT } from "../../hooks/useNFTs";
 import { useRigImageUrls } from "../../hooks/useRigImageUrls";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
@@ -32,6 +33,7 @@ import { openseaBaseUrl } from "../../env";
 import { PilotSessionWithRigId, isValidAddress } from "../../types";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { selectPilotSessionsForPilot } from "../../utils/queries";
+import { abi } from "../../abis/ERC721";
 
 const GRID_GAP = 4;
 
@@ -198,7 +200,13 @@ export const PilotDetails = () => {
 
   const { nfts } = useNFTs(param);
   const pilot = nfts?.length ? nfts[0] : null;
-  const { owner } = useNFTOwner(collection, id);
+
+  const { data: owner } = useContractRead({
+    address: collection,
+    abi,
+    functionName: "ownerOf",
+    args: [ethers.BigNumber.from(id)],
+  });
 
   const { address } = useAccount();
 
