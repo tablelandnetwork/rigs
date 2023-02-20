@@ -42,6 +42,7 @@ import { chain, openseaBaseUrl, deployment } from "../../env";
 import { RigWithPilots, isValidAddress } from "../../types";
 import { abi } from "../../abis/ERC721";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
+import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
 
 const { contractAddress } = deployment;
 
@@ -56,6 +57,7 @@ const MODULE_PROPS = {
 
 type RigHeaderProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
+  tokenURI?: string;
   owner?: string;
   userOwnsRig?: boolean;
   currentBlockNumber?: number;
@@ -64,6 +66,7 @@ type RigHeaderProps = React.ComponentProps<typeof Box> & {
 
 const RigHeader = ({
   rig,
+  tokenURI,
   owner,
   userOwnsRig,
   currentBlockNumber,
@@ -111,6 +114,14 @@ const RigHeader = ({
               isExternal
             >
               <RoundSvgIcon size={20} Component={OpenseaMark} />
+            </Link>
+
+            <Link
+              href={tokenURI}
+              title={`View raw metadata for Rig #${rig.id}`}
+              isExternal
+            >
+              <RoundSvgIcon size={20} Component={TablelandMark} />
             </Link>
           </HStack>
         </HStack>
@@ -160,10 +171,16 @@ export const RigDetails = () => {
         functionName: "ownerOf",
         args: [ethers.BigNumber.from(id)],
       },
+      {
+        address: contractAddress,
+        abi,
+        functionName: "tokenURI",
+        args: [ethers.BigNumber.from(id)],
+      },
     ],
   });
 
-  const [owner] = contractData ?? [];
+  const [owner, tokenURI] = contractData ?? [];
 
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
@@ -264,6 +281,7 @@ export const RigDetails = () => {
                     {...MODULE_PROPS}
                     rig={rig}
                     owner={owner}
+                    tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
                     currentBlockNumber={currentBlockNumber}
                     refresh={refresh}
@@ -291,6 +309,7 @@ export const RigDetails = () => {
                     {...MODULE_PROPS}
                     rig={rig}
                     owner={owner}
+                    tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
                     currentBlockNumber={currentBlockNumber}
                     refresh={refresh}
