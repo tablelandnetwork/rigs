@@ -19,7 +19,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Topbar } from "./Topbar";
 import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
-import { AccountWatcher } from "./components/AccountWatcher";
 import { RigAttributeStatsContextProvider } from "./components/RigAttributeStatsContext";
 import { routes } from "./routes";
 import { chain } from "./env";
@@ -198,7 +197,6 @@ function App() {
       <ChakraProvider theme={theme}>
         <WagmiConfig client={wagmiClient}>
           <RainbowKitProvider chains={chains} theme={darkTheme()}>
-            <AccountWatcher />
             <RigAttributeStatsContextProvider>
               <BrowserRouter>
                 <Topbar />

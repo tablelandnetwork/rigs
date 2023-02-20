@@ -1,7 +1,6 @@
 import React, { useMemo } from "react";
 import { Flex, Heading, Text, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useOwnerPilots } from "../../hooks/useOwnerPilots";
 import { useOwnerActivity } from "../../hooks/useOwnerActivity";
@@ -41,9 +40,8 @@ const CenterContainer = ({ children }: React.PropsWithChildren) => {
 
 export const OwnerDetails = () => {
   const { owner } = useParams();
-  const { data: currentBlockNumber } = useBlockNumber();
-  const { rigs } = useOwnedRigs(owner, currentBlockNumber);
-  const { pilots } = useOwnerPilots(owner, currentBlockNumber);
+  const { rigs } = useOwnedRigs(owner);
+  const { pilots } = useOwnerPilots(owner);
   const { events } = useOwnerActivity(owner);
   const { nfts } = useNFTs(pilots);
 

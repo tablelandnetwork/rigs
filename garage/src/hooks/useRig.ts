@@ -2,10 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import { RigWithPilots } from "../types";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigWithPilots } from "../utils/queries";
-import { rigWithPilotsFromRow } from "../utils/xforms";
 
-export const useRig = (id: string, currentBlock?: number) => {
-  const { connection: tableland } = useTablelandConnection();
+export const useRig = (id: string) => {
+  const { db } = useTablelandConnection();
 
   const [rig, setRig] = useState<RigWithPilots>();
   const [shouldRefresh, setShouldRefresh] = useState({});
@@ -17,17 +16,19 @@ export const useRig = (id: string, currentBlock?: number) => {
   useEffect(() => {
     let isCancelled = false;
 
-    if (!id || !currentBlock) return;
+    if (!id) return;
 
-    tableland.read(selectRigWithPilots(id, currentBlock)).then((result) => {
-      const rigs = result.rows.map(rigWithPilotsFromRow);
-      if (!isCancelled && rigs.length) setRig(rigs[0]);
-    });
+    db.prepare(selectRigWithPilots(id))
+      .first<RigWithPilots>()
+      .then((rig) => {
+        rig.currentPilot = rig.pilotSessions.find((v) => !v.endTime);
+        if (!isCancelled && rig) setRig(rig);
+      });
 
     return () => {
       isCancelled = true;
     };
-  }, [id, setRig, currentBlock, /* effect dep */ shouldRefresh]);
+  }, [id, setRig, db, /* effect dep */ shouldRefresh]);
 
   return { rig, refresh };
 };
