@@ -21,14 +21,14 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount, useBlockNumber, useEnsName } from "wagmi";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useNFTs, useNFTOwner, NFT } from "../../hooks/useNFTs";
 import { useRigImageUrls } from "../../hooks/useRigImageUrls";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { openseaBaseUrl } from "../../env";
-import { PilotSessionWithRigId } from "../../types";
+import { PilotSessionWithRigId, isValidAddress } from "../../types";
 import openseaMark from "../../assets/opensea-mark.svg";
 import { selectPilotSessionsForPilot } from "../../utils/queries";
 
@@ -63,6 +63,10 @@ const NFTHeader = ({
     sm: false,
   });
 
+  const { data: ens } = useEnsName({
+    address: isValidAddress(owner) ? owner : undefined,
+  });
+
   const truncatedOwner = owner ? truncateWalletAddress(owner) : "";
 
   const totalFt = events.reduce((acc, { startTime, endTime }) => {
@@ -89,7 +93,9 @@ const NFTHeader = ({
           <Text>
             Owned by{" "}
             <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
-              {userOwnsNFT ? "You" : shouldTruncate ? truncatedOwner : owner}
+              {userOwnsNFT
+                ? "You"
+                : ens ?? (shouldTruncate ? truncatedOwner : owner)}
             </RouterLink>
           </Text>
         </HStack>
