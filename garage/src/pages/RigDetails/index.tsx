@@ -152,8 +152,8 @@ export const RigDetails = () => {
 
   const refresh = useCallback(() => {
     refreshRig();
-    refreshOwner();
-  }, [useRig, useMemo]);
+    refetch();
+  }, [refreshRig, refetch]);
 
   const userOwnsRig = useMemo(() => {
     return !!address && address.toLowerCase() === owner?.toLowerCase();
