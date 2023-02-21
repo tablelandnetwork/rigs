@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Flex, Heading, Text, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
+import { useEnsName } from "wagmi";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useOwnerPilots } from "../../hooks/useOwnerPilots";
 import { useOwnerActivity } from "../../hooks/useOwnerActivity";
@@ -10,6 +11,7 @@ import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
 import { Pilots } from "./modules/Pilots";
 import { prettyNumber } from "../../utils/fmt";
+import { isValidAddress } from "../../types";
 
 const GRID_GAP = 4;
 
@@ -18,10 +20,6 @@ const MODULE_PROPS = {
   p: 8,
   bgColor: "paper",
   overflow: "hidden",
-};
-
-const isValidAddress = (address?: string): boolean => {
-  return /0x[0-9a-z]{40,40}/i.test(address || "");
 };
 
 const CenterContainer = ({ children }: React.PropsWithChildren) => {
@@ -45,6 +43,10 @@ export const OwnerDetails = () => {
   const { events } = useOwnerActivity(owner);
   const { nfts } = useNFTsCached(pilots);
 
+  const { data: ens } = useEnsName({
+    address: isValidAddress(owner) ? owner : undefined,
+  });
+
   const totalFt = useMemo(() => {
     if (!pilots) return;
 
@@ -65,7 +67,7 @@ export const OwnerDetails = () => {
       >
         <VStack {...MODULE_PROPS} width="100%" align="left">
           <Heading size="sm">Collector profile</Heading>
-          <Heading pb={8}>{owner}</Heading>
+          <Heading pb={8}>{ens ?? owner}</Heading>
 
           {totalFt && (
             <Heading size="sm">

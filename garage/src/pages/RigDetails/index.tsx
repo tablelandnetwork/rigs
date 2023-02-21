@@ -17,7 +17,7 @@ import {
 } from "@chakra-ui/react";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount, useBlockNumber, useEnsName } from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { TransferRigModal } from "../../components/TransferRigModal";
@@ -35,7 +35,7 @@ import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
 import { address as contractAddress } from "../../contract";
 import { chain, openseaBaseUrl } from "../../env";
-import { RigWithPilots } from "../../types";
+import { RigWithPilots, isValidAddress } from "../../types";
 import openseaMark from "../../assets/opensea-mark.svg";
 
 const GRID_GAP = 4;
@@ -79,6 +79,10 @@ const RigHeader = ({
     sm: false,
   });
 
+  const { data: ens } = useEnsName({
+    address: isValidAddress(owner) ? owner : undefined,
+  });
+
   const truncatedOwner = owner ? truncateWalletAddress(owner) : "";
 
   return (
@@ -111,7 +115,9 @@ const RigHeader = ({
           <Text>
             Owned by{" "}
             <RouterLink to={`/owner/${owner}`} style={{ fontWeight: "bold" }}>
-              {userOwnsRig ? "You" : shouldTruncate ? truncatedOwner : owner}
+              {userOwnsRig
+                ? "You"
+                : ens ?? (shouldTruncate ? truncatedOwner : owner)}
             </RouterLink>
           </Text>
 
