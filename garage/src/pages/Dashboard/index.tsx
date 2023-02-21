@@ -27,6 +27,7 @@ export const Dashboard = () => {
         <Flex
           direction={{ base: "column", lg: "row" }}
           p={GRID_GAP}
+          pt={{ base: GRID_GAP, md: GRID_GAP * 2 }}
           gap={GRID_GAP}
           align={{ base: "stretch", lg: "start" }}
           maxWidth="1385px"

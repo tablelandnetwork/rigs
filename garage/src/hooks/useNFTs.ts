@@ -43,6 +43,7 @@ export interface NFT {
   tokenId: string;
   name?: string;
   imageUrl?: string;
+  highResImageUrl?: string;
   imageData?: string;
 }
 
@@ -50,6 +51,7 @@ export const toNFT = (data: Nft): NFT => {
   const { contract, tokenId, title, media, rawMetadata } = data;
 
   const imageUrl = media[0]?.thumbnail || media[0]?.gateway || media[0]?.raw;
+  const highResImageUrl = media[0]?.gateway || media[0]?.raw;
   const imageData = rawMetadata?.image_data || rawMetadata?.svg_image_data;
 
   return {
@@ -58,6 +60,7 @@ export const toNFT = (data: Nft): NFT => {
     tokenId,
     name: title,
     imageUrl,
+    highResImageUrl,
     imageData,
   };
 };
