@@ -164,6 +164,8 @@ export const ParkRigsModal = ({
     hash: contractWrite.data?.hash,
   });
 
+  const hasNotCompletedTraining = rigs.some((v) => !v.isTrained);
+
   useEffect(() => {
     if (!isOpen) reset();
   }, [isOpen, reset]);
@@ -180,11 +182,13 @@ export const ParkRigsModal = ({
         <ModalHeader>Park {pluralize("Rig", rigs)}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text>
-            Training isn't complete! Be aware that your Rig will lose all of its
-            FT if you park now.
-          </Text>
-          <Text mt={4}>Parked Rigs can be sold or transferred.</Text>
+          {hasNotCompletedTraining && (
+            <Text mb={4}>
+              Training isn't complete! Be aware that your{" "}
+              {pluralize("Rig", rigs)} will lose all of its FT if you park now.
+            </Text>
+          )}
+          <Text>Parked Rigs can be sold or transferred.</Text>
           <Text mt={4} sx={{ fontStyle: "italic" }}>
             Parking requires an on-chain transaction. When you click the Park
             button below your wallet will request that you sign a transaction
