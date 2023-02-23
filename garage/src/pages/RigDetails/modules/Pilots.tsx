@@ -57,6 +57,7 @@ const getPilots = (
     return {
       flightTime,
       status,
+      sessions: sessions.length,
       imageUrl: imageUrl,
       pilot: name || "Trainer",
       contract,
@@ -105,7 +106,10 @@ export const Pilots = ({
             <Th pl={p} colSpan={2}>
               Pilot
             </Th>
-            <Th>
+            <Show above="xl">
+              <Th isNumeric>Sessions</Th>
+            </Show>
+            <Th isNumeric>
               <Show above="sm">Flight time (FT)</Show>
               <Show below="sm">FT</Show>
             </Th>
@@ -115,7 +119,15 @@ export const Pilots = ({
         <Tbody>
           {pilots.map(
             (
-              { pilot, imageUrl, flightTime, status, contract, tokenId },
+              {
+                pilot,
+                sessions,
+                imageUrl,
+                flightTime,
+                status,
+                contract,
+                tokenId,
+              },
               index
             ) => {
               return (
@@ -143,7 +155,16 @@ export const Pilots = ({
                       pilot
                     )}
                   </Td>
-                  <Td>{prettyNumber(flightTime)}</Td>
+                  <Show above="xl">
+                    <Td isNumeric>{sessions}</Td>
+                  </Show>
+                  <Td isNumeric sx={{ whiteSpace: "nowrap" }}>
+                    {prettyNumber(flightTime)}
+                    <Show below="xl">
+                      <wbr />
+                      <Text fontSize="xs">({sessions} sessions)</Text>
+                    </Show>
+                  </Td>
                   <Td
                     pr={p}
                     color={status == "Garaged" ? "inactive" : "inherit"}
