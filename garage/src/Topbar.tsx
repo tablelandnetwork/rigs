@@ -200,11 +200,9 @@ const MobileDrawer = ({
       <DrawerOverlay />
       <DrawerContent bgColor="primary">
         <DrawerHeader>
-          <Flex>
-            <Box sx={{ maxWidth: { base: "50px", md: "100%" } }} mr={3}>
-              <Logo />
-            </Box>
-            <Text variant="orbitron" fontSize="20" color="paper">
+          <Flex align="center">
+            <Logo width="50px" height="auto" />
+            <Text variant="orbitron" fontSize="20" color="paper" ml={3}>
               Garage
             </Text>
           </Flex>
@@ -275,8 +273,8 @@ export const Topbar = () => {
       >
         <SearchModal isOpen={isSearchOpen} onClose={onSearchClose} />
         <Link to="/dashboard">
-          <Box sx={{ maxWidth: { base: "50px", md: "100%" } }} mr={2}>
-            <Logo />
+          <Box sx={{ maxWidth: { base: "50px", md: "98px" } }} mr={2}>
+            <Logo width="100%" height="auto" />
           </Box>
         </Link>
         <Show above="lg">
