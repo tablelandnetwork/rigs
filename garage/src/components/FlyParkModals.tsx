@@ -54,9 +54,12 @@ import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { Rig, WalletAddress, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { address as contractAddress, abi } from "../contract";
+import { deployment } from "../env";
+import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
 import { isPresent } from "../utils/types";
+
+const { contractAddress } = deployment;
 
 interface ModalProps {
   rigs: Rig[];

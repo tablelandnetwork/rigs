@@ -6,7 +6,6 @@ import {
   GridItem,
   Heading,
   HStack,
-  Image,
   Link,
   Show,
   Spinner,
@@ -15,28 +14,37 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
+import { ethers } from "ethers";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import { useAccount, useBlockNumber, useEnsName } from "wagmi";
+import {
+  useAccount,
+  useBlockNumber,
+  useContractReads,
+  useEnsName,
+} from "wagmi";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
+import { RoundSvgIcon } from "../../components/RoundSvgIcon";
 import { TransferRigModal } from "../../components/TransferRigModal";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
-import { useRig } from "../../hooks/useRig";
-import { useNFTOwner } from "../../hooks/useNFTs";
 import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
+import { useTablelandConnection } from "../../hooks/useTablelandConnection";
+import { useRig } from "../../hooks/useRig";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
-import { address as contractAddress } from "../../contract";
-import { chain, openseaBaseUrl } from "../../env";
+import { chain, openseaBaseUrl, deployment } from "../../env";
 import { RigWithPilots, isValidAddress } from "../../types";
-import openseaMark from "../../assets/opensea-mark.svg";
+import { abi } from "../../abis/ERC721";
+import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
+import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
+
+const { contractAddress } = deployment;
 
 const GRID_GAP = 4;
 
@@ -49,6 +57,7 @@ const MODULE_PROPS = {
 
 type RigHeaderProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
+  tokenURI?: string;
   owner?: string;
   userOwnsRig?: boolean;
   currentBlockNumber?: number;
@@ -57,6 +66,7 @@ type RigHeaderProps = React.ComponentProps<typeof Box> & {
 
 const RigHeader = ({
   rig,
+  tokenURI,
   owner,
   userOwnsRig,
   currentBlockNumber,
@@ -103,7 +113,15 @@ const RigHeader = ({
               title={`View Rig #${rig.id} on OpenSea`}
               isExternal
             >
-              <Image src={openseaMark} />
+              <RoundSvgIcon size={20} Component={OpenseaMark} />
+            </Link>
+
+            <Link
+              href={tokenURI}
+              title={`View raw metadata for Rig #${rig.id}`}
+              isExternal
+            >
+              <RoundSvgIcon size={20} Component={TablelandMark} />
             </Link>
           </HStack>
         </HStack>
@@ -144,7 +162,26 @@ export const RigDetails = () => {
   const { data: currentBlockNumber } = useBlockNumber();
   const { rig, refresh: refreshRig } = useRig(id || "");
   const { validator } = useTablelandConnection();
-  const { owner, refresh: refreshOwner } = useNFTOwner(contractAddress, id);
+
+  const { data: contractData, refetch } = useContractReads({
+    contracts: [
+      {
+        address: contractAddress,
+        abi,
+        functionName: "ownerOf",
+        args: [ethers.BigNumber.from(id)],
+      },
+      {
+        address: contractAddress,
+        abi,
+        functionName: "tokenURI",
+        args: [ethers.BigNumber.from(id)],
+      },
+    ],
+  });
+
+  const [owner, tokenURI] = contractData ?? [];
+
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
   }, [rig]);
@@ -152,8 +189,8 @@ export const RigDetails = () => {
 
   const refresh = useCallback(() => {
     refreshRig();
-    refreshOwner();
-  }, [useRig, useMemo]);
+    refetch();
+  }, [refreshRig, refetch]);
 
   const userOwnsRig = useMemo(() => {
     return !!address && address.toLowerCase() === owner?.toLowerCase();
@@ -244,6 +281,7 @@ export const RigDetails = () => {
                     {...MODULE_PROPS}
                     rig={rig}
                     owner={owner}
+                    tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
                     currentBlockNumber={currentBlockNumber}
                     refresh={refresh}
@@ -271,6 +309,7 @@ export const RigDetails = () => {
                     {...MODULE_PROPS}
                     rig={rig}
                     owner={owner}
+                    tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
                     currentBlockNumber={currentBlockNumber}
                     refresh={refresh}

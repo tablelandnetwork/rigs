@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  Box,
   Button,
   Divider,
   Drawer,
@@ -11,7 +12,6 @@ import {
   Flex,
   HStack,
   IconButton,
-  Image,
   Input,
   InputGroup,
   InputLeftElement,
@@ -32,7 +32,7 @@ import {
   TablelandConnectButton,
   MobileNavTablelandConnectButton,
 } from "./components/TablelandConnectButton";
-import logo from "./assets/tableland.svg";
+import { ReactComponent as Logo } from "./assets/tableland.svg";
 import { useCurrentRoute } from "./hooks/useCurrentRoute";
 import { useKeysDown } from "./hooks/useKeysDown";
 
@@ -201,11 +201,9 @@ const MobileDrawer = ({
       <DrawerContent bgColor="primary">
         <DrawerHeader>
           <Flex>
-            <Image
-              src={logo}
-              sx={{ maxWidth: { base: "50px", md: "100%" } }}
-              mr={3}
-            />
+            <Box sx={{ maxWidth: { base: "50px", md: "100%" } }} mr={3}>
+              <Logo />
+            </Box>
             <Text variant="orbitron" fontSize="20" color="paper">
               Garage
             </Text>
@@ -277,11 +275,9 @@ export const Topbar = () => {
       >
         <SearchModal isOpen={isSearchOpen} onClose={onSearchClose} />
         <Link to="/dashboard">
-          <Image
-            src={logo}
-            sx={{ maxWidth: { base: "50px", md: "100%" } }}
-            mr={2}
-          />
+          <Box sx={{ maxWidth: { base: "50px", md: "100%" } }} mr={2}>
+            <Logo />
+          </Box>
         </Link>
         <Show above="lg">
           <Text variant="orbitron" fontSize="20">

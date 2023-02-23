@@ -1,9 +1,12 @@
 import React from "react";
-import { Flex, Image, Link } from "@chakra-ui/react";
-import twitterMark from "../assets/twitter-mark.svg";
-import openseaMark from "../assets/opensea-mark.svg";
+import { Flex, Link, useToken } from "@chakra-ui/react";
+import { RoundSvgIcon } from "./RoundSvgIcon";
+import { ReactComponent as TwitterMark } from "../assets/twitter-mark.svg";
+import { ReactComponent as OpenseaMark } from "../assets/opensea-mark.svg";
 
 export const Footer = () => {
+  const [primaryColor] = useToken("colors", ["primary"]);
+
   return (
     <Flex
       position="fixed"
@@ -23,15 +26,16 @@ export const Footer = () => {
         href="https://twitter.com/tableland__"
         title="Tableland on Twitter"
         isExternal
+        sx={{ fill: primaryColor, _hover: { fill: "#7ddbda" } }}
       >
-        <Image src={twitterMark} color="primary" />
+        <TwitterMark width="20px" height="20px" />
       </Link>
       <Link
         href="https://opensea.io/collection/tableland-rigs"
         title="Rigs on OpenSea"
         isExternal
       >
-        <Image src={openseaMark} color="primary" />
+        <RoundSvgIcon Component={OpenseaMark} size={20} />
       </Link>
     </Flex>
   );

@@ -3,7 +3,10 @@ import { Rig, isValidAddress } from "../types";
 import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
-import { address as contractAddress, abi } from "../contract";
+import { deployment } from "../env";
+import { abi } from "../abis/TablelandRigs";
+
+const { contractAddress } = deployment;
 
 export const useOwnedRigs = (address?: string) => {
   const { db } = useTablelandConnection();

@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
 import { Chain } from "wagmi";
 import * as chains from "wagmi/chains";
 import {
@@ -11,8 +10,7 @@ import {
   NftFilters,
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
-import { useContractRead } from "wagmi";
-import { chain, deployment } from "../env";
+import { chain } from "../env";
 import { useQuery } from "@tanstack/react-query";
 
 const wagmiChainToNetwork = (c: Chain): Network => {
@@ -96,48 +94,6 @@ export const useNFTs = (input?: { contract: string; tokenId: string }[]) => {
   }, [input, setNFTs]);
 
   return { nfts };
-};
-
-const ownerOfAbi = [
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "tokenId",
-        type: "uint256",
-      },
-    ],
-    name: "ownerOf",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
-
-export const useNFTOwner = (contract?: string, tokenId?: string) => {
-  const [owner, setOwner] = useState<string>();
-
-  const { data, refetch } = useContractRead({
-    address: contract || "",
-    abi: ownerOfAbi,
-    functionName: "ownerOf",
-    args: tokenId ? [ethers.BigNumber.from(tokenId)] : undefined,
-    enabled: !!contract && !!tokenId,
-  });
-
-  useEffect(() => {
-    if (!data) return;
-
-    setOwner(data);
-  }, [data, setOwner]);
-
-  return { owner, refresh: refetch };
 };
 
 interface OwnedNFTsFilter {
