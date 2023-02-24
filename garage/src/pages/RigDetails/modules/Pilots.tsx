@@ -26,7 +26,7 @@ import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { useBlockNumber } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
-import { prettyNumber } from "../../../utils/fmt";
+import { prettyNumber, pluralize } from "../../../utils/fmt";
 
 const getPilots = (
   rig: RigWithPilots,
@@ -57,7 +57,7 @@ const getPilots = (
     return {
       flightTime,
       status,
-      sessions: sessions.length,
+      sessions,
       imageUrl: imageUrl,
       pilot: name || "Trainer",
       contract,
@@ -156,13 +156,17 @@ export const Pilots = ({
                     )}
                   </Td>
                   <Show above="xl">
-                    <Td isNumeric>{sessions}</Td>
+                    <Td isNumeric>{sessions.length}</Td>
                   </Show>
                   <Td isNumeric sx={{ whiteSpace: "nowrap" }}>
                     {prettyNumber(flightTime)}
                     <Show below="xl">
                       <wbr />
-                      <Text fontSize="xs">({sessions} sessions)</Text>
+                      <Text fontSize="xs">
+                        (
+                        {`${sessions.length} ${pluralize("session", sessions)}`}
+                        )
+                      </Text>
                     </Show>
                   </Td>
                   <Td
