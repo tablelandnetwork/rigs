@@ -22,7 +22,7 @@ export async function getURITemplate(
         await normalize(
           `select 
             json_object(
-              'name','Rig #'||rig_id,
+              'name',case when exists(select * from ${pilotsTable} where rig_id = ${attributesTable}.rig_id and end_time is null) then 'Rig #'||rig_id||' ✈️' else 'Rig #'||rig_id end,
               'external_url','https://garage.tableland.xyz/rigs/'||rig_id,
               'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,
               'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,
@@ -54,7 +54,7 @@ export async function getURITemplate(
         await normalize(
           `select
             json_object(
-              'name','Rig #'||rig_id,
+              'name',case when exists(select * from ${pilotsTable} where rig_id = ${attributesTable}.rig_id and end_time is null) then 'Rig #'||rig_id||' ✈️' else 'Rig #'||rig_id end,
               'external_url','https://garage.tableland.xyz/rigs/'||rig_id,
               'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,
               'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,
