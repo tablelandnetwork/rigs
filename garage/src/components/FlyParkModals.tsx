@@ -57,6 +57,7 @@ import { RigDisplay } from "./RigDisplay";
 import { deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
+import { pluralize } from "../utils/fmt";
 import { isPresent } from "../utils/types";
 
 const { contractAddress } = deployment;
@@ -67,10 +68,6 @@ interface ModalProps {
   onClose: () => void;
   onTransactionSubmitted?: (txHash: string) => void;
 }
-
-const pluralize = (s: string, c: any[]): string => {
-  return c.length === 1 ? s : `${s}s`;
-};
 
 export const TrainRigsModal = ({
   rigs,
