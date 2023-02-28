@@ -26,10 +26,10 @@ export function getURITemplate(
               'value','pre-reveal'
             )
           )
-        ) from ${attributesTable} join ${lookupsTable} where rig_id=ID group by rig_id;`.replace(
-          /(\r\n|\n|\r|\s\s+)/gm,
-          ""
         )
+        from ${attributesTable} join ${lookupsTable}
+        where rig_id=ID
+        group by rig_id;`.replace(/(\r\n|\n|\r|\s\s+)/gm, "")
       );
     return uri.split("ID");
   } else {
@@ -47,27 +47,26 @@ export function getURITemplate(
           'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,
           'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,
           'animation_url',animation_base_url||rig_id||'.html',
-          'attributes',json_insert(
-            (
-              select json_group_array(
-                json_object('display_type',display_type,'trait_type',trait_type,'value',value)
-              )
-              from ${attributesTable} where rig_id=ID group by rig_id
-            ),
-            '$[#]',
-            json_object(
-              'display_type','string',
-              'trait_type','Garage Status',
-              'value',coalesce(
-                (select coalesce(end_time, 'in-flight') from ${pilotsTable} where rig_id=ID and end_time is null),
-                'parked'
-              )
-            )
+          'attributes', json_group_array(
+            json_object('display_type',display_type,'trait_type',trait_type,'value',value)
           )
-        ) from ${attributesTable} join ${lookupsTable} where rig_id=ID group by rig_id;`.replace(
-          /(\r\n|\n|\r|\s\s+)/gm,
-          ""
         )
+        from (
+          select *
+          from ${attributesTable}
+          union
+          select
+            a.rig_id,
+            'string' display_type,
+            'Garage Status' trait_type,
+            case when start_time is null then 'parked' else 'in-flight' end value
+          from
+            ${attributesTable} a
+            left join (select * from ${pilotsTable} where end_time is null) s on a.rig_id = s.rig_id
+        )
+        join ${lookupsTable}
+        where rig_id=ID
+        group by rig_id;`.replace(/(\r\n|\n|\r|\s\s+)/gm, "")
       );
     return uri.split("ID");
   }
