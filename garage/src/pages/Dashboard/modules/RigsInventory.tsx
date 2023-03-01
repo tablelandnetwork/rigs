@@ -3,20 +3,26 @@ import { Link } from "react-router-dom";
 import {
   Box,
   Button,
+  Divider,
   Flex,
   Heading,
+  Hide,
   Grid,
   GridItem,
+  Show,
+  Spacer,
   Spinner,
+  Stack,
   Text,
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
 import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
-import { useNFTs, NFT } from "../../../hooks/useNFTs";
+import { NFT } from "../../../hooks/useNFTs";
+import { useNFTsCached } from "../../../components/NFTsContext";
 import { Rig, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
@@ -24,8 +30,9 @@ import { TablelandConnectButton } from "../../../components/TablelandConnectButt
 import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
-import { sleep, runUntilConditionMet } from "../../../utils/async";
+import { sleep } from "../../../utils/async";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
+import { chain } from "../../../env";
 
 interface RigListItemProps {
   rig: Rig;
@@ -116,9 +123,8 @@ const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { address } = useAccount();
-  const { data: blockNumber } = useBlockNumber();
-  const { rigs, refresh } = useOwnedRigs(address, blockNumber);
-  const { connection: tableland } = useTablelandConnection();
+  const { rigs, refresh } = useOwnedRigs(address);
+  const { validator } = useTablelandConnection();
   const pilots = useMemo(() => {
     if (!rigs) return;
 
@@ -126,7 +132,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       .map((v) => v.currentPilot)
       .filter((v) => v?.contract) as Pilot[];
   }, [rigs]);
-  const { nfts } = useNFTs(pilots);
+  const { nfts } = useNFTsCached(pilots);
 
   const [selectedRigs, setSelectedRigs] = useState<Set<string>>(new Set());
 
@@ -168,20 +174,30 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   // Effect that waits until a tableland receipt is available for a tx hash
   // and then refreshes the rig data
   useEffect(() => {
-    if (tableland && pendingTx) {
-      runUntilConditionMet(
-        () => tableland.receipt(pendingTx),
-        (data) => !!data,
-        refreshRigsAndClearPendingTx,
-        {
-          initialDelay: 5_000,
-          wait: 2_000,
-          maxNumberOfAttempts: 10,
-          onMaxNumberOfAttemptsReached: clearPendingTx,
-        }
-      );
+    if (validator && pendingTx) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
+            chainId: chain.id,
+            transactionHash: pendingTx,
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          refreshRigsAndClearPendingTx();
+        })
+        .catch((_) => {
+          clearPendingTx();
+        });
+
+      return () => {
+        controller.abort();
+      };
     }
-  }, [pendingTx, refreshRigsAndClearPendingTx, tableland, clearPendingTx]);
+  }, [pendingTx, refreshRigsAndClearPendingTx, validator, clearPendingTx]);
 
   const {
     trainRigsModal,
@@ -262,9 +278,20 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       {rigs && rigs.length === 0 && (
-        <Text variant="emptyState" pt={8}>
-          You don't own any Rigs.
-        </Text>
+        <Flex
+          width="100%"
+          height="200px"
+          align="center"
+          justify="center"
+          direction="column"
+        >
+          <Text variant="emptyState" pt={8} pb={4}>
+            You don't own any Rigs.
+          </Text>
+          <Button as={Link} to="/gallery" height="40px">
+            Browse Rigs gallery
+          </Button>
+        </Flex>
       )}
 
       {!rigs && address && (
@@ -274,9 +301,28 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       {!address && (
-        <Flex width="100%" height="200px" align="center" justify="center" direction="column">
-          Not connected.
-          <TablelandConnectButton />
+        <Flex
+          width="100%"
+          height="200px"
+          align="center"
+          justify="center"
+          direction="column"
+        >
+          <Text variant="emptyState">No wallet connected.</Text>
+          <Stack pt={8} direction={{ base: "column", sm: "row" }}>
+            <TablelandConnectButton size="small" />
+            <Spacer width={3} />
+            <Show below="sm">
+              <Divider orientation="horizontal" />
+            </Show>
+            <Hide below="sm">
+              <Divider orientation="vertical" />
+            </Hide>
+            <Spacer width={3} />
+            <Button as={Link} to="/gallery" height={{ base: "40px", sm: "100%" }}>
+              Browse Rigs gallery
+            </Button>
+          </Stack>
         </Flex>
       )}
 

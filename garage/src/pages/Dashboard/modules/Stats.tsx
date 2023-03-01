@@ -22,7 +22,7 @@ import {
   TabPanels,
   Text,
 } from "@chakra-ui/react";
-import { useAccount, useBlockNumber } from "wagmi";
+import { useAccount } from "wagmi";
 import {
   useAccountStats,
   useStats,
@@ -109,11 +109,10 @@ const CollectionToplist = ({
 
 export const Stats = (props: React.ComponentProps<typeof Box>) => {
   const { address } = useAccount();
-  const { data: currentBlockNumber } = useBlockNumber();
-  const { stats } = useStats(currentBlockNumber);
-  const { stats: accountStats } = useAccountStats(currentBlockNumber, address);
+  const { stats } = useStats();
+  const { stats: accountStats } = useAccountStats(address);
   const { stats: pilotStats } = useTopActivePilotCollections();
-  const { stats: ftStats } = useTopFtPilotCollections(currentBlockNumber);
+  const { stats: ftStats } = useTopFtPilotCollections();
 
   const contracts = useMemo(() => {
     if (!pilotStats || !ftStats) return;

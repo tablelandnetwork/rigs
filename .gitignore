@@ -2,7 +2,7 @@ images
 images.zip
 sql
 sql.zip
-renders
+renders*
 local.db
 tableland.db
 
@@ -32,6 +32,7 @@ viewer/node_modules/
 viewer/.nuxt
 viewer/.eslintcache
 viewer/dist/
+viewer/.output
 
 #ethereum
 ethereum/node_modules

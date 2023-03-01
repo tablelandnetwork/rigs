@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -25,7 +26,7 @@ import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { useBlockNumber } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
-import { prettyNumber } from "../../../utils/fmt";
+import { prettyNumber, pluralize } from "../../../utils/fmt";
 
 const getPilots = (
   rig: RigWithPilots,
@@ -41,6 +42,7 @@ const getPilots = (
   }, accumulator);
 
   return Object.values(pilots).map((sessions) => {
+    const { tokenId, contract } = sessions[0];
     const status = sessions.find((v) => !v.endTime) ? "Active" : "Garaged";
 
     const nft = findNFT(sessions[0], nfts);
@@ -55,8 +57,11 @@ const getPilots = (
     return {
       flightTime,
       status,
+      sessions,
       imageUrl: imageUrl,
       pilot: name || "Trainer",
+      contract,
+      tokenId,
     };
   });
 };
@@ -101,7 +106,10 @@ export const Pilots = ({
             <Th pl={p} colSpan={2}>
               Pilot
             </Th>
-            <Th>
+            <Show above="xl">
+              <Th isNumeric>Sessions</Th>
+            </Show>
+            <Th isNumeric>
               <Show above="sm">Flight time (FT)</Show>
               <Show below="sm">FT</Show>
             </Th>
@@ -109,35 +117,68 @@ export const Pilots = ({
           </Tr>
         </Thead>
         <Tbody>
-          {pilots.map(({ pilot, imageUrl, flightTime, status }, index) => {
-            return (
-              <Tr key={`pilots-${index}`}>
-                <Td
-                  pl={p}
-                  pr={0}
-                  width={`calc(var(--chakra-sizes-${p}) + 30px)`}
-                >
-                  {imageUrl ? (
-                    <Image
-                      src={imageUrl}
-                      width="30px"
-                      height="30px"
-                      backgroundColor="primary"
-                    />
-                  ) : (
-                    <TrainerPilot width="30px" height="30px" />
-                  )}
-                </Td>
-                <Td pl={3} wordBreak="break-all">
-                  {pilot}
-                </Td>
-                <Td>{prettyNumber(flightTime)}</Td>
-                <Td pr={p} color={status == "Garaged" ? "inactive" : "inherit"}>
-                  {status}
-                </Td>
-              </Tr>
-            );
-          })}
+          {pilots.map(
+            (
+              {
+                pilot,
+                sessions,
+                imageUrl,
+                flightTime,
+                status,
+                contract,
+                tokenId,
+              },
+              index
+            ) => {
+              return (
+                <Tr key={`pilots-${index}`}>
+                  <Td
+                    pl={p}
+                    pr={0}
+                    width={`calc(var(--chakra-sizes-${p}) + 30px)`}
+                  >
+                    {imageUrl ? (
+                      <Image
+                        src={imageUrl}
+                        width="30px"
+                        height="30px"
+                        backgroundColor="primary"
+                      />
+                    ) : (
+                      <TrainerPilot width="30px" height="30px" />
+                    )}
+                  </Td>
+                  <Td pl={3} wordBreak="break-all">
+                    {contract && tokenId ? (
+                      <Link to={`/pilots/${contract}/${tokenId}`}>{pilot}</Link>
+                    ) : (
+                      pilot
+                    )}
+                  </Td>
+                  <Show above="xl">
+                    <Td isNumeric>{sessions.length}</Td>
+                  </Show>
+                  <Td isNumeric sx={{ whiteSpace: "nowrap" }}>
+                    {prettyNumber(flightTime)}
+                    <Show below="xl">
+                      <wbr />
+                      <Text fontSize="xs">
+                        (
+                        {`${sessions.length} ${pluralize("session", sessions)}`}
+                        )
+                      </Text>
+                    </Show>
+                  </Td>
+                  <Td
+                    pr={p}
+                    color={status == "Garaged" ? "inactive" : "inherit"}
+                  >
+                    {status}
+                  </Td>
+                </Tr>
+              );
+            }
+          )}
         </Tbody>
       </Table>
       {pilots.length === 0 && (
