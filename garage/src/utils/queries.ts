@@ -43,7 +43,19 @@ export const selectRigs = (ids: string[]): string => {
         OR
         (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
       )
-    ) AS "isTrained"
+    ) AS "isTrained",
+    (
+      SELECT
+        json_group_array(json_object(
+          'contract', pilot_contract,
+          'tokenId', cast(pilot_id as text),
+          'owner', owner,
+          'startTime', start_time,
+          'endTime', end_time
+        ))
+      FROM ${pilotSessionsTable} AS session
+      WHERE session.rig_id = attributes.rig_id
+    ) AS "pilotSessions"
   FROM ${attributesTable} AS attributes
   JOIN ${lookupsTable}
   WHERE rig_id IN ('${ids.join("', '")}')

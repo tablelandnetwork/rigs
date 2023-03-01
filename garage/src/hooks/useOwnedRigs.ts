@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Rig, isValidAddress } from "../types";
+import { RigWithPilots, isValidAddress } from "../types";
 import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
@@ -19,7 +19,7 @@ export const useOwnedRigs = (address?: string) => {
     enabled: !!address,
   });
 
-  const [rigs, setRigs] = useState<Rig[]>();
+  const [rigs, setRigs] = useState<RigWithPilots[]>();
   const [shouldRefresh, setShouldRefresh] = useState({});
 
   const refresh = useCallback(() => {
@@ -32,7 +32,7 @@ export const useOwnedRigs = (address?: string) => {
       const ids = data.map((bn) => bn.toString());
 
       db.prepare(selectRigs(ids))
-        .all<Rig>()
+        .all<RigWithPilots>()
         .then(({ results }) => {
           if (!isCancelled) setRigs(results);
         });
