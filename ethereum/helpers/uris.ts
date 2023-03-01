@@ -17,7 +17,7 @@ export async function getURITemplate(
   if (!displayAttributes) {
     const uri =
       tablelandHost +
-      "/api/v1/query?extract=true&unwrap=true&statement=" +
+      "/api/v1/query?format=objects&extract=true&unwrap=true&statement=" +
       encodeURIComponent(
         await normalize(
           `select 
@@ -49,7 +49,7 @@ export async function getURITemplate(
   } else {
     const uri =
       tablelandHost +
-      "/api/v1/query?extract=true&unwrap=true&statement=" +
+      "/api/v1/query?format=objects&extract=true&unwrap=true&statement=" +
       encodeURIComponent(
         await normalize(
           `select
