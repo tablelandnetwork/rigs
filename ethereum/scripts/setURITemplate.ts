@@ -32,7 +32,7 @@ async function main() {
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   ) as TablelandRigs;
-  const uriTemplate = getURITemplate(
+  const uriTemplate = await getURITemplate(
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
     rigsDeployment.lookupsTable,
