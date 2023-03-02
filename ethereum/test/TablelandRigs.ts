@@ -539,10 +539,10 @@ describe("Rigs", function () {
         table3,
         false
       );
-      const uri = uriTemplate.join("1");
-      const uriParts = uri.split("statement=");
-      expect(uriParts.length).to.equal(2);
-      const statement = decodeURIComponent(uriParts[1]);
+      const uri = new URL(uriTemplate.join("1"));
+      const statement = uri.searchParams.get("statement");
+      // normalizing the statement checks that it is valid SQL, will throw
+      // an error if it isn't
       const normalizedStatement = await normalize(statement);
       expect(normalizedStatement).contains("pre-reveal");
     });
