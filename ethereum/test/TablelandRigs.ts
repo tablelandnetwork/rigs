@@ -7,7 +7,7 @@ import { BigNumber, utils } from "ethers";
 import { ethers, network, upgrades } from "hardhat";
 import { MerkleTree } from "merkletreejs";
 import { AllowList, buildTree, hashEntry } from "../helpers/allowlist";
-import { getURITemplate } from "../helpers/uris";
+import { getURITemplate, normalize } from "../helpers/uris";
 import {
   PaymentSplitter,
   TablelandRigs,
@@ -532,16 +532,21 @@ describe("Rigs", function () {
       const table1 = "table1";
       const table2 = "table2";
       const table3 = "table3";
-      const uri = getURITemplate(tablelandHost, table1, table2, table3, false);
-      const part0 =
-        tablelandHost +
-        "/query?extract=true&unwrap=true&s=" +
-        encodeURIComponent(
-          `select json_object('name','Rig #'||rig_id,'external_url','https://garage.tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id||'.html','attributes',json_array(json_object('trait_type','status','value','pre-reveal'))) from table1 join table2 where rig_id=`
-        );
-      expect(uri[0]).to.equal(part0);
-      const part1 = encodeURIComponent(" group by rig_id;");
-      expect(uri[1]).to.equal(part1);
+      const uriTemplate = await getURITemplate(
+        tablelandHost,
+        table1,
+        table2,
+        table3,
+        false
+      );
+      const uri = new URL(uriTemplate.join("1"));
+      const statement = uri.searchParams.get("statement");
+      /* eslint-disable no-unused-expressions */
+      expect(statement).not.to.be.null;
+      // normalizing the statement checks that it is valid SQL, will throw
+      // an error if it isn't
+      const normalizedStatement = await normalize(statement!);
+      expect(normalizedStatement).contains("pre-reveal");
     });
 
     it("Should have final metadata if attributeTable", async function () {
@@ -549,24 +554,21 @@ describe("Rigs", function () {
       const table1 = "table1";
       const table2 = "table2";
       const table3 = "table3";
-      const uri = getURITemplate(tablelandHost, table1, table2, table3, true);
-      const part0 =
-        tablelandHost +
-        "/query?extract=true&unwrap=true&s=" +
-        encodeURIComponent(
-          `select json_object('name','Rig #'||rig_id,'external_url','https://garage.tableland.xyz/rigs/'||rig_id,'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,'animation_url',animation_base_url||rig_id||'.html','attributes',json_insert((select json_group_array(json_object('display_type',display_type,'trait_type',trait_type,'value',value))from table1 where rig_id=`
-        );
-      expect(uri[0]).to.equal(part0);
-      const part1 = encodeURIComponent(
-        " group by rig_id),'$[#]',json_object('display_type','string','trait_type','Garage Status','value',coalesce((select coalesce(end_time, 'in-flight') from table3 where rig_id="
+      const uriTemplate = await getURITemplate(
+        tablelandHost,
+        table1,
+        table2,
+        table3,
+        true
       );
-      expect(uri[1]).to.equal(part1);
-      const part2 = encodeURIComponent(
-        " and end_time is null),'parked')))) from table1 join table2 where rig_id="
-      );
-      expect(uri[2]).to.equal(part2);
-      const part3 = encodeURIComponent(" group by rig_id;");
-      expect(uri[3]).to.equal(part3);
+      const uri = new URL(uriTemplate.join("1"));
+      const statement = uri.searchParams.get("statement");
+      /* eslint-disable no-unused-expressions */
+      expect(statement).not.to.be.null;
+      // normalizing the statement checks that it is valid SQL, will throw
+      // an error if it isn't
+      const normalizedStatement = await normalize(statement!);
+      expect(normalizedStatement).contains("Garage Status");
     });
 
     it("Should not return token URI for non-existent token", async function () {
