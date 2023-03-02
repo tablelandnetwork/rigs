@@ -541,9 +541,11 @@ describe("Rigs", function () {
       );
       const uri = new URL(uriTemplate.join("1"));
       const statement = uri.searchParams.get("statement");
+      /* eslint-disable no-unused-expressions */
+      expect(statement).not.to.be.null;
       // normalizing the statement checks that it is valid SQL, will throw
       // an error if it isn't
-      const normalizedStatement = await normalize(statement);
+      const normalizedStatement = await normalize(statement!);
       expect(normalizedStatement).contains("pre-reveal");
     });
 
@@ -559,11 +561,13 @@ describe("Rigs", function () {
         table3,
         true
       );
-      const uri = uriTemplate.join("1");
-      const uriParts = uri.split("statement=");
-      expect(uriParts.length).to.equal(2);
-      const statement = decodeURIComponent(uriParts[1]);
-      const normalizedStatement = await normalize(statement);
+      const uri = new URL(uriTemplate.join("1"));
+      const statement = uri.searchParams.get("statement");
+      /* eslint-disable no-unused-expressions */
+      expect(statement).not.to.be.null;
+      // normalizing the statement checks that it is valid SQL, will throw
+      // an error if it isn't
+      const normalizedStatement = await normalize(statement!);
       expect(normalizedStatement).contains("Garage Status");
     });
 
