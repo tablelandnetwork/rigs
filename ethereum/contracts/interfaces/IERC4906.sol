@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-import "@openzeppelin/contracts/interfaces/IERC165.sol";
-import "@openzeppelin/contracts/interfaces/IERC721.sol";
-
 /**
  * @dev Interface for IERC4906 (EIP-721 Metadata Update Extension).
  */
