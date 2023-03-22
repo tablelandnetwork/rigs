@@ -1999,6 +1999,10 @@ describe("Rigs", function () {
         )
           .to.emit(rigs, "MetadataUpdate")
           .withArgs(BigNumber.from(tokenId));
+        // Park the Rig as contract owner & check `MetadataUpdate` was emitted
+        await expect(await rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
+          .to.emit(rigs, "MetadataUpdate")
+          .withArgs(BigNumber.from(tokenId));
       });
     });
   });
