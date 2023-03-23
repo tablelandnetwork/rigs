@@ -654,6 +654,8 @@ describe("Rigs", function () {
       expect(await rigs.supportsInterface("0x5b5e139f")).to.equal(true);
       // ERC165 interface ID for ERC2981
       expect(await rigs.supportsInterface("0x2a55205a")).to.equal(true);
+      // ERC165 interface ID for ERC4906
+      expect(await rigs.supportsInterface("0x49064906")).to.equal(true);
     });
   });
 
@@ -1942,6 +1944,65 @@ describe("Rigs", function () {
             receiver.address,
             BigNumber.from(tokenId)
           );
+      });
+    });
+
+    describe("metadata refresh", function () {
+      it("Should emit a metadata refresh event upon pilot status changes", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        let tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        let receipt = await tx.wait();
+        let [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Train the Rig & check `MetadataUpdate` was emitted
+        await expect(
+          rigs
+            .connect(tokenOwner)
+            ["trainRig(uint256)"](BigNumber.from(BigNumber.from(tokenId)))
+        )
+          .to.emit(rigs, "MetadataUpdate")
+          .withArgs(BigNumber.from(tokenId));
+        // Advance 172800 blocks (30 days)
+        await network.provider.send("hardhat_mine", [
+          ethers.utils.hexValue(172800),
+        ]);
+        // Park the Rig & check `MetadataUpdate` was emitted
+        await expect(
+          await rigs
+            .connect(tokenOwner)
+            ["parkRig(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(rigs, "MetadataUpdate")
+          .withArgs(BigNumber.from(tokenId));
+        // Deploy a faux ERC-721 token
+        const FauxERC721Factory = await ethers.getContractFactory(
+          "TestERC721Enumerable"
+        );
+        const fauxERC721 = await (await FauxERC721Factory.deploy()).deployed();
+        tx = await fauxERC721.connect(tokenOwner).mint();
+        receipt = await tx.wait();
+        [event] = receipt.events ?? [];
+        const pilotTokenId = event.args?.tokenId;
+        // Pilot the Rig & check `MetadataUpdate` was emitted
+        await expect(
+          await rigs
+            .connect(tokenOwner)
+            ["pilotRig(uint256,address,uint256)"](
+              BigNumber.from(tokenId),
+              fauxERC721.address,
+              pilotTokenId
+            )
+        )
+          .to.emit(rigs, "MetadataUpdate")
+          .withArgs(BigNumber.from(tokenId));
+        // Park the Rig as contract owner & check `MetadataUpdate` was emitted
+        await expect(await rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
+          .to.emit(rigs, "MetadataUpdate")
+          .withArgs(BigNumber.from(tokenId));
       });
     });
   });

@@ -13,6 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
+import "./interfaces/IERC4906.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -22,6 +23,7 @@ contract TablelandRigs is
     URITemplate,
     ERC721AUpgradeable,
     ERC721AQueryableUpgradeable,
+    IERC4906,
     OwnableUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -391,6 +393,7 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
 
         _pilots.trainRig(_msgSenderERC721A(), tokenId);
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -423,6 +426,7 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
 
         _pilots.pilotRig(_msgSenderERC721A(), tokenId, pilotAddr, pilotId);
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -466,6 +470,7 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
         // Pass `false` to indicate a standard (non-force) park
         _pilots.parkRig(tokenId, false);
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -498,6 +503,7 @@ contract TablelandRigs is
             if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
             // Pass `true` to indicate a force park
             _pilots.parkRig(tokenIds[i], true);
+            emit MetadataUpdate(tokenIds[i]);
         }
     }
 
@@ -586,7 +592,8 @@ contract TablelandRigs is
     {
         return
             ERC721AUpgradeable.supportsInterface(interfaceId) ||
-            ERC2981Upgradeable.supportsInterface(interfaceId);
+            ERC2981Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == bytes4(0x49064906); // See EIP-4096
     }
 
     // =============================
