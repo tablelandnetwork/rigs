@@ -104,41 +104,52 @@ export const selectRigWithPilots = (id: string): string => {
   WHERE rig_id = ${id}`;
 };
 
-// TODO(daniel):
-// we want to include both parked and piloted events in the activity log, how do we do that when we don't support unions? we would ideally want to select from the table twice, like this:
-//  SELECT *
-//  FROM (
-//    SELECT rig_id, thumb, image, pilot_contract, pilot_it, start_time as "timestamp", 'piloted' as "type" FROM rig_pilot_sessions_5_787 WHERE end_time IS NULL
-//    UNION
-//    SELECT rig_id, thumb, image, pilot_contract, pilot_it, end_time as "timestamp", 'parked' as "type" FROM rig_pilot_sessions_5_787 WHERE end_time IS NOT NULL
-//  ) AS sessions
-//  JOIN rigs_5_28 as rigs ON sessions.rig_id = rigs.id
-//  ...
+const selectFilteredRigsActivity = (
+  filter: string,
+  first: number,
+  offset: number = 0
+): string => {
+  return `
+  SELECT
+    *,
+    ${THUMB_IPFS_URI_SELECT} as "thumb",
+    ${IMAGE_IPFS_URI_SELECT} as "image"
+  FROM (
+    SELECT
+      rig_id,
+      cast(rig_id as text) as "rigId",
+      json_object(
+        'contract', pilot_contract,
+        'tokenId', pilot_id
+      ) as "pilot",
+      'piloted' as "action",
+      start_time as "timestamp"
+    FROM ${pilotSessionsTable}
+    WHERE end_time IS NULL ${filter ? `AND ${filter}` : ""}
+    UNION
+    SELECT
+      rig_id,
+      cast(rig_id as text) as "rigId",
+      null as "pilot",
+      'parked' as "action",
+      end_time as "timestamp"
+    FROM ${pilotSessionsTable}
+    WHERE end_time IS NOT NULL ${filter ? `AND ${filter}` : ""}
+  )
+  JOIN ${lookupsTable}
+  ORDER BY timestamp DESC
+  LIMIT ${first}
+  OFFSET ${offset}`;
+};
+
 export const selectRigsActivity = (
   rigIds: string[],
   first: number = 20,
   offset: number = 0
 ): string => {
-  const whereClause = rigIds.length
-    ? `WHERE rig_id IN (${rigIds.join(",")})`
-    : "";
+  const filter = rigIds.length ? `rig_id IN (${rigIds.join(",")})` : "";
 
-  return `
-  SELECT
-    cast(rig_id as text) as "rigId",
-    ${THUMB_IPFS_URI_SELECT} as "thumb",
-    ${IMAGE_IPFS_URI_SELECT} as "image",
-    pilot_contract as "pilotContract",
-    pilot_id as "pilotId",
-    start_time as "startTime",
-    end_time as "endTime",
-    max(start_time, coalesce(end_time, 0)) as "timestamp"
-  FROM ${pilotSessionsTable} AS sessions
-  JOIN ${lookupsTable}
-  ${whereClause}
-  ORDER BY timestamp DESC, start_time DESC
-  LIMIT ${first}
-  OFFSET ${offset}`;
+  return selectFilteredRigsActivity(filter, first, offset);
 };
 
 export const selectOwnerActivity = (
@@ -146,22 +157,11 @@ export const selectOwnerActivity = (
   first: number = 20,
   offset: number = 0
 ): string => {
-  return `
-  SELECT
-    cast(rig_id as text) as "rigId",
-    ${THUMB_IPFS_URI_SELECT} as "thumb",
-    ${IMAGE_IPFS_URI_SELECT} as "image",
-    pilot_contract as "pilotContract",
-    pilot_id as "pilotId",
-    start_time as "startTime",
-    end_time as "endTime",
-    max(start_time, coalesce(end_time, 0)) as "timestamp"
-  FROM ${pilotSessionsTable} AS sessions
-  JOIN ${lookupsTable}
-  WHERE lower(owner) = '${owner.toLowerCase()}'
-  ORDER BY timestamp DESC, start_time DESC
-  LIMIT ${first}
-  OFFSET ${offset}`;
+  return selectFilteredRigsActivity(
+    `lower(owner) = '${owner.toLowerCase()}'`,
+    first,
+    offset
+  );
 };
 
 export const selectOwnerPilots = (owner: string): string => {
