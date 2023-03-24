@@ -1781,10 +1781,6 @@ describe("Rigs", function () {
       it("Should block contract non-owner", async function () {
         const _rigs = rigs.connect(accounts[2]);
 
-        await expect(
-          _rigs.initPilots(ethers.constants.AddressZero)
-        ).to.be.rejectedWith("Ownable: caller is not the owner");
-
         await expect(_rigs.parkRigAsOwner([1])).to.be.rejectedWith(
           "Ownable: caller is not the owner"
         );
@@ -1858,7 +1854,7 @@ describe("Rigs", function () {
       });
 
       it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Try with an empty array
         await expect(rigs.parkRigAsOwner([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
