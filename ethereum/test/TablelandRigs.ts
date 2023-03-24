@@ -841,7 +841,7 @@ describe("Rigs", function () {
       });
 
       it("Should not batch train Rig with empty array or exceeding max length for array", async function () {
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Try with an empty array
         await expect(rigs["trainRig(uint256[])"]([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
@@ -1759,7 +1759,7 @@ describe("Rigs", function () {
       });
 
       it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Try with an empty array
         await expect(rigs["parkRig(uint256[])"]([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
