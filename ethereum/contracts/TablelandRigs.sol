@@ -545,6 +545,25 @@ contract TablelandRigs is
         }
     }
 
+    /**
+     * @dev See {ITablelandRigs-parkRigAsParkingAdmin}.
+     */
+    function parkRigAsParkingAdmin(uint256[] calldata tokenIds) external onlyParkingAdmin {
+        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
+        // Clients should restrict this further to avoid gas exceeding limits
+        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
+            revert ITablelandRigPilots.InvalidBatchPilotAction();
+
+        // For each token, call `parkRig`
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            // Check the Rig `tokenId` exists
+            if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
+            // Pass `true` to indicate a force park
+            _pilots.parkRig(tokenIds[i], true);
+            emit MetadataUpdate(tokenIds[i]);
+        }
+    }
+
     // =============================
     //            ERC721A
     // =============================

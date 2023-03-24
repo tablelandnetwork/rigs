@@ -1886,6 +1886,115 @@ describe("Rigs", function () {
       });
     });
 
+    describe("parkRigAsParkingAdmin", function () {
+      it("Should not park Rig as admin for non-existent token", async function () {
+        const parkingAdmin = accounts[2];
+        await rigs.setParkingAdmin(parkingAdmin.address);
+
+        await expect(
+          rigs.connect(parkingAdmin).parkRigAsParkingAdmin([BigNumber.from(0)])
+        ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
+      });
+
+      it("Should block when caller is not parking admin", async function () {
+        const parkingAdmin = accounts[2];
+        await rigs.setParkingAdmin(parkingAdmin.address);
+
+        await expect(
+          rigs.connect(accounts[3]).parkRigAsParkingAdmin([1])
+        ).to.be.rejectedWith("Caller is not the parkingAdmin");
+      });
+
+      it("Should allow parking admin to park any Rig", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Check pilot is untrained
+        let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        // Start training
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Check pilot is training
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(1);
+
+        // Set parking admin
+        const parkingAdmin = accounts[5];
+        await rigs.setParkingAdmin(parkingAdmin.address);
+
+        // Park the Rig as the parking admin
+        await expect(
+          rigs
+            .connect(parkingAdmin)
+            .parkRigAsParkingAdmin([BigNumber.from(tokenId)])
+        )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId));
+        // Check pilot is back to untrained
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+      });
+
+      it("Should not batch park a duplicate Rig token value", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+
+        // Put the Rig in-flight
+        rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256[])"]([BigNumber.from(tokenId)]);
+
+        // Set parking admin
+        const parkingAdmin = accounts[5];
+        await rigs.setParkingAdmin(parkingAdmin.address);
+
+        // Park the Rig, but pass the same Rig `tokenId` twice -- the second parking attempt will fail
+        await expect(
+          rigs
+            .connect(parkingAdmin)
+            .parkRigAsParkingAdmin([
+              BigNumber.from(tokenId),
+              BigNumber.from(tokenId),
+            ])
+        )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId))
+          .to.be.rejectedWith("InvalidPilotStatus");
+      });
+
+      it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
+        const parkingAdmin = accounts[5];
+        await rigs.setParkingAdmin(parkingAdmin.address);
+
+        const _rigs = rigs.connect(parkingAdmin);
+
+        // Try with an empty array
+        await expect(_rigs.parkRigAsParkingAdmin([])).to.be.rejectedWith(
+          "InvalidBatchPilotAction"
+        );
+        // Try with an array of tokens exceeding 255 in length (the arbitrary limit)
+        const tokenIds = [...Array(256).keys()];
+        await expect(_rigs.parkRigAsParkingAdmin(tokenIds)).to.be.rejectedWith(
+          "InvalidBatchPilotAction"
+        );
+      });
+    });
+
     describe("safeTransferWhileFlying", function () {
       it("Should block non-owner transfers", async function () {
         // First, mint a Rig to `tokenOwner`

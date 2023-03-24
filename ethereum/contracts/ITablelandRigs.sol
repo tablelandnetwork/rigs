@@ -312,6 +312,19 @@ interface ITablelandRigs {
     function parkRigAsOwner(uint256[] calldata tokenIds) external;
 
     /**
+     * @dev Allows the parking admin to park any Rig that may be intentionally
+     * causing buyers to lose gas on sales that can't complete while the
+     * Rig is in-flight.
+     *
+     * tokenIds - the unique Rig token identifiers
+     *
+     * Requirements:
+     *
+     * - `msg.sender` must be the parking admin
+     */
+    function parkRigAsParkingAdmin(uint256[] calldata tokenIds) external;
+
+    /**
      * @dev Allows a token owner to transfer between accounts while in-flight
      * but blocks transfers by an approved address or operator.
      *
