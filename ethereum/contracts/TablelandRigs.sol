@@ -370,6 +370,27 @@ contract TablelandRigs is
     }
 
     // =============================
+    //      PARKING ADMIN LOGIC
+    // =============================
+
+    /**
+     * @dev Throws if called by any account other than parking admin.
+     */
+    modifier onlyParkingAdmin() {
+        _checkParkingAdmin();
+        _;
+    }
+
+    /**
+     * @dev Throws if the sender is not the parking admin or if parking dmin
+     * has not been initialized yet.
+     */
+    function _checkParkingAdmin() internal view virtual {
+        address adminAddress = parkingAdmin();
+        require(adminAddress != address(0) && adminAddress == _msgSender(), "Caller is not the parkingAdmin");
+    }
+
+    // =============================
     //      ITABLELANDRIGPILOTS
     // =============================
 
