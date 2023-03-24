@@ -57,6 +57,9 @@ contract TablelandRigs is
     // Allow transfers while flying, only by token owner
     bool private _allowTransferWhileFlying;
 
+    // Address that is allowed to force park rigs
+    address private _parkingAdmin;
+
     function initialize(
         uint256 _maxSupply,
         uint256 _mintPrice,
@@ -336,6 +339,20 @@ contract TablelandRigs is
      */
     function setRoyaltyReceiver(address receiver) external onlyOwner {
         _setDefaultRoyalty(receiver, 500);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkingAdmin}.
+     */
+    function parkingAdmin() public view returns (address) {
+        return _parkingAdmin;
+    }
+
+    /**
+     * @dev See {ITablelandRigs-setParkingAdmin}.
+     */
+    function setParkingAdmin(address admin) external onlyOwner {
+        _parkingAdmin = admin;
     }
 
     /**

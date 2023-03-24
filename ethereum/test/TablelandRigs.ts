@@ -678,6 +678,26 @@ describe("Rigs", function () {
       });
     });
 
+    describe("parkingAdmin", function() {
+      it("Owner should be able to set parking admin", async function () {
+        const parkingAdmin = accounts[2];
+
+        expect(await rigs.parkingAdmin()).to.not.equal(parkingAdmin.address);
+
+        await rigs.setParkingAdmin(parkingAdmin.address);
+
+        expect(await rigs.parkingAdmin()).to.equal(parkingAdmin.address);
+      });
+
+      it("Non-owner should not be able to set parking admin", async function () {
+        const hacker = accounts[2];
+
+        await expect(
+          rigs.connect(hacker).setParkingAdmin(hacker.address)
+        ).to.be.rejectedWith("Ownable: caller is not the owner");
+      });
+    });
+
     describe("pilotInfo", function () {
       it("Should not return pilot info for non-existent token", async function () {
         // Try calling with a non-existent token

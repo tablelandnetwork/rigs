@@ -159,6 +159,22 @@ interface ITablelandRigs {
     function setRoyaltyReceiver(address receiver) external;
 
     /**
+     * @dev Returns the parking admin.
+     */
+    function parkingAdmin() external view returns (address);
+
+    /**
+     * @dev Sets the parking admin.
+     *
+     * parkingAdmin - the new parking admin
+     *
+     * Requirements:
+     *
+     * - `msg.sender` must be contract owner
+     */
+    function setParkingAdmin(address admin) external;
+
+    /**
      * @dev Initializes Rig pilots by creating the pilot sessions table.
      *
      * pilotsAddress - `ITablelandRigPilots` contract address
