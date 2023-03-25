@@ -387,7 +387,10 @@ contract TablelandRigs is
      */
     function _checkAdmin() internal view virtual {
         address adminAddress = admin();
-        require(adminAddress != address(0) && adminAddress == _msgSender(), "Caller is not the admin");
+        require(
+            adminAddress != address(0) && adminAddress == _msgSender(),
+            "Caller is not the admin"
+        );
     }
 
     // =============================
@@ -526,10 +529,7 @@ contract TablelandRigs is
         }
     }
 
-    /**
-     * @dev See {ITablelandRigs-parkRigAsOwner}.
-     */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+    function _forceParkRigs(uint256[] calldata tokenIds) internal {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
@@ -546,22 +546,17 @@ contract TablelandRigs is
     }
 
     /**
+     * @dev See {ITablelandRigs-parkRigAsOwner}.
+     */
+    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+        _forceParkRigs(tokenIds);
+    }
+
+    /**
      * @dev See {ITablelandRigs-parkRigAsAdmin}.
      */
     function parkRigAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
-        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
-        // Clients should restrict this further to avoid gas exceeding limits
-        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
-            revert ITablelandRigPilots.InvalidBatchPilotAction();
-
-        // For each token, call `parkRig`
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            // Check the Rig `tokenId` exists
-            if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
-            // Pass `true` to indicate a force park
-            _pilots.parkRig(tokenIds[i], true);
-            emit MetadataUpdate(tokenIds[i]);
-        }
+        _forceParkRigs(tokenIds);
     }
 
     // =============================
