@@ -678,22 +678,22 @@ describe("Rigs", function () {
       });
     });
 
-    describe("parkingAdmin", function() {
-      it("Owner should be able to set parking admin", async function () {
-        const parkingAdmin = accounts[2];
+    describe("admin", function () {
+      it("Owner should be able to set admin", async function () {
+        const admin = accounts[2];
 
-        expect(await rigs.parkingAdmin()).to.not.equal(parkingAdmin.address);
+        expect(await rigs.admin()).to.not.equal(admin.address);
 
-        await rigs.setParkingAdmin(parkingAdmin.address);
+        await rigs.setAdmin(admin.address);
 
-        expect(await rigs.parkingAdmin()).to.equal(parkingAdmin.address);
+        expect(await rigs.admin()).to.equal(admin.address);
       });
 
-      it("Non-owner should not be able to set parking admin", async function () {
+      it("Non-owner should not be able to set admin", async function () {
         const hacker = accounts[2];
 
         await expect(
-          rigs.connect(hacker).setParkingAdmin(hacker.address)
+          rigs.connect(hacker).setAdmin(hacker.address)
         ).to.be.rejectedWith("Ownable: caller is not the owner");
       });
     });
@@ -1886,26 +1886,26 @@ describe("Rigs", function () {
       });
     });
 
-    describe("parkRigAsParkingAdmin", function () {
+    describe("parkRigAsAdmin", function () {
       it("Should not park Rig as admin for non-existent token", async function () {
-        const parkingAdmin = accounts[2];
-        await rigs.setParkingAdmin(parkingAdmin.address);
+        const admin = accounts[2];
+        await rigs.setAdmin(admin.address);
 
         await expect(
-          rigs.connect(parkingAdmin).parkRigAsParkingAdmin([BigNumber.from(0)])
+          rigs.connect(admin).parkRigAsAdmin([BigNumber.from(0)])
         ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
       });
 
-      it("Should block when caller is not parking admin", async function () {
-        const parkingAdmin = accounts[2];
-        await rigs.setParkingAdmin(parkingAdmin.address);
+      it("Should block when caller is not admin", async function () {
+        const admin = accounts[2];
+        await rigs.setAdmin(admin.address);
 
         await expect(
-          rigs.connect(accounts[3]).parkRigAsParkingAdmin([1])
-        ).to.be.rejectedWith("Caller is not the parkingAdmin");
+          rigs.connect(accounts[3]).parkRigAsAdmin([1])
+        ).to.be.rejectedWith("Caller is not the admin");
       });
 
-      it("Should allow parking admin to park any Rig", async function () {
+      it("Should allow admin to park any Rig", async function () {
         // First, mint a Rig to `tokenOwner`
         await rigs.setMintPhase(3);
         const tokenOwner = accounts[4];
@@ -1926,15 +1926,13 @@ describe("Rigs", function () {
         pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(1);
 
-        // Set parking admin
-        const parkingAdmin = accounts[5];
-        await rigs.setParkingAdmin(parkingAdmin.address);
+        // Set admin
+        const admin = accounts[5];
+        await rigs.setAdmin(admin.address);
 
-        // Park the Rig as the parking admin
+        // Park the Rig as the admin
         await expect(
-          rigs
-            .connect(parkingAdmin)
-            .parkRigAsParkingAdmin([BigNumber.from(tokenId)])
+          rigs.connect(admin).parkRigAsAdmin([BigNumber.from(tokenId)])
         )
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
@@ -1959,18 +1957,15 @@ describe("Rigs", function () {
           .connect(tokenOwner)
           ["trainRig(uint256[])"]([BigNumber.from(tokenId)]);
 
-        // Set parking admin
-        const parkingAdmin = accounts[5];
-        await rigs.setParkingAdmin(parkingAdmin.address);
+        // Set admin
+        const admin = accounts[5];
+        await rigs.setAdmin(admin.address);
 
         // Park the Rig, but pass the same Rig `tokenId` twice -- the second parking attempt will fail
         await expect(
           rigs
-            .connect(parkingAdmin)
-            .parkRigAsParkingAdmin([
-              BigNumber.from(tokenId),
-              BigNumber.from(tokenId),
-            ])
+            .connect(admin)
+            .parkRigAsAdmin([BigNumber.from(tokenId), BigNumber.from(tokenId)])
         )
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId))
@@ -1978,18 +1973,18 @@ describe("Rigs", function () {
       });
 
       it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
-        const parkingAdmin = accounts[5];
-        await rigs.setParkingAdmin(parkingAdmin.address);
+        const admin = accounts[5];
+        await rigs.setAdmin(admin.address);
 
-        const _rigs = rigs.connect(parkingAdmin);
+        const _rigs = rigs.connect(admin);
 
         // Try with an empty array
-        await expect(_rigs.parkRigAsParkingAdmin([])).to.be.rejectedWith(
+        await expect(_rigs.parkRigAsAdmin([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
         // Try with an array of tokens exceeding 255 in length (the arbitrary limit)
         const tokenIds = [...Array(256).keys()];
-        await expect(_rigs.parkRigAsParkingAdmin(tokenIds)).to.be.rejectedWith(
+        await expect(_rigs.parkRigAsAdmin(tokenIds)).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
       });

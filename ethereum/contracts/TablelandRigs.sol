@@ -57,8 +57,8 @@ contract TablelandRigs is
     // Allow transfers while flying, only by token owner
     bool private _allowTransferWhileFlying;
 
-    // Address that is allowed to force park rigs
-    address private _parkingAdmin;
+    // Admin address
+    address private _admin;
 
     function initialize(
         uint256 _maxSupply,
@@ -342,17 +342,17 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-parkingAdmin}.
+     * @dev See {ITablelandRigs-admin}.
      */
-    function parkingAdmin() public view returns (address) {
-        return _parkingAdmin;
+    function admin() public view returns (address) {
+        return _admin;
     }
 
     /**
-     * @dev See {ITablelandRigs-setParkingAdmin}.
+     * @dev See {ITablelandRigs-setAdmin}.
      */
-    function setParkingAdmin(address admin) external onlyOwner {
-        _parkingAdmin = admin;
+    function setAdmin(address adminAddress) external onlyOwner {
+        _admin = adminAddress;
     }
 
     /**
@@ -376,18 +376,18 @@ contract TablelandRigs is
     /**
      * @dev Throws if called by any account other than parking admin.
      */
-    modifier onlyParkingAdmin() {
-        _checkParkingAdmin();
+    modifier onlyAdmin() {
+        _checkAdmin();
         _;
     }
 
     /**
-     * @dev Throws if the sender is not the parking admin or if parking dmin
-     * has not been initialized yet.
+     * @dev Throws if the sender is not the admin or if admin has not
+     * been initialized.
      */
-    function _checkParkingAdmin() internal view virtual {
-        address adminAddress = parkingAdmin();
-        require(adminAddress != address(0) && adminAddress == _msgSender(), "Caller is not the parkingAdmin");
+    function _checkAdmin() internal view virtual {
+        address adminAddress = admin();
+        require(adminAddress != address(0) && adminAddress == _msgSender(), "Caller is not the admin");
     }
 
     // =============================
@@ -546,9 +546,9 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-parkRigAsParkingAdmin}.
+     * @dev See {ITablelandRigs-parkRigAsAdmin}.
      */
-    function parkRigAsParkingAdmin(uint256[] calldata tokenIds) external onlyParkingAdmin {
+    function parkRigAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)

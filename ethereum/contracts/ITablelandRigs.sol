@@ -159,20 +159,20 @@ interface ITablelandRigs {
     function setRoyaltyReceiver(address receiver) external;
 
     /**
-     * @dev Returns the parking admin.
+     * @dev Returns the admin.
      */
-    function parkingAdmin() external view returns (address);
+    function admin() external view returns (address);
 
     /**
-     * @dev Sets the parking admin.
+     * @dev Sets the admin address.
      *
-     * parkingAdmin - the new parking admin
+     * admin - the new admin address
      *
      * Requirements:
      *
      * - `msg.sender` must be contract owner
      */
-    function setParkingAdmin(address admin) external;
+    function setAdmin(address admin) external;
 
     /**
      * @dev Initializes Rig pilots by creating the pilot sessions table.
@@ -312,7 +312,7 @@ interface ITablelandRigs {
     function parkRigAsOwner(uint256[] calldata tokenIds) external;
 
     /**
-     * @dev Allows the parking admin to park any Rig that may be intentionally
+     * @dev Allows the admin to park any Rig that may be intentionally
      * causing buyers to lose gas on sales that can't complete while the
      * Rig is in-flight.
      *
@@ -320,9 +320,9 @@ interface ITablelandRigs {
      *
      * Requirements:
      *
-     * - `msg.sender` must be the parking admin
+     * - `msg.sender` must be the admin
      */
-    function parkRigAsParkingAdmin(uint256[] calldata tokenIds) external;
+    function parkRigAsAdmin(uint256[] calldata tokenIds) external;
 
     /**
      * @dev Allows a token owner to transfer between accounts while in-flight
