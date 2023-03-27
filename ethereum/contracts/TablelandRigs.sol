@@ -385,7 +385,7 @@ contract TablelandRigs is
      * @dev Throws if the sender is not the admin or if admin has not
      * been initialized.
      */
-    function _checkAdmin() internal view virtual {
+    function _checkAdmin() private view {
         address adminAddress = admin();
         require(
             adminAddress != address(0) && adminAddress == _msgSender(),
@@ -529,7 +529,7 @@ contract TablelandRigs is
         }
     }
 
-    function _forceParkRigs(uint256[] calldata tokenIds) internal {
+    function _forceParkRigs(uint256[] calldata tokenIds) private {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
