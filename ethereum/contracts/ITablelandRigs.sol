@@ -204,6 +204,19 @@ interface ITablelandRigs {
     ) external view returns (ITablelandRigPilots.PilotInfo memory);
 
     /**
+     * @dev Retrieves pilot info for multiple Rigs.
+     *
+     * tokenIds - the unique Rig token identifiers
+     *
+     * Requirements:
+     *
+     * - `tokenIds` must exist
+     */
+    function pilotInfo(
+        uint256[] calldata tokenIds
+    ) external view returns (ITablelandRigPilots.PilotInfo[] memory);
+
+    /**
      * @dev Trains a single Rig for a period of 30 days, putting it in-flight.
      *
      * tokenId - the unique Rig token identifier

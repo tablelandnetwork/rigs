@@ -412,15 +412,32 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-pilotInfo}.
+     * @dev See {ITablelandRigs-pilotInfo(uint256)}.
      */
     function pilotInfo(
         uint256 tokenId
-    ) external view returns (ITablelandRigPilots.PilotInfo memory) {
+    ) public view returns (ITablelandRigPilots.PilotInfo memory) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
         return _pilots.pilotInfo(tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigPilots-pilotInfo(uint256[])}.
+     */
+    function pilotInfo(
+        uint256[] calldata tokenIds
+    ) external view returns (ITablelandRigPilots.PilotInfo[] memory) {
+        // For each token, call `pilotInfo`
+        ITablelandRigPilots.PilotInfo[]
+            memory allPilotInfo = new ITablelandRigPilots.PilotInfo[](
+                tokenIds.length
+            );
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            allPilotInfo[i] = pilotInfo(tokenIds[i]);
+        }
+        return allPilotInfo;
     }
 
     /**
