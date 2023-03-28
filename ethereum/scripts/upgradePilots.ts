@@ -41,9 +41,7 @@ async function main() {
 
   // TMP: Manually initialize impl. Once RIG-30 is done we can remove this.
   const pilotsImpl = Factory.attach(impl2) as TablelandRigPilots;
-  const tx = await pilotsImpl.initialize(
-    rigsDeployment.contractAddress
-  );
+  const tx = await pilotsImpl.initialize(rigsDeployment.contractAddress);
   const receipt = await tx.wait();
   console.log(`Initialized new impl with txn '${receipt.transactionHash}'`);
 
