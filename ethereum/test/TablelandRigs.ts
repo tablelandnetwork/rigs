@@ -701,9 +701,9 @@ describe("Rigs", function () {
     describe("pilotInfo", function () {
       it("Should not return pilot info for non-existent token", async function () {
         // Try calling with a non-existent token
-        await expect(rigs.pilotInfo(BigNumber.from(0))).to.be.rejectedWith(
-          "OwnerQueryForNonexistentToken"
-        );
+        await expect(
+          rigs["pilotInfo(uint256)"](BigNumber.from(0))
+        ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
       });
 
       it("Should get default pilot info for a garaged Rig", async function () {
@@ -716,12 +716,48 @@ describe("Rigs", function () {
         const receipt = await tx.wait();
         const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
-        const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        const pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
         expect(pilotInfo.status).to.equal(0);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
         expect(pilotInfo.id).to.equal(BigNumber.from(0));
+      });
+
+      it("Should get pilot info for more than one Rig", async function () {
+        // Mint 2 tokens
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        let tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        let receipt = await tx.wait();
+        let [event] = receipt.events ?? [];
+        const tokenId1 = event.args?.tokenId;
+        tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        receipt = await tx.wait();
+        [event] = receipt.events ?? [];
+        const tokenId2 = event.args?.tokenId;
+        const pilotInfo = await rigs["pilotInfo(uint256[])"]([
+          BigNumber.from(tokenId1),
+          BigNumber.from(tokenId2),
+        ]);
+        // Pilot info for tokenId1
+        expect(pilotInfo[0].status).to.equal(0);
+        expect(pilotInfo[0].pilotable).to.equal(false);
+        expect(pilotInfo[0].started).to.equal(BigNumber.from(0));
+        expect(pilotInfo[0].addr).to.equal(ethers.constants.AddressZero);
+        expect(pilotInfo[0].id).to.equal(BigNumber.from(0));
+        // Pilot info for tokenId2
+        expect(pilotInfo[1].status).to.equal(0);
+        expect(pilotInfo[1].pilotable).to.equal(false);
+        expect(pilotInfo[1].started).to.equal(BigNumber.from(0));
+        expect(pilotInfo[1].addr).to.equal(ethers.constants.AddressZero);
+        expect(pilotInfo[1].id).to.equal(BigNumber.from(0));
       });
     });
 
@@ -802,42 +838,6 @@ describe("Rigs", function () {
         await expect(
           rigs.connect(tokenOwner)["trainRig(uint256)"](BigNumber.from(tokenId))
         ).to.be.rejectedWith("InvalidPilotStatus");
-      });
-
-      it("Should allow training after being force parked", async function () {
-        // First, mint a Rig to `tokenOwner`
-        await rigs.setMintPhase(3);
-        const tokenOwner = accounts[4];
-        const tx = await rigs
-          .connect(tokenOwner)
-          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-        const receipt = await tx.wait();
-        const [event] = receipt.events ?? [];
-        const tokenId = event.args?.tokenId;
-        // Train the Rig
-        await rigs
-          .connect(tokenOwner)
-          ["trainRig(uint256)"](BigNumber.from(tokenId));
-        // Advance 172800 blocks (30 days)
-        await network.provider.send("hardhat_mine", [
-          ethers.utils.hexValue(172800),
-        ]);
-        // Park the Rig as the contract owner
-        await rigs.parkRigAsOwner([BigNumber.from(tokenId)]);
-        // Check pilot is back to untrained
-        const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
-        // Check that the pilot is now `0` since training was incomplete
-        expect(pilotInfo.status).to.equal(0);
-        expect(pilotInfo.pilotable).to.equal(false);
-        expect(pilotInfo.started).to.equal(BigNumber.from(0));
-        expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
-        expect(pilotInfo.id).to.equal(BigNumber.from(0));
-        // Train the Rig
-        await expect(
-          rigs.connect(tokenOwner)["trainRig(uint256)"](BigNumber.from(tokenId))
-        )
-          .to.emit(pilots, "Training")
-          .withArgs(BigNumber.from(tokenId));
       });
 
       it("Should batch train Rigs", async function () {
@@ -1188,7 +1188,9 @@ describe("Rigs", function () {
         // Save the block number, which will used when checking if a training Rig remains in-flight when piloted
         let blockNumber = tx.blockNumber;
         // Check the pilot info
-        let pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        let pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId)
+        );
         expect(pilotInfo.status).to.equal(1);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
@@ -1216,7 +1218,9 @@ describe("Rigs", function () {
         let pilotReceipt = await tx.wait();
         blockNumber = tx.blockNumber;
         // Check the pilot info
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId)
+        );
         expect(pilotInfo.status).to.equal(3);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
@@ -1227,7 +1231,9 @@ describe("Rigs", function () {
           .connect(tokenOwner)
           ["parkRig(uint256)"](BigNumber.from(rigTokenId));
         // Check the pilot info
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId)
+        );
         expect(pilotInfo.status).to.equal(2);
         expect(pilotInfo.pilotable).to.equal(true);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
@@ -1251,7 +1257,9 @@ describe("Rigs", function () {
         pilotReceipt = await tx.wait();
         blockNumber = pilotReceipt.blockNumber;
         // Check the pilot info
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId)
+        );
         expect(pilotInfo.status).to.equal(3);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
@@ -1286,7 +1294,9 @@ describe("Rigs", function () {
         pilotReceipt = await tx.wait();
         blockNumber = pilotReceipt.blockNumber;
         // Check the pilot info
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId)
+        );
         expect(pilotInfo.status).to.equal(3);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(blockNumber));
@@ -1482,14 +1492,18 @@ describe("Rigs", function () {
             BigNumber.from(pilotTokenId)
           );
         // Check the pilot info for the first Rig -- it should be parked; it's latest pilot should still be accessible
-        let pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId1));
+        let pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId1)
+        );
         expect(pilotInfo.status).to.equal(2); // `2` is equivalent to `PARKED` (`GarageStatus` enum's 3rd value)
         expect(pilotInfo.pilotable).to.equal(true);
         expect(pilotInfo.started).to.be.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(fauxERC721.address); // Faux pilot should still exist since no new pilot has been set again
         expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
         // Check the pilot info for the second Rig
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId2));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId2)
+        );
         expect(pilotInfo.status).to.equal(3); // `3` is equivalent to `PILOTED` (`GarageStatus` enum's 4th value)
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
@@ -1524,14 +1538,18 @@ describe("Rigs", function () {
             BigNumber.from(pilotTokenId)
           );
         // Check the pilot info for the first Rig -- it should be parked; it's latest pilot should still be accessible
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId1));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId1)
+        );
         expect(pilotInfo.status).to.equal(2); // `2` is equivalent to `PARKED` (`GarageStatus` enum's 3rd value)
         expect(pilotInfo.pilotable).to.equal(true);
         expect(pilotInfo.started).to.be.equal(BigNumber.from(0));
         expect(pilotInfo.addr).to.equal(fauxERC721.address); // Faux pilot should still exist since no new pilot has been set again
         expect(pilotInfo.id).to.equal(BigNumber.from(pilotTokenId));
         // Check the pilot info for the second Rig
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(rigTokenId2));
+        pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(rigTokenId2)
+        );
         expect(pilotInfo.status).to.equal(3); // `3` is equivalent to `PILOTED` (`GarageStatus` enum's 4th value)
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
@@ -1623,7 +1641,9 @@ describe("Rigs", function () {
           ["trainRig(uint256)"](BigNumber.from(tokenId));
         // Check the Rig is in-flight, training
         // Recall that a state of `TRAINING` means that the contract is zero but pilot is set to `1`
-        let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        let pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
         expect(pilotInfo.status).to.equal(1);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
@@ -1635,7 +1655,7 @@ describe("Rigs", function () {
         ).to.emit(pilots, "Parked");
         // Check that the index is now `0` since training was incomplete
         // Recall that a state of `UNTRAINED` means that the contract is zero and pilot is set to `0`
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(0);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
@@ -1649,7 +1669,7 @@ describe("Rigs", function () {
           ethers.utils.hexValue(10),
         ]);
         // Check the Rig is in-flight, training
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(1);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.not.be.equal(BigNumber.from(0));
@@ -1660,7 +1680,7 @@ describe("Rigs", function () {
           rigs.connect(tokenOwner)["parkRig(uint256)"](BigNumber.from(tokenId))
         ).to.emit(pilots, "Parked");
         // Check that the pilot is now `0` since training was incomplete
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(0);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
@@ -1674,7 +1694,7 @@ describe("Rigs", function () {
           ethers.utils.hexValue(172800),
         ]);
         // Check that training complete (`pilotable` is `true`)
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(1);
         expect(pilotInfo.pilotable).to.equal(true);
         // Park the Rig now that training has been completed
@@ -1684,7 +1704,7 @@ describe("Rigs", function () {
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Validate the pilot ID is `1` and it was not reset, now that training is complete
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(2);
         expect(pilotInfo.pilotable).to.equal(true);
         expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
@@ -1736,7 +1756,9 @@ describe("Rigs", function () {
             BigNumber.from(tokenId)
           );
         // Check out the pilot & owner info, post-transfer, just for fun
-        const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        const pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
         expect(pilotInfo.status).to.equal(0);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
@@ -1852,21 +1874,23 @@ describe("Rigs", function () {
         const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Check pilot is untrained
-        let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        let pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
         expect(pilotInfo.status).to.equal(0);
         // Start training
         await rigs
           .connect(tokenOwner)
           ["trainRig(uint256)"](BigNumber.from(tokenId));
         // Check pilot is training
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(1);
         // Park the Rig as the contract owner
         await expect(rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Check pilot is back to untrained
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(0);
         // Start training again
         await rigs
@@ -1879,6 +1903,99 @@ describe("Rigs", function () {
         // Park the Rig as the contract owner
         await expect(rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
           .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId));
+      });
+
+      it("Should allow training after being force parked", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Train the Rig
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Advance 172800 blocks (30 days)
+        await network.provider.send("hardhat_mine", [
+          ethers.utils.hexValue(172800),
+        ]);
+        // Park the Rig as the contract owner
+        await rigs.parkRigAsOwner([BigNumber.from(tokenId)]);
+        // Check pilot is back to untrained
+        const pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
+        // Check that the pilot is now `0` since training was incomplete
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
+        expect(pilotInfo.started).to.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
+        expect(pilotInfo.id).to.equal(BigNumber.from(0));
+        // Train the Rig
+        await expect(
+          rigs.connect(tokenOwner)["trainRig(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(pilots, "Training")
+          .withArgs(BigNumber.from(tokenId));
+      });
+
+      it("Should not allow piloting after being force parked if previously trained", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        let tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        let receipt = await tx.wait();
+        let [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Train the Rig
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Advance 172800 blocks (30 days)
+        await network.provider.send("hardhat_mine", [
+          ethers.utils.hexValue(172800),
+        ]);
+        // Deploy a faux ERC-721 token
+        const FauxERC721Factory = await ethers.getContractFactory(
+          "TestERC721Enumerable"
+        );
+        const fauxERC721 = await (await FauxERC721Factory.deploy()).deployed();
+        tx = await fauxERC721.connect(tokenOwner).mint();
+        receipt = await tx.wait();
+        [event] = receipt.events ?? [];
+        const pilotTokenId = event.args?.tokenId;
+        // Pilot the Rig
+        await rigs
+          .connect(tokenOwner)
+          ["pilotRig(uint256,address,uint256)"](
+            BigNumber.from(tokenId),
+            fauxERC721.address,
+            pilotTokenId
+          );
+        // Park the Rig as the contract owner
+        await rigs.parkRigAsOwner([BigNumber.from(tokenId)]);
+        // Check pilot is back to untrained
+        const pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
+        // Check that the pilot is now `0` since training was incomplete
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
+        expect(pilotInfo.started).to.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
+        expect(pilotInfo.id).to.equal(BigNumber.from(0));
+        // Train the Rig
+        await expect(
+          rigs.connect(tokenOwner)["trainRig(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(pilots, "Training")
           .withArgs(BigNumber.from(tokenId));
       });
 
