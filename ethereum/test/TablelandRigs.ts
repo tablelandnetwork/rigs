@@ -728,7 +728,6 @@ describe("Rigs", function () {
     describe("trainRig", function () {
       it("Should not train Rig when paused", async function () {
         await rigs.pause();
-
         // Try to train a single Rig when paused
         const sender = accounts[4];
         await expect(
@@ -803,6 +802,42 @@ describe("Rigs", function () {
         await expect(
           rigs.connect(tokenOwner)["trainRig(uint256)"](BigNumber.from(tokenId))
         ).to.be.rejectedWith("InvalidPilotStatus");
+      });
+
+      it("Should allow training after being force parked", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Train the Rig
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Advance 172800 blocks (30 days)
+        await network.provider.send("hardhat_mine", [
+          ethers.utils.hexValue(172800),
+        ]);
+        // Park the Rig as the contract owner
+        await rigs.parkRigAsOwner([BigNumber.from(tokenId)]);
+        // Check pilot is back to untrained
+        const pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        // Check that the pilot is now `0` since training was incomplete
+        expect(pilotInfo.status).to.equal(0);
+        expect(pilotInfo.pilotable).to.equal(false);
+        expect(pilotInfo.started).to.equal(BigNumber.from(0));
+        expect(pilotInfo.addr).to.equal(ethers.constants.AddressZero);
+        expect(pilotInfo.id).to.equal(BigNumber.from(0));
+        // Train the Rig
+        await expect(
+          rigs.connect(tokenOwner)["trainRig(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(pilots, "Training")
+          .withArgs(BigNumber.from(tokenId));
       });
 
       it("Should batch train Rigs", async function () {
