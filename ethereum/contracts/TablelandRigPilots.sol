@@ -395,10 +395,10 @@ contract TablelandRigPilots is
         uint64 startTime = pilotStartTime(tokenId);
         bool trainingIncomplete = status == GarageStatus.TRAINING &&
             !(block.number >= startTime + _PILOT_TRAINING_DURATION);
-        // Pilot training is incomplete; reset the training pilot such that the Rig must train again
-        if (trainingIncomplete) _setPilotData(uint16(tokenId), 0, 0);
         // If the pilot is untrained or being force parked, there are zero flight time rewards
         if (trainingIncomplete || force) {
+            // Reset the training pilot such that the Rig must train again
+            _setPilotData(uint16(tokenId), 0, 0);
             // Update the row in pilot sessions table with its `end_time` equal to the `start_time`
             setters = string.concat(
                 "end_time=",
