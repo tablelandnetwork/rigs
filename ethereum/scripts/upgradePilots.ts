@@ -39,6 +39,12 @@ async function main() {
   const impl2 = await upgrades.erc1967.getImplementationAddress(pilots.address);
   console.log("New implementation address:", impl2);
 
+  // TMP: Manually initialize impl. Once RIG-30 is done we can remove this.
+  const pilotsImpl = Factory.attach(impl2) as TablelandRigPilots;
+  const tx = await pilotsImpl.initialize(rigsDeployment.contractAddress);
+  const receipt = await tx.wait();
+  console.log(`Initialized new impl with txn '${receipt.transactionHash}'`);
+
   // Warn if implementation did not change, ie, nothing happened.
   if (impl === impl2) {
     console.warn("\nProxy implementation did not change. Is this expected?");
