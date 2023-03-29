@@ -57,6 +57,9 @@ contract TablelandRigs is
     // Allow transfers while flying, only by token owner
     bool private _allowTransferWhileFlying;
 
+    // Admin address
+    address private _admin;
+
     function initialize(
         uint256 _maxSupply,
         uint256 _mintPrice,
@@ -339,6 +342,20 @@ contract TablelandRigs is
     }
 
     /**
+     * @dev See {ITablelandRigs-admin}.
+     */
+    function admin() public view returns (address) {
+        return _admin;
+    }
+
+    /**
+     * @dev See {ITablelandRigs-setAdmin}.
+     */
+    function setAdmin(address adminAddress) external onlyOwner {
+        _admin = adminAddress;
+    }
+
+    /**
      * @dev See {ITablelandRigs-pause}.
      */
     function pause() external onlyOwner {
@@ -350,6 +367,30 @@ contract TablelandRigs is
      */
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    // =============================
+    //      PARKING ADMIN LOGIC
+    // =============================
+
+    /**
+     * @dev Throws if called by any account other than parking admin.
+     */
+    modifier onlyAdmin() {
+        _checkAdmin();
+        _;
+    }
+
+    /**
+     * @dev Throws if the sender is not the admin or if admin has not
+     * been initialized.
+     */
+    function _checkAdmin() private view {
+        address adminAddress = admin();
+        require(
+            adminAddress != address(0) && adminAddress == _msgSender(),
+            "Caller is not the admin"
+        );
     }
 
     // =============================
@@ -488,10 +529,7 @@ contract TablelandRigs is
         }
     }
 
-    /**
-     * @dev See {ITablelandRigs-parkRigAsOwner}.
-     */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+    function _forceParkRigs(uint256[] calldata tokenIds) private {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
@@ -505,6 +543,20 @@ contract TablelandRigs is
             _pilots.parkRig(tokenIds[i], true);
             emit MetadataUpdate(tokenIds[i]);
         }
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRigAsOwner}.
+     */
+    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+        _forceParkRigs(tokenIds);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRigAsAdmin}.
+     */
+    function parkRigAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
+        _forceParkRigs(tokenIds);
     }
 
     // =============================

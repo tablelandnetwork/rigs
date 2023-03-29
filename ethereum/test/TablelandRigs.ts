@@ -678,6 +678,26 @@ describe("Rigs", function () {
       });
     });
 
+    describe("admin", function () {
+      it("Owner should be able to set admin", async function () {
+        const admin = accounts[2];
+
+        expect(await rigs.admin()).to.not.equal(admin.address);
+
+        await rigs.setAdmin(admin.address);
+
+        expect(await rigs.admin()).to.equal(admin.address);
+      });
+
+      it("Non-owner should not be able to set admin", async function () {
+        const hacker = accounts[2];
+
+        await expect(
+          rigs.connect(hacker).setAdmin(hacker.address)
+        ).to.be.rejectedWith("Ownable: caller is not the owner");
+      });
+    });
+
     describe("pilotInfo", function () {
       it("Should not return pilot info for non-existent token", async function () {
         // Try calling with a non-existent token
@@ -841,7 +861,7 @@ describe("Rigs", function () {
       });
 
       it("Should not batch train Rig with empty array or exceeding max length for array", async function () {
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Try with an empty array
         await expect(rigs["trainRig(uint256[])"]([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
@@ -1759,7 +1779,7 @@ describe("Rigs", function () {
       });
 
       it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Try with an empty array
         await expect(rigs["parkRig(uint256[])"]([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
@@ -1780,10 +1800,6 @@ describe("Rigs", function () {
 
       it("Should block contract non-owner", async function () {
         const _rigs = rigs.connect(accounts[2]);
-
-        await expect(
-          _rigs.initPilots(ethers.constants.AddressZero)
-        ).to.be.rejectedWith("Ownable: caller is not the owner");
 
         await expect(_rigs.parkRigAsOwner([1])).to.be.rejectedWith(
           "Ownable: caller is not the owner"
@@ -1858,13 +1874,117 @@ describe("Rigs", function () {
       });
 
       it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
-        // Train the Rig, but pass the same Rig `tokenId` twice -- the second training attempt will fail
+        // Try with an empty array
         await expect(rigs.parkRigAsOwner([])).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
         // Try with an array of tokens exceeding 255 in length (the arbitrary limit)
         const tokenIds = [...Array(256).keys()];
         await expect(rigs.parkRigAsOwner(tokenIds)).to.be.rejectedWith(
+          "InvalidBatchPilotAction"
+        );
+      });
+    });
+
+    describe("parkRigAsAdmin", function () {
+      it("Should not park Rig as admin for non-existent token", async function () {
+        const admin = accounts[2];
+        await rigs.setAdmin(admin.address);
+
+        await expect(
+          rigs.connect(admin).parkRigAsAdmin([BigNumber.from(0)])
+        ).to.be.rejectedWith("OwnerQueryForNonexistentToken");
+      });
+
+      it("Should block when caller is not admin", async function () {
+        const admin = accounts[2];
+        await rigs.setAdmin(admin.address);
+
+        await expect(
+          rigs.connect(accounts[3]).parkRigAsAdmin([1])
+        ).to.be.rejectedWith("Caller is not the admin");
+      });
+
+      it("Should allow admin to park any Rig", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+        // Check pilot is untrained
+        let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+        // Start training
+        await rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256)"](BigNumber.from(tokenId));
+        // Check pilot is training
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(1);
+
+        // Set admin
+        const admin = accounts[5];
+        await rigs.setAdmin(admin.address);
+
+        // Park the Rig as the admin
+        await expect(
+          rigs.connect(admin).parkRigAsAdmin([BigNumber.from(tokenId)])
+        )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId));
+        // Check pilot is back to untrained
+        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        expect(pilotInfo.status).to.equal(0);
+      });
+
+      it("Should not batch park a duplicate Rig token value", async function () {
+        // First, mint a Rig to `tokenOwner`
+        await rigs.setMintPhase(3);
+        const tokenOwner = accounts[4];
+        const tx = await rigs
+          .connect(tokenOwner)
+          ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
+        const tokenId = event.args?.tokenId;
+
+        // Put the Rig in-flight
+        rigs
+          .connect(tokenOwner)
+          ["trainRig(uint256[])"]([BigNumber.from(tokenId)]);
+
+        // Set admin
+        const admin = accounts[5];
+        await rigs.setAdmin(admin.address);
+
+        // Park the Rig, but pass the same Rig `tokenId` twice -- the second parking attempt will fail
+        await expect(
+          rigs
+            .connect(admin)
+            .parkRigAsAdmin([BigNumber.from(tokenId), BigNumber.from(tokenId)])
+        )
+          .to.emit(pilots, "Parked")
+          .withArgs(BigNumber.from(tokenId))
+          .to.be.rejectedWith("InvalidPilotStatus");
+      });
+
+      it("Should not batch pilot Rig with empty array or exceeding max length for array", async function () {
+        const admin = accounts[5];
+        await rigs.setAdmin(admin.address);
+
+        const _rigs = rigs.connect(admin);
+
+        // Try with an empty array
+        await expect(_rigs.parkRigAsAdmin([])).to.be.rejectedWith(
+          "InvalidBatchPilotAction"
+        );
+        // Try with an array of tokens exceeding 255 in length (the arbitrary limit)
+        const tokenIds = [...Array(256).keys()];
+        await expect(_rigs.parkRigAsAdmin(tokenIds)).to.be.rejectedWith(
           "InvalidBatchPilotAction"
         );
       });
