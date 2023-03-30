@@ -282,6 +282,50 @@ contract TablelandRigPilots is
     /**
      * @dev See {ITablelandRigPilots-pilotRig}.
      */
+    function pilotRig(address sender, uint256 tokenId) external onlyParent {
+        // Validate the Rig can be piloted with a trainer pilot. Note that
+        // `_canPilot` allows for in-flight piloting once trained *and* in
+        // `TRAINING` status, but this only allows for piloting a with trainer
+        // if `PARKED`.
+        if (_pilotStatus(tokenId) != GarageStatus.PARKED)
+            revert InvalidPilotStatus();
+
+        // Assign a trainer pilot to the Rig in `_pilots`. The pilot contract is
+        // `0` and pilot ID `2`—this is needed to differentiate from a
+        // `TRAINING` Rig's pilot, which has a pilot ID of `1`.
+        _setPilotData(uint16(tokenId), 0, 2);
+
+        // Set the start time for the new pilot session
+        _setStartTime(uint16(tokenId), uint64(block.number));
+
+        // Insert the trainer pilot into the Tableland pilot sessions table
+        TablelandDeployments.get().runSQL(
+            address(this),
+            _pilotSessionsTableId,
+            SQLHelpers.toInsert(
+                _PILOT_SESSIONS_PREFIX,
+                _pilotSessionsTableId,
+                "rig_id,owner,pilot_contract,pilot_id,start_time",
+                string.concat(
+                    StringsUpgradeable.toString(uint16(tokenId)),
+                    ",",
+                    SQLHelpers.quote(StringsUpgradeable.toHexString(sender)),
+                    ",",
+                    SQLHelpers.quote(Strings.toHexString(address(0))),
+                    ",",
+                    StringsUpgradeable.toString(uint32(2)),
+                    ",",
+                    StringsUpgradeable.toString(uint64(block.number))
+                )
+            )
+        );
+
+        emit Piloted(tokenId, address(0), 2);
+    }
+
+    /**
+     * @dev See {ITablelandRigPilots-pilotRig}.
+     */
     function pilotRig(
         address sender,
         uint256 tokenId,
@@ -305,7 +349,8 @@ contract TablelandRigPilots is
         // Validate the Rig can be piloted
         if (!_canPilot(tokenId)) revert InvalidPilotStatus();
 
-        // Initialize the packed "pilot data" (pilot ID `uint32` with a pilot contract `uint160`, shifted 32 bits)
+        // Initialize the packed "pilot data" (pilot ID `uint32` with a pilot
+        // contract `uint160`, shifted 32 bits)
         uint192 pilotData = (uint192(pilotId) |
             (uint192(uint160(pilotAddr)) << 32));
 
@@ -320,8 +365,9 @@ contract TablelandRigPilots is
             _pilotStatus(_pilotIndex[pilotData]) != GarageStatus.PARKED
         ) parkRig(_pilotIndex[pilotData], false);
 
-        // If the Rig is training, end its training session (no parking required) to then open a new pilot session
-        // Pilot has completed training at this point (training validation is checked above)
+        // If the Rig is training, end its training session (no parking
+        // required) to then open a new pilot session. Pilot has completed
+        // training at this point (training validation is checked above)
         if (_pilotStatus(tokenId) == GarageStatus.TRAINING) {
             // Update the pilot's existing training session with its `end_time`
             string memory setters = string.concat(
