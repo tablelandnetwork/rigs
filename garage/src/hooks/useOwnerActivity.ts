@@ -7,10 +7,8 @@ interface DbEvent {
   rigId: string;
   thumb: string;
   image: string;
-  pilotContract: string;
-  pilotId: string;
-  startTime: number;
-  endTime?: number;
+  pilot?: { contract: string; tokenId: string };
+  action: "piloted" | "parked";
   timestamp: number;
 }
 
@@ -18,20 +16,20 @@ const eventFromRow = ({
   rigId,
   thumb,
   image,
-  pilotContract,
-  pilotId,
-  endTime,
+  pilot,
+  action,
   timestamp,
 }: DbEvent): Event => ({
   rigId,
   thumb,
   image,
-  pilot: { contract: pilotContract, tokenId: pilotId },
-  action: endTime
-    ? EventAction.Parked
-    : pilotContract
-    ? EventAction.Piloted
-    : EventAction.PilotedTrainer,
+  pilot,
+  action:
+    action === "parked"
+      ? EventAction.Parked
+      : pilot?.contract
+      ? EventAction.Piloted
+      : EventAction.PilotedTrainer,
   timestamp: timestamp.toString(),
 });
 export const useOwnerActivity = (owner?: string) => {
