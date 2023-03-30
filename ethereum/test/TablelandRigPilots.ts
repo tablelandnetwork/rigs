@@ -88,7 +88,14 @@ describe("Pilots", function () {
       const _pilots = pilots.connect(accounts[2]);
 
       await expect(
-        _pilots.pilotRig(
+        _pilots["pilotRig(address,uint256)"](
+          ethers.constants.AddressZero,
+          BigNumber.from(1)
+        )
+      ).to.be.rejectedWith("Pilots: caller is not the parent");
+
+      await expect(
+        _pilots["pilotRig(address,uint256,address,uint256)"](
           ethers.constants.AddressZero,
           BigNumber.from(1),
           ethers.constants.AddressZero,
