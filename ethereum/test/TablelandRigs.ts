@@ -1303,8 +1303,8 @@ describe("Rigs", function () {
         let tx = await rigs
           .connect(tokenOwner)
           ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-        let receipt = await tx.wait();
-        let [event] = receipt.events ?? [];
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Start to train the Rig
         tx = await rigs
@@ -1330,11 +1330,11 @@ describe("Rigs", function () {
         // First, mint a Rig to `rigTokenOwner`
         await rigs.setMintPhase(3);
         const rigTokenOwner = accounts[4];
-        let tx = await rigs
+        const tx = await rigs
           .connect(rigTokenOwner)
           ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-        let receipt = await tx.wait();
-        let [event] = receipt.events ?? [];
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Train the Rig, putting it in-flight, and advance 1 block
         await rigs
