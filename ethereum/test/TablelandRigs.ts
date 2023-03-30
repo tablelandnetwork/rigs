@@ -2255,14 +2255,16 @@ describe("Rigs", function () {
         const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Check pilot is untrained
-        let pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        let pilotInfo = await rigs["pilotInfo(uint256)"](
+          BigNumber.from(tokenId)
+        );
         expect(pilotInfo.status).to.equal(0);
         // Start training
         await rigs
           .connect(tokenOwner)
           ["trainRig(uint256)"](BigNumber.from(tokenId));
         // Check pilot is training
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(1);
 
         // Set admin
@@ -2276,7 +2278,7 @@ describe("Rigs", function () {
           .to.emit(pilots, "Parked")
           .withArgs(BigNumber.from(tokenId));
         // Check pilot is back to untrained
-        pilotInfo = await rigs.pilotInfo(BigNumber.from(tokenId));
+        pilotInfo = await rigs["pilotInfo(uint256)"](BigNumber.from(tokenId));
         expect(pilotInfo.status).to.equal(0);
       });
 
