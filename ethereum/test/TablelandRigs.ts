@@ -2107,7 +2107,7 @@ describe("Rigs", function () {
         const pilotInfo = await rigs["pilotInfo(uint256)"](
           BigNumber.from(tokenId)
         );
-        // Check that the pilot is now `0` since training was incomplete
+        // Check that the pilot is now `0` since it was force parked while training
         expect(pilotInfo.status).to.equal(0);
         expect(pilotInfo.pilotable).to.equal(false);
         expect(pilotInfo.started).to.equal(BigNumber.from(0));
