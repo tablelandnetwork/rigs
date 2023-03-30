@@ -412,7 +412,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-pilotInfo(uint256)}.
+     * @dev See {ITablelandRigs-pilotInfo}.
      */
     function pilotInfo(
         uint256 tokenId
@@ -424,7 +424,7 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigPilots-pilotInfo(uint256[])}.
+     * @dev See {ITablelandRigs-pilotInfo}.
      */
     function pilotInfo(
         uint256[] calldata tokenIds
