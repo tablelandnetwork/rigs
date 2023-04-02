@@ -37,11 +37,11 @@ import {
   chakraComponents,
 } from "chakra-react-select";
 import {
-  useAccount,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
+import { useAccount } from "../hooks/useAccount";
 import {
   useOwnedNFTs,
   Collection,
@@ -507,7 +507,7 @@ const PickRigPilotStep = ({
   onNext,
   onClose,
 }: PickRigPilotStepProps) => {
-  const { address } = useAccount();
+  const { actingAsAddress } = useAccount();
   const { filters, toggleFilter, clearFilters } = useFilters<Collection>();
   const ownedNftsFilter = useMemo(() => {
     return {
@@ -521,7 +521,7 @@ const PickRigPilotStep = ({
   }, [ownedNftsFilter]);
 
   const { data, isFetching } = useOwnedNFTs(
-    address,
+    actingAsAddress,
     20,
     pagination.pages[pagination.index],
     ownedNftsFilter
