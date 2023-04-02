@@ -118,6 +118,13 @@ describe("Rigs", function () {
 
     // Set pilots on rigs
     await (await rigs.initPilots(pilots.address)).wait();
+
+    const DelegateCashFactory = await ethers.getContractFactory(
+      "DelegateCashMock"
+    );
+    const delegateCash = await (await DelegateCashFactory.deploy()).deployed();
+
+    await (await rigs.initDelegateCash(delegateCash.address)).wait();
   }
 
   beforeEach(async function () {
