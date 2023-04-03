@@ -12,6 +12,7 @@ import {
   PaymentSplitter,
   TablelandRigs,
   TablelandRigPilots,
+  MockDelegateCashInterface,
 } from "../typechain-types";
 
 chai.use(chaiAsPromised);
@@ -33,6 +34,7 @@ describe("Rigs", function () {
   let allowlistTree: MerkleTree;
   let waitlistTree: MerkleTree;
   let pilots: TablelandRigPilots;
+  let delegateCash: MockDelegateCashInterface;
 
   // Use a fixture, which runs *once* to help ensure deterministic contract addresses
   async function deployRigsFixture() {
@@ -122,7 +124,9 @@ describe("Rigs", function () {
     const DelegateCashFactory = await ethers.getContractFactory(
       "DelegateCashMock"
     );
-    const delegateCash = await (await DelegateCashFactory.deploy()).deployed();
+    delegateCash = await (
+      (await DelegateCashFactory.deploy()) as MockDelegateCashInterface
+    ).deployed();
 
     await (await rigs.initDelegateCash(delegateCash.address)).wait();
   }
@@ -2471,6 +2475,149 @@ describe("Rigs", function () {
         await expect(await rigs.parkRigAsOwner([BigNumber.from(tokenId)]))
           .to.emit(rigs, "MetadataUpdate")
           .withArgs(BigNumber.from(tokenId));
+      });
+    });
+
+    describe("delegation", function () {
+      describe("initDelegateCash", function () {
+        it("Should block contract non-owner", async function () {
+          const _rigs = rigs.connect(accounts[2]);
+
+          await expect(
+            _rigs.initDelegateCash(ethers.constants.AddressZero)
+          ).to.be.rejectedWith("Ownable: caller is not the owner");
+        });
+      });
+
+      describe("trainRig", function () {
+        it("Should train Rig if msg.sender is registered delegate for token.owner", async function () {
+          // First, mint a Rig to `tokenOwner`
+          await rigs.setMintPhase(3);
+          const tokenOwner = accounts[4];
+          const tx = await rigs
+            .connect(tokenOwner)
+            ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+          const receipt = await tx.wait();
+          const [event] = receipt.events ?? [];
+          const tokenId = event.args?.tokenId;
+
+          const delegate = accounts[5];
+          // Setup delegation
+          await delegateCash.registerDelegate(
+            delegate.address,
+            tokenOwner.address,
+            rigs.address,
+            tokenId
+          );
+
+          // Train the Rig
+          await expect(
+            rigs.connect(delegate)["trainRig(uint256)"](BigNumber.from(tokenId))
+          )
+            .to.emit(pilots, "Training")
+            .withArgs(BigNumber.from(tokenId));
+        });
+      });
+
+      describe("pilotRig", function () {
+        it("Should pilot rig if msg.sender is registered delegate for token.owner", async function () {
+          // First, mint a Rig to `rigTokenOwner`
+          await rigs.setMintPhase(3);
+          const rigTokenOwner = accounts[4];
+          let tx = await rigs
+            .connect(rigTokenOwner)
+            ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+          let receipt = await tx.wait();
+          let [event] = receipt.events ?? [];
+          const rigTokenId = event.args?.tokenId;
+          // Train the Rig, putting it in-flight, and advance 1 block
+          await rigs
+            .connect(rigTokenOwner)
+            ["trainRig(uint256)"](BigNumber.from(rigTokenId));
+          // Advance 172800 blocks (30 days)
+          await network.provider.send("hardhat_mine", [
+            ethers.utils.hexValue(172800),
+          ]);
+          // Park the Rig now that training has been completed
+          await rigs
+            .connect(rigTokenOwner)
+            ["parkRig(uint256)"](BigNumber.from(rigTokenId));
+          // Deploy a faux ERC-721 token but mint to an address *not* `rigTokenOwner`
+          const FauxERC721Factory = await ethers.getContractFactory(
+            "TestERC721Enumerable"
+          );
+          const fauxERC721 = await (
+            await FauxERC721Factory.deploy()
+          ).deployed();
+          // Mint a faux NFT and set the pilot to an ERC-721 contract & pilot
+          tx = await fauxERC721.connect(rigTokenOwner).mint();
+          receipt = await tx.wait();
+          [event] = receipt.events ?? [];
+          const pilotTokenIdRigOwner = event.args?.tokenId;
+
+          // Setup delegation
+          const delegate = accounts[5];
+          await delegateCash.registerDelegate(
+            delegate.address,
+            rigTokenOwner.address,
+            rigs.address,
+            rigTokenId
+          );
+
+          await expect(
+            await rigs
+              .connect(delegate)
+              ["pilotRig(uint256,address,uint256)"](
+                BigNumber.from(rigTokenId),
+                fauxERC721.address,
+                pilotTokenIdRigOwner
+              )
+          )
+            .to.emit(pilots, "Piloted")
+            .withArgs(
+              BigNumber.from(rigTokenId),
+              fauxERC721.address,
+              BigNumber.from(pilotTokenIdRigOwner)
+            );
+        });
+      });
+
+      describe("parkRig", function () {
+        it("Should park Rig if msg.sender is registered delegate for token.owner", async function () {
+          // First, mint a Rig to `tokenOwner`
+          await rigs.setMintPhase(3);
+          const tokenOwner = accounts[4];
+          const tx = await rigs
+            .connect(tokenOwner)
+            ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+          const receipt = await tx.wait();
+          const [event] = receipt.events ?? [];
+          const tokenId = event.args?.tokenId;
+
+          // Train the Rig
+          await expect(
+            rigs
+              .connect(tokenOwner)
+              ["trainRig(uint256)"](BigNumber.from(tokenId))
+          )
+            .to.emit(pilots, "Training")
+            .withArgs(BigNumber.from(tokenId));
+
+          // Setup delegation
+          const delegate = accounts[5];
+          await delegateCash.registerDelegate(
+            delegate.address,
+            tokenOwner.address,
+            rigs.address,
+            tokenId
+          );
+
+          await expect(
+            rigs.connect(delegate)["parkRig(uint256)"](BigNumber.from(tokenId))
+          )
+            .to.emit(pilots, "Parked")
+            .withArgs(BigNumber.from(tokenId));
+        });
       });
     });
   });
