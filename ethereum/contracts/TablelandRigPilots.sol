@@ -298,22 +298,18 @@ contract TablelandRigPilots is
         // Set the start time for the new pilot session
         _setStartTime(uint16(tokenId), uint64(block.number));
 
-        // Insert the trainer pilot into the Tableland pilot sessions table
+        // Insert the trainer pilot session into the Tableland pilot sessions table
         TablelandDeployments.get().runSQL(
             address(this),
             _pilotSessionsTableId,
             SQLHelpers.toInsert(
                 _PILOT_SESSIONS_PREFIX,
                 _pilotSessionsTableId,
-                "rig_id,owner,pilot_contract,pilot_id,start_time",
+                "rig_id,owner,start_time",
                 string.concat(
                     StringsUpgradeable.toString(uint16(tokenId)),
                     ",",
                     SQLHelpers.quote(StringsUpgradeable.toHexString(sender)),
-                    ",",
-                    SQLHelpers.quote(Strings.toHexString(address(0))),
-                    ",",
-                    StringsUpgradeable.toString(uint32(2)),
                     ",",
                     StringsUpgradeable.toString(uint64(block.number))
                 )
