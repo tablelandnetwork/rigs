@@ -99,6 +99,20 @@ interface ITablelandRigPilots {
     function trainRig(address sender, uint256 tokenId) external;
 
     /**
+     * @dev Puts a single Rig in flight with a "stock" trainer pilot.
+     *
+     * sender - the initiator address
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - `sender` must own the Rig
+     * - Must already be trained & currently parked
+     */
+    function pilotRig(address sender, uint256 tokenId) external;
+
+    /**
      * @dev Puts a single Rig in flight by setting a custom `Pilot`.
      *
      * sender - the initiator address
@@ -110,7 +124,7 @@ interface ITablelandRigPilots {
      *
      * - `tokenId` must exist
      * - `sender` must own the Rig
-     * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
+     * - Ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
      * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
      * - `pilotId` must be owned by `msg.sender` at `pilotContract`
      * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict

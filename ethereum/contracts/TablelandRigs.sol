@@ -416,11 +416,28 @@ contract TablelandRigs is
      */
     function pilotInfo(
         uint256 tokenId
-    ) external view returns (ITablelandRigPilots.PilotInfo memory) {
+    ) public view returns (ITablelandRigPilots.PilotInfo memory) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
         return _pilots.pilotInfo(tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-pilotInfo}.
+     */
+    function pilotInfo(
+        uint256[] calldata tokenIds
+    ) external view returns (ITablelandRigPilots.PilotInfo[] memory) {
+        // For each token, call `pilotInfo`
+        ITablelandRigPilots.PilotInfo[]
+            memory allPilotInfo = new ITablelandRigPilots.PilotInfo[](
+                tokenIds.length
+            );
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            allPilotInfo[i] = pilotInfo(tokenIds[i]);
+        }
+        return allPilotInfo;
     }
 
     /**
@@ -466,7 +483,17 @@ contract TablelandRigs is
         if (ownerOf(tokenId) != _msgSenderERC721A())
             revert ITablelandRigPilots.Unauthorized();
 
-        _pilots.pilotRig(_msgSenderERC721A(), tokenId, pilotAddr, pilotId);
+        // If the supplied pilot address is `0x0`, then assume a trainer pilot
+        // (note: `pilotId` has no impact here). Otherwise, proceed with a
+        // custom pilot. The overloaded methods direct changes accordingly.
+        pilotAddr == address(0)
+            ? _pilots.pilotRig(_msgSenderERC721A(), tokenId)
+            : _pilots.pilotRig(
+                _msgSenderERC721A(),
+                tokenId,
+                pilotAddr,
+                pilotId
+            );
         emit MetadataUpdate(tokenId);
     }
 

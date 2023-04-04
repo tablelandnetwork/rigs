@@ -204,6 +204,19 @@ interface ITablelandRigs {
     ) external view returns (ITablelandRigPilots.PilotInfo memory);
 
     /**
+     * @dev Retrieves pilot info for multiple Rigs.
+     *
+     * tokenIds - the unique Rig token identifiers
+     *
+     * Requirements:
+     *
+     * - `tokenIds` must exist
+     */
+    function pilotInfo(
+        uint256[] calldata tokenIds
+    ) external view returns (ITablelandRigPilots.PilotInfo[] memory);
+
+    /**
      * @dev Trains a single Rig for a period of 30 days, putting it in-flight.
      *
      * tokenId - the unique Rig token identifier
@@ -223,6 +236,7 @@ interface ITablelandRigs {
      * Requirements:
      *
      * - Input array of `tokenIds` must be non-empty
+     * - `msg.sender` must own the Rig
      * - There cannot exist a duplicate value in `tokenIds`
      * - Values are processed in order
      * - See `trainRig` for additional constraints on a per-token basis
@@ -239,10 +253,11 @@ interface ITablelandRigs {
      * Requirements:
      *
      * - `tokenId` must exist
-     * - ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
-     * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
-     * - `pilotId` must be owned by `msg.sender` at `pilotContract`
-     * - pilot can only be associated with one Rig at a time; parks the other Rig on conflict
+     * - `msg.sender` must own the Rig
+     * - Must be trained & flying with trainer, or already trained & parked
+     * - `pilotContract` must be an ERC-721 contract *or* 0x0 to indicate a trainer pilot; cannot be the Rigs contract
+     * - `pilotId` must be owned by `msg.sender` at `pilotContract` (does not apply to trainer pilots)
+     * - Pilot can only be associated with one Rig at a time; parks the other Rig on conflict (does not apply to trainer pilots)
      */
     function pilotRig(
         uint256 tokenId,
@@ -261,7 +276,8 @@ interface ITablelandRigs {
      *
      * - All input parameters must be non-empty
      * - All input parameters must have an equal length
-     * - There cannot exist a duplicate value in each of the individual parameters
+     * - There cannot exist a duplicate value in each of the individual parameters,
+     *   except if using a trainer pilot (i.e., trainers aren't unique/owned NFTs).
      * - Values are processed in order (i.e., use same index for each array)
      * - See `pilotRig` for additional constraints on a per-token basis
      */
