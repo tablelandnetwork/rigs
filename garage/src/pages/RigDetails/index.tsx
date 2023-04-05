@@ -40,7 +40,7 @@ import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
 import { chain, openseaBaseUrl, deployment } from "../../env";
 import { RigWithPilots, isValidAddress } from "../../types";
-import { abi } from "../../abis/ERC721";
+import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
 
@@ -177,10 +177,16 @@ export const RigDetails = () => {
         functionName: "tokenURI",
         args: [ethers.BigNumber.from(id)],
       },
+      {
+        address: contractAddress,
+        abi,
+        functionName: "pilotInfo",
+        args: [ethers.BigNumber.from(id)],
+      },
     ],
   });
 
-  const [owner, tokenURI] = contractData ?? [];
+  const [owner, tokenURI, pilotInfo] = contractData ?? [];
 
   const pilots = useMemo(() => {
     return rig?.pilotSessions.filter((v) => v.contract);
@@ -322,6 +328,7 @@ export const RigDetails = () => {
                   onOpenParkModal={onOpenParkModal}
                   onOpenPilotModal={onOpenPilotModal}
                   onOpenTrainModal={onOpenTrainModal}
+                  chainPilotStatus={pilotInfo?.status}
                   {...MODULE_PROPS}
                 />
                 <FlightLog rig={rig} nfts={nfts} {...MODULE_PROPS} />
