@@ -534,12 +534,7 @@ contract TablelandRigs is
         // custom pilot. The overloaded methods direct changes accordingly.
         pilotAddr == address(0)
             ? _pilots.pilotRig(_msgSenderERC721A(), tokenId)
-            : _pilots.pilotRig(
-                sender,
-                tokenId,
-                pilotAddr,
-                pilotId
-            );
+            : _pilots.pilotRig(sender, tokenId, pilotAddr, pilotId);
 
         emit MetadataUpdate(tokenId);
     }
