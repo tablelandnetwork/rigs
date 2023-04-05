@@ -2580,6 +2580,55 @@ describe("Rigs", function () {
               BigNumber.from(pilotTokenIdRigOwner)
             );
         });
+
+        it("Should pilot with the trainer pilot rig if msg.sender is registered delegate for token.owner", async function () {
+          // First, mint a Rig to `rigTokenOwner`
+          await rigs.setMintPhase(3);
+          const rigTokenOwner = accounts[4];
+          const tx = await rigs
+            .connect(rigTokenOwner)
+            ["mint(uint256)"](1, { value: getCost(1, 0.05) });
+          const receipt = await tx.wait();
+          const [event] = receipt.events ?? [];
+          const rigTokenId = event.args?.tokenId;
+          // Train the Rig, putting it in-flight, and advance 1 block
+          await rigs
+            .connect(rigTokenOwner)
+            ["trainRig(uint256)"](BigNumber.from(rigTokenId));
+          // Advance 172800 blocks (30 days)
+          await network.provider.send("hardhat_mine", [
+            ethers.utils.hexValue(172800),
+          ]);
+          // Park the Rig now that training has been completed
+          await rigs
+            .connect(rigTokenOwner)
+            ["parkRig(uint256)"](BigNumber.from(rigTokenId));
+
+          // Setup delegation
+          const delegate = accounts[5];
+          await delegateCash.registerDelegate(
+            delegate.address,
+            rigTokenOwner.address,
+            rigs.address,
+            rigTokenId
+          );
+
+          await expect(
+            await rigs
+              .connect(delegate)
+              ["pilotRig(uint256,address,uint256)"](
+                BigNumber.from(rigTokenId),
+                ethers.constants.AddressZero,
+                BigNumber.from(1337)
+              )
+          )
+            .to.emit(pilots, "Piloted")
+            .withArgs(
+              BigNumber.from(rigTokenId),
+              ethers.constants.AddressZero,
+              BigNumber.from(2) // Pilot ID always `2` for trainer
+            );
+        });
       });
 
       describe("parkRig", function () {
