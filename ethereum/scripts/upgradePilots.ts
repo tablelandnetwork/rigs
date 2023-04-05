@@ -3,7 +3,7 @@ import type { TablelandRigPilots } from "../typechain-types";
 import assert from "assert";
 
 async function main() {
-  console.log(`\nUpgrading on '${network.name}'...`);
+  console.log(`\nUpgrading pilots on '${network.name}'...`);
 
   // Get owner account
   const [account] = await ethers.getSigners();
@@ -28,6 +28,7 @@ async function main() {
   const pilots = await (
     (await upgrades.upgradeProxy(rigsDeployment.pilotsAddress, Factory, {
       kind: "uups",
+      timeout: 60 * 10 * 1000,
     })) as TablelandRigPilots
   ).deployed();
   assert(
