@@ -27,6 +27,7 @@ import { useBlockNumber } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
 import { prettyNumber, pluralize } from "../../../utils/fmt";
+import { deployment } from "../../../env";
 
 const getPilots = (
   rig: RigWithPilots,
@@ -70,6 +71,7 @@ type PilotProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
   nfts: NFT[];
   isOwner: boolean;
+  chainPilotStatus?: number;
   onOpenTrainModal: () => void;
   onOpenPilotModal: () => void;
   onOpenParkModal: () => void;
@@ -79,6 +81,7 @@ export const Pilots = ({
   rig,
   nfts,
   isOwner,
+  chainPilotStatus,
   onOpenTrainModal,
   onOpenPilotModal,
   onOpenParkModal,
@@ -189,7 +192,7 @@ export const Pilots = ({
       {isOwner && (
         <StackItem px={4}>
           <HStack gap={3}>
-            {!rig.currentPilot && !rig.isTrained && (
+            {!rig.currentPilot && (!rig.isTrained && chainPilotStatus !== 2) && (
               <ChainAwareButton
                 variant="outlined"
                 onClick={onOpenTrainModal}
@@ -198,10 +201,13 @@ export const Pilots = ({
                 Train
               </ChainAwareButton>
             )}
-            {(rig.isTrained || rig.currentPilot) && (
+            {(rig.isTrained || rig.currentPilot || chainPilotStatus === 2) && (
               <ChainAwareButton
                 variant="outlined"
-                isDisabled={!rig.isTrained || !!rig.currentPilot?.contract}
+                isDisabled={
+                  !!rig.currentPilot?.contract ||
+                  (!rig.isTrained && chainPilotStatus !== 2)
+                }
                 onClick={onOpenPilotModal}
                 width="100%"
               >
