@@ -1,11 +1,39 @@
 import { useEffect, useState } from "react";
 import { selectOwnerActivity } from "../utils/queries";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { Event } from "../types";
-import { eventFromRow } from "../utils/xforms";
+import { Event, EventAction } from "../types";
 
+interface DbEvent {
+  rigId: string;
+  thumb: string;
+  image: string;
+  pilot?: { contract: string; tokenId: string };
+  action: "piloted" | "parked";
+  timestamp: number;
+}
+
+const eventFromRow = ({
+  rigId,
+  thumb,
+  image,
+  pilot,
+  action,
+  timestamp,
+}: DbEvent): Event => ({
+  rigId,
+  thumb,
+  image,
+  pilot,
+  action:
+    action === "parked"
+      ? EventAction.Parked
+      : pilot?.contract
+      ? EventAction.Piloted
+      : EventAction.PilotedTrainer,
+  timestamp: timestamp.toString(),
+});
 export const useOwnerActivity = (owner?: string) => {
-  const { connection: tableland } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const [events, setEvents] = useState<Event[]>();
 
@@ -14,11 +42,13 @@ export const useOwnerActivity = (owner?: string) => {
 
     let isCancelled = false;
 
-    tableland.read(selectOwnerActivity(owner, 100, 0)).then((result) => {
-      if (isCancelled) return;
+    db.prepare(selectOwnerActivity(owner, 100, 0))
+      .all<DbEvent>()
+      .then(({ results }) => {
+        if (isCancelled) return;
 
-      setEvents(result.rows.map(eventFromRow));
-    });
+        setEvents(results.map(eventFromRow));
+      });
 
     return () => {
       isCancelled = true;

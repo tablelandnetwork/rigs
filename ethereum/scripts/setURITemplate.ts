@@ -3,7 +3,7 @@ import { TablelandRigs } from "../typechain-types";
 import { getURITemplate } from "../helpers/uris";
 
 async function main() {
-  console.log(`\nUpdating base URI on '${network.name}'...`);
+  console.log(`\nSetting URI template on '${network.name}'...`);
 
   // Get proxy owner account
   const [account] = await ethers.getSigners();
@@ -32,7 +32,7 @@ async function main() {
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   ) as TablelandRigs;
-  const uriTemplate = getURITemplate(
+  const uriTemplate = await getURITemplate(
     rigsDeployment.tablelandHost,
     rigsDeployment.attributesTable,
     rigsDeployment.lookupsTable,

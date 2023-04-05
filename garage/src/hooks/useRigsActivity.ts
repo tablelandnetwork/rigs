@@ -2,19 +2,51 @@ import { useEffect, useState } from "react";
 import { Event } from "../types";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigsActivity } from "../utils/queries";
-import { eventFromRow } from "../utils/xforms";
+import { EventAction } from "../types";
+
+interface DbEvent {
+  rigId: string;
+  thumb: string;
+  image: string;
+  pilot?: { contract: string; tokenId: string };
+  action: "piloted" | "parked";
+  timestamp: number;
+}
+
+const eventFromRow = ({
+  rigId,
+  thumb,
+  image,
+  pilot,
+  action,
+  timestamp,
+}: DbEvent): Event => ({
+  rigId,
+  thumb,
+  image,
+  pilot,
+  action:
+    action === "parked"
+      ? EventAction.Parked
+      : pilot?.contract
+      ? EventAction.Piloted
+      : EventAction.PilotedTrainer,
+  timestamp: timestamp.toString(),
+});
 
 export const useRigsActivity = () => {
-  const { connection: tableland } = useTablelandConnection();
+  const { db } = useTablelandConnection();
 
   const [events, setEvents] = useState<Event[]>();
 
   useEffect(() => {
     let isCancelled = false;
 
-    tableland.read(selectRigsActivity([], 40)).then((result) => {
-      if (!isCancelled) setEvents(result.rows.map(eventFromRow));
-    });
+    db.prepare(selectRigsActivity([], 40))
+      .all<DbEvent>()
+      .then(({ results }) => {
+        if (!isCancelled) setEvents(results.map(eventFromRow));
+      });
 
     return () => {
       isCancelled = true;

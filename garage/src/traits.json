@@ -1,0 +1,3536 @@
+{
+  "fleets": [
+    "Titans",
+    "Sleds",
+    "Hoppers",
+    "Airelights",
+    "Edge Riders",
+    "Tracers",
+    "Tumblers",
+    "Foils"
+  ],
+  "colors": [
+    "Alpenglow",
+    "Midnight",
+    "Sunset",
+    "Electric",
+    "Dawn",
+    "Ruby",
+    "Moonlight",
+    "Blaze",
+    "Spark",
+    "Crimson",
+    "Cobalt"
+  ],
+  "specialTraits": [
+    "% Original",
+    "Color",
+    "Fleet",
+    "Name",
+    "VIN"
+  ],
+  "sharedTraits": [
+    "Background"
+  ],
+  "individualTraits": {
+    "Cab": [
+      "Titans"
+    ],
+    "Chassis": [
+      "Titans",
+      "Sleds",
+      "Hoppers",
+      "Tracers"
+    ],
+    "Mainframe": [
+      "Titans"
+    ],
+    "Mod": [
+      "Titans",
+      "Sleds",
+      "Hoppers",
+      "Tracers"
+    ],
+    "Utility Pack": [
+      "Titans",
+      "Tumblers"
+    ],
+    "Bonnet": [
+      "Sleds"
+    ],
+    "Monocoque": [
+      "Sleds"
+    ],
+    "Spoiler": [
+      "Sleds"
+    ],
+    "Cockpit": [
+      "Hoppers",
+      "Airelights",
+      "Edge Riders",
+      "Tracers",
+      "Tumblers",
+      "Foils"
+    ],
+    "Propulsion": [
+      "Hoppers",
+      "Airelights",
+      "Tracers",
+      "Foils"
+    ],
+    "Airframe": [
+      "Airelights",
+      "Foils"
+    ],
+    "Back Mod": [
+      "Edge Riders"
+    ],
+    "Frame": [
+      "Edge Riders"
+    ],
+    "Side Mod": [
+      "Edge Riders"
+    ],
+    "Suit": [
+      "Edge Riders"
+    ],
+    "Core": [
+      "Tumblers"
+    ],
+    "Suspension": [
+      "Tumblers"
+    ]
+  },
+  "traitValuesByType": {
+    "Background": [
+      {
+        "traitType": "Background",
+        "value": "Hue Shift High Desert 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Salt Flat 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Canyonland 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Alpine 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Canyonland 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Salt Flat 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Salt Flat 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Canyonland 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat High Desert 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat High Desert 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat High Desert 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift High Desert 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark High Desert 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Alpine 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main High Desert 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Canyonland 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Canyonland 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Salt Flat 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Salt Flat 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main High Desert 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main High Desert 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main High Desert 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Canyonland 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Salt Flat 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Alpine 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Canyonland 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Salt Flat 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Canyonland 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Salt Flat 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift High Desert 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift High Desert 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Salt Flat 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Canyonland 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat High Desert 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Salt Flat 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Alpine 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Alpine 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Salt Flat 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Canyonland 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Salt Flat 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Canyonland 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Salt Flat 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Canyonland 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark High Desert 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Salt Flat 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Alpine 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Salt Flat 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Alpine 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Canyonland 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Alpine 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Canyonland 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark High Desert 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Main Alpine 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark High Desert 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Alpine 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Alpine 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Hue Shift Canyonland 4"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Alpine 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Alpine 3"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Alpine 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Salt Flat 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Canyonland 1"
+      },
+      {
+        "traitType": "Background",
+        "value": "Dark Alpine 2"
+      },
+      {
+        "traitType": "Background",
+        "value": "Desat Alpine 2"
+      }
+    ],
+    "Cab": [
+      {
+        "traitType": "Cab",
+        "value": "Midnight Low Vector"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Crimson Merkle Proofed"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Techno"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Brute Force"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Attacker"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Midnight Hardforked Combinator"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Crimson Techno"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Moonlight Caesar Cipher"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Caesar Cipher"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Blaze Caesar Cipher"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Blaze Raked Consensus Engine"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Blaze Brute Force"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Techno"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Alpenglow Raked Consensus Engine"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Hardforked Combinator"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Electric Raked Consensus Engine"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Midnight Brute Force"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Alpenglow Code Collector"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Midnight Attacker"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Moonlight Merkle Proofed"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Delegator"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Hardforked Combinator"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Attacker"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Raked Consensus Engine"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Ruby Brute Force"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Low Vector"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Alpenglow Delegator"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Hashed"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Electric Hashed"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Sunset Code Collector"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Midnight Code Collector"
+      },
+      {
+        "traitType": "Cab",
+        "value": "Dawn Code Collector"
+      }
+    ],
+    "Chassis": [
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Fast Tracking Tread"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Unstoppable"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Cipher Glide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Cross Join"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight DDL"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn TLV"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Splitter"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Alpenglow Hexwide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Armored Front Runner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Crimson Monotonic Screw"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Splitter"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Rug Pull"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Rug Pull"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Pinner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Alpenglow Happycat Systems"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Slash"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Pinner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Slash"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Multihash"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Hexwide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Quad Class Empiradyne Tracker"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Sandwich Attack"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Quad Class Empiradyne Tracker"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric DML"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Multihash"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Phoenixl X"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Cipher Glide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Ruby TLS"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Sandwich Attack"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Armored Front Runner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Ruby Pepperll"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Pinner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Cross Join"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Hexcode"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Sandwich Attack"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Unstoppable"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight TLV"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric DDL"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Moonlight Fast Tracking Tread"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Hexwide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Spark Vector"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Rug Pull"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Quantum Resistant Tread"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Spark Rug Pull"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Ruby Cipher Glide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Cobalt Phoenixl X"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Alpenglow Null Hopper"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Happycat Systems"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Pepperll"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Crimson Armored Front Runner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Phoenixl X"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Pinner"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Moonlight Monotonic Screw"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Cipher Glide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Slash"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Alpenglow Slash"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Crimson Cross Join"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Black Swan"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Happycat Systems"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Unstoppable"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Cobalt DBMS"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset ACID"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Quad Class Empiradyne Tracker"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn DML"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight DCL"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn DDL"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn DCL"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Hexwide"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset DCL"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight TLS"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Fast Tracking Tread"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Vector"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Quantum Resistant Tread"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight BFT"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Splitter"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric BFT"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Light Node"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Light Node"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Hexcode"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Sandwich Attack"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Alpenglow ACID"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Null Hopper"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric Black Swan"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Pepperll"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight Quantum Resistant Tread"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Electric DBMS"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Spark Phoeixl X"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Scam"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset Null Hopper"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Midnight DBMS"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Blaze Scam"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Dawn Null Hopper"
+      },
+      {
+        "traitType": "Chassis",
+        "value": "Sunset BFT"
+      }
+    ],
+    "Mainframe": [
+      {
+        "traitType": "Mainframe",
+        "value": "Dawn Base58 Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Midnight Merkle Node Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Ruby Chunker Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Sunset Chunker Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Sunset Pragma Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Midnight Chunker Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Midnight Base58 Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Moonlight Reverse Bonded"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Dawn Merkle Node Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Dawn Reinforced Zero Knowledge"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Alpenglow Pragma Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Blaze Pragma Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Crimson Reverse Bonded"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Blaze Chunker Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Crimson Reinforced Zero Knowledge"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Sunset Reinforced Zero Knowledge"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Moonlight Kludge Armored"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Blaze Kludge Armored"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Midnight Post Quantum"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Sunset Merkle Node Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Alpenglow Cartesian Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Electric Atomic Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Sunset Base58 Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Dawn Kludge Armored"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Electric Pragma Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Dawn Post Quantum"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Sunset Cartesian Class"
+      },
+      {
+        "traitType": "Mainframe",
+        "value": "Dawn Atomic Class"
+      }
+    ],
+    "Mod": [
+      {
+        "traitType": "Mod",
+        "value": "Dawn Foreign Data Wrapper"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Solidarity Splitter"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Injection Attacker"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Cluster"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Reader"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Single Shielded"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Spark PFP"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Backdoor Opener"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Injection Attacker"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Traunch"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset PFP"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze ZK Snark"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Quantum Safe"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn SK Sync"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Spark ZK Snark"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset DAO"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric PFP"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Single Shielded"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Injection Attacker"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Sybil Resistance Ray"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Cobalt Null Value"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Hook Shot"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Median"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Solidarity Splitter"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Hyperclaw"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Factorizer"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Backdoor Opener"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Soft Fork"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Polynomial Timer"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Hyperclaw"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Logical Operator"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Query Parser Array"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Ruby Quantum Safe"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Soft Fork"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Spark Factorizer"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Hook Shot"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Reader"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Reader"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Injection Attacker"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Solidarity Splitter"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Single Shielded"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Single Shielded"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Ruby Scytale"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Polynomial Timer"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight SK Sync"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Blind Signing Extractor"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Equi-join"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Blaze Satoshi Radiator"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Ruby Backdoor Opener"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Blind Signing Extractor"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Cluster"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Crimson Finite Field Tools"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Reader"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Moonlight Finite Field Tools"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Null Value"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Soft Fork"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Soft Fork"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Query Parser Array"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Crimson Sybil Resistance Ray"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Satoshi Radiator"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Cobalt Factorizer"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset ZK Rollup"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight PFP"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Quantum Safe"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Satoshi Radiator"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric ZK Rollup"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Query Parser Array"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Crimson Cluster"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Factorizer"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Backdoor Opener"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Hyperclaw"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight MAC"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Traunch"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Sybil Resistance Ray"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Hook Shot"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Hook Shot"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Equi-join"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Availability Sampling"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Moonlight Blind Signing Extractor"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight ZK Rollup"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Shared Secrets"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Water Tank"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Shared Secrets"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Logical Operator"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn DAO"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Water Tank"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Scytale"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Foreign Data Wrapper"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Logical Operator"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Dweb Broadcaster"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Dweb Broadcaster"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Sunset Rock Grinder"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Availability Sampling"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Water Tank"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Null Value"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Availability Sampling"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Midnight Rock Grinder"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric MAC"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Median"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Rock Grinder"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Electric Equi-join"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Dawn Water Tank"
+      },
+      {
+        "traitType": "Mod",
+        "value": "Alpenglow Rock Grinder"
+      }
+    ],
+    "Utility Pack": [
+      {
+        "traitType": "Utility Pack",
+        "value": "Blaze UTOX"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Blaze Bloom Filter"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Midnight Range Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Range Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Range Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Spark Merklizer"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Electric Merklizer"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Alpenglow UID"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Nchar Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn BLOB"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn DSN"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset RSA Tank"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Composite Key"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Ruby Range Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Electric BLOB"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Electric Rebaser"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Crimson MEV"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Ruby Bloom Filter"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Bloom Filter"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Decryption Signal Processor"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Rebaser"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Cobalt Proxy Receiver"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Electric UTOX"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Proxy Receiver"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Midnight Bloom Filter"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn WASM"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Midnight Decryption Signal Processor"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Blaze Nchar Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Ruby UID"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Alpenglow UTOX"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Rebaser"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Moonlight Nchar Extender"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset UTOX"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Moonlight MEV"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Alpenglow B-Tree Indexer"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Decryption Signal Processor"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset DSN"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Ruby RSA Tank"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Merklizer"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Crimson DSN"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset B-Tree Indexer"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Electric Composite Key"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Blaze UID"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Composite Key"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Midnight WASM"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Blaze Proxy Receiver"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Midnight Diffie Hellman Key Exchanger"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn Diffie Hellman Key Exchanger"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn RSA Tank"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset Diffie Hellman Key Exchanger"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Dawn UML"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Midnight UML"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Alpenglow Diffie Hellman Key Exchanger"
+      },
+      {
+        "traitType": "Utility Pack",
+        "value": "Sunset UML"
+      }
+    ],
+    "Bonnet": [
+      {
+        "traitType": "Bonnet",
+        "value": "Blaze Sniffer"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Sunset Sniffer"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Midnight Mukhabarat"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Blaze Wagm"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Midnight Sniffer"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Electric Mukhabarat"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Sunset Mukhabarat"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Midnight VM"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Ruby Sender"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Spark Wagmi"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Electric POS"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Midnight Sender"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Blaze Mukhabarat"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Dawn VM"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Dawn POS"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Midnight Mint"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Dawn Grail"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Sunset Grail"
+      },
+      {
+        "traitType": "Bonnet",
+        "value": "Electric Mint"
+      }
+    ],
+    "Monocoque": [
+      {
+        "traitType": "Monocoque",
+        "value": "Midnight Arcanium Dev Gru"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Electric Arcanium Dev Gru"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Ruby Rebase Reward"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Midnight Universal Machine"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Sunset Universal Machine"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Blaze Arcanium Dev Gru"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Midnight Tokenomics"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Dawn Tokenomics"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Sunset Arcanium Dev Gru"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Dawn MD4"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Dawn Punk"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Blaze Universal Machine"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Spark Vertex"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Electric Punk"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Midnight Rebase Reward"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Midnight MD5"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Blaze Vertex"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Electric MD5"
+      },
+      {
+        "traitType": "Monocoque",
+        "value": "Sunset MD4"
+      }
+    ],
+    "Spoiler": [
+      {
+        "traitType": "Spoiler",
+        "value": "Blaze Multi Tine Forked"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Midnight Multi Tine Forked"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Midnight Verkle"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Sunset Verkle"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Sunset Multi Tine Forked"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Sunset Mnemonic Phrase"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Electric Multi Tine Forked"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Dawn Theorem"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Spark Utility Token"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Midnight Merk Dag"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Blaze Utility Token"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Dawn Sha 256"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Electric Sha 256"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Electric Merk Dag"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Midnight Theorem"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Midnight Secret Key"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Ruby Secret Key"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Blaze Verkle"
+      },
+      {
+        "traitType": "Spoiler",
+        "value": "Dawn Mnemonic Phrase"
+      }
+    ],
+    "Cockpit": [
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Genesis Block"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Denormalized"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Isolation"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Consensus"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Spark Permissionless"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Sentinel Value"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Diamond Hands"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Herculean Twin"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Hashjoin"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Rotor Cipher Machine"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Permissionless"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Skipjack"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Skipjack"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Diamond Hands"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Front Run"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Spark Immutable"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Attenuator"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Aggregator"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Mapped"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Attenuator"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Cobalt Degen"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Rownum"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Front Run"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn WAL"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Ruby Paper Hands"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Immutable"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Spark Man In The Middle"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow CRUD"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Materialized View"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Hash Table"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Cobalt Genesis Block"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Hashtable"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Ruby Diamond Hands"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Hashtable"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze CRUD"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Crimson Nonce"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Mutable II"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Permissionless"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Sharder"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Sharder"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Mapped"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric ETL"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Rotor Cipher Machine"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Selector"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Genesis Block"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Skipjack"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Attack Vector"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Mutable II"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Simple Query"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Consensus"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn ETL"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Ruby CRUD"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Tablespace"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Permissionless"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Degen"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Denormalized"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Denormalized"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Spark Genesis Block"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Sentinel Value"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Testnet"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Paper Hands"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze ETL"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Sharder"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Honest Actor"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Herculean Twin"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Subquery"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Skipjack"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Front Run"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Herculean Twin"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Quorum"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Crimson Attenuator"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Node"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Spoofer"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Nonce"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Isolation"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Rownum"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Stark"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Degen"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Spoofer"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Honest Actor"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Testnet"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Simple Query"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Selector"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Spoofer"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Subquery"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Hashjoin"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Cobalt Man In The Middle"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Crimson Hashjoin"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Layer 2"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Immutable"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Rotor Cipher Machine"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Rownum"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric WAL"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Node"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Quorum"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Cobalt Aggregator"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Isolation"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Aggregator"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Nonce"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Attack Vector"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Upsert"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Paper Hands"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Stark"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Crimson Materialized View"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Hash Table"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Pseudo Random"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Subquery"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Star"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Clause"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset WAL"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Upsert"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Ruby Sentinel Value"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Materialized View"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Testnet"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Star"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Pseudo Random"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Tablespace"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric State Machine"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Moonlight Attack Vector"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Sharder"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Pseudo Random"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Staker"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Electric Node"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Moonlight Clause"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Stark"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn State Machine"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Alpenglow Staker"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Midnight Simple Query"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Spark Selector"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Ruby State Machine"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Mesh"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Blaze Staker"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Dawn Layer 2"
+      },
+      {
+        "traitType": "Cockpit",
+        "value": "Sunset Mesh"
+      }
+    ],
+    "Propulsion": [
+      {
+        "traitType": "Propulsion",
+        "value": "Crimson Bind Variable"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Alpenglow Histogram"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Bit-Shift"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Solidarity"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Alpenglow Solidarity"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Dimension"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset PID"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Recovery Phrase"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn PID"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Trustless"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Many-To-Many"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Sybil Attack"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn SPoF"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Ionic Induction"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Bind Variable"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Many-To-Many"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Ruby PID"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Nextval"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Cobalt Adversarial"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Binary Tree"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Adversarial"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Cobalt Bit-Shift"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset RDBMS"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze Parser"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Bind Variable"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Sybil Attack"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Threshold"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Parser"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Solidarity"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Nextval"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Timestamp"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Alpenglow Ionic Induction"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Recovery Phrase"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Histogram"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric RDBMS"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Spark Bit-Shift"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Solidarity"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Threshold"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze Revokable"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Spark Recovery Phrase"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze Snark"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Recovery Phrase"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Sybil Attack"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze Ionic Induction"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Binary Tree"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze Threshold"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze EVM"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Natural Key"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Histogram"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Natural Key"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Revokable"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Referential Integrity"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Trustless"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Nextval"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Syntax"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Bit-Shift"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Dimension"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn RDBMS"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Alpenglow EVM"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset SPoF"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric SPoF"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Binary Tree"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Sybil Attack"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Symmetric Encryption"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Adversarial"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Spark Revokable"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Zero-Knowledge"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Natural Key"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Blaze Rollback"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Referential Integrity"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Alpenglow Zero-Knowledge"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Trustless"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Snark"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Timestamp"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Syntax"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Alpenglow Rollback"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight EVM"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Dawn Symmetric Encryption"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Crimson Dimension"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Sunset Syntax"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Midnight Zero-Knowledge"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Ruby Symmetric Encryption"
+      },
+      {
+        "traitType": "Propulsion",
+        "value": "Electric Parser"
+      }
+    ],
+    "Color": [
+      {
+        "traitType": "Color",
+        "value": "Alpenglow"
+      },
+      {
+        "traitType": "Color",
+        "value": "Midnight"
+      },
+      {
+        "traitType": "Color",
+        "value": "Sunset"
+      },
+      {
+        "traitType": "Color",
+        "value": "Electric"
+      },
+      {
+        "traitType": "Color",
+        "value": "Dawn"
+      },
+      {
+        "traitType": "Color",
+        "value": "Ruby"
+      },
+      {
+        "traitType": "Color",
+        "value": "Moonlight"
+      },
+      {
+        "traitType": "Color",
+        "value": "Blaze"
+      },
+      {
+        "traitType": "Color",
+        "value": "Spark"
+      },
+      {
+        "traitType": "Color",
+        "value": "Crimson"
+      },
+      {
+        "traitType": "Color",
+        "value": "Cobalt"
+      }
+    ],
+    "Airframe": [
+      {
+        "traitType": "Airframe",
+        "value": "Alpenglow Coalesce"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Verifier"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Transitive Dependency"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Verifier"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Blaze Fulljoin"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Transmitter"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Disaster Recovery"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Spark Outerjoin"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Midnight Coalesce"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Electric Disaster Recovery"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Tuple"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Electric Varchar"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Ruby DHA"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Blaze Disaster Recovery"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Blaze Tuple"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Midnight Supersingular"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Varchar"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Crimson Verifier"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Coalesce"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Outerjoin"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Varchar"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Blaze Outerjoin"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Electric DHA"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Transitive Dependency"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Electric Transitive Dependency"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Alpenglow Fulljoin"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Midnight Skyler Vll"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Alpenglow Supersingular"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Transmitter"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Alpenglow Tangle"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Electric Tuple"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn DHA"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Skyler Vll"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Blaze Supersingular"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Tangle"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Dawn Varray"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Midnight Tangle"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Midnight Transmitter"
+      },
+      {
+        "traitType": "Airframe",
+        "value": "Sunset Varray"
+      }
+    ],
+    "Back Mod": [
+      {
+        "traitType": "Back Mod",
+        "value": "Midnight Edge"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Midnight Arbitrage"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Blaze Gwei"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Midnight Gwei"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Dawn ACL"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Sunset Gwei"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Electric Gwei"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Crimson ACL"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Dawn Merklization"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Alpenglow Encoder"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Blaze Arbitrage"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Cobalt Lattice Based"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Sunset Hex"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Sunset ACL"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Moonlight Arbitrage"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Electric Encoder"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Blaze Edge"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Spark Lattice Based"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Midnight Merklization"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Sunset Interoperability"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Moonlight Archival Node"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Dawn Archival Node"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Dawn Hex"
+      },
+      {
+        "traitType": "Back Mod",
+        "value": "Dawn Interoperability"
+      }
+    ],
+    "Frame": [
+      {
+        "traitType": "Frame",
+        "value": "Midnight Cracker"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Spark Key Exchanger"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Blaze Clipper"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Midnight Multibase"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Dawn Multibase"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Midnight Moniker"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Sunset Moniker"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Electric Endowment"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Dawn Bad Actor II"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Blaze Cracker"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Sunset Bad Actor II"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Moonlight Back Door"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Moonlight Clipper"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Crimson Bad Actor II"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Electric Moniker"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Cobalt Key Exchanger"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Dawn Back Door"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Dawn Multi Sig"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Blaze Moniker"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Midnight Clipper"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Sunset Key Ceremony"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Sunset Multi Sig"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Alpenglow Endowment"
+      },
+      {
+        "traitType": "Frame",
+        "value": "Dawn Key Ceremony"
+      }
+    ],
+    "Side Mod": [
+      {
+        "traitType": "Side Mod",
+        "value": "Midnight EdDSA"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Midnight Keygen III"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Sunset Keygen III"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Electric Keygen III"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Sunset Hash Collection"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Blaze Keygen III"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Dawn Attack"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Blaze EdDSA"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Dawn Gas"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Alpenglow Fisherman"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Blaze AMM"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Spark PGP"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Crimson Attack"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Moonlight AMM"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Electric Fisherman"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Midnight AMM"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Sunset Attack"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Dawn Access Control"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Midnight Gas"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Moonlight Access Control"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Dawn HODL"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Cobalt PGP"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Sunset HODL"
+      },
+      {
+        "traitType": "Side Mod",
+        "value": "Dawn Hash Collection"
+      }
+    ],
+    "Suit": [
+      {
+        "traitType": "Suit",
+        "value": "Midnight 07"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Crimson 09"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Moonlight 05"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Electric 02"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Moonlight 08"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Midnight 02"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Sunset 02"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Dawn 09"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Cobalt 06"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Dawn 04"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Blaze 02"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Midnight 05"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Blaze 05"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Alpenglow 10"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Electric 10"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Midnight 04"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Spark 06"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Sunset 09"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Sunset 01"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Blaze 07"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Dawn 03"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Dawn 08"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Dawn 01"
+      },
+      {
+        "traitType": "Suit",
+        "value": "Sunset 03"
+      }
+    ],
+    "Core": [
+      {
+        "traitType": "Core",
+        "value": "Dawn Star Schema"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset Klinger"
+      },
+      {
+        "traitType": "Core",
+        "value": "Blaze Fraud Proof"
+      },
+      {
+        "traitType": "Core",
+        "value": "Electric RPC"
+      },
+      {
+        "traitType": "Core",
+        "value": "Midnight Klinger"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset Deployer"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset Giga Wei"
+      },
+      {
+        "traitType": "Core",
+        "value": "Blaze Oracle"
+      },
+      {
+        "traitType": "Core",
+        "value": "Dawn Giga Wei"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset RPC"
+      },
+      {
+        "traitType": "Core",
+        "value": "Ruby Oracle"
+      },
+      {
+        "traitType": "Core",
+        "value": "Cobalt Fraud Proof"
+      },
+      {
+        "traitType": "Core",
+        "value": "Dawn RPC"
+      },
+      {
+        "traitType": "Core",
+        "value": "Electric Giga Wei"
+      },
+      {
+        "traitType": "Core",
+        "value": "Ruby Klinger"
+      },
+      {
+        "traitType": "Core",
+        "value": "Dawn Turing Tester"
+      },
+      {
+        "traitType": "Core",
+        "value": "Alpenglow Oracle"
+      },
+      {
+        "traitType": "Core",
+        "value": "Spark Turing Tester"
+      },
+      {
+        "traitType": "Core",
+        "value": "Ruby Star Schema"
+      },
+      {
+        "traitType": "Core",
+        "value": "Dawn Deployer"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset Fraud Proof"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset Star Schema"
+      },
+      {
+        "traitType": "Core",
+        "value": "Electric Turing Tester"
+      },
+      {
+        "traitType": "Core",
+        "value": "Crimson Deployer"
+      },
+      {
+        "traitType": "Core",
+        "value": "Midnight POW"
+      },
+      {
+        "traitType": "Core",
+        "value": "Dawn POW"
+      },
+      {
+        "traitType": "Core",
+        "value": "Sunset POW"
+      }
+    ],
+    "Suspension": [
+      {
+        "traitType": "Suspension",
+        "value": "Dawn Quantum Proof"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Telescoping Dual Suspensor"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Full Node"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Blaze Algorithmic"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Dawn Drop Table"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Dawn Full Node"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Cobalt Derivative"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Derivative"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Electric Full Node"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Ruby Telescoping Dual Suspensor"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Dawn Off Chain"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Electric Boolean"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Midnight Telescoping Dual Suspensor"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Electric Quantum Proof"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Crimson Off Chain"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Quantum Proof"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Drop Table"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Ruby Algorithmic"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Off Chain"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Blaze Derivative"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Dawn Boolean"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Alpenglow Algorithmic"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Midnight Prover"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Ruby Drop Table"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Dawn Prover"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Spark Boolean"
+      },
+      {
+        "traitType": "Suspension",
+        "value": "Sunset Prover"
+      }
+    ]
+  }
+}
