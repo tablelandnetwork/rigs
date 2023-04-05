@@ -16,11 +16,11 @@ async function main() {
   }
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
-  // Update mint phase
+  // Park rigs
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
     rigsDeployment.contractAddress
   ) as TablelandRigs;
-  const tx = await rigs.parkRigAsOwner([
+  const tx = await rigs.parkRigAsAdmin([
     /* rigs IDs to park here */
   ]);
   const receipt = await tx.wait();

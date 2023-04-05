@@ -4,7 +4,7 @@ import assert from "assert";
 import { BigNumber, utils } from "ethers";
 
 async function main() {
-  console.log(`\nUpgrading on '${network.name}'...`);
+  console.log(`\nUpgrading rigs on '${network.name}'...`);
 
   // Get owner account
   const [account] = await ethers.getSigners();
@@ -29,6 +29,7 @@ async function main() {
   const rigs = await (
     (await upgrades.upgradeProxy(rigsDeployment.contractAddress, Factory, {
       kind: "uups",
+      timeout: 60 * 10 * 1000,
     })) as TablelandRigs
   ).deployed();
   assert(
