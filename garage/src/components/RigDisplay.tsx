@@ -4,6 +4,7 @@ import { TrainerPilot } from "./TrainerPilot";
 import { useRigImageUrls } from "../hooks/useRigImageUrls";
 import { Rig } from "../types";
 import { NFT } from "../hooks/useNFTs";
+import unknownPilot from "../assets/unknown-pilot.svg";
 
 type BorderWidth = React.ComponentProps<typeof Box>["borderWidth"];
 
@@ -70,6 +71,8 @@ export const RigDisplay = ({
           ) : imageUrl || imageData ? (
             <Image
               src={imageUrl || imageData}
+              fallbackSrc={unknownPilot}
+              backgroundColor="primary"
               {...pilotProps}
               objectFit="contain"
             />

@@ -3,7 +3,7 @@ import type { TablelandRigPilots } from "../typechain-types";
 import assert from "assert";
 
 async function main() {
-  console.log(`\nUpgrading on '${network.name}'...`);
+  console.log(`\nUpgrading pilots on '${network.name}'...`);
 
   // Get owner account
   const [account] = await ethers.getSigners();
@@ -28,6 +28,7 @@ async function main() {
   const pilots = await (
     (await upgrades.upgradeProxy(rigsDeployment.pilotsAddress, Factory, {
       kind: "uups",
+      timeout: 60 * 10 * 1000,
     })) as TablelandRigPilots
   ).deployed();
   assert(
@@ -38,6 +39,12 @@ async function main() {
   // Check new implementation
   const impl2 = await upgrades.erc1967.getImplementationAddress(pilots.address);
   console.log("New implementation address:", impl2);
+
+  // TMP: Manually initialize impl. Once RIG-30 is done we can remove this.
+  const pilotsImpl = Factory.attach(impl2) as TablelandRigPilots;
+  const tx = await pilotsImpl.initialize(rigsDeployment.contractAddress);
+  const receipt = await tx.wait();
+  console.log(`Initialized new impl with txn '${receipt.transactionHash}'`);
 
   // Warn if implementation did not change, ie, nothing happened.
   if (impl === impl2) {

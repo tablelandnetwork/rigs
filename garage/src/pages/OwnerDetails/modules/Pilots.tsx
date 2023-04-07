@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Box,
   Flex,
@@ -68,7 +69,13 @@ export const Pilots = ({ pilots, nfts, p, ...props }: PilotProps) => {
                     )}
                   </Td>
                   <Td pl={3} wordBreak="break-all">
-                    {nft?.name || "Trainer"}
+                    {nft?.contract && nft?.tokenId && nft?.name ? (
+                      <Link to={`/pilots/${contract}/${tokenId}`}>
+                        {nft.name}
+                      </Link>
+                    ) : (
+                      nft?.name || "Trainer"
+                    )}
                   </Td>
                   <Td isNumeric>{prettyNumber(flightTime)}</Td>
                   <Td pr={p} color={isActive ? "inherit" : "inactive"}>

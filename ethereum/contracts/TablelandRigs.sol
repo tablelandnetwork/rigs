@@ -13,6 +13,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
+import "./interfaces/IERC4906.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -22,6 +23,7 @@ contract TablelandRigs is
     URITemplate,
     ERC721AUpgradeable,
     ERC721AQueryableUpgradeable,
+    IERC4906,
     OwnableUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -54,6 +56,9 @@ contract TablelandRigs is
 
     // Allow transfers while flying, only by token owner
     bool private _allowTransferWhileFlying;
+
+    // Admin address
+    address private _admin;
 
     function initialize(
         uint256 _maxSupply,
@@ -337,6 +342,20 @@ contract TablelandRigs is
     }
 
     /**
+     * @dev See {ITablelandRigs-admin}.
+     */
+    function admin() public view returns (address) {
+        return _admin;
+    }
+
+    /**
+     * @dev See {ITablelandRigs-setAdmin}.
+     */
+    function setAdmin(address adminAddress) external onlyOwner {
+        _admin = adminAddress;
+    }
+
+    /**
      * @dev See {ITablelandRigs-pause}.
      */
     function pause() external onlyOwner {
@@ -348,6 +367,30 @@ contract TablelandRigs is
      */
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    // =============================
+    //      PARKING ADMIN LOGIC
+    // =============================
+
+    /**
+     * @dev Throws if called by any account other than parking admin.
+     */
+    modifier onlyAdmin() {
+        _checkAdmin();
+        _;
+    }
+
+    /**
+     * @dev Throws if the sender is not the admin or if admin has not
+     * been initialized.
+     */
+    function _checkAdmin() private view {
+        address adminAddress = admin();
+        require(
+            adminAddress != address(0) && adminAddress == _msgSender(),
+            "Caller is not the admin"
+        );
     }
 
     // =============================
@@ -373,11 +416,28 @@ contract TablelandRigs is
      */
     function pilotInfo(
         uint256 tokenId
-    ) external view returns (ITablelandRigPilots.PilotInfo memory) {
+    ) public view returns (ITablelandRigPilots.PilotInfo memory) {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
         return _pilots.pilotInfo(tokenId);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-pilotInfo}.
+     */
+    function pilotInfo(
+        uint256[] calldata tokenIds
+    ) external view returns (ITablelandRigPilots.PilotInfo[] memory) {
+        // For each token, call `pilotInfo`
+        ITablelandRigPilots.PilotInfo[]
+            memory allPilotInfo = new ITablelandRigPilots.PilotInfo[](
+                tokenIds.length
+            );
+        for (uint8 i = 0; i < tokenIds.length; i++) {
+            allPilotInfo[i] = pilotInfo(tokenIds[i]);
+        }
+        return allPilotInfo;
     }
 
     /**
@@ -391,6 +451,7 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
 
         _pilots.trainRig(_msgSenderERC721A(), tokenId);
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -422,7 +483,18 @@ contract TablelandRigs is
         if (ownerOf(tokenId) != _msgSenderERC721A())
             revert ITablelandRigPilots.Unauthorized();
 
-        _pilots.pilotRig(_msgSenderERC721A(), tokenId, pilotAddr, pilotId);
+        // If the supplied pilot address is `0x0`, then assume a trainer pilot
+        // (note: `pilotId` has no impact here). Otherwise, proceed with a
+        // custom pilot. The overloaded methods direct changes accordingly.
+        pilotAddr == address(0)
+            ? _pilots.pilotRig(_msgSenderERC721A(), tokenId)
+            : _pilots.pilotRig(
+                _msgSenderERC721A(),
+                tokenId,
+                pilotAddr,
+                pilotId
+            );
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -466,6 +538,7 @@ contract TablelandRigs is
             revert ITablelandRigPilots.Unauthorized();
         // Pass `false` to indicate a standard (non-force) park
         _pilots.parkRig(tokenId, false);
+        emit MetadataUpdate(tokenId);
     }
 
     /**
@@ -483,10 +556,7 @@ contract TablelandRigs is
         }
     }
 
-    /**
-     * @dev See {ITablelandRigs-parkRigAsOwner}.
-     */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+    function _forceParkRigs(uint256[] calldata tokenIds) private {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
@@ -498,7 +568,22 @@ contract TablelandRigs is
             if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
             // Pass `true` to indicate a force park
             _pilots.parkRig(tokenIds[i], true);
+            emit MetadataUpdate(tokenIds[i]);
         }
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRigAsOwner}.
+     */
+    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+        _forceParkRigs(tokenIds);
+    }
+
+    /**
+     * @dev See {ITablelandRigs-parkRigAsAdmin}.
+     */
+    function parkRigAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
+        _forceParkRigs(tokenIds);
     }
 
     // =============================
@@ -586,7 +671,8 @@ contract TablelandRigs is
     {
         return
             ERC721AUpgradeable.supportsInterface(interfaceId) ||
-            ERC2981Upgradeable.supportsInterface(interfaceId);
+            ERC2981Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == bytes4(0x49064906); // See EIP-4096
     }
 
     // =============================

@@ -2,7 +2,9 @@ import React from "react";
 import { Enter } from "./pages/Enter";
 import { Dashboard } from "./pages/Dashboard";
 import { RigDetails } from "./pages/RigDetails";
+import { PilotDetails } from "./pages/PilotDetails";
 import { OwnerDetails } from "./pages/OwnerDetails";
+import { Gallery } from "./pages/Gallery";
 
 export const routes = () => {
   return [
@@ -24,6 +26,18 @@ export const routes = () => {
       path: "/owner/:owner",
       requiresWalletConnection: false,
       element: <OwnerDetails />,
+    },
+    {
+      key: "GALLERY",
+      path: "/gallery",
+      requiresWalletConnection: false,
+      element: <Gallery />,
+    },
+    {
+      key: "PILOT_DETAILS",
+      path: "/pilots/:collection/:id",
+      requiresWalletConnection: false,
+      element: <PilotDetails />,
     },
   ];
 };

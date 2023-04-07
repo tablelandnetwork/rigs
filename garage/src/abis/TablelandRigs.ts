@@ -1,7 +1,3 @@
-import { deployment } from "./env";
-
-const { contractAddress } = deployment;
-
 export const abi = [
   {
     inputs: [],
@@ -1392,5 +1388,3 @@ export const abi = [
     type: "function",
   },
 ] as const;
-
-export const address = contractAddress;

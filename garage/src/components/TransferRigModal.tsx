@@ -21,11 +21,13 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { useTablelandTokenGatedContractWriteFn } from "../hooks/useTablelandTokenGatedContractWriteFn";
 import { Rig, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { address as contractAddress, abi } from "../contract";
+import { deployment } from "../env";
+import { abi } from "../abis/TablelandRigs";
+
+const { contractAddress } = deployment;
 
 interface ModalProps {
   rig: Rig;
@@ -63,8 +65,7 @@ export const TransferRigModal = ({
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write: _write, reset, data } = contractWrite;
-  const write = useTablelandTokenGatedContractWriteFn(_write);
+  const { isLoading, isSuccess, write, reset, data } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
     hash: data?.hash,
   });

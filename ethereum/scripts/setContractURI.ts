@@ -3,7 +3,7 @@ import { TablelandRigs } from "../typechain-types";
 import { getContractURI } from "../helpers/uris";
 
 async function main() {
-  console.log(`\nUpdating contract URI on '${network.name}'...`);
+  console.log(`\nSetting contract URI on '${network.name}'...`);
 
   // Get proxy owner account
   const [account] = await ethers.getSigners();

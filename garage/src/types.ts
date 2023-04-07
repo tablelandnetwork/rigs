@@ -53,4 +53,5 @@ export interface Event {
 
 export interface PilotSessionWithRigId extends PilotSession {
   rigId: string;
+  thumb: string;
 }

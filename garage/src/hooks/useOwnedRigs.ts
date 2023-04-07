@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
-import { Rig, isValidAddress } from "../types";
+import { RigWithPilots, isValidAddress } from "../types";
 import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
-import { rigFromRow } from "../utils/xforms";
-import { address as contractAddress, abi } from "../contract";
+import { deployment } from "../env";
+import { abi } from "../abis/TablelandRigs";
 
-export const useOwnedRigs = (address?: string, currentBlock?: number) => {
-  const { connection: tableland } = useTablelandConnection();
+const { contractAddress } = deployment;
+
+export const useOwnedRigs = (address?: string) => {
+  const { db } = useTablelandConnection();
 
   const { data } = useContractRead({
     address: contractAddress,
@@ -17,7 +19,7 @@ export const useOwnedRigs = (address?: string, currentBlock?: number) => {
     enabled: !!address,
   });
 
-  const [rigs, setRigs] = useState<Rig[]>();
+  const [rigs, setRigs] = useState<RigWithPilots[]>();
   const [shouldRefresh, setShouldRefresh] = useState({});
 
   const refresh = useCallback(() => {
@@ -26,18 +28,20 @@ export const useOwnedRigs = (address?: string, currentBlock?: number) => {
 
   useEffect(() => {
     let isCancelled = false;
-    if (address && data && currentBlock) {
+    if (address && data) {
       const ids = data.map((bn) => bn.toString());
 
-      tableland.read(selectRigs(ids, currentBlock)).then((result) => {
-        if (!isCancelled) setRigs(result.rows.map(rigFromRow));
-      });
+      db.prepare(selectRigs(ids))
+        .all<RigWithPilots>()
+        .then(({ results }) => {
+          if (!isCancelled) setRigs(results);
+        });
 
       return () => {
         isCancelled = true;
       };
     }
-  }, [address, data, setRigs, currentBlock, /* effect dep */ shouldRefresh]);
+  }, [address, data, setRigs, /* effect dep */ shouldRefresh]);
 
   return { rigs, refresh };
 };

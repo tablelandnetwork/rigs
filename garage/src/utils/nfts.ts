@@ -1,12 +1,13 @@
-import { NFT } from "../hooks/useNFTs";
+export interface NFTIsh {
+  contract: string;
+  tokenId: string;
+}
 
-type Data = Omit<NFT, "type">
-
-export const findNFT = (needle: Data, haystack: NFT[]) => {
+export const findNFT = <T extends NFTIsh>(needle: NFTIsh, haystack: T[]) => {
   return haystack.find((v) => {
     return (
       v.tokenId === needle.tokenId &&
       v.contract.toLowerCase() === needle.contract.toLowerCase()
     );
   });
-}
+};
