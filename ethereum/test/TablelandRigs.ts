@@ -19,6 +19,8 @@ chai.use(chaiAsPromised);
 const expect = chai.expect;
 const assert = chai.assert;
 
+const DELEGATE_CASH_ADDRESS = "0x00000000000076a84fef008cdabe6409d2fe638b";
+
 function getCost(quantity: number, price: number): BigNumber {
   return utils.parseEther((quantity * price).toFixed(2));
 }
@@ -121,14 +123,26 @@ describe("Rigs", function () {
     // Set pilots on rigs
     await (await rigs.initPilots(pilots.address)).wait();
 
+    // Deploy our delegate.cash mock,
+    // get the byte code from the deployed mock contract,
+    // and set the mock bytecode at the hardcoded delegate.cash address
     const DelegateCashFactory = await ethers.getContractFactory(
       "DelegateCashMock"
     );
-    delegateCash = await (
+    const delegateCashMock = await (
       (await DelegateCashFactory.deploy()) as DelegateCashMock
     ).deployed();
+    const mockDelegateCashCode = await network.provider.send("eth_getCode", [
+      delegateCashMock.address,
+    ]);
+    await network.provider.send("hardhat_setCode", [
+      DELEGATE_CASH_ADDRESS,
+      mockDelegateCashCode,
+    ]);
 
-    await (await rigs.initDelegateCash(delegateCash.address)).wait();
+    delegateCash = DelegateCashFactory.attach(
+      DELEGATE_CASH_ADDRESS
+    ) as DelegateCashMock;
   }
 
   beforeEach(async function () {
@@ -2479,16 +2493,6 @@ describe("Rigs", function () {
     });
 
     describe("delegation", function () {
-      describe("initDelegateCash", function () {
-        it("Should block contract non-owner", async function () {
-          const _rigs = rigs.connect(accounts[2]);
-
-          await expect(
-            _rigs.initDelegateCash(ethers.constants.AddressZero)
-          ).to.be.rejectedWith("Ownable: caller is not the owner");
-        });
-      });
-
       describe("trainRig", function () {
         it("Should train Rig if msg.sender is registered delegate for token.owner", async function () {
           // First, mint a Rig to `tokenOwner`
