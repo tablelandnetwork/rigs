@@ -14,15 +14,7 @@ import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
 import "./interfaces/IERC4906.sol";
-
-interface DelegateCashInterface {
-    function checkDelegateForToken(
-        address delegate,
-        address vault,
-        address contract_,
-        uint256 tokenId
-    ) external view returns (bool);
-}
+import "./interfaces/IDelegationRegistry.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -69,7 +61,7 @@ contract TablelandRigs is
     // Admin address
     address private _admin;
 
-    DelegateCashInterface private _delegateCash;
+    IDelegationRegistry private _delegateCash;
 
     function initialize(
         uint256 _maxSupply,
@@ -384,7 +376,7 @@ contract TablelandRigs is
      * @dev See {ITablelandRigs-initDelegateCash}.
      */
     function initDelegateCash(address delegateCashAddress) external onlyOwner {
-        _delegateCash = DelegateCashInterface(delegateCashAddress);
+        _delegateCash = IDelegateCash(delegateCashAddress);
     }
 
     // =============================

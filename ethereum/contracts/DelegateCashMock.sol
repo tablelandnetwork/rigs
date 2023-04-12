@@ -1,23 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-interface MockDelegateCashInterface {
-    function checkDelegateForToken(
-        address delegate,
-        address vault,
-        address contract_,
-        uint256 tokenId
-    ) external view returns (bool);
+import "./interfaces/IDelegationRegistry.sol";
 
-    function registerDelegate(
-        address delegate,
-        address vault,
-        address contract_,
-        uint256 tokenId
-    ) external;
-}
-
-contract DelegateCashMock is MockDelegateCashInterface {
+contract DelegateCashMock is IDelegationRegistry {
     mapping(address => mapping(address => mapping(uint256 => mapping(address => bool)))) delegations;
 
     function checkDelegateForToken(
