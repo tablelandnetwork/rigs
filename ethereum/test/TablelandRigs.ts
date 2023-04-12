@@ -12,7 +12,7 @@ import {
   PaymentSplitter,
   TablelandRigs,
   TablelandRigPilots,
-  MockDelegateCashInterface,
+  DelegateCashMock,
 } from "../typechain-types";
 
 chai.use(chaiAsPromised);
@@ -34,7 +34,7 @@ describe("Rigs", function () {
   let allowlistTree: MerkleTree;
   let waitlistTree: MerkleTree;
   let pilots: TablelandRigPilots;
-  let delegateCash: MockDelegateCashInterface;
+  let delegateCash: DelegateCashMock;
 
   // Use a fixture, which runs *once* to help ensure deterministic contract addresses
   async function deployRigsFixture() {
@@ -125,7 +125,7 @@ describe("Rigs", function () {
       "DelegateCashMock"
     );
     delegateCash = await (
-      (await DelegateCashFactory.deploy()) as MockDelegateCashInterface
+      (await DelegateCashFactory.deploy()) as DelegateCashMock
     ).deployed();
 
     await (await rigs.initDelegateCash(delegateCash.address)).wait();
