@@ -61,6 +61,7 @@ contract TablelandRigs is
     // Admin address
     address private _admin;
 
+    // Delegate.cash registry address
     IDelegationRegistry private _delegateCash;
 
     function initialize(
