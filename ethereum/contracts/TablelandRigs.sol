@@ -62,7 +62,8 @@ contract TablelandRigs is
     address private _admin;
 
     // Delegate.cash registry address
-    IDelegationRegistry private _delegateCash;
+    IDelegationRegistry private constant _delegateCash =
+        IDelegationRegistry(0x00000000000076A84feF008CDAbe6409d2FE638B);
 
     function initialize(
         uint256 _maxSupply,
@@ -371,13 +372,6 @@ contract TablelandRigs is
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    /**
-     * @dev See {ITablelandRigs-initDelegateCash}.
-     */
-    function initDelegateCash(address delegateCashAddress) external onlyOwner {
-        _delegateCash = IDelegateCash(delegateCashAddress);
     }
 
     // =============================

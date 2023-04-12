@@ -175,17 +175,6 @@ interface ITablelandRigs {
     function setAdmin(address admin) external;
 
     /**
-     * @dev Initializes the delegateCash address;
-     *
-     * delegateCashAddress - `DelegateCashInterface` contract address
-     *
-     * Requirements:
-     *
-     * - `msg.sender` must be contract owner
-     */
-    function initDelegateCash(address delegateCashAddress) external;
-
-    /**
      * @dev Initializes Rig pilots by creating the pilot sessions table.
      *
      * pilotsAddress - `ITablelandRigPilots` contract address
