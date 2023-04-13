@@ -32,7 +32,7 @@
     "svelte-preprocess": "^4.10.6",
     "sveltejs-adapter-ipfs": "^0.3.1",
     "tslib": "^2.4.1",
-    "typescript": "^4.8.4",
+    "typescript": "^5.0.4",
     "vite": "^3.2.3"
   },
   "type": "module"
