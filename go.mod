@@ -16,7 +16,7 @@ require (
 	github.com/ipld/go-car v0.5.0
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/rs/zerolog v1.28.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/textileio/go-tableland v0.0.0-20221108153858-1bdbdb189a6d
 	golang.org/x/image v0.7.0
 )
