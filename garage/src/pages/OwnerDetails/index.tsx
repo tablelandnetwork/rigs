@@ -51,10 +51,14 @@ export const OwnerDetails = () => {
   });
 
   const totalFt = useMemo(() => {
-    if (!pilots) return;
+    if (!pilots || !rewards) return;
 
-    return pilots.map((p) => p.flightTime).reduce((a, b) => a + b, 0);
-  }, [pilots]);
+    const sum = (a: number[]) => a.reduce((a, b) => a + b, 0);
+
+    return (
+      sum(pilots.map((p) => p.flightTime)) + sum(rewards.map((r) => r.amount))
+    );
+  }, [pilots, rewards]);
 
   return isValidAddress(owner) ? (
     <CenterContainer>
