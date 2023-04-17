@@ -63,6 +63,18 @@ var (
 			animation_base_url text
 		)`,
 	}
+	// FtRewardsDefinition defines the ft rewards table.
+	FtRewardsDefinition = TableDefinition{
+		Prefix: "ft_rewards",
+		Schema: `(
+			id integer primary key,
+			block_num integer not null,
+			recipient text not null,
+			reason text not null,
+			amount integer not null,
+			proposal_id integer
+		)`,
+	}
 )
 
 // Lookups holds values to be referenced in queries.
