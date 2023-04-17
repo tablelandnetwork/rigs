@@ -5,11 +5,13 @@ import { useEnsName } from "wagmi";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useOwnerPilots } from "../../hooks/useOwnerPilots";
 import { useOwnerActivity } from "../../hooks/useOwnerActivity";
+import { useOwnerFTRewards } from "../../hooks/useOwnerFTRewards";
 import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
 import { Pilots } from "./modules/Pilots";
+import { FTRewards } from "./modules/FTRewards";
 import { prettyNumber } from "../../utils/fmt";
 import { isValidAddress } from "../../utils/types";
 
@@ -42,6 +44,7 @@ export const OwnerDetails = () => {
   const { pilots } = useOwnerPilots(owner);
   const { events } = useOwnerActivity(owner);
   const { nfts } = useNFTsCached(pilots);
+  const { rewards } = useOwnerFTRewards(owner);
 
   const { data: ens } = useEnsName({
     address: isValidAddress(owner) ? owner : undefined,
@@ -84,13 +87,16 @@ export const OwnerDetails = () => {
           width="100%"
           align={{ base: "stretch", lg: "start" }}
         >
-          <RigsGrid
-            rigs={rigs}
-            nfts={nfts}
-            {...MODULE_PROPS}
-            gap={GRID_GAP}
-            flexGrow="1"
-          />
+          <VStack align="top" spacing={GRID_GAP}>
+            <RigsGrid
+              rigs={rigs}
+              nfts={nfts}
+              {...MODULE_PROPS}
+              gap={GRID_GAP}
+              flexGrow="1"
+            />
+            <FTRewards rewards={rewards} {...MODULE_PROPS} flexGrow="1" />
+          </VStack>
           <VStack flexShrink="0" align="top" spacing={GRID_GAP}>
             <Pilots pilots={pilots} nfts={nfts} {...MODULE_PROPS} />
             <ActivityLog events={events} {...MODULE_PROPS} />

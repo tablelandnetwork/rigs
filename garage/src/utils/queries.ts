@@ -1,6 +1,6 @@
 import { chain, deployment } from "../env";
 
-const { attributesTable, lookupsTable, pilotSessionsTable } = deployment;
+const { attributesTable, lookupsTable, pilotSessionsTable, ftRewardsTable } = deployment;
 
 const IMAGE_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name`;
 const IMAGE_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name`;
@@ -423,4 +423,8 @@ export const selectFilteredRigs = (
   }
 
   return `${outerQuery.replace("<subquery>", subQuery)}`;
+};
+
+export const selectOwnerFTRewards = (owner: string) => {
+  return `SELECT block_num as "blockNum", recipient, reason, amount FROM ${ftRewardsTable} WHERE recipient = '${owner}' ORDER BY block_num DESC`;
 };
