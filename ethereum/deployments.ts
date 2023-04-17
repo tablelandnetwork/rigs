@@ -10,7 +10,7 @@ export interface RigsDeployment {
   tablelandChain: helpers.ChainName;
   tablelandHost:
     | "https://tableland.network"
-    | "https://testnet.tableland.network"
+    | "https://testnets.tableland.network"
     | "https://staging.tableland.network"
     | "http://localhost:8080";
 
@@ -54,7 +54,7 @@ export const deployments: RigsDeployments = {
     royaltyContractAddress: "0xb61974afD4348DA16e45BC48d53883A281bc4A6e",
     pilotsAddress: "0x864655946432f52AE16BDE9af054380b3dE06789",
     tablelandChain: "maticmum",
-    tablelandHost: "https://testnet.tableland.network",
+    tablelandHost: "https://testnets.tableland.network",
     contractTable: "rigs_contract_80001_3819",
     allowlistTable: "rigs_allowlist_80001_3820",
     partsTable: "parts_80001_4038",

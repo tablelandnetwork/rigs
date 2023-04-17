@@ -101,6 +101,7 @@ const config: HardhatUserConfig = {
       externalLink: "https://tableland.xyz/rigs",
       sellerFeeBasisPoints: 500,
       feeRecipient: "0xEC19654b1c1DfAc2427F06D0fcA991f43C6b1281",
+      admin: "0x472028E35b69d92caaF804fA32c9D7AcD673AA37",
       maxSupply: 3000,
       etherPrice: "0.05",
       mintPhase: "public",
@@ -140,6 +141,7 @@ interface RigsConfig {
   externalLink: string;
   sellerFeeBasisPoints: number;
   feeRecipient: string;
+  admin: string;
 
   // mint phase
   mintPhase: "closed" | "allowlist" | "waitlist" | "public";
