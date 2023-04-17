@@ -24,7 +24,10 @@ import {
 import { Rig, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { address as contractAddress, abi } from "../contract";
+import { deployment } from "../env";
+import { abi } from "../abis/TablelandRigs";
+
+const { contractAddress } = deployment;
 
 interface ModalProps {
   rig: Rig;

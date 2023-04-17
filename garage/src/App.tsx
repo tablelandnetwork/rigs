@@ -20,6 +20,7 @@ import { Topbar } from "./Topbar";
 import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 import { RigAttributeStatsContextProvider } from "./components/RigAttributeStatsContext";
+import { NFTsContextProvider } from "./components/NFTsContext";
 import { routes } from "./routes";
 import { chain } from "./env";
 
@@ -198,33 +199,35 @@ function App() {
         <WagmiConfig client={wagmiClient}>
           <RainbowKitProvider chains={chains} theme={darkTheme()}>
             <RigAttributeStatsContextProvider>
-              <BrowserRouter>
-                <Topbar />
-                <GlobalFlyParkModals>
-                  <Routes>
-                    {routes().map(
-                      (
-                        { requiresWalletConnection, element, ...props },
-                        index
-                      ) => (
-                        <Route
-                          {...props}
-                          key={`route-${index}`}
-                          element={
-                            requiresWalletConnection ? (
-                              <RequiresWalletConnection>
-                                {element}
-                              </RequiresWalletConnection>
-                            ) : (
-                              element
-                            )
-                          }
-                        />
-                      )
-                    )}
-                  </Routes>
-                </GlobalFlyParkModals>
-              </BrowserRouter>
+              <NFTsContextProvider>
+                <BrowserRouter>
+                  <Topbar />
+                  <GlobalFlyParkModals>
+                    <Routes>
+                      {routes().map(
+                        (
+                          { requiresWalletConnection, element, ...props },
+                          index
+                        ) => (
+                          <Route
+                            {...props}
+                            key={`route-${index}`}
+                            element={
+                              requiresWalletConnection ? (
+                                <RequiresWalletConnection>
+                                  {element}
+                                </RequiresWalletConnection>
+                              ) : (
+                                element
+                              )
+                            }
+                          />
+                        )
+                      )}
+                    </Routes>
+                  </GlobalFlyParkModals>
+                </BrowserRouter>
+              </NFTsContextProvider>
             </RigAttributeStatsContextProvider>
           </RainbowKitProvider>
         </WagmiConfig>

@@ -54,8 +54,13 @@ import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { Rig, WalletAddress, isValidAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { address as contractAddress, abi } from "../contract";
+import { deployment } from "../env";
+import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
+import { pluralize } from "../utils/fmt";
+import { isPresent } from "../utils/types";
+
+const { contractAddress } = deployment;
 
 interface ModalProps {
   rigs: Rig[];
@@ -63,10 +68,6 @@ interface ModalProps {
   onClose: () => void;
   onTransactionSubmitted?: (txHash: string) => void;
 }
-
-const pluralize = (s: string, c: any[]): string => {
-  return c.length === 1 ? s : `${s}s`;
-};
 
 export const TrainRigsModal = ({
   rigs,
@@ -163,6 +164,8 @@ export const ParkRigsModal = ({
     hash: contractWrite.data?.hash,
   });
 
+  const hasNotCompletedTraining = rigs.some((v) => !v.isTrained);
+
   useEffect(() => {
     if (!isOpen) reset();
   }, [isOpen, reset]);
@@ -179,11 +182,13 @@ export const ParkRigsModal = ({
         <ModalHeader>Park {pluralize("Rig", rigs)}</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
-          <Text>
-            Training isn't complete! Be aware that your Rig will lose all of its
-            FT if you park now.
-          </Text>
-          <Text mt={4}>Parked Rigs can be sold or transferred.</Text>
+          {hasNotCompletedTraining && (
+            <Text mb={4}>
+              Training isn't complete! Be aware that your{" "}
+              {pluralize("Rig", rigs)} will lose all of its FT if you park now.
+            </Text>
+          )}
+          <Text>Parked Rigs can be sold or transferred.</Text>
           <Text mt={4} sx={{ fontStyle: "italic" }}>
             Parking requires an on-chain transaction. When you click the Park
             button below your wallet will request that you sign a transaction
@@ -218,9 +223,6 @@ interface PilotTransactionProps {
   onClose: () => void;
   onTransactionSubmitted?: (txHash: string) => void;
 }
-
-const isPresent = <T,>(t: T | undefined | null): t is T =>
-  t !== undefined && t !== null;
 
 const toContractArgs = (
   pairs: { rig: Rig; pilot: NFT }[]

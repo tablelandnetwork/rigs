@@ -3,21 +3,27 @@ import { Link } from "react-router-dom";
 import {
   Box,
   Button,
+  Divider,
   Flex,
   Heading,
+  Hide,
   Grid,
   GridItem,
+  Show,
+  Spacer,
   Spinner,
+  Stack,
   Text,
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
 import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
-import { useAccount } from "wagmi";
+import { useAccount, useBlockNumber } from "wagmi";
 import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
 import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
-import { useNFTs, NFT } from "../../../hooks/useNFTs";
-import { Rig, Pilot } from "../../../types";
+import { NFT } from "../../../hooks/useNFTs";
+import { useNFTsCached } from "../../../components/NFTsContext";
+import { Rig, RigWithPilots, Pilot } from "../../../types";
 import { RigDisplay } from "../../../components/RigDisplay";
 import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
 import { TablelandConnectButton } from "../../../components/TablelandConnectButton";
@@ -25,16 +31,18 @@ import { ChainAwareButton } from "../../../components/ChainAwareButton";
 import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { findNFT } from "../../../utils/nfts";
 import { sleep } from "../../../utils/async";
+import { prettyNumber } from "../../../utils/fmt";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
 import { chain } from "../../../env";
 
 interface RigListItemProps {
-  rig: Rig;
+  rig: RigWithPilots;
   nfts: NFT[];
   loading: boolean;
   selected: boolean;
   selectable: boolean;
   toggleSelected: () => void;
+  currentBlockNumber?: number;
 }
 
 const RigListItem = ({
@@ -44,8 +52,19 @@ const RigListItem = ({
   selected,
   selectable,
   toggleSelected,
+  currentBlockNumber,
 }: RigListItemProps) => {
   const currentNFT = rig.currentPilot && findNFT(rig.currentPilot, nfts);
+
+  const totalFlightTime = rig.pilotSessions.reduce(
+    (acc, { startTime, endTime }) => {
+      return (
+        acc +
+        Math.max((endTime ?? currentBlockNumber ?? startTime) - startTime, 0)
+      );
+    },
+    0
+  );
 
   return (
     <GridItem>
@@ -72,9 +91,14 @@ const RigListItem = ({
             transition=".2s"
           />
         </Link>
-        <Flex width="100%" justify="space-between">
-          <Text>{`#${rig.id}`}</Text>
-          <Text>{rig.currentPilot && "In-flight"}</Text>
+        <Flex width="100%" justify="space-between" align="center">
+          <Flex>
+            <Text>Rig {`#${rig.id}`}</Text>
+            <Text marginTop="2px" marginLeft="4px">
+              {rig.currentPilot && "✈️"}
+            </Text>
+          </Flex>
+          <Text fontSize="sm">{prettyNumber(totalFlightTime)} FT</Text>
         </Flex>
         <Button
           variant="outlined-background"
@@ -119,6 +143,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { address } = useAccount();
   const { rigs, refresh } = useOwnedRigs(address);
   const { validator } = useTablelandConnection();
+  const { data: currentBlockNumber } = useBlockNumber();
   const pilots = useMemo(() => {
     if (!rigs) return;
 
@@ -126,7 +151,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       .map((v) => v.currentPilot)
       .filter((v) => v?.contract) as Pilot[];
   }, [rigs]);
-  const { nfts } = useNFTs(pilots);
+  const { nfts } = useNFTsCached(pilots);
 
   const [selectedRigs, setSelectedRigs] = useState<Set<string>>(new Set());
 
@@ -265,6 +290,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
                 selected={selected}
                 selectable={!pendingTx && selectable}
                 toggleSelected={() => toggleRigSelected(rig)}
+                currentBlockNumber={currentBlockNumber}
               />
             );
           })}
@@ -272,9 +298,20 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       {rigs && rigs.length === 0 && (
-        <Text variant="emptyState" pt={8}>
-          You don't own any Rigs.
-        </Text>
+        <Flex
+          width="100%"
+          height="200px"
+          align="center"
+          justify="center"
+          direction="column"
+        >
+          <Text variant="emptyState" pt={8} pb={4}>
+            You don't own any Rigs.
+          </Text>
+          <Button as={Link} to="/gallery" height="40px">
+            Browse Rigs gallery
+          </Button>
+        </Flex>
       )}
 
       {!rigs && address && (
@@ -284,9 +321,32 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       )}
 
       {!address && (
-        <Flex width="100%" height="200px" align="center" justify="center" direction="column">
-          Not connected.
-          <TablelandConnectButton />
+        <Flex
+          width="100%"
+          height="200px"
+          align="center"
+          justify="center"
+          direction="column"
+        >
+          <Text variant="emptyState">No wallet connected.</Text>
+          <Stack pt={8} direction={{ base: "column", sm: "row" }}>
+            <TablelandConnectButton size="small" />
+            <Spacer width={3} />
+            <Show below="sm">
+              <Divider orientation="horizontal" />
+            </Show>
+            <Hide below="sm">
+              <Divider orientation="vertical" />
+            </Hide>
+            <Spacer width={3} />
+            <Button
+              as={Link}
+              to="/gallery"
+              height={{ base: "40px", sm: "100%" }}
+            >
+              Browse Rigs gallery
+            </Button>
+          </Stack>
         </Flex>
       )}
 

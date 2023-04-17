@@ -1,15 +1,17 @@
 import React, { useMemo } from "react";
 import { Flex, Heading, Text, VStack } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
+import { useEnsName } from "wagmi";
 import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useOwnerPilots } from "../../hooks/useOwnerPilots";
 import { useOwnerActivity } from "../../hooks/useOwnerActivity";
-import { useNFTs } from "../../hooks/useNFTs";
+import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
 import { Pilots } from "./modules/Pilots";
 import { prettyNumber } from "../../utils/fmt";
+import { isValidAddress } from "../../types";
 
 const GRID_GAP = 4;
 
@@ -18,10 +20,6 @@ const MODULE_PROPS = {
   p: 8,
   bgColor: "paper",
   overflow: "hidden",
-};
-
-const isValidAddress = (address?: string): boolean => {
-  return /0x[0-9a-z]{40,40}/i.test(address || "");
 };
 
 const CenterContainer = ({ children }: React.PropsWithChildren) => {
@@ -43,7 +41,11 @@ export const OwnerDetails = () => {
   const { rigs } = useOwnedRigs(owner);
   const { pilots } = useOwnerPilots(owner);
   const { events } = useOwnerActivity(owner);
-  const { nfts } = useNFTs(pilots);
+  const { nfts } = useNFTsCached(pilots);
+
+  const { data: ens } = useEnsName({
+    address: isValidAddress(owner) ? owner : undefined,
+  });
 
   const totalFt = useMemo(() => {
     if (!pilots) return;
@@ -56,6 +58,7 @@ export const OwnerDetails = () => {
       <Flex
         direction="column"
         p={GRID_GAP}
+        pt={{ base: GRID_GAP, md: GRID_GAP * 2 }}
         gap={GRID_GAP}
         align={{ base: "stretch", lg: "start" }}
         maxWidth="1385px"
@@ -64,7 +67,7 @@ export const OwnerDetails = () => {
       >
         <VStack {...MODULE_PROPS} width="100%" align="left">
           <Heading size="sm">Collector profile</Heading>
-          <Heading pb={8}>{owner}</Heading>
+          <Heading pb={8}>{ens ?? owner}</Heading>
 
           {totalFt && (
             <Heading size="sm">
