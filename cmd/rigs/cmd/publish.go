@@ -15,7 +15,7 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/files"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/sqlite"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/impl/tableland"
-	baseClient "github.com/textileio/go-tableland/pkg/client"
+	chains "github.com/textileio/go-tableland/pkg/client"
 	client "github.com/textileio/go-tableland/pkg/client/v1"
 	"github.com/textileio/go-tableland/pkg/wallet"
 )
@@ -27,7 +27,7 @@ var (
 	dirPublisher *dirpublisher.DirPublisher
 	store        storage.Store
 	tblClient    *client.Client
-	chain        baseClient.Chain
+	chain        chains.Chain
 )
 
 func init() {
@@ -101,9 +101,9 @@ var publishCmd = &cobra.Command{
 		checkErr(err)
 
 		if viper.GetString("tbl-api-url") != "" {
-			chain = baseClient.Chain{
+			chain = chains.Chain{
 				Endpoint:     viper.GetString("tbl-api-url"),
-				ID:           baseClient.ChainID(viper.GetInt64("chain-id")),
+				ID:           chains.ChainID(viper.GetInt64("chain-id")),
 				ContractAddr: common.HexToAddress(viper.GetString("contract-addr")),
 			}
 		} else {
@@ -131,7 +131,7 @@ var publishCmd = &cobra.Command{
 			opts = append(opts, client.NewClientAlchemyAPIKey(alchemyKey))
 			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(alchemyURLs[chain.ID], alchemyKey))
 			checkErr(err)
-		} else if chain.ID == baseClient.ChainIDs.Local {
+		} else if chain.ID == chains.ChainIDs.Local {
 			ethClient, err = ethclient.DialContext(ctx, localURLs[chain.ID])
 			checkErr(err)
 		}
@@ -172,54 +172,54 @@ var publishCmd = &cobra.Command{
 	},
 }
 
-func getChain() (baseClient.Chain, error) {
+func getChain() (chains.Chain, error) {
 	chain := viper.GetString("chain")
 	switch chain {
 	case "ethereum":
-		return baseClient.Chains[baseClient.ChainIDs.Ethereum], nil
+		return chains.Chains[chains.ChainIDs.Ethereum], nil
 	case "optimism":
-		return baseClient.Chains[baseClient.ChainIDs.Optimism], nil
+		return chains.Chains[chains.ChainIDs.Optimism], nil
 	case "arbitrum":
-		return baseClient.Chains[baseClient.ChainIDs.Arbitrum], nil
+		return chains.Chains[chains.ChainIDs.Arbitrum], nil
 	case "polygon":
-		return baseClient.Chains[baseClient.ChainIDs.Polygon], nil
+		return chains.Chains[chains.ChainIDs.Polygon], nil
 	case "ethereum-goerli":
-		return baseClient.Chains[baseClient.ChainIDs.EthereumGoerli], nil
+		return chains.Chains[chains.ChainIDs.EthereumGoerli], nil
 	case "optimism-goerli":
-		return baseClient.Chains[baseClient.ChainIDs.OptimismGoerli], nil
+		return chains.Chains[chains.ChainIDs.OptimismGoerli], nil
 	case "arbitrum-goerli":
-		return baseClient.Chains[baseClient.ChainIDs.ArbitrumGoerli], nil
+		return chains.Chains[chains.ChainIDs.ArbitrumGoerli], nil
 	case "polygon-mumbai":
-		return baseClient.Chains[baseClient.ChainIDs.PolygonMumbai], nil
+		return chains.Chains[chains.ChainIDs.PolygonMumbai], nil
 	case "local":
-		return baseClient.Chains[baseClient.ChainIDs.Local], nil
+		return chains.Chains[chains.ChainIDs.Local], nil
 	default:
-		return baseClient.Chain{}, fmt.Errorf("%s is not a valid chain", chain)
+		return chains.Chain{}, fmt.Errorf("%s is not a valid chain", chain)
 	}
 }
 
-var infuraURLs = map[baseClient.ChainID]string{
-	baseClient.ChainIDs.EthereumGoerli: "https://goerli.infura.io/v3/%s",
-	baseClient.ChainIDs.Ethereum:       "https://mainnet.infura.io/v3/%s",
-	baseClient.ChainIDs.OptimismGoerli: "https://optimism-goerli.infura.io/v3/%s",
-	baseClient.ChainIDs.Optimism:       "https://optimism-mainnet.infura.io/v3/%s",
-	baseClient.ChainIDs.ArbitrumGoerli: "https://arbitrim-goerli.infura.io/v3/%s",
-	baseClient.ChainIDs.Arbitrum:       "https://arbitrum-mainnet.infura.io/v3/%s",
-	baseClient.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.infura.io/v3/%s",
-	baseClient.ChainIDs.Polygon:        "https://polygon-mainnet.infura.io/v3/%s",
+var infuraURLs = map[chains.ChainID]string{
+	chains.ChainIDs.EthereumGoerli: "https://goerli.infura.io/v3/%s",
+	chains.ChainIDs.Ethereum:       "https://mainnet.infura.io/v3/%s",
+	chains.ChainIDs.OptimismGoerli: "https://optimism-goerli.infura.io/v3/%s",
+	chains.ChainIDs.Optimism:       "https://optimism-mainnet.infura.io/v3/%s",
+	chains.ChainIDs.ArbitrumGoerli: "https://arbitrim-goerli.infura.io/v3/%s",
+	chains.ChainIDs.Arbitrum:       "https://arbitrum-mainnet.infura.io/v3/%s",
+	chains.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.infura.io/v3/%s",
+	chains.ChainIDs.Polygon:        "https://polygon-mainnet.infura.io/v3/%s",
 }
 
-var alchemyURLs = map[baseClient.ChainID]string{
-	baseClient.ChainIDs.EthereumGoerli: "https://eth-goerli.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.Ethereum:       "https://eth-mainnet.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.OptimismGoerli: "https://opt-goerli.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.Optimism:       "https://opt-mainnet.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.ArbitrumGoerli: "https://arb-goerli.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.Arbitrum:       "https://arb-mainnet.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.g.alchemy.com/v2/%s",
-	baseClient.ChainIDs.Polygon:        "https://polygon-mainnet.g.alchemy.com/v2/%s",
+var alchemyURLs = map[chains.ChainID]string{
+	chains.ChainIDs.EthereumGoerli: "https://eth-goerli.g.alchemy.com/v2/%s",
+	chains.ChainIDs.Ethereum:       "https://eth-mainnet.g.alchemy.com/v2/%s",
+	chains.ChainIDs.OptimismGoerli: "https://opt-goerli.g.alchemy.com/v2/%s",
+	chains.ChainIDs.Optimism:       "https://opt-mainnet.g.alchemy.com/v2/%s",
+	chains.ChainIDs.ArbitrumGoerli: "https://arb-goerli.g.alchemy.com/v2/%s",
+	chains.ChainIDs.Arbitrum:       "https://arb-mainnet.g.alchemy.com/v2/%s",
+	chains.ChainIDs.PolygonMumbai:  "https://polygon-mumbai.g.alchemy.com/v2/%s",
+	chains.ChainIDs.Polygon:        "https://polygon-mainnet.g.alchemy.com/v2/%s",
 }
 
-var localURLs = map[baseClient.ChainID]string{
-	baseClient.ChainIDs.Local: "http://localhost:8545",
+var localURLs = map[chains.ChainID]string{
+	chains.ChainIDs.Local: "http://localhost:8545",
 }
