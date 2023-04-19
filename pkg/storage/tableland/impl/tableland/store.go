@@ -12,7 +12,7 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/common"
-	"github.com/textileio/go-tableland/pkg/client"
+	client "github.com/textileio/go-tableland/pkg/client/v1"
 )
 
 const dialect = "sqlite3"
@@ -226,8 +226,8 @@ func (s *Store) writeSQL(ctx context.Context, sql string) (string, error) {
 	if !found {
 		return "", fmt.Errorf("timed out before getting receipt for txn %s", hash)
 	}
-	if receipt.Error != "" {
-		return "", fmt.Errorf("error processing txn %s: %s", receipt.TxnHash, receipt.Error)
+	if receipt.Error_ != "" {
+		return "", fmt.Errorf("error processing txn %s: %s", receipt.TransactionHash, receipt.Error_)
 	}
 	return hash, nil
 }
