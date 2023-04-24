@@ -3,20 +3,20 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "daily"
+      interval: "monthly"
   - package-ecosystem: "npm"
     directory: "/ethereum"
     schedule:
-      interval: "daily"
+      interval: "monthly"
   - package-ecosystem: "npm"
     directory: "/viewer"
     schedule:
-      interval: "daily"
+      interval: "monthly"
   - package-ecosystem: "npm"
     directory: "/animation_url"
     schedule:
-      interval: "daily"
+      interval: "monthly"
   - package-ecosystem: "npm"
     directory: "/garage"
     schedule:
-      interval: "daily"
+      interval: "monthly"
