@@ -201,7 +201,7 @@ const MobileDrawer = ({
       <DrawerContent bgColor="primary">
         <DrawerHeader>
           <Flex align="center">
-            <Logo width="50px" height="auto" />
+            <Logo width="50px" height="100%" />
             <Text variant="orbitron" fontSize="20" color="paper" ml={3}>
               Garage
             </Text>
@@ -274,7 +274,7 @@ export const Topbar = () => {
         <SearchModal isOpen={isSearchOpen} onClose={onSearchClose} />
         <Link to="/dashboard">
           <Box sx={{ maxWidth: { base: "50px", md: "98px" } }} mr={2}>
-            <Logo width="100%" height="auto" />
+            <Logo width="100%" height="100%" />
           </Box>
         </Link>
         <Show above="lg">
