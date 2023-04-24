@@ -42,9 +42,9 @@ require (
 	github.com/ipfs/go-ipld-format v0.4.0 // indirect
 	github.com/ipld/go-car/v2 v2.4.1 // indirect
 	github.com/lib/pq v1.10.2 // indirect
-	github.com/libp2p/go-libp2p v0.16.0 // indirect
+	github.com/libp2p/go-libp2p v0.18.0 // indirect
 	github.com/libp2p/go-libp2p-record v0.1.3 // indirect
-	github.com/libp2p/go-libp2p-testing v0.5.0 // indirect
+	github.com/libp2p/go-libp2p-testing v0.8.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -70,7 +70,6 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.37.0 // indirect
 	go.opentelemetry.io/otel/trace v1.14.0 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
-	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	lukechampine.com/blake3 v1.1.6 // indirect
@@ -98,7 +97,7 @@ require (
 	github.com/ipfs/go-ipld-cbor v0.0.6 // indirect
 	github.com/ipfs/go-ipld-legacy v0.1.0 // indirect
 	github.com/ipfs/go-log v1.0.5 // indirect
-	github.com/ipfs/go-log/v2 v2.3.0 // indirect
+	github.com/ipfs/go-log/v2 v2.5.0 // indirect
 	github.com/ipfs/go-merkledag v0.6.0 // indirect
 	github.com/ipfs/go-metrics-interface v0.0.1 // indirect
 	github.com/ipfs/go-path v0.3.0 // indirect
@@ -109,7 +108,7 @@ require (
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/libp2p/go-buffer-pool v0.0.2 // indirect
-	github.com/libp2p/go-libp2p-core v0.11.0 // indirect
+	github.com/libp2p/go-libp2p-core v0.14.0 // indirect
 	github.com/libp2p/go-openssl v0.0.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
@@ -138,7 +137,7 @@ require (
 	github.com/whyrusleeping/cbor-gen v0.0.0-20210303213153-67a261a1d291 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
-	go.uber.org/zap v1.19.0 // indirect
+	go.uber.org/zap v1.19.1 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
