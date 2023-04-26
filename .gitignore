@@ -20,18 +20,18 @@ tableland.db
 *.out
 
 # IDEs
-.idea/
-.vscode/
+.idea
+.vscode
 
 # Project
 .env*
 *.ignore
 
 # viewer
-viewer/node_modules/
+viewer/node_modules
 viewer/.nuxt
 viewer/.eslintcache
-viewer/dist/
+viewer/dist
 viewer/.output
 
 #ethereum
