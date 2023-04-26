@@ -28,7 +28,7 @@ The `artifacts/` folder contains some build input and output that could be usefu
 
 ## Build and Install
 
-The Rigs CLI executable can be built by running `make build-rigs` or `go build ./cmd/rigs/`. The resulting executable will end up in the root of the repo working directory. If you want to install it into your `$PATH` using a properly configured Go installation, use `go instsall ./cmd/rigs`.
+The Rigs CLI executable can be built by running `make build-rigs` or `go build ./cmd/rigs/`. The resulting executable will end up in the root of the repo working directory. If you want to install it into your `$PATH` using a properly configured Go installation, use `go install ./cmd/rigs`.
 
 ## Running the CLI
 
