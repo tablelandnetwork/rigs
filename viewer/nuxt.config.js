@@ -1,6 +1,6 @@
 export default {
   env: {
-    api: process.env.API || 'http://localhost:5000'
+    api: process.env.API || 'http://localhost:5001'
   },
   // Disable server-side rendering: https://go.nuxtjs.dev/ssr-mode
   ssr: false,
