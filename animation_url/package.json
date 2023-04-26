@@ -29,7 +29,7 @@
     "prettier-plugin-svelte": "^2.8.0",
     "svelte": "^3.58.0",
     "svelte-check": "^3.2.0",
-    "svelte-preprocess": "^4.10.6",
+    "svelte-preprocess": "^5.0.3",
     "sveltejs-adapter-ipfs": "^0.3.1",
     "tslib": "^2.5.0",
     "typescript": "^4.8.4",
