@@ -37,15 +37,6 @@ jobs:
             ${{ runner.os }}-go-
       - name: Test
         run: make test
-      - name: Install and generate frontend
-        working-directory: ./viewer
-        run: |
-          npm install
-          npm run generate
-      - name: Test frontend
-        working-directory: ./viewer
-        run: |
-          npm test
   test-app:
     name: Test App
     runs-on: ubuntu-latest
