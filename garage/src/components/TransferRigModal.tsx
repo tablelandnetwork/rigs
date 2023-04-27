@@ -21,7 +21,8 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { Rig, isValidAddress } from "../types";
+import { Rig } from "../types";
+import { isValidAddress, as0xString } from "../utils/types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
 import { deployment } from "../env";
@@ -52,7 +53,7 @@ export const TransferRigModal = ({
   }, [toAddress]);
 
   const { config } = usePrepareContractWrite({
-    address: contractAddress,
+    address: as0xString(contractAddress),
     abi,
     functionName: rig.currentPilot
       ? "safeTransferWhileFlying"

@@ -51,14 +51,14 @@ import {
 } from "../hooks/useNFTs";
 import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
-import { Rig, WalletAddress, isValidAddress } from "../types";
+import { Rig, WalletAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
 import { deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
 import { pluralize } from "../utils/fmt";
-import { isPresent } from "../utils/types";
+import { isPresent, isValidAddress, as0xString } from "../utils/types";
 
 const { contractAddress } = deployment;
 
@@ -76,7 +76,7 @@ export const TrainRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
-    address: contractAddress,
+    address: as0xString(contractAddress),
     abi,
     functionName: "trainRig",
     args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
@@ -151,7 +151,7 @@ export const ParkRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
-    address: contractAddress,
+    address: as0xString(contractAddress),
     abi,
     functionName: "parkRig",
     args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
@@ -255,7 +255,7 @@ const PilotTransactionStep = ({
 }: PilotTransactionProps) => {
   // TODO support calling pilotRig(uint256, address, uint256) for a single rig?
   const { config } = usePrepareContractWrite({
-    address: contractAddress,
+    address: as0xString(contractAddress),
     abi,
     functionName: "pilotRig",
     args: toContractArgs(pairs),
