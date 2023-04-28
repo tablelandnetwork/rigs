@@ -11,7 +11,7 @@ import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
 import { Pilots } from "./modules/Pilots";
 import { prettyNumber } from "../../utils/fmt";
-import { isValidAddress } from "../../types";
+import { isValidAddress } from "../../utils/types";
 
 const GRID_GAP = 4;
 

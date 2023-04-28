@@ -38,8 +38,9 @@ import { useRig } from "../../hooks/useRig";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
+import { isValidAddress, as0xString } from "../../utils/types";
 import { chain, openseaBaseUrl, deployment } from "../../env";
-import { RigWithPilots, isValidAddress } from "../../types";
+import { RigWithPilots } from "../../types";
 import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
@@ -166,19 +167,19 @@ export const RigDetails = () => {
   const { data: contractData, refetch } = useContractReads({
     contracts: [
       {
-        address: contractAddress,
+        address: as0xString(contractAddress),
         abi,
         functionName: "ownerOf",
         args: [ethers.BigNumber.from(id)],
       },
       {
-        address: contractAddress,
+        address: as0xString(contractAddress),
         abi,
         functionName: "tokenURI",
         args: [ethers.BigNumber.from(id)],
       },
       {
-        address: contractAddress,
+        address: as0xString(contractAddress),
         abi,
         functionName: "pilotInfo",
         args: [ethers.BigNumber.from(id)],
