@@ -14,6 +14,7 @@ import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
 import "./interfaces/IERC4906.sol";
+import "./interfaces/IDelegationRegistry.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -59,6 +60,10 @@ contract TablelandRigs is
 
     // Admin address
     address private _admin;
+
+    // Delegate.cash registry address
+    IDelegationRegistry private constant _delegateCash =
+        IDelegationRegistry(0x00000000000076A84feF008CDAbe6409d2FE638B);
 
     function initialize(
         uint256 _maxSupply,
@@ -441,16 +446,48 @@ contract TablelandRigs is
     }
 
     /**
+     * @notice Returns the token owner and the sender. Useful for authorization
+     * checks that take delegation into account.
+     *
+     * @dev If `msg.sender` is registered as a delegate for the address that owns
+     * the rig in the delegate.cash registry (= msg.sender is allowed to act
+     * on behalf of the owner), the owning address will be returned as sender.
+     *
+     * tokenId - the unique Rig token identifier
+     */
+    function _getTokenOwnerAndSenderWithDelegationCheck(
+        uint256 tokenId
+    ) private view returns (address tokenOwner, address sender) {
+        sender = _msgSenderERC721A();
+        tokenOwner = ownerOf(tokenId);
+
+        if (
+            _delegateCash.checkDelegateForToken(
+                sender,
+                tokenOwner,
+                address(this),
+                tokenId
+            )
+        ) {
+            sender = tokenOwner;
+        }
+    }
+
+    /**
      * @dev See {ITablelandRigs-trainRig}.
      */
     function trainRig(uint256 tokenId) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-        // Verify `msg.sender` is authorized to train the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A())
-            revert ITablelandRigPilots.Unauthorized();
 
-        _pilots.trainRig(_msgSenderERC721A(), tokenId);
+        // Verify `msg.sender` is authorized to train the specified Rig
+        (
+            address tokenOwner,
+            address sender
+        ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
+        if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
+
+        _pilots.trainRig(sender, tokenId);
         emit MetadataUpdate(tokenId);
     }
 
@@ -479,21 +516,21 @@ contract TablelandRigs is
     ) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+
         // Verify `msg.sender` is authorized to pilot the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A())
-            revert ITablelandRigPilots.Unauthorized();
+        (
+            address tokenOwner,
+            address sender
+        ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
+        if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
 
         // If the supplied pilot address is `0x0`, then assume a trainer pilot
         // (note: `pilotId` has no impact here). Otherwise, proceed with a
         // custom pilot. The overloaded methods direct changes accordingly.
         pilotAddr == address(0)
-            ? _pilots.pilotRig(_msgSenderERC721A(), tokenId)
-            : _pilots.pilotRig(
-                _msgSenderERC721A(),
-                tokenId,
-                pilotAddr,
-                pilotId
-            );
+            ? _pilots.pilotRig(sender, tokenId)
+            : _pilots.pilotRig(sender, tokenId, pilotAddr, pilotId);
+
         emit MetadataUpdate(tokenId);
     }
 
@@ -533,9 +570,14 @@ contract TablelandRigs is
     function parkRig(uint256 tokenId) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
+
         // Verify `msg.sender` is authorized to park the specified Rig
-        if (ownerOf(tokenId) != _msgSenderERC721A())
-            revert ITablelandRigPilots.Unauthorized();
+        (
+            address tokenOwner,
+            address sender
+        ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
+        if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
+
         // Pass `false` to indicate a standard (non-force) park
         _pilots.parkRig(tokenId, false);
         emit MetadataUpdate(tokenId);

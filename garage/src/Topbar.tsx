@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
@@ -17,13 +17,20 @@ import {
   InputLeftElement,
   InputRightElement,
   Kbd,
+  Link,
   List,
   ListItem,
   Modal,
   ModalOverlay,
+  ModalBody,
+  ModalCloseButton,
   ModalContent,
+  ModalHeader,
+  RadioGroup,
+  Radio,
   Show,
   Spacer,
+  Stack,
   Text,
   useDisclosure,
 } from "@chakra-ui/react";
@@ -35,6 +42,8 @@ import {
 import { ReactComponent as Logo } from "./assets/tableland.svg";
 import { useCurrentRoute } from "./hooks/useCurrentRoute";
 import { useKeysDown } from "./hooks/useKeysDown";
+import { useAccount } from "./hooks/useAccount";
+import { truncateWalletAddress } from "./utils/fmt";
 
 export const TOPBAR_HEIGHT = "80px";
 
@@ -176,7 +185,7 @@ const NavButton = ({ active, route, title, ref, ...rest }: NavButtonProps) => {
     <Button
       {...props}
       {...rest}
-      as={Link}
+      as={RouterLink}
       to={route}
       flexGrow="0"
       flexShrink="0"
@@ -239,8 +248,60 @@ const MobileDrawer = ({
   );
 };
 
+const ActAsModal = ({
+  isOpen,
+  onClose,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  const {
+    address,
+    delegations,
+    actingAsAddress,
+    setActingAsAddress,
+  } = useAccount();
+
+  const setValue = useCallback(
+    (value: string) => {
+      setActingAsAddress(value === address ? undefined : value);
+    },
+    [address, setActingAsAddress]
+  );
+  return (
+    <Modal size="md" isOpen={isOpen} onClose={onClose}>
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Act as</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          The garage uses{" "}
+          <Link href="https://delegate.cash" isExternal>
+            delegate.cash
+          </Link>{" "}
+          to allow you to use your hot wallet(s) to manage Rigs in your vaults.
+          You have permission to act as:
+          <RadioGroup onChange={setValue} value={actingAsAddress} py={4}>
+            <Stack direction="column">
+              <Radio value={address}>Yourself</Radio>
+              {delegations.map(({ vault }, i) => {
+                return (
+                  <Radio value={vault} key={i}>
+                    {truncateWalletAddress(vault)}
+                  </Radio>
+                );
+              })}
+            </Stack>
+          </RadioGroup>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 export const Topbar = () => {
   const route = useCurrentRoute();
+  const { delegations, actingAsAddress } = useAccount();
 
   const isEnter = route?.route.key === "ENTER";
   const bgColor = isEnter ? "primaryLight" : "primary";
@@ -254,6 +315,12 @@ export const Topbar = () => {
     isOpen: isDrawerOpen,
     onClose: onDrawerClose,
     onOpen: onDrawerOpen,
+  } = useDisclosure();
+
+  const {
+    isOpen: isActAsOpen,
+    onClose: onActAsClose,
+    onOpen: onActAsOpen,
   } = useDisclosure();
 
   return (
@@ -272,11 +339,11 @@ export const Topbar = () => {
         py={4}
       >
         <SearchModal isOpen={isSearchOpen} onClose={onSearchClose} />
-        <Link to="/dashboard">
+        <RouterLink to="/dashboard">
           <Box sx={{ maxWidth: { base: "50px", md: "98px" } }} mr={2}>
             <Logo width="100%" height="100%" />
           </Box>
-        </Link>
+        </RouterLink>
         <Show above="lg">
           <Text variant="orbitron" fontSize="20">
             Garage
@@ -316,6 +383,15 @@ export const Topbar = () => {
               </HStack>
               <HStack flexShrink="0" flexGrow="1" justify="end">
                 <RigSearchForm />
+                {delegations.length > 0 && (
+                  <Button
+                    {...inactiveProps}
+                    onClick={onActAsOpen}
+                    fontSize="xs"
+                  >
+                    Act as
+                  </Button>
+                )}
                 <TablelandConnectButton />
               </HStack>
             </Show>
@@ -341,6 +417,7 @@ export const Topbar = () => {
           </Flex>
         )}
       </Flex>
+      <ActAsModal isOpen={isActAsOpen} onClose={onActAsClose} />
     </>
   );
 };
