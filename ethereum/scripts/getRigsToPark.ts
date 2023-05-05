@@ -6,7 +6,7 @@ const db = new Database();
 
 // Blur API response
 type BlurRig = {
-  id: string;
+  id: string; // Rig tokenId
   isSuspicious: boolean;
   owner: string;
   contractAddress: string;
@@ -36,7 +36,7 @@ type OsRig = {
       offer: Array<{
         itemType: number;
         token: string;
-        identifierOrCriteria: string;
+        identifierOrCriteria: string; // Rig tokenId
         startAmount: string;
         endAmount: string;
       }>;
@@ -61,6 +61,32 @@ type OsRig = {
     signature: string | null;
   };
   protocol_address: string;
+};
+
+// LooksRare API
+type LooksRareRig = {
+  id: string;
+  hash: string;
+  quoteType: number;
+  globalNonce: string;
+  subsetNonce: string;
+  orderNonce: string;
+  collection: string;
+  currency: string;
+  signer: string;
+  strategyId: number;
+  collectionType: number;
+  startTime: number;
+  endTime: number;
+  price: string;
+  additionalParameters: string;
+  signature: string;
+  createdAt: string;
+  merkleRoot: null;
+  merkleProof: null;
+  amounts: Array<string>;
+  itemIds: Array<string>; // Rig tokenId
+  status: string;
 };
 
 async function getInFlight(rigIds: number[]): Promise<number[]> {
@@ -128,6 +154,18 @@ async function main() {
   const osRes = await osReq.json();
   const osListed: OsRig[] = osRes.listings;
 
+  // Get listings on LooksRare
+  const lrReq = await fetch(
+    `https://api.looksrare.org/api/v2/orders?quoteType=1&collection=${rigsDeployment.contractAddress}&status=VALID`,
+    {
+      headers: {
+        accept: "application/json",
+      },
+    }
+  );
+  const lrRes = await lrReq.json();
+  const lrListed: LooksRareRig[] = lrRes.data;
+
   // Check if Rigs are in-flight on each marketplace
   const blurIds = blurListed.map((l) => {
     return parseInt(l.tokenId);
@@ -136,12 +174,18 @@ async function main() {
     osListed.map((l) => {
       return parseInt(l.protocol_data.parameters.offer[0].identifierOrCriteria);
     }) || [];
+  const lrIds =
+    lrListed.map((l) => {
+      return parseInt(l.itemIds[0]);
+    }) || [];
   const blurToPark = await getInFlight(blurIds);
   const osToPark = await getInFlight(osIds);
+  const lrToPark = await getInFlight(lrIds);
   console.log(
-    `----\nPark Rigs:\n`,
+    `----\nForce park Rigs:\n`,
     `Blur: ${blurToPark.length > 0 ? blurToPark.join(",") : "none"}\n`,
-    `OpenSea: ${osToPark.length > 0 ? osToPark.join(",") : "none"}`
+    `OpenSea: ${osToPark.length > 0 ? osToPark.join(",") : "none"}\n`,
+    `LooksRare: ${lrToPark.length > 0 ? lrToPark.join(",") : "none"}`
   );
 
   // // Park rigs
