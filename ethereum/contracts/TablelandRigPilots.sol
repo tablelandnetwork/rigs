@@ -64,7 +64,7 @@ contract TablelandRigPilots is
         __UUPSUpgradeable_init();
 
         _parent = parent_;
-        _pilotSessionsTableId = TablelandDeployments.get().createTable(
+        _pilotSessionsTableId = TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
                 "id integer primary key,"
@@ -259,7 +259,7 @@ contract TablelandRigPilots is
         _setPilotData(uint16(tokenId), 0, 1);
 
         // Insert the Rig training session into the Tableland pilot sessions table
-        TablelandDeployments.get().runSQL(
+        TablelandDeployments.get().mutate(
             address(this),
             _pilotSessionsTableId,
             SQLHelpers.toInsert(
@@ -299,7 +299,7 @@ contract TablelandRigPilots is
         _setStartTime(uint16(tokenId), uint64(block.number));
 
         // Insert the trainer pilot session into the Tableland pilot sessions table
-        TablelandDeployments.get().runSQL(
+        TablelandDeployments.get().mutate(
             address(this),
             _pilotSessionsTableId,
             SQLHelpers.toInsert(
@@ -378,7 +378,7 @@ contract TablelandRigPilots is
                 "start_time=",
                 StringsUpgradeable.toString(pilotStartTime(tokenId))
             );
-            TablelandDeployments.get().runSQL(
+            TablelandDeployments.get().mutate(
                 address(this),
                 _pilotSessionsTableId,
                 SQLHelpers.toUpdate(
@@ -394,7 +394,7 @@ contract TablelandRigPilots is
         _setStartTime(uint16(tokenId), uint64(block.number));
 
         // Insert the pilot into the Tableland pilot sessions table
-        TablelandDeployments.get().runSQL(
+        TablelandDeployments.get().mutate(
             address(this),
             _pilotSessionsTableId,
             SQLHelpers.toInsert(
@@ -471,7 +471,7 @@ contract TablelandRigPilots is
         _setStartTime(uint16(tokenId), 0);
 
         // Update the pilot information in the Tableland pilot sessions table
-        TablelandDeployments.get().runSQL(
+        TablelandDeployments.get().mutate(
             address(this),
             _pilotSessionsTableId,
             SQLHelpers.toUpdate(
@@ -507,7 +507,7 @@ contract TablelandRigPilots is
             StringsUpgradeable.toString(startTime)
         );
         // Update the pilot information in the Tableland pilot sessions table
-        TablelandDeployments.get().runSQL(
+        TablelandDeployments.get().mutate(
             address(this),
             _pilotSessionsTableId,
             SQLHelpers.toUpdate(
