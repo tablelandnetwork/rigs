@@ -1,4 +1,4 @@
-import { network, rigsDeployment, ethers } from "hardhat";
+import { network, rigsDeployment } from "hardhat";
 import { Database } from "@tableland/sdk";
 // import { TablelandRigs } from "../typechain-types";
 
