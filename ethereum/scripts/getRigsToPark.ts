@@ -1,9 +1,10 @@
-import { network, rigsDeployment } from "hardhat";
+import { network, rigsDeployment, ethers } from "hardhat";
 import { Database } from "@tableland/sdk";
 // import { TablelandRigs } from "../typechain-types";
 
 const db = new Database();
 
+// Blur API response
 type BlurRig = {
   id: string;
   isSuspicious: boolean;
@@ -16,6 +17,67 @@ type BlurRig = {
   createdAt: string;
   updatedAt: string;
 };
+
+// OpenSea API response
+type OsRig = {
+  order_hash: string;
+  chain: string;
+  type: string;
+  price: {
+    current: {
+      currency: string;
+      decimals: number;
+      value: string;
+    };
+  };
+  protocol_data: {
+    parameters: {
+      offerer: string;
+      offer: Array<{
+        itemType: number;
+        token: string;
+        identifierOrCriteria: string;
+        startAmount: string;
+        endAmount: string;
+      }>;
+      consideration: Array<{
+        itemType: number;
+        token: string;
+        identifierOrCriteria: string;
+        startAmount: string;
+        endAmount: string;
+        recipient: string;
+      }>;
+      startTime: string;
+      endTime: string;
+      orderType: number;
+      zone: string;
+      zoneHash: string;
+      salt: string;
+      conduitKey: string;
+      totalOrginalConsiderationItems: number;
+      counter: number;
+    };
+    signature: string | null;
+  };
+  protocol_address: string;
+};
+
+async function getInFlight(rigIds: number[]): Promise<number[]> {
+  // Get the sessions where end_time is null, there should only ever be one of these
+  const res = await db
+    .prepare(
+      `SELECT rig_id FROM ${
+        rigsDeployment.pilotSessionsTable
+      } WHERE rig_id in (${rigIds.join(",")}) AND end_time is null;`
+    )
+    .all<{ rig_id: number }>();
+  const ids: number[] = [];
+  (res && res.results ? res.results : []).forEach((i) => {
+    ids.push(i.rig_id);
+  });
+  return ids;
+}
 
 async function main() {
   console.log(
@@ -34,11 +96,11 @@ async function main() {
   }
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
-  // Get listed on Blur
+  // Get listings on Blur
   const blurReq = await fetch(
     "https://openblur.p.rapidapi.com/listings?" +
       new URLSearchParams({
-        contractAddress: "0x8eaa9ae1ac89b1c8c8a8104d08c045f78aadb42d",
+        contractAddress: rigsDeployment.contractAddress.toLowerCase(),
         orderBy: "ASC",
         pageSize: "100",
       }),
@@ -52,12 +114,35 @@ async function main() {
   const blurRes = await blurReq.json();
   const blurListed: BlurRig[] = blurRes.items || [];
 
-  // Check if each is in-flight
-  const ids = blurListed.map((l) => {
+  // Get listings on OpenSea
+  const osSlug = "tableland-rigs"; // Must query by OS slug, not contract address
+  const osReq = await fetch(
+    `https://api.opensea.io/v2/listings/collection/${osSlug}/all`,
+    {
+      headers: {
+        accept: "application/json",
+        "X-API-KEY": process.env.OPENSEA_API_KEY!,
+      },
+    }
+  );
+  const osRes = await osReq.json();
+  const osListed: OsRig[] = osRes.listings;
+
+  // Check if Rigs are in-flight on each marketplace
+  const blurIds = blurListed.map((l) => {
     return parseInt(l.tokenId);
   });
-  const toPark = await getInFlight(ids);
-  console.log(`Park rigs: ${toPark.length > 0 ? toPark.join(",") : "none"}`);
+  const osIds =
+    osListed.map((l) => {
+      return parseInt(l.protocol_data.parameters.offer[0].identifierOrCriteria);
+    }) || [];
+  const blurToPark = await getInFlight(blurIds);
+  const osToPark = await getInFlight(osIds);
+  console.log(
+    `----\nPark Rigs:\n`,
+    `Blur: ${blurToPark.length > 0 ? blurToPark.join(",") : "none"}\n`,
+    `OpenSea: ${osToPark.length > 0 ? osToPark.join(",") : "none"}`
+  );
 
   // // Park rigs
   // const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
@@ -68,22 +153,6 @@ async function main() {
   // ]);
   // const receipt = await tx.wait();
   // console.log(`parked rigs with txn '${receipt.transactionHash}'`);
-}
-
-async function getInFlight(rigIds: number[]): Promise<number[]> {
-  // Get the sessions where end_time is null, there should only ever be one of these
-  const res = await db
-    .prepare(
-      `SELECT rig_id FROM ${
-        rigsDeployment.pilotSessionsTable
-      } WHERE rig_id in (${rigIds.join(",")}) AND end_time is null;`
-    )
-    .all<{ rig_id: number }>();
-  const ids: number[] = [];
-  (res && res.results ? res.results : []).forEach((i) => {
-    ids.push(i.rig_id);
-  });
-  return ids;
 }
 
 main().catch((error) => {
