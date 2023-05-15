@@ -1,6 +1,5 @@
 import { network, rigsDeployment } from "hardhat";
 import { Database } from "@tableland/sdk";
-// import { TablelandRigs } from "../typechain-types";
 
 const db = new Database();
 
@@ -110,12 +109,6 @@ async function main() {
     `\nGetting listed rigs that are in-flight on '${network.name}'...`
   );
 
-  // Get owner account
-  // const [account] = await ethers.getSigners();
-  // if (account.provider === undefined) {
-  //   throw Error("missing provider");
-  // }
-
   // Get contract address
   if (rigsDeployment.contractAddress === "") {
     throw Error(`no contractAddress entry for '${network.name}'`);
@@ -187,16 +180,6 @@ async function main() {
     `OpenSea: ${osToPark.length > 0 ? osToPark.join(",") : "none"}\n`,
     `LooksRare: ${lrToPark.length > 0 ? lrToPark.join(",") : "none"}`
   );
-
-  // // Park rigs
-  // const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
-  //   rigsDeployment.contractAddress
-  // ) as TablelandRigs;
-  // const tx = await rigs.parkRigAsAdmin([
-  //   /* rigs IDs to park here */
-  // ]);
-  // const receipt = await tx.wait();
-  // console.log(`parked rigs with txn '${receipt.transactionHash}'`);
 }
 
 main().catch((error) => {
