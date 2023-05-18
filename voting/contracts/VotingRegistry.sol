@@ -25,6 +25,10 @@ contract VotingRegistry {
         string ftSnapshotTableName;
     }
 
+    string private constant _PROPOSALS_PREFIX = "proposals";
+    uint256 private _proposalsTableId;
+    string private _proposalsTableName;
+
     string private constant _FT_SNAPSHOT_PREFIX = "ft_snapshot";
     uint256 private _ftSnapshotTableId;
     string private _ftSnapshotTableName;
@@ -50,6 +54,9 @@ contract VotingRegistry {
         _ftRewardsTableName = ftRewardsTableName;
         _ftRewardsTableId = ftRewardsTableId;
 
+        _proposalsTableId = _createProposalsTable();
+        _proposalsTableName = SQLHelpers.toNameFromId(_PROPOSALS_PREFIX, _proposalsTableId);
+
         _ftSnapshotTableId = _createSnapshotTable();
         _ftSnapshotTableName = SQLHelpers.toNameFromId(_FT_SNAPSHOT_PREFIX, _ftSnapshotTableId);
 
@@ -74,6 +81,7 @@ contract VotingRegistry {
 
         string memory proposalIdString = StringsUpgradeable.toString(proposalId);
 
+        _insertProposal(proposalIdString, name, startBlockNumber, endBlockNumber);
         _insertAlternatives(proposalIdString, alternatives);
         _snapshotVotingPower(proposalIdString);
         _insertEligibleVotes(proposalIdString, alternatives);
@@ -87,6 +95,16 @@ contract VotingRegistry {
 
     function proposal(uint256 proposalId) external view returns (Proposal memory) {
         return _proposals[proposalId];
+    }
+
+    function _createProposalsTable() internal returns (uint256) {
+        return TablelandDeployments.get().create(
+            address(this),
+            SQLHelpers.toCreateFromSchema(
+                "id integer NOT NULL, name text NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL",
+                _PROPOSALS_PREFIX
+            )
+        );
     }
 
     function _createSnapshotTable() internal returns (uint256) {
@@ -115,6 +133,25 @@ contract VotingRegistry {
                 "id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL", _ALTERNATIVES_PREFIX
             )
         );
+    }
+
+    function _insertProposal(string memory proposalIdString, string memory name, uint256 startBlockNumber, uint256 endBlockNumber) internal {
+        string memory insert = string.concat(
+            "INSERT INTO ",
+            _proposalsTableName,
+            " (id, name, created_at, start_block, end_block) VALUES (",
+            proposalIdString,
+            ", ",
+            SQLHelpers.quote(name),
+            ", ",
+            StringsUpgradeable.toString(block.number),
+            ", ",
+            StringsUpgradeable.toString(startBlockNumber),
+            ", ",
+            StringsUpgradeable.toString(endBlockNumber),
+            ")"
+        );
+        TablelandDeployments.get().mutate(address(this), _proposalsTableId, insert);
     }
 
     function _insertAlternatives(string memory proposalId, string[] calldata alternatives) internal {
