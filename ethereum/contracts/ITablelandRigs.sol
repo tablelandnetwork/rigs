@@ -217,18 +217,6 @@ interface ITablelandRigs {
     ) external view returns (ITablelandRigPilots.PilotInfo[] memory);
 
     /**
-     * @dev Trains a single Rig for a period of 30 days, putting it in-flight.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - pilot status must be valid (`UNTRAINED`)
-     */
-    function trainRig(uint256 tokenId) external;
-
-    /**
      * @dev Puts multiple Rigs in training.
      *
      * tokenIds - the unique Rig token identifier
@@ -241,7 +229,7 @@ interface ITablelandRigs {
      * - Values are processed in order
      * - See `trainRig` for additional constraints on a per-token basis
      */
-    function trainRig(uint256[] calldata tokenIds) external;
+    function stake(uint256[] calldata tokenIds) external;
 
     /**
      * @dev Puts a single Rig in flight by setting a custom pilot.
@@ -259,7 +247,7 @@ interface ITablelandRigs {
      * - `pilotId` must be owned by `msg.sender` at `pilotContract` (does not apply to trainer pilots)
      * - Pilot can only be associated with one Rig at a time; parks the other Rig on conflict (does not apply to trainer pilots)
      */
-    function pilotRig(
+    function stake(
         uint256 tokenId,
         address pilotContract,
         uint256 pilotId
@@ -279,26 +267,13 @@ interface ITablelandRigs {
      * - There cannot exist a duplicate value in each of the individual parameters,
      *   except if using a trainer pilot (i.e., trainers aren't unique/owned NFTs).
      * - Values are processed in order (i.e., use same index for each array)
-     * - See `pilotRig` for additional constraints on a per-token basis
+     * - See `stake` for additional constraints on a per-token basis
      */
-    function pilotRig(
+    function stake(
         uint256[] calldata tokenIds,
         address[] calldata pilotContracts,
         uint256[] calldata pilotIds
     ) external;
-
-    /**
-     * @dev Parks a single Rig and ends the current pilot session.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - pilot status must be `TRAINING` or `PILOTED`
-     * - pilot must have completed 30 days of training
-     */
-    function parkRig(uint256 tokenId) external;
 
     /**
      * @dev Parks multiple Rigs and ends the current pilot session.
@@ -312,7 +287,7 @@ interface ITablelandRigs {
      * - Values are processed in order
      * - See `parkRig` for additional constraints on a per-token basis
      */
-    function parkRig(uint256[] calldata tokenIds) external;
+    function unstake(uint256[] calldata tokenIds) external;
 
     /**
      * @dev Allows contract owner to park any Rig that may be intentionally

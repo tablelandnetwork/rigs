@@ -15,6 +15,7 @@ import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
 import "./interfaces/IERC4906.sol";
 import "./interfaces/IDelegationRegistry.sol";
+import "./interfaces/ITokenReputation.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -25,6 +26,7 @@ contract TablelandRigs is
     ERC721AUpgradeable,
     ERC721AQueryableUpgradeable,
     IERC4906,
+    ITokenReputation,
     OwnableUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -474,9 +476,9 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-trainRig}.
+     * @dev See {ITokenReputation-stake}.
      */
-    function trainRig(uint256 tokenId) public whenNotPaused {
+    function stake(uint256 tokenId) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
@@ -488,13 +490,14 @@ contract TablelandRigs is
         if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
 
         _pilots.trainRig(sender, tokenId);
+        emit Stake(tokenId, tokenOwner, block.number);
         emit MetadataUpdate(tokenId);
     }
 
     /**
-     * @dev See {ITablelandRigs-trainRig}.
+     * @dev See {ITablelandRigs-stake}.
      */
-    function trainRig(uint256[] calldata tokenIds) external whenNotPaused {
+    function stake(uint256[] calldata tokenIds) external whenNotPaused {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
@@ -502,14 +505,14 @@ contract TablelandRigs is
 
         // For each token, call `trainRig`
         for (uint8 i = 0; i < tokenIds.length; i++) {
-            trainRig(tokenIds[i]);
+            stake(tokenIds[i]);
         }
     }
 
     /**
-     * @dev See {ITablelandRigs-pilotRig}.
+     * @dev See {ITablelandRigs-stake}.
      */
-    function pilotRig(
+    function stake(
         uint256 tokenId,
         address pilotAddr,
         uint256 pilotId
@@ -530,14 +533,14 @@ contract TablelandRigs is
         pilotAddr == address(0)
             ? _pilots.pilotRig(sender, tokenId)
             : _pilots.pilotRig(sender, tokenId, pilotAddr, pilotId);
-
+        emit Stake(tokenId, tokenOwner, block.number);
         emit MetadataUpdate(tokenId);
     }
 
     /**
-     * @dev See {ITablelandRigs-pilotRig}.
+     * @dev See {ITablelandRigs-stake}.
      */
-    function pilotRig(
+    function stake(
         uint256[] calldata tokenIds,
         address[] calldata pilotAddrs,
         uint256[] calldata pilotIds
@@ -560,14 +563,14 @@ contract TablelandRigs is
 
         // For each token, call `pilotRig`
         for (uint8 i = 0; i < tokenIds.length; i++) {
-            pilotRig(tokenIds[i], pilotAddrs[i], pilotIds[i]);
+            stake(tokenIds[i], pilotAddrs[i], pilotIds[i]);
         }
     }
 
     /**
-     * @dev See {ITablelandRigs-parkRig}.
+     * @dev See {ITokenReputation-unstake}.
      */
-    function parkRig(uint256 tokenId) public whenNotPaused {
+    function unstake(uint256 tokenId) public whenNotPaused {
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
@@ -580,13 +583,14 @@ contract TablelandRigs is
 
         // Pass `false` to indicate a standard (non-force) park
         _pilots.parkRig(tokenId, false);
+        emit Unstake(tokenId, tokenOwner, block.number);
         emit MetadataUpdate(tokenId);
     }
 
     /**
-     * @dev See {ITablelandRigs-parkRig}.
+     * @dev See {ITablelandRigs-unstake}.
      */
-    function parkRig(uint256[] calldata tokenIds) external whenNotPaused {
+    function unstake(uint256[] calldata tokenIds) external whenNotPaused {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
@@ -594,7 +598,7 @@ contract TablelandRigs is
 
         // For each token, call `parkRig`
         for (uint8 i = 0; i < tokenIds.length; i++) {
-            parkRig(tokenIds[i]);
+            unstake(tokenIds[i]);
         }
     }
 
@@ -610,6 +614,7 @@ contract TablelandRigs is
             if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
             // Pass `true` to indicate a force park
             _pilots.parkRig(tokenIds[i], true);
+            emit Unstake(tokenIds[i], ownerOf(tokenIds[i]), block.number);
             emit MetadataUpdate(tokenIds[i]);
         }
     }
@@ -714,7 +719,8 @@ contract TablelandRigs is
         return
             ERC721AUpgradeable.supportsInterface(interfaceId) ||
             ERC2981Upgradeable.supportsInterface(interfaceId) ||
-            interfaceId == bytes4(0x49064906); // See EIP-4096
+            interfaceId == bytes4(0x49064906) || // See EIP-4096
+            interfaceId == bytes4(0x88832242); // Token reputation
     }
 
     // =============================
