@@ -37,6 +37,14 @@ These two EIPs also lack the emittance of a `block.number` within their events. 
 
 For reference, [OpenSea](https://docs.opensea.io/docs/metadata-standards#disable-trading-for-staked-or-locked-tokens) leverages both of the events noted in EIP-5192 and EIP-5753 to disable trading for staked/locked tokens. There are other accepted events by OpenSea, including the `Stake` and `Unstake` events outlined in this proposal, which _do not_ have an EIP associated with them. Although it is not necessarily the primary motivation of this token reputation EIP, it's been noted to demonstrate how marketplaces are using this EIP's event definitions today. In other words, it is true that the events outlined in this proposal **will disable/enable trading a token on marketplaces**; this proposal _already_ has real-world usage.
 
+### Transferrable vs. non-transferrable
+
+Generally, there are two ways to approach reputation: transferrable or non-transferrable. This EIP gives flexibility as to how reputation is treated and results in a broader use case surface area. With the `Stake` and `Unstake` events, there is information about both the token ID and current owner's address; the metadata is ultimately what stores this information. It brings a unique design advantage because it allows the NFT to simply be a _reputation proxy_ where the implementor aggregates reputation tied to a specific owner's _address_. Alternatively, the _token ID_ and that alone could be used. Reputation can either be an address-bound or token-bound.
+
+If reputation **SHOULD NOT be transferrable** (e.g., reputation SHOULD be earned for only a single owner of a token), then this EIP gives the flexibility to the implementor to block transfers, such as creating SBTs via inheriting from ERC-5192 and block sales altogether. This would ensure reputation is no longer transferrable, which is common for credentialing systems.
+
+On the contrary, if reputation is tied to the NFT token ID and not a single address, then it actually opens up a new set of opportunities for value creation through **reputation transferability**. For example, in a gaming application, you might earn some reputation that's bound to the token ID, and this unlocks a set of new features that are not available to tokens with a lower reputation. A token-gated workflow. As the token owner, you can choose to sell the token for all of the work you've put in; the tokens with more reputation are more valuable and come with transferrable game state. The owner could even choose to participate in more complex activities, like temporarily allowing another account to own the token (e.g., rent / escrow) and profit from the reputation earned.
+
 ## Specification
 
 The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and "OPTIONAL" in this document are to be interpreted as described in RFC 2119 and RFC 8174.
