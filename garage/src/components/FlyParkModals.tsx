@@ -502,6 +502,18 @@ const useFilters = <T,>() => {
   return { filters, toggleFilter, clearFilters };
 };
 
+// The pilot contract packs pilot struct data and requires that the pilot token id
+// is < type(uint32).max
+const MAX_SUPPORTED_PILOT_TOKEN_ID = ethers.BigNumber.from("0xFFFFFFFF");
+
+const tryParseBigNumber = (v: any) => {
+  try {
+    return { valid: true, result: ethers.BigNumber.from(v) };
+  } catch (_) {
+    return { valid: false, result: ethers.BigNumber.from(0) };
+  }
+};
+
 const PickRigPilotStep = ({
   rigs,
   pilots,
@@ -634,9 +646,13 @@ const PickRigPilotStep = ({
         <Flex direction="row" wrap="wrap" justify="start" gap={4}>
           {nfts &&
             nfts.map((nft, index) => {
+              const { valid, result: tokenId } = tryParseBigNumber(nft.tokenId);
               const supported =
                 nft.type === "ERC721" &&
-                nft.contract.toLowerCase() !== contractAddress.toLowerCase();
+                nft.contract.toLowerCase() !== contractAddress.toLowerCase() &&
+                valid &&
+                MAX_SUPPORTED_PILOT_TOKEN_ID.gte(tokenId);
+
               const alreadySelected = Object.values(pilots).includes(nft);
 
               const selectedForCurrentRig = pilot === nft;
