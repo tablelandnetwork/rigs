@@ -35,8 +35,14 @@ const settings = {
 
 export const alchemy = new Alchemy(settings);
 
+enum NFTType {
+  ERC721 = "ERC721",
+  ERC1155 = "ERC1155",
+  UNKNOWN = "UNKNOWN",
+}
+
 export interface NFT {
-  type: "ERC721" | "ERC1155" | "UNKNOWN";
+  type: NFTType;
   contract: string;
   tokenId: string;
   name?: string;
@@ -44,6 +50,13 @@ export interface NFT {
   highResImageUrl?: string;
   imageData?: string;
 }
+
+const toNFTType = (t: Nft["tokenType"]): NFTType => {
+  if (t === "ERC721") return NFTType.ERC721;
+  if (t === "ERC1155") return NFTType.ERC1155;
+
+  return NFTType.UNKNOWN;
+};
 
 export const toNFT = (data: Nft): NFT => {
   const { contract, tokenId, title, media, rawMetadata } = data;
@@ -53,7 +66,7 @@ export const toNFT = (data: Nft): NFT => {
   const imageData = rawMetadata?.image_data || rawMetadata?.svg_image_data;
 
   return {
-    type: contract.tokenType,
+    type: toNFTType(contract.tokenType),
     contract: contract.address,
     tokenId,
     name: title,
