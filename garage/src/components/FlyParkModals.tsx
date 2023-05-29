@@ -59,6 +59,7 @@ import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
 import { pluralize } from "../utils/fmt";
 import { isPresent, isValidAddress, as0xString } from "../utils/types";
+import unknownPilot from "../assets/unknown-pilot.svg";
 
 const { contractAddress } = deployment;
 
@@ -373,6 +374,7 @@ const NFTDisplay = ({
     >
       <Image
         src={nft.imageUrl || nft.imageData}
+        fallbackSrc={unknownPilot}
         width={size}
         sx={{ aspectRatio: "1/1", objectFit: "contain" }}
       />
