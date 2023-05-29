@@ -65,11 +65,13 @@ export const toNFT = (data: Nft): NFT => {
   const highResImageUrl = media[0]?.gateway || media[0]?.raw;
   const imageData = rawMetadata?.image_data || rawMetadata?.svg_image_data;
 
+  const fallbackName = (contract.name + " " + tokenId).trim();
+
   return {
     type: toNFTType(contract.tokenType),
     contract: contract.address,
     tokenId,
-    name: title,
+    name: title || fallbackName,
     imageUrl,
     highResImageUrl,
     imageData,
