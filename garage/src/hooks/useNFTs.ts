@@ -230,38 +230,15 @@ export const useNFTCollections = (contracts?: string[]) => {
       return { ...oldData, isLoading: true, isError: false };
     });
 
-    const options = {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        contractAddresses: contracts,
-      }),
-    };
+    alchemy.nft.getContractMetadataBatch(contracts).then((data) => {
+      if (isCancelled) return;
 
-    fetch(
-      `https://${settings.network}.g.alchemy.com/nft/v2/${
-        import.meta.env.VITE_ALCHEMY_ID
-      }/getContractMetadataBatch`,
-      options
-    )
-      .then((response) => response.json())
-      .then((response) => {
-        if (isCancelled) return;
-
-        const data = (response as any[]).filter((v) => v?.address);
-
-        setData({
-          isLoading: false,
-          isError: false,
-          collections: data.map(({ address, contractMetadata }) =>
-            toCollection({ address, ...contractMetadata })
-          ),
-        });
-      })
-      .catch((err) => console.error(err));
+      setData({
+        isLoading: false,
+        isError: false,
+        collections: data.map(toCollection),
+      });
+    });
 
     return () => {
       isCancelled = true;
