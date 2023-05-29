@@ -123,7 +123,7 @@ const fetchNftsForOwner = async (
     pageSize,
     pageKey,
     omitMetadata: false,
-    excludeFilters: [NftFilters.SPAM],
+    excludeFilters: [NftFilters.SPAM, NftFilters.AIRDROPS],
   };
   if (filter?.contracts) {
     options = { ...options, contractAddresses: filter.contracts };
