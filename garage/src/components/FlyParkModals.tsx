@@ -650,6 +650,7 @@ const PickRigPilotStep = ({
               const supported =
                 nft.type === "ERC721" &&
                 nft.contract.toLowerCase() !== contractAddress.toLowerCase() &&
+                !!(nft.imageData || nft.imageUrl || nft.highResImageUrl) &&
                 valid &&
                 MAX_SUPPORTED_PILOT_TOKEN_ID.gte(tokenId);
 
