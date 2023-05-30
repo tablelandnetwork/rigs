@@ -37,7 +37,7 @@ These two EIPs also lack the emittance of a `block.number` within their events. 
 
 For reference, [OpenSea](https://docs.opensea.io/docs/metadata-standards#disable-trading-for-staked-or-locked-tokens) leverages both of the events noted in EIP-5192 and EIP-5753 to disable trading for staked/locked tokens. There are other accepted events by OpenSea, including the `Stake` and `Unstake` events outlined in this proposal, which _do not_ have an EIP associated with them. Although it is not necessarily the primary motivation of this token reputation EIP, it's been noted to demonstrate how marketplaces are using this EIP's event definitions today. In other words, it is true that the events outlined in this proposal **will disable/enable trading a token on marketplaces**; this proposal _already_ has real-world usage.
 
-### Transferrable vs. non-transferrable
+### Transferrable vs. Non-Transferrable
 
 Generally, there are two ways to approach reputation: transferrable or non-transferrable. This EIP gives flexibility as to how reputation is treated and results in a broader use case surface area. With the `Stake` and `Unstake` events, there is information about both the token ID and current owner's address; the metadata is ultimately what stores this information. It brings a unique design advantage because it allows the NFT to simply be a _reputation proxy_ where the implementor aggregates reputation tied to a specific owner's _address_. Alternatively, the _token ID_ and that alone could be used. Reputation can either be an address-bound or token-bound.
 
