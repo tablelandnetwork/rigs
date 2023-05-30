@@ -50,9 +50,9 @@ export const deployments: RigsDeployments = {
   },
   // testnets
   "polygon-mumbai": {
-    contractAddress: "0xfdD15E0Af08AF6b767bc85384698eda79f5AcAb4",
+    contractAddress: "0x36Ae6D7e2B460530A22416C8fC8A506cADE353B8",
     royaltyContractAddress: "0xb61974afD4348DA16e45BC48d53883A281bc4A6e",
-    pilotsAddress: "0x864655946432f52AE16BDE9af054380b3dE06789",
+    pilotsAddress: "0x171c03D706f02Ed57f8509539ED590A69d286D61",
     tablelandChain: "maticmum",
     tablelandHost: "https://testnets.tableland.network",
     contractTable: "rigs_contract_80001_3819",

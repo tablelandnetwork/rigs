@@ -12,7 +12,7 @@ import (
 	"github.com/tablelandnetwork/rigs/pkg/storage/local"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland"
 	"github.com/tablelandnetwork/rigs/pkg/storage/tableland/common"
-	v1 "github.com/textileio/go-tableland/pkg/client/v1"
+	client "github.com/textileio/go-tableland/pkg/client/v1"
 )
 
 const dialect = "sqlite3"
@@ -20,7 +20,7 @@ const dialect = "sqlite3"
 // Store implements Store using the Tableland client.
 type Store struct {
 	chainID        int64
-	tblClient      *v1.Client
+	tblClient      *client.Client
 	ethClient      *ethclient.Client
 	localStore     local.Store
 	receiptTimeout time.Duration
@@ -30,7 +30,7 @@ type Store struct {
 // Config confitures a new Store.
 type Config struct {
 	ChainID        int64
-	TblClient      *v1.Client
+	TblClient      *client.Client
 	EthClient      *ethclient.Client
 	LocalStore     local.Store
 	ReceiptTimeout time.Duration
@@ -53,8 +53,8 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 	_, tableName, err := s.tblClient.Create(
 		ctx,
 		definition.Schema,
-		v1.WithPrefix(definition.Prefix),
-		v1.WithReceiptTimeout(s.receiptTimeout),
+		client.WithPrefix(definition.Prefix),
+		client.WithReceiptTimeout(s.receiptTimeout),
 	)
 	if err != nil {
 		return "", fmt.Errorf("creating table with client: %v", err)
@@ -291,7 +291,7 @@ func (s *Store) writeSQL(ctx context.Context, sql string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("calling write: %v", err)
 	}
-	receipt, found, err := s.tblClient.Receipt(ctx, hash, v1.WaitFor(s.receiptTimeout))
+	receipt, found, err := s.tblClient.Receipt(ctx, hash, client.WaitFor(s.receiptTimeout))
 	if err != nil {
 		return "", fmt.Errorf("getting receipt for txn %s: %v", hash, err)
 	}

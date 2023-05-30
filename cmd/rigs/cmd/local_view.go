@@ -21,7 +21,7 @@ func init() {
 		false,
 		"specifies that the web server shouldn't host the viewer web app because it is being started separately",
 	)
-	viewCmd.Flags().Int("port", 5000, "port for the http server to listen on")
+	viewCmd.Flags().Int("port", 5001, "port for the http server to listen on")
 	viewCmd.Flags().String("renders-path", "./renders", "path to the rendered rig images")
 }
 

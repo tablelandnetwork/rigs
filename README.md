@@ -28,7 +28,7 @@ The `artifacts/` folder contains some build input and output that could be usefu
 
 ## Build and Install
 
-The Rigs CLI executable can be built by running `make build-rigs` or `go build ./cmd/rigs/`. The resulting executable will end up in the root of the repo working directory. If you want to install it into your `$PATH` using a properly configured Go installation, use `go instsall ./cmd/rigs`.
+The Rigs CLI executable can be built by running `make build-rigs` or `go build ./cmd/rigs/`. The resulting executable will end up in the root of the repo working directory. If you want to install it into your `$PATH` using a properly configured Go installation, use `go install ./cmd/rigs`.
 
 ## Running the CLI
 
@@ -131,7 +131,7 @@ The `--attrs` and `--lookups` flags specify that we want to create the tables to
 > **Note**
 > All mutating interactions with Tableland (creating and writing to tables) must provide a private key hex string using the `--private-key` flag as well as an EVM backend provider API key using the `--infura` or `--alchemy` flags. In these examples, you can assume the flags were set using the corresponding environment variables `RIGS_PRIVATE_KEY` and `RIGS_INFURA` or `RIGS_ALCHEMY`.
 
-Now we can write our Rigs data to those Tableland tables. The following command transforms our built Rigs data stored in `local.db` into the appropriate SQL statements to populate the Tableland tables, and then executes those SQL statements using Tableland's [Go client](https://pkg.go.dev/github.com/textileio/go-tableland/pkg/client).
+Now we can write our Rigs data to those Tableland tables. The following command transforms our built Rigs data stored in `local.db` into the appropriate SQL statements to populate the Tableland tables, and then executes those SQL statements using Tableland's [Go client](https://pkg.go.dev/github.com/textileio/go-tableland/pkg/client/v1).
 
 ```
 > rigs publish data --attrs --lookups --to-tableland

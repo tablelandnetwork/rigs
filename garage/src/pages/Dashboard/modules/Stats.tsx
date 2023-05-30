@@ -22,7 +22,7 @@ import {
   TabPanels,
   Text,
 } from "@chakra-ui/react";
-import { useAccount } from "wagmi";
+import { useAccount } from "../../../hooks/useAccount";
 import {
   useAccountStats,
   useStats,
@@ -108,9 +108,9 @@ const CollectionToplist = ({
 };
 
 export const Stats = (props: React.ComponentProps<typeof Box>) => {
-  const { address } = useAccount();
+  const { actingAsAddress } = useAccount();
   const { stats } = useStats();
-  const { stats: accountStats } = useAccountStats(address);
+  const { stats: accountStats } = useAccountStats(actingAsAddress);
   const { stats: pilotStats } = useTopActivePilotCollections();
   const { stats: ftStats } = useTopFtPilotCollections();
 
@@ -137,7 +137,7 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
       <Tabs variant="line">
         <TabList>
           <Tab>Global</Tab>
-          {address && <Tab>You</Tab>}
+          {actingAsAddress && <Tab>You</Tab>}
           <Tab>Pilots</Tab>
         </TabList>
 
@@ -145,7 +145,7 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
           <TabPanel px={0}>
             <StatGrid stats={stats} />
           </TabPanel>
-          {address && (
+          {actingAsAddress && (
             <TabPanel px={0}>
               <StatGrid stats={accountStats} />
             </TabPanel>

@@ -3,7 +3,7 @@ module github.com/tablelandnetwork/rigs
 go 1.18
 
 require (
-	github.com/alanshaw/go-carbites v0.5.0
+	github.com/alanshaw/go-carbites v0.6.0
 	github.com/doug-martin/goqu/v9 v9.18.0
 	github.com/ethereum/go-ethereum v1.11.6
 	github.com/fatih/camelcase v1.0.0

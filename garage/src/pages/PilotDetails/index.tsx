@@ -30,9 +30,10 @@ import { useRigImageUrls } from "../../hooks/useRigImageUrls";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { openseaBaseUrl } from "../../env";
-import { PilotSessionWithRigId, isValidAddress } from "../../types";
+import { PilotSessionWithRigId } from "../../types";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { selectPilotSessionsForPilot } from "../../utils/queries";
+import { isValidAddress, as0xString } from "../../utils/types";
 import { abi } from "../../abis/ERC721";
 
 const GRID_GAP = 4;
@@ -202,7 +203,7 @@ export const PilotDetails = () => {
   const pilot = nfts?.length ? nfts[0] : null;
 
   const { data: owner } = useContractRead({
-    address: collection,
+    address: as0xString(collection),
     abi,
     functionName: "ownerOf",
     args: [ethers.BigNumber.from(id)],

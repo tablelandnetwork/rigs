@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
-import { RigWithPilots, isValidAddress } from "../types";
+import { RigWithPilots } from "../types";
 import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
+import { isValidAddress, as0xString } from "../utils/types";
 import { deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 
@@ -12,7 +13,7 @@ export const useOwnedRigs = (address?: string) => {
   const { db } = useTablelandConnection();
 
   const { data } = useContractRead({
-    address: contractAddress,
+    address: as0xString(contractAddress),
     abi,
     functionName: "tokensOfOwner",
     args: isValidAddress(address) ? [address] : undefined,

@@ -17,12 +17,8 @@ import {
 import { ethers } from "ethers";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import {
-  useAccount,
-  useBlockNumber,
-  useContractReads,
-  useEnsName,
-} from "wagmi";
+import { useBlockNumber, useContractReads, useEnsName } from "wagmi";
+import { useAccount } from "../../hooks/useAccount";
 import { useGlobalFlyParkModals } from "../../components/GlobalFlyParkModals";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { RoundSvgIcon } from "../../components/RoundSvgIcon";
@@ -38,8 +34,9 @@ import { useRig } from "../../hooks/useRig";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
+import { isValidAddress, as0xString } from "../../utils/types";
 import { chain, openseaBaseUrl, deployment } from "../../env";
-import { RigWithPilots, isValidAddress } from "../../types";
+import { RigWithPilots } from "../../types";
 import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
@@ -74,6 +71,7 @@ const RigHeader = ({
   ...props
 }: RigHeaderProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { address, actingAsAddress } = useAccount();
   const totalFlightTime = rig.pilotSessions.reduce(
     (acc, { startTime, endTime }) => {
       return (
@@ -139,7 +137,7 @@ const RigHeader = ({
             </RouterLink>
           </Text>
 
-          {userOwnsRig && (
+          {userOwnsRig && address === actingAsAddress && (
             <ChainAwareButton
               variant="solid"
               color="primary"
@@ -158,7 +156,7 @@ const RigHeader = ({
 
 export const RigDetails = () => {
   const { id } = useParams();
-  const { address } = useAccount();
+  const { actingAsAddress } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
   const { rig, refresh: refreshRig } = useRig(id || "");
   const { validator } = useTablelandConnection();
@@ -166,19 +164,19 @@ export const RigDetails = () => {
   const { data: contractData, refetch } = useContractReads({
     contracts: [
       {
-        address: contractAddress,
+        address: as0xString(contractAddress),
         abi,
         functionName: "ownerOf",
         args: [ethers.BigNumber.from(id)],
       },
       {
-        address: contractAddress,
+        address: as0xString(contractAddress),
         abi,
         functionName: "tokenURI",
         args: [ethers.BigNumber.from(id)],
       },
       {
-        address: contractAddress,
+        address: as0xString(contractAddress),
         abi,
         functionName: "pilotInfo",
         args: [ethers.BigNumber.from(id)],
@@ -199,8 +197,11 @@ export const RigDetails = () => {
   }, [refreshRig, refetch]);
 
   const userOwnsRig = useMemo(() => {
-    return !!address && address.toLowerCase() === owner?.toLowerCase();
-  }, [address, owner]);
+    return (
+      !!actingAsAddress &&
+      actingAsAddress.toLowerCase() === owner?.toLowerCase()
+    );
+  }, [actingAsAddress, owner]);
 
   const [pendingTx, setPendingTx] = useState<string>();
   const clearPendingTx = useCallback(() => {
