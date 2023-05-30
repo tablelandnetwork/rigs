@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-import "./ITablelandRigPilots.sol";
+import {ITablelandRigPilots} from "./ITablelandRigPilots.sol";
+import {ITokenReputation} from "./interfaces/ITokenReputation.sol";
 
 /**
  * @dev Interface of a TablelandRigs compliant contract.
  */
-interface ITablelandRigs {
+interface ITablelandRigs is ITokenReputation {
     // Thrown when minting with minting not open.
     error MintingClosed();
 
@@ -217,7 +218,19 @@ interface ITablelandRigs {
     ) external view returns (ITablelandRigPilots.PilotInfo[] memory);
 
     /**
-     * @dev Puts multiple Rigs in training.
+     * @dev Stakes a single Rig, putting it in-flight with a "stock" pilot.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - pilot status must be valid (`PARKED`)
+     */
+    function stake(uint256 tokenId) external;
+
+    /**
+     * @dev Stakes multiple Rigs, putting them in-flight with a "stock" pilot.
      *
      * tokenIds - the unique Rig token identifier
      *
@@ -227,7 +240,6 @@ interface ITablelandRigs {
      * - `msg.sender` must own the Rig
      * - There cannot exist a duplicate value in `tokenIds`
      * - Values are processed in order
-     * - See `trainRig` for additional constraints on a per-token basis
      */
     function stake(uint256[] calldata tokenIds) external;
 
@@ -242,10 +254,10 @@ interface ITablelandRigs {
      *
      * - `tokenId` must exist
      * - `msg.sender` must own the Rig
-     * - Must be trained & flying with trainer, or already trained & parked
-     * - `pilotContract` must be an ERC-721 contract *or* 0x0 to indicate a trainer pilot; cannot be the Rigs contract
-     * - `pilotId` must be owned by `msg.sender` at `pilotContract` (does not apply to trainer pilots)
-     * - Pilot can only be associated with one Rig at a time; parks the other Rig on conflict (does not apply to trainer pilots)
+     * - Must be currently `PARKED`
+     * - `pilotContract` must be an ERC-721 contract *or* 0x0 to indicate a stock pilot; cannot be the Rigs contract
+     * - `pilotId` must be owned by `msg.sender` at `pilotContract` (does not apply to stock pilots)
+     * - Pilot can only be associated with one Rig at a time; parks the other Rig on conflict (does not apply to stock pilots)
      */
     function stake(
         uint256 tokenId,
@@ -265,7 +277,7 @@ interface ITablelandRigs {
      * - All input parameters must be non-empty
      * - All input parameters must have an equal length
      * - There cannot exist a duplicate value in each of the individual parameters,
-     *   except if using a trainer pilot (i.e., trainers aren't unique/owned NFTs).
+     *   except if using a stock pilot (i.e., stock pilots aren't unique/owned NFTs).
      * - Values are processed in order (i.e., use same index for each array)
      * - See `stake` for additional constraints on a per-token basis
      */
@@ -276,7 +288,19 @@ interface ITablelandRigs {
     ) external;
 
     /**
-     * @dev Parks multiple Rigs and ends the current pilot session.
+     * @dev Unstakes a single Rig and ends the current pilot session.
+     *
+     * tokenId - the unique Rig token identifier
+     *
+     * Requirements:
+     *
+     * - `tokenId` must exist
+     * - pilot status must be `PILOTED`
+     */
+    function unstake(uint256 tokenId) external;
+
+    /**
+     * @dev Unstakes multiple Rigs and ends the current pilot session.
      *
      * tokenIds - the unique Rig token identifiers
      *
@@ -285,14 +309,14 @@ interface ITablelandRigs {
      * - Input array of `tokenIds` must be non-empty
      * - There cannot exist a duplicate value in `tokenIds`
      * - Values are processed in order
-     * - See `parkRig` for additional constraints on a per-token basis
+     * - See `unstake` for additional constraints on a per-token basis
      */
     function unstake(uint256[] calldata tokenIds) external;
 
     /**
-     * @dev Allows contract owner to park any Rig that may be intentionally
+     * @dev Allows contract owner to unstake any Rig that may be intentionally
      * causing buyers to lose gas on sales that can't complete while the
-     * Rig is in-flight.
+     * Rig is in-flight (staking).
      *
      * tokenIds - the unique Rig token identifiers
      *
@@ -300,12 +324,12 @@ interface ITablelandRigs {
      *
      * - `msg.sender` must be contract owner
      */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external;
+    function unstakeAsOwner(uint256[] calldata tokenIds) external;
 
     /**
-     * @dev Allows the admin to park any Rig that may be intentionally
+     * @dev Allows the admin to unstake any Rig that may be intentionally
      * causing buyers to lose gas on sales that can't complete while the
-     * Rig is in-flight.
+     * Rig is in-flight (staking).
      *
      * tokenIds - the unique Rig token identifiers
      *
@@ -313,10 +337,10 @@ interface ITablelandRigs {
      *
      * - `msg.sender` must be the admin
      */
-    function parkRigAsAdmin(uint256[] calldata tokenIds) external;
+    function unstakeAsAdmin(uint256[] calldata tokenIds) external;
 
     /**
-     * @dev Allows a token owner to transfer between accounts while in-flight
+     * @dev Allows a token owner to transfer between accounts while staking
      * but blocks transfers by an approved address or operator.
      *
      * from - owner of `tokenId`
@@ -327,7 +351,7 @@ interface ITablelandRigs {
      *
      * - Caller must own `tokenId` and *cannot* be an approved address or operator
      */
-    function safeTransferWhileFlying(
+    function safeTransferWhileStaking(
         address from,
         address to,
         uint256 tokenId

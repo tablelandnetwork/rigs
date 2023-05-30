@@ -15,7 +15,6 @@ import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
 import "./interfaces/IERC4906.sol";
 import "./interfaces/IDelegationRegistry.sol";
-import "./interfaces/ITokenReputation.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -26,7 +25,6 @@ contract TablelandRigs is
     ERC721AUpgradeable,
     ERC721AQueryableUpgradeable,
     IERC4906,
-    ITokenReputation,
     OwnableUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
@@ -482,16 +480,15 @@ contract TablelandRigs is
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
-        // Verify `msg.sender` is authorized to train the specified Rig
+        // Verify `msg.sender` is authorized to stake the specified Rig
         (
             address tokenOwner,
             address sender
         ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
         if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
 
-        _pilots.trainRig(sender, tokenId);
-        emit Stake(tokenId, tokenOwner, block.number);
-        emit MetadataUpdate(tokenId);
+        // Stake with a stock pilot (address `0x0`; pilot ID `1` has no impact)
+        stake(tokenId, address(0), 1);
     }
 
     /**
@@ -503,7 +500,7 @@ contract TablelandRigs is
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
             revert ITablelandRigPilots.InvalidBatchPilotAction();
 
-        // For each token, call `trainRig`
+        // For each token, call `stake`
         for (uint8 i = 0; i < tokenIds.length; i++) {
             stake(tokenIds[i]);
         }
@@ -527,7 +524,7 @@ contract TablelandRigs is
         ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
         if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
 
-        // If the supplied pilot address is `0x0`, then assume a trainer pilot
+        // If the supplied pilot address is `0x0`, then assume a stock pilot
         // (note: `pilotId` has no impact here). Otherwise, proceed with a
         // custom pilot. The overloaded methods direct changes accordingly.
         pilotAddr == address(0)
@@ -602,7 +599,13 @@ contract TablelandRigs is
         }
     }
 
-    function _forceParkRigs(uint256[] calldata tokenIds) private {
+    /**
+     * @notice Force unstakes Rigs due to malicious behavior (listing on a
+     * marketplace while currently in-flight, which should not accrue FT).
+     *
+     * tokenIds - the unique Rig token identifiers
+     */
+    function _forceUnstakeRigs(uint256[] calldata tokenIds) private {
         // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
         // Clients should restrict this further to avoid gas exceeding limits
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
@@ -620,17 +623,17 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-parkRigAsOwner}.
+     * @dev See {ITablelandRigs-unstakeAsOwner}.
      */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
-        _forceParkRigs(tokenIds);
+    function unstakeAsOwner(uint256[] calldata tokenIds) external onlyOwner {
+        _forceUnstakeRigs(tokenIds);
     }
 
     /**
-     * @dev See {ITablelandRigs-parkRigAsAdmin}.
+     * @dev See {ITablelandRigs-unstakeAsAdmin}.
      */
-    function parkRigAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
-        _forceParkRigs(tokenIds);
+    function unstakeAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
+        _forceUnstakeRigs(tokenIds);
     }
 
     // =============================
@@ -660,9 +663,9 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {IERC721Metadata-safeTransferWhileFlying}.
+     * @dev See {ITablelandRigs-safeTransferWhileStaking}.
      */
-    function safeTransferWhileFlying(
+    function safeTransferWhileStaking(
         address from,
         address to,
         uint256 tokenId

@@ -25,9 +25,6 @@ contract TablelandRigPilots is
     // Table prefix for the Rigs pilot sessions table.
     string private constant _PILOT_SESSIONS_PREFIX = "pilot_sessions";
 
-    // Number of blocks that a Rig must train before piloting.
-    uint256 private constant _PILOT_TRAINING_DURATION = 172800;
-
     // Mask of the lower 64 bits of a pilot; the flight start time
     uint256 private constant _BITMASK_START_TIME = (1 << 64) - 1;
 
@@ -142,15 +139,6 @@ contract TablelandRigPilots is
     }
 
     /**
-     * @dev Returns a pilot's data (packed `uint32` pilot ID and `uint160` pilot contract).
-     *
-     * tokenId - the unique Rig token identifier
-     */
-    function _pilotData(uint256 tokenId) private view returns (uint192) {
-        return uint192(_pilots[uint16(tokenId)] >> _BITPOS_PILOT_ID);
-    }
-
-    /**
      * @dev Sets a pilot's start time.
      *
      * tokenId - the unique Rig token identifier
@@ -206,23 +194,11 @@ contract TablelandRigPilots is
      * tokenId - the unique Rig token identifier
      */
     function _pilotStatus(uint256 tokenId) private view returns (GarageStatus) {
-        // The `park` logic sets "pilot data" (pilot ID and pilot contract) to `0` if both of these are true:
-        //   - Pilot data is currently `1` (contract is zero and trainer pilot is in use, `1`)
-        //   - Rig has not been training for long enough
-        // i.e., `park` results in a status of `UNTRAINED` or `PARKED`
-        // Invariant: pilot data cannot be `0` if `startTime` is > `0`
+        // Unstaking results in a status of `PARKED`; else, Rig is `PILOTED`
         return
             pilotStartTime(tokenId) == 0
-                ? (
-                    _pilotData(tokenId) == 0
-                        ? GarageStatus.UNTRAINED
-                        : GarageStatus.PARKED
-                )
-                : (
-                    _pilotData(tokenId) == 1
-                        ? GarageStatus.TRAINING
-                        : GarageStatus.PILOTED
-                );
+                ? GarageStatus.PARKED
+                : GarageStatus.PILOTED;
     }
 
     /**
@@ -231,74 +207,26 @@ contract TablelandRigPilots is
      * tokenId - the unique Rig token identifier
      */
     function _canPilot(uint256 tokenId) private view returns (bool) {
-        // Cannot switch real pilots mid-flight, but can go from trainer -> real pilot
-        // There are two ways to pilot:
-        //   1. In a `PARKED` status
-        //   2. In a `TRAINING` status for long enough (30 days; 172800 blocks)
-        GarageStatus status = _pilotStatus(tokenId);
-        return
-            status == GarageStatus.PARKED ||
-            (status == GarageStatus.TRAINING &&
-                block.number >=
-                pilotStartTime(tokenId) + _PILOT_TRAINING_DURATION);
-    }
-
-    /**
-     * @dev See {ITablelandRigPilots-trainRig}.
-     */
-    function trainRig(address sender, uint256 tokenId) external onlyParent {
-        // Validate the Rig is untrained
-        if (_pilotStatus(tokenId) != GarageStatus.UNTRAINED)
-            revert InvalidPilotStatus();
-
-        // Start training
-        _setStartTime(uint16(tokenId), uint64(block.number));
-
-        // Assign a trainer pilot to the Rig in `_pilots`
-        // The "pilot data" is pilot contract `0` and pilot ID `1`
-        _setPilotData(uint16(tokenId), 0, 1);
-
-        // Insert the Rig training session into the Tableland pilot sessions table
-        TablelandDeployments.get().mutate(
-            address(this),
-            _pilotSessionsTableId,
-            SQLHelpers.toInsert(
-                _PILOT_SESSIONS_PREFIX,
-                _pilotSessionsTableId,
-                "rig_id,owner,start_time",
-                string.concat(
-                    StringsUpgradeable.toString(uint16(tokenId)),
-                    ",",
-                    SQLHelpers.quote(StringsUpgradeable.toHexString(sender)),
-                    ",",
-                    StringsUpgradeable.toString(uint64(block.number))
-                )
-            )
-        );
-
-        emit Training(tokenId);
+        // Cannot switch real pilots mid-flight but only in a `PARKED` status
+        return _pilotStatus(tokenId) == GarageStatus.PARKED;
     }
 
     /**
      * @dev See {ITablelandRigPilots-pilotRig}.
      */
     function pilotRig(address sender, uint256 tokenId) external onlyParent {
-        // Validate the Rig can be piloted with a trainer pilot. Note that
-        // `_canPilot` allows for in-flight piloting once trained *and* in
-        // `TRAINING` status, but this only allows for piloting a with trainer
-        // if `PARKED`.
+        // Validate the Rig can be piloted with a stock pilot (i.e., is `PARKED`).
         if (_pilotStatus(tokenId) != GarageStatus.PARKED)
             revert InvalidPilotStatus();
 
-        // Assign a trainer pilot to the Rig in `_pilots`. The pilot contract is
-        // `0` and pilot ID `2`—this is needed to differentiate from a
-        // `TRAINING` Rig's pilot, which has a pilot ID of `1`.
-        _setPilotData(uint16(tokenId), 0, 2);
+        // Assign a stock pilot to the Rig in `_pilots`. The pilot contract is
+        // `0` and pilot ID `1`.
+        _setPilotData(uint16(tokenId), 0, 1);
 
         // Set the start time for the new pilot session
         _setStartTime(uint16(tokenId), uint64(block.number));
 
-        // Insert the trainer pilot session into the Tableland pilot sessions table
+        // Insert the stock pilot session into the Tableland pilot sessions table
         TablelandDeployments.get().mutate(
             address(this),
             _pilotSessionsTableId,
@@ -316,7 +244,7 @@ contract TablelandRigPilots is
             )
         );
 
-        emit Piloted(tokenId, address(0), 2);
+        emit Piloted(tokenId, address(0), 1);
     }
 
     /**
@@ -361,36 +289,7 @@ contract TablelandRigPilots is
             _pilotStatus(_pilotIndex[pilotData]) != GarageStatus.PARKED
         ) parkRig(_pilotIndex[pilotData], false);
 
-        // If the Rig is training, end its training session (no parking
-        // required) to then open a new pilot session. Pilot has completed
-        // training at this point (training validation is checked above)
-        if (_pilotStatus(tokenId) == GarageStatus.TRAINING) {
-            // Update the pilot's existing training session with its `end_time`
-            string memory setters = string.concat(
-                "end_time=",
-                StringsUpgradeable.toString(uint64(block.number))
-            );
-            // Only update the row with the matching `rig_id` and `start_time`
-            string memory filters = string.concat(
-                "rig_id=",
-                StringsUpgradeable.toString(uint16(tokenId)),
-                " and ",
-                "start_time=",
-                StringsUpgradeable.toString(pilotStartTime(tokenId))
-            );
-            TablelandDeployments.get().mutate(
-                address(this),
-                _pilotSessionsTableId,
-                SQLHelpers.toUpdate(
-                    _PILOT_SESSIONS_PREFIX,
-                    _pilotSessionsTableId,
-                    setters,
-                    filters
-                )
-            );
-        }
-        // The Rig is either `PARKED` or setting its first pilot while in a `TRAINED` status
-        // Set the start time for the new pilot session
+        // The Rig `PARKED`; set the start time for the new pilot session.
         _setStartTime(uint16(tokenId), uint64(block.number));
 
         // Insert the pilot into the Tableland pilot sessions table
@@ -428,29 +327,21 @@ contract TablelandRigPilots is
     function parkRig(uint256 tokenId, bool force) public onlyParent {
         // Ensure Rig is currently in-flight
         GarageStatus status = _pilotStatus(tokenId);
-        if (
-            !(status == GarageStatus.TRAINING || status == GarageStatus.PILOTED)
-        ) revert InvalidPilotStatus();
-        // Session update type is dependent on training completion status
-        // Use `setters` for setting SQL update values, and `startTime` is used for checking training completion status
+        if (!(status == GarageStatus.PILOTED)) revert InvalidPilotStatus();
+        // Use `setters` for setting SQL update values, and `startTime` is used
+        // for SQL related updates
         string memory setters;
         uint64 startTime = pilotStartTime(tokenId);
-        bool trainingIncomplete = status == GarageStatus.TRAINING &&
-            !(block.number >= startTime + _PILOT_TRAINING_DURATION);
-        bool forceParkedWhileTraining = status == GarageStatus.TRAINING &&
-            force;
-        // Pilot training is incomplete; reset the training pilot such that the Rig must train again
-        if (trainingIncomplete || forceParkedWhileTraining)
-            _setPilotData(uint16(tokenId), 0, 0);
-        // If the pilot is untrained or being force parked, there are zero flight time rewards
-        if (trainingIncomplete || force) {
+
+        // If the pilot is being force parked, there are zero flight time rewards
+        if (force) {
             // Update the row in pilot sessions table with its `end_time` equal to the `start_time`
             setters = string.concat(
                 "end_time=",
                 StringsUpgradeable.toString(startTime)
             );
         } else {
-            // Training is complete, and the Rig is being parked without "malicious" force park origins
+            // The Rig is being parked without "malicious" force park origins
             // Update the row in the pilot sessions table with its `end_time` to accrue flight time rewards
             setters = string.concat(
                 "end_time=",

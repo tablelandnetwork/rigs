@@ -19,8 +19,6 @@ interface ITablelandRigPilots {
 
     // Values describing a Rig's Garage status.
     enum GarageStatus {
-        UNTRAINED,
-        TRAINING,
         PARKED,
         PILOTED
     }
@@ -40,19 +38,18 @@ interface ITablelandRigPilots {
     }
 
     /**
-     * @dev Emitted when a Rig starts its training.
-     */
-    event Training(uint256 tokenId);
-
-    /**
      * @dev Emitted when a Rig is piloted.
      */
-    event Piloted(uint256 tokenId, address pilotContract, uint256 pilotId);
+    event Piloted(
+        uint256 indexed tokenId,
+        address indexed pilotContract,
+        uint256 indexed pilotId
+    );
 
     /**
      * @dev Emitted when a Rig is parked.
      */
-    event Parked(uint256 tokenId);
+    event Parked(uint256 indexed tokenId);
 
     /**
      * @dev Returns the address of the contract parent parent.
@@ -85,21 +82,7 @@ interface ITablelandRigPilots {
     function pilotStartTime(uint256 tokenId) external view returns (uint64);
 
     /**
-     * @dev Trains a Rig for a period of 30 days, putting it in-flight.
-     *
-     * sender - the initiator address
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `sender` must own the Rig
-     * - `tokenId` must exist
-     * - pilot status must be valid (`UNTRAINED`)
-     */
-    function trainRig(address sender, uint256 tokenId) external;
-
-    /**
-     * @dev Puts a single Rig in flight with a "stock" trainer pilot.
+     * @dev Puts a single Rig in flight with a "stock" pilot.
      *
      * sender - the initiator address
      * tokenId - the unique Rig token identifier
@@ -108,7 +91,7 @@ interface ITablelandRigPilots {
      *
      * - `tokenId` must exist
      * - `sender` must own the Rig
-     * - Must already be trained & currently parked
+     * - Must currently be parked
      */
     function pilotRig(address sender, uint256 tokenId) external;
 
@@ -124,7 +107,7 @@ interface ITablelandRigPilots {
      *
      * - `tokenId` must exist
      * - `sender` must own the Rig
-     * - Ability to pilot must be `true` (trained & flying with trainer, or already trained & parked)
+     * - Ability to pilot must be `true` (flying with stock pilot, or currently parked)
      * - `pilotContract` must be an ERC-721 contract; cannot be the Rigs contract
      * - `pilotId` must be owned by `msg.sender` at `pilotContract`
      * - `Pilot` can only be associated with one Rig at a time; parks the other Rig on conflict
@@ -146,8 +129,7 @@ interface ITablelandRigPilots {
      *
      * - `tokenId` must exist
      * - `sender` must own the Rig
-     * - pilot status must be `TRAINING` or `PILOTED`
-     * - pilot must have completed 30 days of training
+     * - pilot status must `PILOTED`
      */
     function parkRig(uint256 tokenId, bool force) external;
 
