@@ -1,6 +1,9 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
+import "@nomiclabs/hardhat-ethers";
+import "@nomicfoundation/hardhat-toolbox";
+import "@openzeppelin/hardhat-upgrades";
 import { ethers, upgrades } from "hardhat";
 import { utils, BigNumber, Contract, ContractFactory } from "ethers";
 import { buildTree } from "../../helpers/allowlist";

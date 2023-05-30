@@ -1,5 +1,7 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import "@nomicfoundation/hardhat-toolbox";
+import "@openzeppelin/hardhat-upgrades";
 import { TablelandTables } from "@tableland/evm";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
@@ -73,16 +75,6 @@ describe("Pilots", function () {
     });
   });
 
-  describe("trainRig", function () {
-    it("Should only allow contract parent", async function () {
-      const _pilots = pilots.connect(accounts[2]);
-
-      await expect(
-        _pilots.trainRig(ethers.constants.AddressZero, BigNumber.from(1))
-      ).to.be.rejectedWith("Pilots: caller is not the parent");
-    });
-  });
-
   describe("pilotRig", function () {
     it("Should only allow contract parent", async function () {
       const _pilots = pilots.connect(accounts[2]);
@@ -110,7 +102,7 @@ describe("Pilots", function () {
       const _pilots = pilots.connect(accounts[2]);
 
       await expect(
-        _pilots.parkRig(ethers.constants.AddressZero, BigNumber.from(1))
+        _pilots.parkRig(ethers.constants.AddressZero, true)
       ).to.be.rejectedWith("Pilots: caller is not the parent");
     });
   });
