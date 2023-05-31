@@ -46,7 +46,7 @@ var rendersCmd = &cobra.Command{
 			checkErr(err)
 			fmt.Printf("Car chunks written to folder %s\n", chunksDir)
 		}
-		checkErr(pub.CarChunksToNftStorage(
+		checkErr(pub.CarChunksToCarStorage(
 			ctx,
 			chunksDir,
 			viper.GetInt("concurrency"),
