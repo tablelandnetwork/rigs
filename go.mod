@@ -19,7 +19,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.2
-	github.com/textileio/go-tableland v1.5.0
+	github.com/textileio/go-tableland v1.6.1
 	golang.org/x/image v0.7.0
 )
 
