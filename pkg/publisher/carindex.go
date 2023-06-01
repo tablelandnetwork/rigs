@@ -51,22 +51,31 @@ func (p *Publisher) RendersIndexToCar(ctx context.Context, filename string) (cid
 		MhLength: 32,
 	}}
 
-	cids := make([]cid.Cid, len(rigs))
+	rigInfos := make(
+		[]struct {
+			rigID int
+			cid   cid.Cid
+		},
+		len(rigs),
+	)
 	for i, rig := range rigs {
 		c, err := cid.Decode(*rig.RendersCid)
 		if err != nil {
 			return cid.Cid{}, fmt.Errorf("decoding cid: %v", err)
 		}
-		cids[i] = c
+		rigInfos[i] = struct {
+			rigID int
+			cid   cid.Cid
+		}{rigID: rig.ID, cid: c}
 	}
 
 	n, err := qp.BuildMap(dagpb.Type.PBNode, -1, func(ma datamodel.MapAssembler) {
 		qp.MapEntry(ma, "Data", qp.Bytes([]byte("hello")))
 		qp.MapEntry(ma, "Links", qp.List(int64(len(rigs)), func(la datamodel.ListAssembler) {
-			for ii, c := range cids {
+			for _, rigInfo := range rigInfos {
 				qp.ListEntry(la, qp.Map(3, func(ma datamodel.MapAssembler) {
-					qp.MapEntry(ma, "Hash", qp.Link(cidlink.Link{Cid: c}))
-					qp.MapEntry(ma, "Name", qp.String(fmt.Sprintf("%d", ii)))
+					qp.MapEntry(ma, "Hash", qp.Link(cidlink.Link{Cid: rigInfo.cid}))
+					qp.MapEntry(ma, "Name", qp.String(fmt.Sprintf("%d", rigInfo.rigID)))
 					// optional: qp.MapEntry(ma, "Tsize", qp.Int(0))
 				}))
 			}
