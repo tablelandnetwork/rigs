@@ -134,7 +134,6 @@ func (s *SQLFactory) SQLForInsertingDeals(table string, rigs []local.Rig) (strin
 		for i, deal := range rig.Deals {
 			vals = append(
 				vals,
-				// TODO: Is using i here the best way to get deal number?
 				goqu.Vals{rig.ID, deal.DealID, deal.StorageProvider, deal.DataModelSelector, i + 1},
 			)
 		}

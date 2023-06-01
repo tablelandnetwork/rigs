@@ -436,6 +436,9 @@ func (s *Store) Rigs(ctx context.Context, opts ...local.RigsOption) ([]local.Rig
 	}
 
 	q := s.db.Select("*").From("rigs")
+	if len(c.IDs) > 0 {
+		q = q.Where(goqu.C("id").In(c.IDs))
+	}
 	if c.Limit != nil {
 		q = q.Limit(*c.Limit)
 	}
@@ -459,7 +462,10 @@ func (s *Store) Rigs(ctx context.Context, opts ...local.RigsOption) ([]local.Rig
 		rigs[i].Parts = parts
 
 		var deals []local.Deal
-		if err := s.db.From("rig_deals").Where(goqu.C("rig_id").Eq(rigs[i].ID)).ScanStructsContext(ctx, &deals); err != nil {
+		if err := s.db.From("rig_deals").
+			Where(goqu.C("rig_id").Eq(rigs[i].ID)).
+			Order(goqu.C("deal_id").Asc()).
+			ScanStructsContext(ctx, &deals); err != nil {
 			return nil, fmt.Errorf("querying deals: %v", err)
 		}
 		rigs[i].Deals = deals

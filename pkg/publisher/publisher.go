@@ -314,7 +314,12 @@ func (p *Publisher) RendersToCarStorage(
 }
 
 // UpdateCarStorageDeals updates the local db with the latest storage deals from car storage service.
-func (p *Publisher) UpdateCarStorageDeals(ctx context.Context, concurrency int, rateLimit rate.Limit) error {
+func (p *Publisher) UpdateCarStorageDeals(
+	ctx context.Context,
+	concurrency int,
+	rateLimit rate.Limit,
+	rigIDs ...string,
+) error {
 	execFn := func(rig local.Rig) wpool.ExecutionFn {
 		return func(ctx context.Context) (interface{}, error) {
 			c, err := cid.Decode(*rig.RendersCid)
@@ -344,7 +349,7 @@ func (p *Publisher) UpdateCarStorageDeals(ctx context.Context, concurrency int, 
 			return nil, nil
 		}
 	}
-	rigs, err := p.localStore.Rigs(ctx)
+	rigs, err := p.localStore.Rigs(ctx, local.RigsWithIDs(rigIDs))
 	if err != nil {
 		return fmt.Errorf("querying rigs: %v", err)
 	}
@@ -369,4 +374,17 @@ func (p *Publisher) UpdateCarStorageDeals(ctx context.Context, concurrency int, 
 		count++
 	}
 	return nil
+}
+
+// GetStatus gets the status of a cid from car storage service.
+func (p *Publisher) GetStatus(ctx context.Context, in string) (*carstorage.Status, error) {
+	c, err := cid.Decode(in)
+	if err != nil {
+		return nil, fmt.Errorf("decoding rig cid: %v", err)
+	}
+	s, err := p.carStorage.Status(ctx, c)
+	if err != nil {
+		return nil, fmt.Errorf("getting car storage service status: %v", err)
+	}
+	return s, nil
 }

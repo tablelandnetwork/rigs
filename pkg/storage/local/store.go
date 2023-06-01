@@ -190,6 +190,7 @@ func LayersWithOffset(offset uint) LayersOption {
 type RigsConfig struct {
 	Limit  *uint
 	Offset *uint
+	IDs    []string
 }
 
 // RigsOption controls the behavior of Rigs.
@@ -206,6 +207,13 @@ func RigsWithLimit(limit uint) RigsOption {
 func RigsWithOffset(offset uint) RigsOption {
 	return func(rc *RigsConfig) {
 		rc.Offset = &offset
+	}
+}
+
+// RigsWithIDs filters results to the specified ids.
+func RigsWithIDs(ids []string) RigsOption {
+	return func(rc *RigsConfig) {
+		rc.IDs = ids
 	}
 }
 
