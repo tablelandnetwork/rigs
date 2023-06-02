@@ -82,6 +82,7 @@ var (
 type Lookups struct {
 	RendersCid           string
 	LayersCid            string
+	IndexCid             string
 	ImageFullName        string
 	ImageFullAlphaName   string
 	ImageMediumName      string

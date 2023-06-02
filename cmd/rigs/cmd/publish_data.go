@@ -18,7 +18,7 @@ const (
 	layersPageSize        uint = 130
 	rigsPageSize          uint = 100
 	rigAttributesPageSize uint = 70
-	dealsPageSize              = 100
+	dealsPageSize              = 20
 )
 
 func init() {
@@ -31,7 +31,6 @@ func init() {
 	dataCmd.Flags().Bool("attrs", false, "publish data for the rig attributes table")
 	dataCmd.Flags().Bool("deals", false, "publish data for the deals table")
 	dataCmd.Flags().Bool("lookups", false, "publish data for lookups table")
-	dataCmd.MarkFlagsMutuallyExclusive()
 }
 
 var dataCmd = &cobra.Command{
@@ -235,7 +234,7 @@ func dealsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 		}
 	}
 	for {
-		rigs, err := s.Rigs(ctx, local.RigsWithLimit(rigsPageSize), local.RigsWithOffset(offset))
+		rigs, err := s.Rigs(ctx, local.RigsWithLimit(dealsPageSize), local.RigsWithOffset(offset))
 		if err != nil {
 			return nil, fmt.Errorf("getting rigs: %v", err)
 		}
@@ -269,9 +268,14 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 			if err != nil {
 				return nil, fmt.Errorf("querying layers cid: %v", err)
 			}
+			indexCid, err := s.Cid(ctx, "index")
+			if err != nil {
+				return nil, fmt.Errorf("querying index cid: %v", err)
+			}
 			lookups := tableland.Lookups{
 				RendersCid:           rendersCid,
 				LayersCid:            layersCid,
+				IndexCid:             indexCid,
 				ImageFullName:        "image_full.png",
 				ImageFullAlphaName:   "image_full_alpha.png",
 				ImageMediumName:      "image_medium.png",
@@ -279,7 +283,7 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 				ImageThumbName:       "image_thumb.png",
 				ImageThumbAlphaName:  "image_thumb_alpha.png",
 				AnimationBaseURL:     "https://rigs.tableland.xyz/",
-				FilecoinBaseURL:      "https://filecoin.io/",
+				FilecoinBaseURL:      "https://filfox.info/deal/",
 			}
 			if err := store.InsertLookups(ctx, lookups); err != nil {
 				return nil, fmt.Errorf("calling insert lookups: %v", err)

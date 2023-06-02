@@ -19,6 +19,7 @@ export interface RigsDeployment {
   allowlistTable: string;
   partsTable: string;
   layersTable: string;
+  rigsTable: string;
   attributesTable: string;
   dealsTable: string;
   lookupsTable: string;
@@ -42,6 +43,7 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_42161_14",
     partsTable: "parts_42161_7",
     layersTable: "layers_42161_8",
+    rigsTable: "",
     attributesTable: "rig_attributes_42161_15",
     dealsTable: "",
     lookupsTable: "lookups_42161_10",
@@ -59,9 +61,10 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_80001_3820",
     partsTable: "parts_80001_4038",
     layersTable: "layers_80001_4039",
+    rigsTable: "rigs_314159_9",
     attributesTable: "rig_attributes_80001_4040",
-    dealsTable: "",
-    lookupsTable: "lookups_80001_4041",
+    dealsTable: "deals_314159_8",
+    lookupsTable: "lookups_314159_10",
     pilotSessionsTable: "pilot_sessions_80001_4078",
     displayAttributes: true,
   },
@@ -75,6 +78,7 @@ export const deployments: RigsDeployments = {
     allowlistTable: "",
     partsTable: "",
     layersTable: "",
+    rigsTable: "",
     attributesTable: "",
     dealsTable: "",
     lookupsTable: "",

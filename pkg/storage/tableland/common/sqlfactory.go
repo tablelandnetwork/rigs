@@ -158,6 +158,9 @@ func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tablela
 			"layers_cid", lookups.LayersCid,
 		},
 		{
+			"index_cid", lookups.IndexCid,
+		},
+		{
 			"image_full_name", lookups.ImageFullName,
 		},
 		{
