@@ -18,7 +18,7 @@ import { Database } from "@tableland/sdk";
 import { useSigner } from "wagmi";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
-import { isValidAddress } from "../../types";
+import { isValidAddress } from "../../utils/types";
 import { deployment } from "../../env";
 
 const { ftRewardsTable } = deployment;
