@@ -62,11 +62,15 @@ func init() {
 		`the tableland/evm to use, spported values are:
 	ethereum
 	optimism
-	arbitrum
 	polygon
+	arbitrum
+	arbitrum-nova
+	filecoin
 	ethereum-goerli
+	ethereum-sepolia
 	optimism-goerli
 	arbitrum-goerli
+	filecoin-calibration
 	polygon-mumbai
 	local
     `,
