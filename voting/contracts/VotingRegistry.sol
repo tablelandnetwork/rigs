@@ -4,13 +4,16 @@ pragma solidity >=0.8.10 <0.9.0;
 import "hardhat/console.sol";
 
 import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
-import "@tableland/evm/contracts/utils/SQLHelpers.sol";
-import "@tableland/evm/contracts/utils/TablelandDeployments.sol";
+import {TablelandDeployments} from "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import {ITablelandTables} from "@tableland/evm/contracts/interfaces/ITablelandTables.sol";
+import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 
-contract VotingRegistry {
+contract VotingRegistry is AccessControl {
     event ProposalCreated(uint256 proposalId);
+
+    bytes32 public constant VOTING_ADMIN_ROLE = keccak256("VOTING_ADMIN_ROLE");
 
     struct Proposal {
         uint256 startBlockNumber;
@@ -51,6 +54,9 @@ contract VotingRegistry {
     mapping(uint256 => Proposal) private _proposals;
 
     constructor(string memory pilotSessionsTableName, string memory ftRewardsTableName, uint256 ftRewardsTableId) {
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(VOTING_ADMIN_ROLE, msg.sender);
+
         _pilotSessionsTableName = pilotSessionsTableName;
         _ftRewardsTableName = ftRewardsTableName;
         _ftRewardsTableId = ftRewardsTableId;
@@ -78,7 +84,7 @@ contract VotingRegistry {
         uint256 voterFtReward,
         uint256 startBlockNumber,
         uint256 endBlockNumber
-    ) external onlyOwner returns (uint256 proposalId) {
+    ) external onlyRole(VOTING_ADMIN_ROLE) returns (uint256 proposalId) {
         proposalId = proposalCounter++;
 
         string memory proposalIdString = StringsUpgradeable.toString(proposalId);
@@ -294,7 +300,7 @@ contract VotingRegistry {
         TablelandDeployments.get().mutate(address(this), _votesTableId, updateStatement);
     }
 
-    function distributeParticipantFtRewards(uint256 proposalId) external onlyOwner {
+    function distributeParticipantFtRewards(uint256 proposalId) external {
         Proposal memory proposal = _proposals[proposalId];
 
         require(block.number > proposal.endBlockNumber, "Vote has not ended yet");
@@ -330,11 +336,6 @@ contract VotingRegistry {
         );
 
         TablelandDeployments.get().mutate(address(this), _ftRewardsTableId, insert);
-    }
-
-    // TODO actual modifier
-    modifier onlyOwner() {
-        _;
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) public pure returns (bytes4) {

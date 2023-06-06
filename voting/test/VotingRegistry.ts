@@ -141,7 +141,7 @@ describe("VotingRegistry", function () {
       await loadFixture(deployFixture);
     });
 
-    it("Owner should be able to create a proposal", async () => {
+    it("Default admin (owner) should be able to create a proposal", async () => {
       const [admin, user] = accounts;
 
       const txn = await registry
@@ -165,6 +165,52 @@ describe("VotingRegistry", function () {
         startBlockNumber: BigNumber.from(100),
         endBlockNumber: BigNumber.from(200),
       });
+    });
+
+    it("Regular user should not be able to create a proposal", async () => {
+      const [_, user] = accounts;
+
+      await expect(
+      registry
+        .connect(user)
+        .createProposal(
+          ["one", "two", "three"],
+          "my vote",
+          BigNumber.from(100),
+          BigNumber.from(100),
+          BigNumber.from(200)
+        )
+      ).to.be.rejected;
+    });
+
+    it("Voting admin should be able to create a proposal", async () => {
+      const [owner, _, __, votingAdmin] = accounts;
+
+      await expect(
+      registry
+        .connect(votingAdmin)
+        .createProposal(
+          ["one", "two", "three"],
+          "my vote",
+          BigNumber.from(100),
+          BigNumber.from(100),
+          BigNumber.from(200)
+        )
+      ).to.be.rejected;
+
+      await registry.connect(owner).grantRole(registry.VOTING_ADMIN_ROLE(), votingAdmin.address);
+
+      await expect(
+        registry
+        .connect(votingAdmin)
+        .createProposal(
+          ["one", "two", "three"],
+          "my vote",
+          BigNumber.from(100),
+          BigNumber.from(100),
+          BigNumber.from(200)
+        )
+      ).not.to.be.rejected;
     });
 
     it("Should insert alternatives", async () => {
