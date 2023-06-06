@@ -3,7 +3,7 @@ pragma solidity >=0.8.10 <0.9.0;
 
 import "hardhat/console.sol";
 
-import "@openzeppelin/contracts-upgradeable/utils/StringsUpgradeable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 import {TablelandDeployments} from "@tableland/evm/contracts/utils/TablelandDeployments.sol";
@@ -87,7 +87,7 @@ contract VotingRegistry is AccessControl {
     ) external onlyRole(VOTING_ADMIN_ROLE) returns (uint256 proposalId) {
         proposalId = proposalCounter++;
 
-        string memory proposalIdString = StringsUpgradeable.toString(proposalId);
+        string memory proposalIdString = Strings.toString(proposalId);
 
         _insertProposal(proposalIdString, name, voterFtReward, startBlockNumber, endBlockNumber);
         _insertAlternatives(proposalIdString, alternatives);
@@ -158,13 +158,13 @@ contract VotingRegistry is AccessControl {
             ", ",
             SQLHelpers.quote(name),
             ", ",
-            StringsUpgradeable.toString(voterFtReward),
+            Strings.toString(voterFtReward),
             ", ",
-            StringsUpgradeable.toString(block.number),
+            Strings.toString(block.number),
             ", ",
-            StringsUpgradeable.toString(startBlockNumber),
+            Strings.toString(startBlockNumber),
             ", ",
-            StringsUpgradeable.toString(endBlockNumber),
+            Strings.toString(endBlockNumber),
             ")"
         );
         TablelandDeployments.get().mutate(address(this), _proposalsTableId, insert);
@@ -177,8 +177,7 @@ contract VotingRegistry is AccessControl {
         uint256 i;
         unchecked {
             for (; i < length;) {
-                values[i] =
-                    string.concat(proposalId, ", ", StringsUpgradeable.toString(i + 1), ", '", alternatives[i], "'");
+                values[i] = string.concat(proposalId, ", ", Strings.toString(i + 1), ", '", alternatives[i], "'");
                 i++;
             }
         }
@@ -230,7 +229,7 @@ contract VotingRegistry is AccessControl {
                     "SELECT DISTINCT address, ",
                     proposalId,
                     ", ",
-                    StringsUpgradeable.toString(i + 1),
+                    Strings.toString(i + 1),
                     ", 0 FROM ",
                     _ftSnapshotTableName
                 );
@@ -278,11 +277,7 @@ contract VotingRegistry is AccessControl {
         unchecked {
             for (; i < weights.length;) {
                 updateStatement = string.concat(
-                    updateStatement,
-                    " WHEN ",
-                    StringsUpgradeable.toString(alternatives[i]),
-                    " THEN ",
-                    StringsUpgradeable.toString(weights[i])
+                    updateStatement, " WHEN ", Strings.toString(alternatives[i]), " THEN ", Strings.toString(weights[i])
                 );
                 ++i;
             }
@@ -291,9 +286,9 @@ contract VotingRegistry is AccessControl {
         updateStatement = string.concat(
             updateStatement,
             " ELSE 0 END WHERE lower(address) = lower('",
-            StringsUpgradeable.toHexString(uint256(uint160(msg.sender)), 20),
+            Strings.toHexString(uint256(uint160(msg.sender)), 20),
             "') AND proposal_id = ",
-            StringsUpgradeable.toString(proposalId)
+            Strings.toString(proposalId)
         );
 
         // Submit vote
@@ -328,11 +323,11 @@ contract VotingRegistry is AccessControl {
             " (block_num, recipient, reason, amount, proposal_id)",
             " SELECT DISTINCT BLOCK_NUM(), ",
             "address, 'Voted on proposal', ",
-            StringsUpgradeable.toString(proposal.voterFtReward),
+            Strings.toString(proposal.voterFtReward),
             ", proposal_id FROM ",
             _votesTableName,
             " WHERE weight > 0 AND proposal_id = ",
-            StringsUpgradeable.toString(proposalId)
+            Strings.toString(proposalId)
         );
 
         TablelandDeployments.get().mutate(address(this), _ftRewardsTableId, insert);
