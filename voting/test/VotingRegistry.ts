@@ -79,7 +79,8 @@ describe("VotingRegistry", function () {
       )
       .all();
 
-    const pilotRewardsReceipt = await pilotRewardsMeta.txn.wait();
+    const pilotRewardsReceipt = await pilotRewardsMeta.txn?.wait();
+    if (!pilotRewardsReceipt) throw Error("Did not get pilotRewardsReceipt");
     pilotSessionsTableName = pilotRewardsReceipt.name;
 
     const pilotSessions: PilotSession[] = [
@@ -104,7 +105,9 @@ describe("VotingRegistry", function () {
       )
       .all();
 
-    const ftRewardsReceipt = await ftRewardsMeta.txn.wait();
+    const ftRewardsReceipt = await ftRewardsMeta.txn?.wait();
+    if (!ftRewardsReceipt) throw Error("Did not get ftRewardsReceipt");
+
     ftRewardsTableName = ftRewardsReceipt.name;
     const ftRewardsTableId = ftRewardsReceipt.tableId;
 
@@ -130,7 +133,7 @@ describe("VotingRegistry", function () {
       .prepare(`GRANT INSERT ON ${ftRewardsTableName} TO '${registry.address}'`)
       .all();
 
-    await grantMeta.txn.wait();
+    await grantMeta.txn?.wait();
   }
 
   describe("createProposal", () => {
@@ -152,7 +155,7 @@ describe("VotingRegistry", function () {
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       const proposal = await registry
         .connect(user)
@@ -178,7 +181,7 @@ describe("VotingRegistry", function () {
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
       await pollForReceiptByTransactionHash(validator, {
@@ -213,7 +216,7 @@ describe("VotingRegistry", function () {
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
       const r = await pollForReceiptByTransactionHash(validator, {
@@ -250,7 +253,7 @@ describe("VotingRegistry", function () {
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
       await pollForReceiptByTransactionHash(validator, {
@@ -310,7 +313,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       await expect(
         registry
@@ -366,7 +369,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // advance 11 blocks
       await network.provider.send("hardhat_mine", [ethers.utils.hexValue(11)]);
@@ -409,7 +412,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // advance 11 blocks
       await network.provider.send("hardhat_mine", [ethers.utils.hexValue(11)]);
@@ -452,7 +455,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // User 1 and 2 are eligible for the vote, user 4 is not
       const vote1 = await registry
@@ -551,7 +554,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       await expect(
         registry
@@ -577,7 +580,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       // close the vote
       await network.provider.send("hardhat_mine", [ethers.utils.hexValue(100)]);
@@ -615,7 +618,7 @@ describe("VotingRegistry", function () {
 
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
-      const proposalId = event.args?.proposalId.toNumber();
+      const proposalId = event?.args?.proposalId.toNumber();
 
       await registry
         .connect(user1)
