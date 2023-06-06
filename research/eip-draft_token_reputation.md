@@ -41,9 +41,51 @@ For reference, [OpenSea](https://docs.opensea.io/docs/metadata-standards#disable
 
 Generally, there are two ways to approach reputation: transferrable or non-transferrable. This EIP gives flexibility as to how reputation is treated and results in a broader use case surface area. With the `Stake` and `Unstake` events, there is information about both the token ID and current owner's address; the metadata is ultimately what stores this information. It brings a unique design advantage because it allows the NFT to simply be a _reputation proxy_ where the implementor aggregates reputation tied to a specific owner's _address_. Alternatively, the _token ID_ and that alone could be used. Reputation can either be an address-bound or token-bound.
 
-If reputation **SHOULD NOT be transferrable** (e.g., reputation SHOULD be earned for only a single owner of a token), then this EIP gives the flexibility to the implementor to block transfers, such as creating SBTs via inheriting from ERC-5192 and block sales altogether. This would ensure reputation is no longer transferrable, which is common for credentialing systems.
+If reputation **SHOULD NOT be transferrable** (e.g., reputation SHOULD be earned for only a single owner of a token), then this EIP's events give the implementor the data needed to query reputation tied only to an address currently or previously owned a token. This would ensure reputation is no longer transferrable, which is common for credentialing systems. For example, `Stake(1, '0x1234...', 100)` and `Unstake(1, '0x1234...', 200)` could translate to `100` reputation-related blocks to have accrued for address `0x1234...`.
 
-On the contrary, if reputation is tied to the NFT token ID and not a single address, then it actually opens up a new set of opportunities for value creation through **reputation transferability**. For example, in a gaming application, you might earn some reputation that's bound to the token ID, and this unlocks a set of new features that are not available to tokens with a lower reputation. A token-gated workflow. As the token owner, you can choose to sell the token for all of the work you've put in; the tokens with more reputation are more valuable and come with transferrable game state. The owner could even choose to participate in more complex activities, like temporarily allowing another account to own the token (e.g., rent / escrow) and profit from the reputation earned.
+On the contrary, if reputation is tied to the NFT token ID and not a single address, then it actually opens up a new set of opportunities for value creation through **reputation transferability**. Namely, take the snippet above but calculate reputation for token ID `1` instead of address `0x1234...`. In terms of real-world applications, in a gaming, you might earn some reputation that's bound to the token ID, and this unlocks a set of new features that are not available to tokens with a lower reputation. A token-gated workflow. As the token owner, you can choose to sell the token for all of the work you've put in; the tokens with more reputation are more valuable and come with transferrable game state. The owner could even choose to participate in more complex activities, like temporarily allowing another account to own the token (e.g., rent / escrow) and profit from the reputation earned.
+
+### Systematic Example
+
+There are various ways in which reputation could stored and tracked. Since NFT metadata is highly structured, an SQL database is often used and could be implemented to listen to the on-chain `Stake` and `Unstake` events, materialize the data, and then allow for queries. That is, each event could mutate the database. Expanding upon the two categorizations above, one could do the following in an off-chain database where you create a table, insert values upon `Stake` events, update the row upon `Unstake`, and query the reputation for a specific address:
+
+```sql
+/* Example: tracking reputation using sessions */
+
+/* Create a table to track reputation */
+CREATE TABLE token_reputation (
+  id INTEGER PRIMARY KEY, /* Session ID */
+  token_id INTEGER NOT NULL, /* NFT token ID */
+  owner TEXT NOT NULL, /* Token owner's address */
+  start_time INTEGER NOT NULL, /* Starting block number */
+  end_time INTEGER /* Ending block number */
+);
+
+/* Listen to & process event: `Stake(1, '0x1234...', 100)` */
+INSERT INTO
+  token_reputation (token_id, owner, start_time)
+VALUES
+  (1, '0x1234...', 100);
+
+/* Listen to & process event: `Unstake(1, '0x1234...', 200)` */
+UPDATE
+  token_reputation SET end_time = 200
+WHERE
+  token_id = 1 AND
+  owner = '0x1234...' AND
+  end_time IS NULL;
+
+/* Query reputation for address `0x1234...` */
+SELECT
+  SUM(end_time - start_time)
+FROM
+  token_reputation
+WHERE
+  owner = '0x1234...';
+/* Returns a reputation value of: 100 */
+```
+
+Within the metadata, the calculated reputation value can then be displayed as an attribute. The query above demonstrates address-bound (non-transferrable) reputation. For token-bound (transferrable) reputation, the overall structure could be quite similar but drop the `owner` column and also change the `SELECT` query such that is uses `token_id = 1` instead of `owner = '0x1234...'` in the `WHERE` clause. One could even imagine more complex use cases where other structured data is included within implementation-specific events and materialized in the SQL table, such as in-game points, wins/losses, or similar.
 
 ## Specification
 
@@ -53,7 +95,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 An owner SHALL be able to "soft" stake and unstake their token; staking and unstaking a token SHOULD NOT require a change to the ownership of the token itself but simply emit events that signal the on-chain action taken. Staking a token with `function stake(...)` signals that the owner is staking their token to accrue reputation, such as earning block-based rewards, while the token cannot be sold; reputation SHOULD be earned for good behavior during this token state. Unstaking a token with `function unstake(...)` signals that the owner no longer wishes to stake the token and is available to be sold; reputation SHOULD NOT be earned while in an unstaked state.
 
-These functions emit `Staked` and `Unstaked` events, respectively, to signal a change in state of the token. This allows for off-chain marketplaces to change listing behavior as well as the token's metadata to be dynamically changed; the metadata SHOULD be changed by the implementer upon event emittance, but is is entirely OPTIONAL. Namely, there is no required contract storage for token reputation, so the events and metadata are what actually SHOULD store reputation, as provided by the DA layer. The implementor can choose to store reputation in contract storage, if desired. It is a key design component as this keeps the interface as lightweight as possible while also ensuring there is not a lossy process for determining a token's reputation fully off-chain.
+These functions emit `Stake` and `Unstake` events, respectively, to signal a change in state of the token. This allows for off-chain marketplaces to change listing behavior as well as the token's metadata to be dynamically changed; the metadata SHOULD be changed by the implementer upon event emittance, but is is entirely OPTIONAL. Namely, there is no required contract storage for token reputation, so the events and metadata are what actually SHOULD store reputation, as provided by the DA layer. The implementor can choose to store reputation in contract storage, if desired. It is a key design component as this keeps the interface as lightweight as possible while also ensuring there is not a lossy process for determining a token's reputation fully off-chain.
 
 **Every contract compliant with this EIP MUST implement the `ERC721` interface.**
 
@@ -103,7 +145,7 @@ interface ITokenReputation {
 }
 ```
 
-Every contract compliant with this token reputation EIP MusT also use the feature detection functionality of EIP-165 such that calling `function supportsInterface(bytes4 interfaceID) external view returns (bool)` with `interfaceID` of `0x88832242` MUST return `true`. As EIP-165 and EIP-721 are also required, an example is provided below:
+Every contract compliant with this token reputation EIP MUST also use the feature detection functionality of EIP-165 such that calling `function supportsInterface(bytes4 interfaceID) external view returns (bool)` with `interfaceID` of `0x88832242` MUST return `true`. As EIP-165 and EIP-721 are also required, an example is provided below:
 
 ```solidity
 function supportsInterface(bytes4 interfaceID) external view returns (bool) {
@@ -226,7 +268,7 @@ contract TokenReputation is ERC721, ITokenReputation {
     Counters.Counter private _tokenIdCounter;
 
     uint256 private _tokenRepTableId; // Some reference used off-chain to store reputation data
-    string private constant _REPUTATION_PREFIX = "token_rep"; // Used off-chain but stored for interoperability purposes
+    string private constant _REPUTATION_PREFIX = "token_reputation"; // Used off-chain but stored for interoperability purposes
 
     constructor() ERC721("Tableland", "TBL") {
         _tokenRepTableId = TablelandDeployments.get().create(
@@ -293,6 +335,9 @@ contract TokenReputation is ERC721, ITokenReputation {
         string memory filters = string.concat(
             "token_id=",
             Strings.toString(uint64(tokenId)),
+            " AND ",
+            "owner=",
+            SQLHelpers.quote(Strings.toHexString(tokenOwner)),
             " AND ",
             "end_time IS NULL"
         );
