@@ -184,16 +184,11 @@ contract VotingRegistry {
     }
 
     function _snapshotVotingPower(string memory proposalId) internal {
-        // TODO: BLOCK_NUM() doesn't work with LocalTableland, remove this later
-        string memory blockNumber = StringsUpgradeable.toString(block.number);
-
         string memory snapshotPilotSessionFt = string.concat(
             "INSERT INTO ",
             _ftSnapshotTableName,
             " (address, ft, proposal_id) ",
-            "SELECT owner, (COALESCE(end_time, ",
-            blockNumber,
-            ") - start_time), ",
+            "SELECT owner, (COALESCE(end_time, BLOCK_NUM()) - start_time), ",
             proposalId,
             " FROM ",
             _pilotSessionsTableName
@@ -321,16 +316,12 @@ contract VotingRegistry {
         // FROM votes WHERE weight > 0 and proposal_id = ?
         // ```
 
-        // TODO: BLOCK_NUM() doesn't work with LocalTableland, remove this later
-        string memory blockNumber = StringsUpgradeable.toString(block.number);
-
         string memory insert = string.concat(
             "INSERT INTO ",
             _ftRewardsTableName,
             " (block_num, recipient, reason, amount, proposal_id)",
-            " SELECT DISTINCT ",
-            blockNumber,
-            ", address, 'Voted on proposal', ",
+            " SELECT DISTINCT BLOCK_NUM(), ",
+            "address, 'Voted on proposal', ",
             StringsUpgradeable.toString(proposal.voterFtReward),
             ", proposal_id FROM ",
             _votesTableName,
