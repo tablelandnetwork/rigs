@@ -45,7 +45,7 @@ export const deployments: RigsDeployments = {
     attributesTable: "rig_attributes_42161_15",
     lookupsTable: "lookups_42161_10",
     pilotSessionsTable: "pilot_sessions_1_7",
-    ftRewardsTable: "", // TODO fill in with real value from deployment
+    ftRewardsTable: "ft_rewards_314_2",
     displayAttributes: true,
   },
   // testnets
@@ -62,7 +62,7 @@ export const deployments: RigsDeployments = {
     attributesTable: "rig_attributes_80001_4040",
     lookupsTable: "lookups_80001_4041",
     pilotSessionsTable: "pilot_sessions_80001_4078",
-    ftRewardsTable: "", // TODO fill in with real value from deployment
+    ftRewardsTable: "ft_rewards_80001_6727",
     displayAttributes: true,
   },
   localhost: {
