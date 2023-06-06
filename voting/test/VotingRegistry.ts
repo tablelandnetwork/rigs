@@ -168,7 +168,7 @@ describe("VotingRegistry", function () {
     });
 
     it("Should insert alternatives", async () => {
-      const [admin, user] = accounts;
+      const [admin] = accounts;
 
       const txn = await registry
         .connect(admin)
@@ -203,7 +203,7 @@ describe("VotingRegistry", function () {
     });
 
     it("Should snapshot voting power", async () => {
-      const [admin, user] = accounts;
+      const [admin] = accounts;
 
       const txn = await registry
         .connect(admin)
@@ -219,7 +219,7 @@ describe("VotingRegistry", function () {
       const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
-      const r = await pollForReceiptByTransactionHash(validator, {
+      await pollForReceiptByTransactionHash(validator, {
         chainId: 31337,
         transactionHash: receipt.transactionHash,
       });
@@ -238,7 +238,7 @@ describe("VotingRegistry", function () {
     });
 
     it("Should pre-insert votes for eligible wallets", async () => {
-      const [admin, user] = accounts;
+      const [admin] = accounts;
 
       const alternatives = ["alt1", "alt2", "alt3", "alt4"];
 
@@ -458,7 +458,7 @@ describe("VotingRegistry", function () {
       const proposalId = event?.args?.proposalId.toNumber();
 
       // User 1 and 2 are eligible for the vote, user 4 is not
-      const vote1 = await registry
+      await registry
         .connect(user1)
         .vote(
           BigNumber.from(proposalId),
@@ -466,7 +466,7 @@ describe("VotingRegistry", function () {
           [BigNumber.from(40), BigNumber.from(30), BigNumber.from(30)]
         );
 
-      const vote2 = await registry
+      await registry
         .connect(user2)
         .vote(
           BigNumber.from(proposalId),
