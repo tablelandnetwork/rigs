@@ -72,7 +72,7 @@ describe("VotingRegistry", function () {
     db = getDatabase(accounts[0]);
     validator = new Validator(db.config);
 
-    // 1. Create pilotSessions table
+    // 1. Create pre-existing tables, pilot sessions and ft rewards & populate
     const { meta: pilotRewardsMeta } = await db
       .prepare(
         "CREATE TABLE pilot_sessions (id integer primary key, rig_id integer NOT NULL, owner text NOT NULL, pilot_contract text, pilot_id integer, start_time integer NOT NULL, end_time integer)"
@@ -82,6 +82,7 @@ describe("VotingRegistry", function () {
     const pilotRewardsReceipt = await pilotRewardsMeta.txn?.wait();
     if (!pilotRewardsReceipt) throw Error("Did not get pilotRewardsReceipt");
     pilotSessionsTableName = pilotRewardsReceipt.name;
+    const pilotSessionsTableId = pilotRewardsReceipt.tableId;
 
     const pilotSessions: PilotSession[] = [
       { rigId: 1, owner: accounts[1].address, startTime: 0, endTime: 111 },
@@ -98,7 +99,6 @@ describe("VotingRegistry", function () {
       )
     );
 
-    // 2. Create ftRewards table
     let { meta: ftRewardsMeta } = await db
       .prepare(
         "CREATE TABLE ft_rewards (block_num integer NOT NULL, recipient text NOT NULL, reason text NOT NULL, amount integer NOT NULL, proposal_id integer)"
@@ -111,27 +111,79 @@ describe("VotingRegistry", function () {
     ftRewardsTableName = ftRewardsReceipt.name;
     const ftRewardsTableId = ftRewardsReceipt.tableId;
 
-    // 3. Create contract
+    // 2. Create voting tables
+    const { meta: proposalsMeta } = await db
+      .prepare(
+        "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
+      )
+      .all();
+
+    const proposalsReceipt = await proposalsMeta.txn!.wait();
+    const proposalsTableName = proposalsReceipt.name;
+    const proposalsTableId = proposalsReceipt.tableId;
+
+    const { meta: ftSnapshotMeta } = await db
+      .prepare(
+        "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL)"
+      )
+      .all();
+
+    const ftSnapshotReceipt = await ftSnapshotMeta.txn!.wait();
+    ftSnapshotTableName = ftSnapshotReceipt.name;
+    const ftSnapshotTableId = ftSnapshotReceipt.tableId;
+
+    const { meta: votesMeta } = await db
+      .prepare(
+        "CREATE TABLE votes (address text NOT NULL, proposal_id integer NOT NULL, option_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, option_id, proposal_id))"
+      )
+      .all();
+
+    const votesReceipt = await votesMeta.txn!.wait();
+    votesTableName = votesReceipt.name;
+    const votesTableId = votesReceipt.tableId;
+
+    const { meta: optionsMeta } = await db
+      .prepare(
+        "CREATE TABLE ft_snapshot (id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL)"
+      )
+      .all();
+
+    const optionsReceipt = await optionsMeta.txn!.wait();
+    optionsTableName = optionsReceipt.name;
+    const optionsTableId = optionsReceipt.tableId;
+
+    // 3. Deploy contract
     const VotingRegistryFactory = await ethers.getContractFactory(
       "VotingRegistry"
     );
     registry = await (
       (await VotingRegistryFactory.deploy(
-        pilotSessionsTableName,
-        ftRewardsTableName,
-        ftRewardsTableId
+        { id: proposalsTableId, name: proposalsTableName },
+        { id: ftSnapshotTableId, name: ftSnapshotTableName },
+        { id: votesTableId, name: votesTableName },
+        { id: optionsTableId, name: optionsTableName },
+        { id: pilotSessionsTableId, name: pilotSessionsTableName },
+        { id: ftRewardsTableId, name: ftRewardsTableName },
+        BigNumber.from(0)
       )) as VotingRegistry
     ).deployed();
 
-    const tableNames = await registry.connect(accounts[0]).tableNames();
-    votesTableName = tableNames.votesTableName;
-    optionsTableName = tableNames.optionsTableName;
-    ftSnapshotTableName = tableNames.ftSnapshotTableName;
-
-    // 4. Grant contract permission to write to ftRewards table
+    // 4. Grant contract permission to write to all voting tables and the ftRewardsTable
+    await db
+      .prepare(`GRANT INSERT ON ${proposalsTableName} TO '${registry.address}'`)
+      .run();
+    await db
+      .prepare(`GRANT INSERT ON ${ftSnapshotTableName} TO '${registry.address}'`)
+      .run();
+    await db
+      .prepare(`GRANT INSERT ON ${votesTableName} TO '${registry.address}'`)
+      .run();
+    await db
+      .prepare(`GRANT INSERT ON ${optionsTableName} TO '${registry.address}'`)
+      .run();
     const { meta: grantMeta } = await db
       .prepare(`GRANT INSERT ON ${ftRewardsTableName} TO '${registry.address}'`)
-      .all();
+      .run();
 
     await grantMeta.txn?.wait();
   }
@@ -172,16 +224,16 @@ describe("VotingRegistry", function () {
       const [_, user] = accounts;
 
       await expect(
-      registry
-        .connect(user)
-        .createProposal(
-          ["one", "two", "three"],
-          "my vote",
-          "some-cid",
-          BigNumber.from(100),
-          BigNumber.from(100),
-          BigNumber.from(200)
-        )
+        registry
+          .connect(user)
+          .createProposal(
+            ["one", "two", "three"],
+            "my vote",
+            "some-cid",
+            BigNumber.from(100),
+            BigNumber.from(100),
+            BigNumber.from(200)
+          )
       ).to.be.rejected;
     });
 
@@ -189,31 +241,33 @@ describe("VotingRegistry", function () {
       const [owner, _, __, votingAdmin] = accounts;
 
       await expect(
-      registry
-        .connect(votingAdmin)
-        .createProposal(
-          ["one", "two", "three"],
-          "my vote",
-          "some-cid",
-          BigNumber.from(100),
-          BigNumber.from(100),
-          BigNumber.from(200)
-        )
+        registry
+          .connect(votingAdmin)
+          .createProposal(
+            ["one", "two", "three"],
+            "my vote",
+            "some-cid",
+            BigNumber.from(100),
+            BigNumber.from(100),
+            BigNumber.from(200)
+          )
       ).to.be.rejected;
 
-      await registry.connect(owner).grantRole(registry.VOTING_ADMIN_ROLE(), votingAdmin.address);
+      await registry
+        .connect(owner)
+        .grantRole(registry.VOTING_ADMIN_ROLE(), votingAdmin.address);
 
       await expect(
         registry
-        .connect(votingAdmin)
-        .createProposal(
-          ["one", "two", "three"],
-          "my vote",
-          "some-cid",
-          BigNumber.from(100),
-          BigNumber.from(100),
-          BigNumber.from(200)
-        )
+          .connect(votingAdmin)
+          .createProposal(
+            ["one", "two", "three"],
+            "my vote",
+            "some-cid",
+            BigNumber.from(100),
+            BigNumber.from(100),
+            BigNumber.from(200)
+          )
       ).not.to.be.rejected;
     });
 

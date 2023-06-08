@@ -15,6 +15,11 @@ contract VotingRegistry is AccessControl {
 
     bytes32 public constant VOTING_ADMIN_ROLE = keccak256("VOTING_ADMIN_ROLE");
 
+    struct TableInfo {
+        uint256 id;
+        string name;
+    }
+
     struct Proposal {
         uint256 startBlockNumber;
         uint256 endBlockNumber;
@@ -23,59 +28,37 @@ contract VotingRegistry is AccessControl {
         bool rewardsDistributed;
     }
 
-    struct TableNames {
-        string votesTableName;
-        string optionsTableName;
-        string ftSnapshotTableName;
-    }
+    TableInfo private _proposalsTable;
+    TableInfo private _ftSnapshotTable;
+    TableInfo private _votesTable;
+    TableInfo private _optionsTable;
+    TableInfo private _pilotSessionsTable;
+    TableInfo private _ftRewardsTable;
 
-    string private constant _PROPOSALS_PREFIX = "proposals";
-    uint256 private _proposalsTableId;
-    string private _proposalsTableName;
-
-    string private constant _FT_SNAPSHOT_PREFIX = "ft_snapshot";
-    uint256 private _ftSnapshotTableId;
-    string private _ftSnapshotTableName;
-
-    string private constant _VOTES_PREFIX = "votes";
-    uint256 private _votesTableId;
-    string private _votesTableName;
-
-    string private constant _ALTERNATIVES_PREFIX = "options";
-    uint256 private _optionsTableId;
-    string private _optionsTableName;
-
-    string private _pilotSessionsTableName;
-    string private _ftRewardsTableName;
-    uint256 private _ftRewardsTableId;
-
-    uint256 private proposalCounter;
+    uint256 private _proposalCounter;
 
     mapping(uint256 => Proposal) private _proposals;
 
-    constructor(string memory pilotSessionsTableName, string memory ftRewardsTableName, uint256 ftRewardsTableId) {
+    constructor(
+        TableInfo memory proposalsTable,
+        TableInfo memory ftSnapshotTable,
+        TableInfo memory votesTable,
+        TableInfo memory optionsTable,
+        TableInfo memory pilotSessionsTable,
+        TableInfo memory ftRewardsTable,
+        uint256 startingProposalId
+    ) {
+        _proposalsTable = proposalsTable;
+        _ftSnapshotTable = ftSnapshotTable;
+        _votesTable = votesTable;
+        _optionsTable = optionsTable;
+        _pilotSessionsTable = pilotSessionsTable;
+        _ftRewardsTable = ftRewardsTable;
+
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(VOTING_ADMIN_ROLE, msg.sender);
 
-        _pilotSessionsTableName = pilotSessionsTableName;
-        _ftRewardsTableName = ftRewardsTableName;
-        _ftRewardsTableId = ftRewardsTableId;
-
-        _proposalsTableId = _createProposalsTable();
-        _proposalsTableName = SQLHelpers.toNameFromId(_PROPOSALS_PREFIX, _proposalsTableId);
-
-        _ftSnapshotTableId = _createSnapshotTable();
-        _ftSnapshotTableName = SQLHelpers.toNameFromId(_FT_SNAPSHOT_PREFIX, _ftSnapshotTableId);
-
-        _votesTableId = _createVotesTable();
-        _votesTableName = SQLHelpers.toNameFromId(_VOTES_PREFIX, _votesTableId);
-
-        _optionsTableId = _createAlternativesTable();
-        _optionsTableName = SQLHelpers.toNameFromId(_ALTERNATIVES_PREFIX, _optionsTableId);
-    }
-
-    function tableNames() external view returns (TableNames memory) {
-        return TableNames(_votesTableName, _optionsTableName, _ftSnapshotTableName);
+        _proposalCounter = startingProposalId;
     }
 
     function createProposal(
@@ -86,12 +69,12 @@ contract VotingRegistry is AccessControl {
         uint256 startBlockNumber,
         uint256 endBlockNumber
     ) external onlyRole(VOTING_ADMIN_ROLE) returns (uint256 proposalId) {
-        proposalId = proposalCounter++;
+        proposalId = _proposalCounter++;
 
         string memory proposalIdString = Strings.toString(proposalId);
 
         _insertProposal(proposalIdString, name, descriptionCid, voterFtReward, startBlockNumber, endBlockNumber);
-        _insertAlternatives(proposalIdString, options);
+        _insertOptions(proposalIdString, options);
         _snapshotVotingPower(proposalIdString);
         _insertEligibleVotes(proposalIdString, options);
 
@@ -106,44 +89,6 @@ contract VotingRegistry is AccessControl {
         return _proposals[proposalId];
     }
 
-    function _createProposalsTable() internal returns (uint256) {
-        return TablelandDeployments.get().create(
-            address(this),
-            SQLHelpers.toCreateFromSchema(
-                "id integer NOT NULL, name text NOT NULL, description_cid text, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL",
-                _PROPOSALS_PREFIX
-            )
-        );
-    }
-
-    function _createSnapshotTable() internal returns (uint256) {
-        return TablelandDeployments.get().create(
-            address(this),
-            SQLHelpers.toCreateFromSchema(
-                "address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL", _FT_SNAPSHOT_PREFIX
-            )
-        );
-    }
-
-    function _createVotesTable() internal returns (uint256) {
-        return TablelandDeployments.get().create(
-            address(this),
-            SQLHelpers.toCreateFromSchema(
-                "address text NOT NULL, proposal_id integer NOT NULL, option_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, option_id, proposal_id)",
-                _VOTES_PREFIX
-            )
-        );
-    }
-
-    function _createAlternativesTable() internal returns (uint256) {
-        return TablelandDeployments.get().create(
-            address(this),
-            SQLHelpers.toCreateFromSchema(
-                "id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL", _ALTERNATIVES_PREFIX
-            )
-        );
-    }
-
     function _insertProposal(
         string memory proposalIdString,
         string memory name,
@@ -154,7 +99,7 @@ contract VotingRegistry is AccessControl {
     ) internal {
         string memory insert = string.concat(
             "INSERT INTO ",
-            _proposalsTableName,
+            _proposalsTable.name,
             " (id, name, description_cid, voter_ft_reward, created_at, start_block, end_block) VALUES (",
             proposalIdString,
             ", ",
@@ -171,51 +116,59 @@ contract VotingRegistry is AccessControl {
             Strings.toString(endBlockNumber),
             ")"
         );
-        TablelandDeployments.get().mutate(address(this), _proposalsTableId, insert);
+        TablelandDeployments.get().mutate(address(this), _proposalsTable.id, insert);
     }
 
-    function _insertAlternatives(string memory proposalId, string[] calldata options) internal {
-        uint256 length = options.length;
+    function _insertOptions(string memory proposalId, string[] calldata options) internal {
+        string memory insert =
+            string.concat("INSERT INTO ", _optionsTable.name, " (proposal_id, id, description) VALUES");
 
-        string[] memory values = new string[](length);
+        uint256 length = options.length;
+        string memory prefix;
         uint256 i;
-        unchecked {
-            for (; i < length;) {
-                values[i] = string.concat(proposalId, ", ", Strings.toString(i + 1), ", '", options[i], "'");
-                i++;
+        for (; i < length;) {
+            if (i == 0) {
+                prefix = "(";
+            } else {
+                prefix = ",(";
+            }
+
+            insert = string.concat(
+                insert, prefix, proposalId, ",", Strings.toString(i + 1), ",", SQLHelpers.quote(options[i]), ")"
+            );
+
+            unchecked {
+                ++i;
             }
         }
 
-        string memory insert =
-            SQLHelpers.toBatchInsert(_ALTERNATIVES_PREFIX, _optionsTableId, "proposal_id, id, description", values);
-
-        TablelandDeployments.get().mutate(address(this), _optionsTableId, insert);
+        TablelandDeployments.get().mutate(address(this), _optionsTable.id, insert);
     }
 
     function _snapshotVotingPower(string memory proposalId) internal {
         string memory snapshotPilotSessionFt = string.concat(
             "INSERT INTO ",
-            _ftSnapshotTableName,
+            _ftSnapshotTable.name,
             " (address, ft, proposal_id) ",
             "SELECT owner, (COALESCE(end_time, BLOCK_NUM()) - start_time), ",
             proposalId,
             " FROM ",
-            _pilotSessionsTableName
+            _pilotSessionsTable.name
         );
 
         string memory snapshotFtRewards = string.concat(
             "INSERT INTO ",
-            _ftSnapshotTableName,
+            _ftSnapshotTable.name,
             " (address, ft, proposal_id) ",
             "SELECT recipient, amount, ",
             proposalId,
             " FROM ",
-            _ftRewardsTableName
+            _ftRewardsTable.name
         );
 
         ITablelandTables.Statement[] memory stmnts = new ITablelandTables.Statement[](2);
-        stmnts[0] = ITablelandTables.Statement(_ftSnapshotTableId, snapshotPilotSessionFt);
-        stmnts[1] = ITablelandTables.Statement(_ftSnapshotTableId, snapshotFtRewards);
+        stmnts[0] = ITablelandTables.Statement(_ftSnapshotTable.id, snapshotPilotSessionFt);
+        stmnts[1] = ITablelandTables.Statement(_ftSnapshotTable.id, snapshotFtRewards);
         TablelandDeployments.get().mutate(address(this), stmnts);
     }
 
@@ -228,17 +181,17 @@ contract VotingRegistry is AccessControl {
             for (; i < length;) {
                 string memory insert = string.concat(
                     "INSERT INTO ",
-                    _votesTableName,
+                    _votesTable.name,
                     " (address, proposal_id, option_id, weight) ",
                     "SELECT DISTINCT address, ",
                     proposalId,
                     ", ",
                     Strings.toString(i + 1),
                     ", 0 FROM ",
-                    _ftSnapshotTableName
+                    _ftSnapshotTable.name
                 );
 
-                stmnts[i++] = ITablelandTables.Statement(_votesTableId, insert);
+                stmnts[i++] = ITablelandTables.Statement(_votesTable.id, insert);
             }
         }
 
@@ -278,7 +231,7 @@ contract VotingRegistry is AccessControl {
         //              END
         // WHERE lower(address) = lower(msg.sender);
         // ```
-        string memory updateStatement = string.concat("UPDATE ", _votesTableName, " SET weight = CASE option_id");
+        string memory updateStatement = string.concat("UPDATE ", _votesTable.name, " SET weight = CASE option_id");
 
         uint256 votes = weights.length;
         i = 0;
@@ -312,7 +265,7 @@ contract VotingRegistry is AccessControl {
         );
 
         // Submit vote
-        TablelandDeployments.get().mutate(address(this), _votesTableId, updateStatement);
+        TablelandDeployments.get().mutate(address(this), _votesTable.id, updateStatement);
     }
 
     function distributeParticipantFtRewards(uint256 proposalId) external {
@@ -339,18 +292,18 @@ contract VotingRegistry is AccessControl {
 
         string memory insert = string.concat(
             "INSERT INTO ",
-            _ftRewardsTableName,
+            _ftRewardsTable.name,
             " (block_num, recipient, reason, amount, proposal_id)",
             " SELECT DISTINCT BLOCK_NUM(), ",
             "address, 'Voted on proposal', ",
             Strings.toString(proposal.voterFtReward),
             ", proposal_id FROM ",
-            _votesTableName,
+            _votesTable.name,
             " WHERE weight > 0 AND proposal_id = ",
             Strings.toString(proposalId)
         );
 
-        TablelandDeployments.get().mutate(address(this), _ftRewardsTableId, insert);
+        TablelandDeployments.get().mutate(address(this), _ftRewardsTable.id, insert);
     }
 
     function onERC721Received(address, address, uint256, bytes calldata) public pure returns (bytes4) {
