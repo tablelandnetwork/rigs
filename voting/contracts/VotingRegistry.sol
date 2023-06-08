@@ -129,7 +129,7 @@ contract VotingRegistry is AccessControl {
         return TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
-                "address text NOT NULL, proposal_id integer NOT NULL, alternative_id integer NOT NULL, weight integer NOT NULL, UNIQUE(address, alternative_id, proposal_id)",
+                "address text NOT NULL, proposal_id integer NOT NULL, alternative_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, alternative_id, proposal_id)",
                 _VOTES_PREFIX
             )
         );
@@ -245,15 +245,21 @@ contract VotingRegistry is AccessControl {
         TablelandDeployments.get().mutate(address(this), stmnts);
     }
 
-    function vote(uint256 proposalId, uint256[] calldata alternatives, uint256[] calldata weights) external {
+    function vote(
+        uint256 proposalId,
+        uint256[] calldata alternatives,
+        uint256[] calldata weights,
+        string[] memory comments
+    ) external {
         Proposal memory proposal = _proposals[proposalId];
 
         // Check that proposal is active
         require(block.number >= proposal.startBlockNumber, "Vote has not started");
         require(block.number <= proposal.endBlockNumber, "Vote has ended");
 
-        // Check that alternatives & weights match, and weight sum == 100
+        // Check that alternatives & weights & comments match, and weight sum == 100
         require(alternatives.length == weights.length, "Mismatched alternatives and weights length");
+        require(weights.length == comments.length, "Mismatched alternatives and commentslength");
         uint256 weightSum;
         uint256 i;
         for (; i < weights.length;) {
@@ -277,9 +283,10 @@ contract VotingRegistry is AccessControl {
         // ```
         string memory updateStatement = string.concat("UPDATE ", _votesTableName, " SET weight = CASE alternative_id");
 
+        uint256 votes = weights.length;
         i = 0;
         unchecked {
-            for (; i < weights.length;) {
+            for (; i < votes;) {
                 updateStatement = string.concat(
                     updateStatement, " WHEN ", Strings.toString(alternatives[i]), " THEN ", Strings.toString(weights[i])
                 );
@@ -287,9 +294,25 @@ contract VotingRegistry is AccessControl {
             }
         }
 
+        updateStatement = string.concat(updateStatement, " ELSE 0 END, comment = CASE alternative_id");
+
+        i = 0;
+        unchecked {
+            for (; i < votes;) {
+                updateStatement = string.concat(
+                    updateStatement,
+                    " WHEN ",
+                    Strings.toString(alternatives[i]),
+                    " THEN ",
+                    SQLHelpers.quote(comments[i])
+                );
+                ++i;
+            }
+        }
+
         updateStatement = string.concat(
             updateStatement,
-            " ELSE 0 END WHERE lower(address) = lower('",
+            " ELSE null END WHERE lower(address) = lower('",
             Strings.toHexString(uint256(uint160(msg.sender)), 20),
             "') AND proposal_id = ",
             Strings.toString(proposalId)
