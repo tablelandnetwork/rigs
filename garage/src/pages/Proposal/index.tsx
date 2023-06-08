@@ -31,6 +31,7 @@ import {
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
 import { ethers } from "ethers";
+import { TransactionStateAlert } from "../../components/TransactionStateAlert";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useHelia } from "../../hooks/useHelia";
 import { strings } from "@helia/strings";
@@ -94,7 +95,7 @@ const useProposal = (id: string | undefined) => {
       end_block as "endBlock",
       voter_ft_reward as "voterFtReward",
       json_group_array(json_object('id', alternatives.id, 'description', alternatives.description)) as "alternatives",
-      (SELECT SUM(ft) FROM ${ftSnapshotTable} WHERE proposal_id = ${id}) as "totalFt"
+      (SELECT COALESCE(SUM(ft), 0) FROM ${ftSnapshotTable} WHERE proposal_id = ${id}) as "totalFt"
       FROM ${proposalsTable} proposal
       JOIN ${alternativesTable} alternatives ON proposal.id = alternatives.proposal_id
       WHERE proposal.id = ${id}
@@ -328,7 +329,9 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
         {!isEligible && (
           <Text pb={8}>You are not eligible to vote in this proposal.</Text>
         )}
+        <TransactionStateAlert {...contractWrite} />
         <Button
+          mt={2}
           isDisabled={status !== "open" || !isValid}
           onClick={write}
           width="100%"
@@ -367,7 +370,7 @@ const Information = ({ proposal, results, p, ...props }: ModuleProps) => {
           <Tr>
             <Td pl={p}>Total FT in snapshot</Td>
             <Td pr={p} isNumeric>
-              {`${prettyNumber(proposal.totalFt)} FT`}
+              {prettyNumber(proposal.totalFt)} FT
             </Td>
           </Tr>
         </Tbody>
