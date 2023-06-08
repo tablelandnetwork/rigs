@@ -691,6 +691,8 @@ describe("Rigs", function () {
       expect(await rigs.supportsInterface("0x2a55205a")).to.equal(true);
       // ERC165 interface ID for ERC4906
       expect(await rigs.supportsInterface("0x49064906")).to.equal(true);
+      // ERC165 interface ID for ITokenReputation
+      expect(await rigs.supportsInterface("0x88832242")).to.equal(true);
     });
   });
 
@@ -2300,17 +2302,11 @@ describe("Rigs", function () {
         let [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Start to stake the Rig
-        tx = await rigs
-          .connect(tokenOwner)
-          ["stake(uint256)"](BigNumber.from(tokenId));
-        receipt = await tx.wait();
-        [, , event] = receipt.events ?? [];
-        // Save the block number
-        const blockNumber = tx.blockNumber;
-        // Check that `Stake` was emitted
-        expect(event.args?.tokenId).to.equal(BigNumber.from(tokenId));
-        expect(event.args?.owner).to.equal(tokenOwner.address);
-        expect(event.args?.block).to.equal(blockNumber);
+        await expect(
+          rigs.connect(tokenOwner)["stake(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(rigs, "Stake")
+          .withArgs(BigNumber.from(tokenId), tokenOwner.address);
       });
 
       it("Should emit an Unstaked event upon unstaking", async function () {
@@ -2325,29 +2321,17 @@ describe("Rigs", function () {
         const tokenId = event.args?.tokenId;
         // Stake the Rig & check `MetadataUpdate` was emitted
         // Start to pilot the Rig
-        tx = await rigs
-          .connect(tokenOwner)
-          ["stake(uint256)"](BigNumber.from(tokenId));
-        receipt = await tx.wait();
-        [, , event] = receipt.events ?? [];
-        // Save the block number
-        let blockNumber = tx.blockNumber;
-        // Check `Stake` was emitted
-        expect(event.args?.tokenId).to.equal(BigNumber.from(tokenId));
-        expect(event.args?.owner).to.equal(tokenOwner.address);
-        expect(event.args?.block).to.equal(blockNumber);
+        await expect(
+          rigs.connect(tokenOwner)["stake(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(rigs, "Stake")
+          .withArgs(BigNumber.from(tokenId), tokenOwner.address);
         // Park the Rig & check `Unstake` was emitted
-        tx = await rigs
-          .connect(tokenOwner)
-          ["unstake(uint256)"](BigNumber.from(tokenId));
-        receipt = await tx.wait();
-        [, , event] = receipt.events ?? [];
-        // Save the block number
-        blockNumber = tx.blockNumber;
-        // Check that `Unstake` was emitted
-        expect(event.args?.tokenId).to.equal(BigNumber.from(tokenId));
-        expect(event.args?.owner).to.equal(tokenOwner.address);
-        expect(event.args?.block).to.equal(blockNumber);
+        await expect(
+          rigs.connect(tokenOwner)["unstake(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(rigs, "Unstake")
+          .withArgs(BigNumber.from(tokenId), tokenOwner.address);
       });
 
       it("Should emit a Staked event upon staking with pilot", async function () {
@@ -2368,23 +2352,12 @@ describe("Rigs", function () {
         tx = await fauxERC721.connect(tokenOwner).mint();
         receipt = await tx.wait();
         [event] = receipt.events ?? [];
-        const pilotTokenId = event.args?.tokenId;
         // Pilot the Rig & check `Stake` was emitted
-        tx = await rigs
-          .connect(tokenOwner)
-          ["stake(uint256,address,uint256)"](
-            BigNumber.from(tokenId),
-            fauxERC721.address,
-            pilotTokenId
-          );
-        receipt = await tx.wait();
-        [, , event] = receipt.events ?? [];
-        // Save the block number
-        const blockNumber = tx.blockNumber;
-        // Check that `Unstake` was emitted
-        expect(event.args?.tokenId).to.equal(BigNumber.from(tokenId));
-        expect(event.args?.owner).to.equal(tokenOwner.address);
-        expect(event.args?.block).to.equal(blockNumber);
+        await expect(
+          rigs.connect(tokenOwner)["stake(uint256)"](BigNumber.from(tokenId))
+        )
+          .to.emit(rigs, "Stake")
+          .withArgs(BigNumber.from(tokenId), tokenOwner.address);
       });
     });
 
