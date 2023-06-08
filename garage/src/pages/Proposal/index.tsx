@@ -394,7 +394,7 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
       <Heading px={p}>Votes ({votes.length})</Heading>
       <Table>
         <Tbody>
-          {votes.slice(0, 20).map(({ address, choices, ft }) => {
+          {votes.slice(0, 20).map(({ address, choices, ft }, index) => {
             const choiceString = choices
               .map(
                 ({ option_id, weight }) =>
@@ -403,24 +403,31 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
               .join(", ");
 
             return (
-              <Tr>
-                <Td pl={p}>
-                  <Link to={`/owner/${address}`}>
-                    {truncateWalletAddress(address)}
-                  </Link>
-                </Td>
-                <Td
-                  textAlign="center"
-                  title={choiceString}
-                  overflow="hidden"
-                  textOverflow="ellipsis"
-                >
-                  {truncateChoiceString(choiceString)}
-                </Td>
-                <Td pr={p} isNumeric>
-                  {prettyNumber(ft)} FT
-                </Td>
-              </Tr>
+              <React.Fragment key={`vote-${index}`}>
+                <Tr>
+                  <Td pl={p}>
+                    <Link to={`/owner/${address}`}>
+                      {truncateWalletAddress(address)}
+                    </Link>
+                  </Td>
+                  <Td
+                    textAlign="center"
+                    title={choiceString}
+                    overflow="hidden"
+                    textOverflow="ellipsis"
+                  >
+                    {truncateChoiceString(choiceString)}
+                  </Td>
+                  <Td pr={p} isNumeric>
+                    {prettyNumber(ft)} FT
+                  </Td>
+                </Tr>
+                <Tr>
+                  <Td colSpan={3}>
+                    {choices.map((v) => v.comment).join(", ")}
+                  </Td>
+                </Tr>
+              </React.Fragment>
             );
           })}
         </Tbody>
