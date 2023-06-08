@@ -69,7 +69,7 @@ interface Result {
 interface Vote {
   address: string;
   ft: number;
-  choices: { alternative_id: string; weight: number }[];
+  choices: { alternative_id: string; weight: number; comment?: string }[];
 }
 
 const useProposal = (id: string | undefined) => {
@@ -108,7 +108,7 @@ const useProposal = (id: string | undefined) => {
       });
 
     db.prepare(
-      `SELECT votes.address, vp.ft, json_group_array(json_object('alternative_id', votes.alternative_id, 'weight', votes.weight)) as "choices"
+      `SELECT votes.address, vp.ft, json_group_array(json_object('alternative_id', votes.alternative_id, 'weight', votes.weight, 'comment', votes.comment)) as "choices"
         FROM ${votesTable} votes
         JOIN ${ftSnapshotTable} vp ON vp.address = votes.address AND vp.proposal_id = votes.proposal_id
         WHERE votes.proposal_id = ${id} AND votes.weight > 0
@@ -184,8 +184,6 @@ const useIsEligibleToVote = (
   return { isEligible };
 };
 
-type Weights = { [key: number]: number };
-
 const proposalStatus = (
   blockNumber: number | undefined,
   proposal: ProposalWithAlternatives | undefined
@@ -205,33 +203,54 @@ type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
   votes: Vote[];
 };
 
+type VoteState = { [key: number]: { weight: number; comment: string } };
+
+// TODO make different forms/components for different voting systems?
 const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
   const { address } = useAccount();
   const { isEligible } = useIsEligibleToVote(address, proposal.id);
 
   const { data: blockNumber } = useBlockNumber();
-  const [weights, setWeights] = useState<Weights>({});
+  const [votes, setVotes] = useState<VoteState>({});
 
-  const status = useMemo(
-    () => proposalStatus(blockNumber, proposal),
-    [blockNumber, proposal]
-  );
+  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
+    blockNumber,
+    proposal,
+  ]);
 
   const handleWeightChanged = useCallback(
     (i: number, event: React.ChangeEvent<HTMLInputElement>) => {
       const newWeight = parseInt(event.target.value, 10);
-      setWeights((old) => {
-        const update = Object.fromEntries([[i, newWeight]]);
+      setVotes((old) => {
+        const curr = old[i] ?? {};
+        const update = Object.fromEntries([
+          [i, { ...curr, weight: newWeight }],
+        ]);
         return { ...old, ...update };
       });
     },
-    [setWeights]
+    [setVotes]
   );
 
-  const isValid = Object.values(weights).reduce((p, c) => p + c, 0) === 100;
+  const handleCommentChanged = useCallback(
+    (i: number, event: React.ChangeEvent<HTMLInputElement>) => {
+      const newComment = event.target.value;
+      setVotes((old) => {
+        const curr = old[i] ?? {};
+        const update = Object.fromEntries([
+          [i, { ...curr, comment: newComment }],
+        ]);
+        return { ...old, ...update };
+      });
+    },
+    [setVotes]
+  );
 
-  const nonZeroWeights = Object.entries(weights).filter(
-    ([_, weight]) => weight > 0
+  const isValid =
+    Object.values(votes).reduce((p, c) => p + c.weight, 0) === 100;
+
+  const nonZeroWeights = Object.entries(votes).filter(
+    ([_, { weight }]) => weight > 0
   );
 
   const { config } = usePrepareContractWrite({
@@ -241,7 +260,8 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
     args: [
       ethers.BigNumber.from(proposal.id),
       nonZeroWeights.map(([id]) => ethers.BigNumber.from(id)),
-      nonZeroWeights.map(([_, weight]) => ethers.BigNumber.from(weight)),
+      nonZeroWeights.map(([_, { weight }]) => ethers.BigNumber.from(weight)),
+      nonZeroWeights.map(([_, { comment }]) => comment ?? ""),
     ],
     enabled: isEligible && status === "open" && isValid,
   });
@@ -252,24 +272,55 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
     hash: data?.hash,
   });
 
+  // TODO add explanation of current voting systems, and hwo the weights need to be split
+  // TODO add better/nicer state invalid box, some box with rounded corner and info? + maybe fade in
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
       <Heading px={p}>Cast your vote</Heading>
+      <Text px={p}>
+        This proposal uses <i>weighted voting</i> which means that you can vote
+        on multiple options by assigning weights to the options. The sum of your
+        weights must add up to 100. If you want to vote for just one option,
+        give that option the weight 100. If you want to vote for three options,
+        you can split your weight between them any way you want so that the sum
+        adds up to 100, for example 50/25/25.
+      </Text>
+      {nonZeroWeights.length > 0 && !isValid && (
+        <Text style={{ color: "red" }}>Incorrect weight sum</Text>
+      )}
       {isEligible && (
         <Table>
           <Tbody>
-            {proposal.alternatives.map(({ id, description }) => (
-              <Tr key={`alternative-${id}`}>
-                <Td pl={p}>{description}</Td>
-                <Td pr={p}>
-                  <Input
-                    value={weights[id] || 0}
-                    onChange={(e) => handleWeightChanged(id, e)}
-                    type="number"
-                  />
-                </Td>
-              </Tr>
-            ))}
+            {proposal.alternatives.map(({ id, description }) => {
+              const weight = votes[id]?.weight || 0;
+              const comment = weight > 0 ? votes[id].comment : "";
+              return (
+                <React.Fragment key={`alternative-${id}`}>
+                  <Tr>
+                    <Td pl={p}>{description}</Td>
+                    <Td pr={p}>
+                      <Input
+                        value={weight}
+                        onChange={(e) => handleWeightChanged(id, e)}
+                        type="number"
+                      />
+                    </Td>
+                  </Tr>
+                  <Tr>
+                    <Td />
+                    <Td>
+                      <Input
+                        type="text"
+                        placeholder="Comment"
+                        value={comment}
+                        isDisabled={weight === 0}
+                        onChange={(e) => handleCommentChanged(id, e)}
+                      />
+                    </Td>
+                  </Tr>
+                </React.Fragment>
+              );
+            })}
           </Tbody>
         </Table>
       )}
