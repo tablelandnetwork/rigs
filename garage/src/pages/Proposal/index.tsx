@@ -45,7 +45,7 @@ import { abi } from "../../abis/VotingRegistry";
 
 const {
   proposalsTable,
-  alternativesTable,
+  optionsTable,
   votesTable,
   ftSnapshotTable,
   votingContractAddress,
@@ -61,7 +61,7 @@ const MODULE_PROPS = {
 };
 
 interface Result {
-  alternativeId: number;
+  optionId: number;
   description: string;
   result: number;
   list: string;
@@ -70,7 +70,7 @@ interface Result {
 interface Vote {
   address: string;
   ft: number;
-  choices: { alternative_id: string; weight: number; comment?: string }[];
+  choices: { option_id: string; weight: number; comment?: string }[];
 }
 
 const useProposal = (id: string | undefined) => {
@@ -94,10 +94,10 @@ const useProposal = (id: string | undefined) => {
       start_block as "startBlock",
       end_block as "endBlock",
       voter_ft_reward as "voterFtReward",
-      json_group_array(json_object('id', alternatives.id, 'description', alternatives.description)) as "alternatives",
+      json_group_array(json_object('id', options.id, 'description', options.description)) as "options",
       (SELECT COALESCE(SUM(ft), 0) FROM ${ftSnapshotTable} WHERE proposal_id = ${id}) as "totalFt"
       FROM ${proposalsTable} proposal
-      JOIN ${alternativesTable} alternatives ON proposal.id = alternatives.proposal_id
+      JOIN ${optionsTable} options ON proposal.id = options.proposal_id
       WHERE proposal.id = ${id}
       GROUP BY proposal.id, proposal.name, proposal.created_at, proposal.start_block, proposal.end_block`
     )
@@ -109,7 +109,7 @@ const useProposal = (id: string | undefined) => {
       });
 
     db.prepare(
-      `SELECT votes.address, vp.ft, json_group_array(json_object('alternative_id', votes.alternative_id, 'weight', votes.weight, 'comment', votes.comment)) as "choices"
+      `SELECT votes.address, vp.ft, json_group_array(json_object('option_id', votes.option_id, 'weight', votes.weight, 'comment', votes.comment)) as "choices"
         FROM ${votesTable} votes
         JOIN ${ftSnapshotTable} vp ON vp.address = votes.address AND vp.proposal_id = votes.proposal_id
         WHERE votes.proposal_id = ${id} AND votes.weight > 0
@@ -125,15 +125,15 @@ const useProposal = (id: string | undefined) => {
 
     db.prepare(
       `SELECT
-        alternatives.id as "alternativeId",
-        alternatives.description as description,
-        json_group_array(json_object('alternative_id', votes.alternative_id, 'proposal_id', votes.proposal_id, 'weight', votes.weight)) as "list",
+        options.id as "optionId",
+        options.description as description,
+        json_group_array(json_object('option_id', votes.option_id, 'proposal_id', votes.proposal_id, 'weight', votes.weight)) as "list",
         SUM(votes.weight * uwp.ft) / 100 as result
         FROM ${votesTable} votes
-        JOIN ${alternativesTable} alternatives ON alternatives.id = votes.alternative_id AND alternatives.proposal_id = votes.proposal_id
+        JOIN ${optionsTable} options ON options.id = votes.option_id AND options.proposal_id = votes.proposal_id
         JOIN ${ftSnapshotTable} uwp ON uwp.address = votes.address AND uwp.proposal_id = votes.proposal_id
         WHERE votes.proposal_id = ${id}
-        GROUP BY alternatives.id, alternatives.description
+        GROUP BY options.id, options.description
         ORDER BY result DESC`
     )
       .all<Result>()
@@ -292,11 +292,11 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
       {isEligible && (
         <Table>
           <Tbody>
-            {proposal.alternatives.map(({ id, description }) => {
+            {proposal.options.map(({ id, description }) => {
               const weight = votes[id]?.weight || 0;
               const comment = weight > 0 ? votes[id].comment : "";
               return (
-                <React.Fragment key={`alternative-${id}`}>
+                <React.Fragment key={`option-${id}`}>
                   <Tr>
                     <Td pl={p}>{description}</Td>
                     <Td pr={p}>
@@ -383,10 +383,10 @@ const truncateChoiceString = (s: string, l: number = 80) =>
   s.slice(0, l) + (s.length > l ? "..." : "");
 
 const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
-  const { alternatives } = proposal;
+  const { options } = proposal;
 
-  const alternativeLookupMap = Object.fromEntries(
-    alternatives.map(({ id, description }) => [id, description])
+  const optionLookupMap = Object.fromEntries(
+    options.map(({ id, description }) => [id, description])
   );
 
   return (
@@ -397,8 +397,8 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
           {votes.slice(0, 20).map(({ address, choices, ft }) => {
             const choiceString = choices
               .map(
-                ({ alternative_id, weight }) =>
-                  `${weight}% for ${alternativeLookupMap[alternative_id]}`
+                ({ option_id, weight }) =>
+                  `${weight}% for ${optionLookupMap[option_id]}`
               )
               .join(", ");
 
@@ -456,10 +456,10 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
       <Table variant="unstyled">
         <Tbody>
           {results &&
-            results.map(({ description, result, alternativeId }) => {
+            results.map(({ description, result, optionId }) => {
               const percent = result === 0 ? 0 : (result / totalResults) * 100;
               return (
-                <React.Fragment key={`alternative-${alternativeId}`}>
+                <React.Fragment key={`option-${optionId}`}>
                   <Tr px="0">
                     <Td px="0" pb="0">
                       {description}

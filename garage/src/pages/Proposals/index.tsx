@@ -23,7 +23,7 @@ import { deployment } from "../../env";
 
 const {
   proposalsTable,
-  alternativesTable,
+  optionsTable,
   votesTable,
   ftSnapshotTable,
   votingContractAddress,
