@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import {
   Box,
   Button,
+  Divider,
   Flex,
   Heading,
   HStack,
@@ -32,6 +33,10 @@ import {
 import { useParams, Link } from "react-router-dom";
 import { ethers } from "ethers";
 import { TransactionStateAlert } from "../../components/TransactionStateAlert";
+import {
+  ProposalStatusBadge,
+  proposalStatus,
+} from "../../components/ProposalStatusBadge";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useHelia } from "../../hooks/useHelia";
 import { strings } from "@helia/strings";
@@ -39,7 +44,7 @@ import { CID } from "multiformats/cid";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
-import { ProposalWithAlternatives } from "../../types";
+import { ProposalWithOptions, ProposalStatus } from "../../types";
 import { deployment } from "../../env";
 import { abi } from "../../abis/VotingRegistry";
 
@@ -76,7 +81,7 @@ interface Vote {
 const useProposal = (id: string | undefined) => {
   const { db } = useTablelandConnection();
 
-  const [proposal, setProposal] = useState<ProposalWithAlternatives>();
+  const [proposal, setProposal] = useState<ProposalWithOptions>();
   const [votes, setVotes] = useState<Vote[]>();
   const [results, setResults] = useState<Result[]>();
 
@@ -101,7 +106,7 @@ const useProposal = (id: string | undefined) => {
       WHERE proposal.id = ${id}
       GROUP BY proposal.id, proposal.name, proposal.created_at, proposal.start_block, proposal.end_block`
     )
-      .first<ProposalWithAlternatives>()
+      .first<ProposalWithOptions>()
       .then((result) => {
         if (isCancelled) return;
 
@@ -185,21 +190,8 @@ const useIsEligibleToVote = (
   return { isEligible };
 };
 
-const proposalStatus = (
-  blockNumber: number | undefined,
-  proposal: ProposalWithAlternatives | undefined
-) => {
-  if (!blockNumber || !proposal) return "loading";
-
-  if (blockNumber < proposal.startBlock) return "Not opened yet";
-
-  if (blockNumber > proposal.endBlock) return "Proposal ended";
-
-  return "open";
-};
-
 type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
-  proposal: ProposalWithAlternatives;
+  proposal: ProposalWithOptions;
   results: Result[];
   votes: Vote[];
 };
@@ -264,7 +256,7 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
       nonZeroWeights.map(([_, { weight }]) => ethers.BigNumber.from(weight)),
       nonZeroWeights.map(([_, { comment }]) => comment ?? ""),
     ],
-    enabled: isEligible && status === "open" && isValid,
+    enabled: isEligible && status === ProposalStatus.Open && isValid,
   });
 
   const contractWrite = useContractWrite(config);
@@ -332,7 +324,7 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
         <TransactionStateAlert {...contractWrite} />
         <Button
           mt={2}
-          isDisabled={status !== "open" || !isValid}
+          isDisabled={status !== ProposalStatus.Open || !isValid}
           onClick={write}
           width="100%"
         >
@@ -518,7 +510,7 @@ const Header = ({ proposal, results, ...props }: ModuleProps) => {
     try {
       const cid = CID.parse(proposal.descriptionCid);
 
-      // TODO what how is this incompatible
+      // TODO what, how is this incompatible
       s.get(cid as any).then((v) => {
         if (isCancelled) return;
 
@@ -533,16 +525,13 @@ const Header = ({ proposal, results, ...props }: ModuleProps) => {
 
   return (
     <VStack align="stretch" spacing={1} {...props}>
-      <Heading>{proposal.name}</Heading>
-      <HStack justify="space-between" pb={6}>
-        <Badge
-          fontSize="1em"
-          colorScheme={status === "open" ? "green" : "purple"}
-        >
-          {status}
-        </Badge>
-        <Button leftIcon={<LinkIcon />}>Share</Button>
+      <HStack align="center" justify="space-between">
+        <Heading size="xl">{proposal.name}</Heading>
+        <ProposalStatusBadge proposal={proposal} />
       </HStack>
+      <Box paddingTop={6} />
+      <Divider />
+      <Box paddingTop={6} />
       {markdown && (
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
       )}

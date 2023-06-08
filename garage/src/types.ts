@@ -76,11 +76,18 @@ export interface Proposal {
   totalFt: number;
 }
 
-export interface Alternative {
+export interface Option {
   id: number;
   description: string;
 }
 
-export interface ProposalWithAlternatives extends Proposal {
-  alternatives: Alternative[];
+export interface ProposalWithOptions extends Proposal {
+  options: Option[];
+}
+
+export enum ProposalStatus {
+  Loading = "loading",
+  NotOpened = "Not opened",
+  Open = "Open",
+  Ended = "Ended"
 }

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -11,14 +11,16 @@ import {
   VStack,
   Badge,
 } from "@chakra-ui/react";
-import { LinkIcon } from "@chakra-ui/icons";
 import { useBlockNumber } from "wagmi";
 import { Link } from "react-router-dom";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { TOPBAR_HEIGHT } from "../../Topbar";
-import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
-import { as0xString } from "../../utils/types";
-import { Proposal } from "../../types";
+import { prettyNumber } from "../../utils/fmt";
+import { Proposal, ProposalStatus } from "../../types";
+import {
+  proposalStatus,
+  ProposalStatusBadge,
+} from "../../components/ProposalStatusBadge";
 import { deployment } from "../../env";
 
 const {
@@ -47,7 +49,15 @@ const useProposals = () => {
     let isCancelled = false;
 
     db.prepare(
-      `SELECT * FROM ${proposalsTable} ORDER BY start_block DESC LIMIT 100`
+      `SELECT
+         id,
+         name,
+         description_cid as "descriptionCid",
+         created_at as "createdAt",
+         start_block as "startBlock",
+         end_block as "endBlock",
+         voter_ft_reward as "voterFtReward"
+       FROM ${proposalsTable} ORDER BY start_block DESC LIMIT 100`
     )
       .all<Proposal>()
       .then(({ results }) => {
@@ -99,19 +109,6 @@ const useIsEligibleToVote = (
   return { isEligible };
 };
 
-const proposalStatus = (
-  blockNumber: number | undefined,
-  proposal: Proposal | undefined
-) => {
-  if (!blockNumber || !proposal) return "loading";
-
-  if (blockNumber < proposal.startBlock) return "Not opened yet";
-
-  if (blockNumber > proposal.endBlock) return "Proposal ended";
-
-  return "open";
-};
-
 type ModuleProps = React.ComponentProps<typeof Box> & {
   proposal: Proposal;
 };
@@ -119,19 +116,42 @@ type ModuleProps = React.ComponentProps<typeof Box> & {
 const Information = ({ proposal, ...props }: ModuleProps) => {
   const { data: blockNumber } = useBlockNumber();
 
-  const status = useMemo(
-    () => proposalStatus(blockNumber, proposal),
-    [blockNumber, proposal]
-  );
+  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
+    blockNumber,
+    proposal,
+  ]);
 
-  // TODO make this better
+  const startsIn = proposal.startBlock - (blockNumber ?? 0);
+  const endsIn = proposal.endBlock - (blockNumber ?? 0);
+  const ended = (blockNumber ?? 0) - proposal.endBlock;
+
   return (
     <VStack align="stretch" spacing={4} {...props}>
-      <Heading>
-        {proposal.name} {status}
-      </Heading>
-      <Text>{proposal.name}</Text>
-      <Text>Ends in 3 days</Text>
+      <HStack align="center" justify="space-between">
+        <Heading>{proposal.name}</Heading>
+        <ProposalStatusBadge proposal={proposal} />
+      </HStack>
+      <Text>
+        Voting Reward: <b>{prettyNumber(proposal.voterFtReward)} FT</b>
+      </Text>
+      {status === ProposalStatus.Open && (
+        <Text>
+          Ends in: <b>{endsIn} blocks</b>
+        </Text>
+      )}
+      {status === ProposalStatus.NotOpened && (
+        <Text>
+          Opens in: <b>{startsIn} blocks</b>
+        </Text>
+      )}
+      {status === ProposalStatus.Ended && (
+        <Text>
+          Ended: <b>{ended} blocks</b> ago
+        </Text>
+      )}
+      <Button as={Link} to={`/proposals/${proposal.id}`}>
+        Details
+      </Button>
     </VStack>
   );
 };
@@ -139,50 +159,41 @@ const Information = ({ proposal, ...props }: ModuleProps) => {
 export const Proposals = () => {
   const { proposals } = useProposals();
 
-  // TODO add global header, and then a list that just stacks
-
   return (
-    <>
-      <script type="module">
-        import ReactMarkdown from 'https://esm.sh/react-markdown@7?bundle'
-      </script>
-      <Flex
-        direction="column"
-        align="center"
-        justify="stretch"
+    <Flex
+      direction="column"
+      align="center"
+      justify="stretch"
+      width="100%"
+      minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
+    >
+      <VStack
+        align="stretch"
+        pt={{ base: GRID_GAP, md: GRID_GAP * 2 }}
+        maxWidth="900px"
         width="100%"
-        minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
+        gap={GRID_GAP}
       >
-        <Flex
-          direction={{ base: "column", lg: "row" }}
-          p={GRID_GAP}
-          pt={{ base: GRID_GAP, md: GRID_GAP * 2 }}
-          gap={GRID_GAP}
-          align={{ base: "stretch", lg: "start" }}
-          maxWidth="1385px"
-          width="100%"
-          minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
-        >
-          <VStack align="stretch">
-            <Box {...MODULE_PROPS}>
-              <Heading>Proposals</Heading>
-            </Box>
-            {!proposals && (
-              <Box {...MODULE_PROPS}>
-                <Spinner />
-              </Box>
-            )}
-            {proposals &&
-              proposals.map((proposal, idx) => (
-                <Information
-                  proposal={proposal}
-                  key={`proposal-${idx}`}
-                  {...MODULE_PROPS}
-                />
-              ))}
-          </VStack>
-        </Flex>
-      </Flex>
-    </>
+        <Box {...MODULE_PROPS}>
+          <Heading>Proposals</Heading>
+        </Box>
+        {!proposals && (
+          <Box {...MODULE_PROPS}>
+            <Spinner />
+          </Box>
+        )}
+        {proposals &&
+          proposals.map((proposal, idx) => (
+            <Information
+              proposal={proposal}
+              key={`proposal-${idx}`}
+              {...MODULE_PROPS}
+            />
+          ))}
+        {proposals?.length === 0 && (
+          <Box {...MODULE_PROPS}>No proposals created.</Box>
+        )}
+      </VStack>
+    </Flex>
   );
 };

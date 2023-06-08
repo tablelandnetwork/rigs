@@ -56,7 +56,7 @@ export const routes = () => {
     },
     {
       key: "PROPOSAL",
-      path: "/proposal/:id",
+      path: "/proposals/:id",
       requiresWalletConnection: false,
       element: <Proposal />,
     }

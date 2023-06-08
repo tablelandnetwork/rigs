@@ -206,7 +206,7 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
               proposals.map((proposal, i) => (
                 <Tr key={i}>
                   <Td>
-                    <Link to={`/proposal/${proposal.id}`}>{proposal.id}</Link>
+                    <Link to={`/proposals/${proposal.id}`}>{proposal.id}</Link>
                   </Td>
                   <Td>{proposal.name}</Td>
                   <Td>{proposal.createdAt}</Td>
