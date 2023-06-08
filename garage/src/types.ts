@@ -71,6 +71,7 @@ export interface Proposal {
   createdAt: number;
   startBlock: number;
   endBlock: number;
+  descriptionCid: string;
   voterFtReward: number;
   totalFt: number;
 }

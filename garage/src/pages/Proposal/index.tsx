@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import ReactDom from "react-dom";
+import remarkGfm from "remark-gfm";
 import {
   Box,
   Button,
@@ -32,6 +32,9 @@ import {
 import { useParams, Link } from "react-router-dom";
 import { ethers } from "ethers";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
+import { useHelia } from "../../hooks/useHelia";
+import { strings } from "@helia/strings";
+import { CID } from "multiformats/cid";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
@@ -85,6 +88,7 @@ const useProposal = (id: string | undefined) => {
       `SELECT
       proposal.id,
       proposal.name,
+      description_cid as "descriptionCid",
       created_at as "createdAt",
       start_block as "startBlock",
       end_block as "endBlock",
@@ -434,10 +438,34 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
 const Header = ({ proposal, results, ...props }: ModuleProps) => {
   const { data: blockNumber } = useBlockNumber();
 
-  const status = useMemo(
-    () => proposalStatus(blockNumber, proposal),
-    [blockNumber, proposal]
-  );
+  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
+    blockNumber,
+    proposal,
+  ]);
+
+  const [markdown, setMarkdown] = useState("");
+
+  const { node } = useHelia();
+  const s = strings(node);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    try {
+      const cid = CID.parse(proposal.descriptionCid);
+
+      // TODO what how is this incompatible
+      s.get(cid as any).then((v) => {
+        if (isCancelled) return;
+
+        setMarkdown(v);
+      });
+    } catch (_) {}
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [proposal.descriptionCid, setMarkdown]);
 
   return (
     <VStack align="stretch" spacing={1} {...props}>
@@ -451,20 +479,9 @@ const Header = ({ proposal, results, ...props }: ModuleProps) => {
         </Badge>
         <Button leftIcon={<LinkIcon />}>Share</Button>
       </HStack>
-      <Text>
-        We propose that option a is better then b, which is better then c and d.
-        What do you think? Please vote and help us decide. The winner will be
-        very good.
-      </Text>
-      <Text>
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-        tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim
-        veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea
-        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate
-        velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint
-        occaecat cupidatat non proident, sunt in culpa qui officia deserunt
-        mollit anim id est laborum.
-      </Text>
+      {markdown && (
+        <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+      )}
     </VStack>
   );
 };
