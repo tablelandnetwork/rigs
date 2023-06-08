@@ -12,6 +12,11 @@ export const abi = [
         type: "string",
       },
       {
+        internalType: "string",
+        name: "descriptionCid",
+        type: "string",
+      },
+      {
         internalType: "uint256",
         name: "voterFtReward",
         type: "uint256",
@@ -48,6 +53,11 @@ export const abi = [
         internalType: "uint256[]",
         name: "weights",
         type: "uint256[]",
+      },
+      {
+        internalType: "string[]",
+        name: "comments",
+        type: "string[]",
       },
     ],
     name: "vote",
