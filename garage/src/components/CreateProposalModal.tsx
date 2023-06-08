@@ -11,6 +11,7 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
+  Text,
 } from "@chakra-ui/react";
 import { ethers } from "ethers";
 import {
@@ -32,18 +33,34 @@ interface ModalProps {
   onTransactionCompleted?: (success: boolean) => void;
 }
 
+interface FormState {
+  name: string;
+  descriptionCid: string;
+  voterFtReward: number;
+  startBlock: number;
+  endBlock: number;
+  alternatives: string[];
+}
+
+const initialFormState = {
+  name: "",
+  descriptionCid: "",
+  voterFtReward: 0,
+  startBlock: 0,
+  endBlock: 0,
+  alternatives: [],
+};
+
 export const CreateProposalModal = ({
   isOpen,
   onClose,
   onTransactionSubmitted,
   onTransactionCompleted,
 }: ModalProps) => {
-  const [name, setName] = useState("");
-  const [voterFtReward, setVoterFtReward] = useState(0);
-  const [startBlock, setStartBlock] = useState(0);
-  const [endBlock, setEndBlock] = useState(0);
-  const [alternatives, setAlternatives] = useState<string[]>([]);
-  const [alternative, setAlternative] = useState("");
+  const [
+    { name, descriptionCid, voterFtReward, startBlock, endBlock, alternatives },
+    setFormState,
+  ] = useState<FormState>(initialFormState);
 
   const isValid =
     name !== "" && startBlock > 0 && endBlock > 0 && alternatives.length > 0;
@@ -55,6 +72,7 @@ export const CreateProposalModal = ({
     args: [
       alternatives,
       name,
+      descriptionCid,
       ethers.BigNumber.from(voterFtReward),
       ethers.BigNumber.from(startBlock),
       ethers.BigNumber.from(endBlock),
@@ -84,35 +102,46 @@ export const CreateProposalModal = ({
 
   const onNameInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setName(e.target.value);
+      setFormState((old) => ({ ...old, name: e.target.value }));
     },
-    [setName]
+    [setFormState]
+  );
+
+  const onDescriptionCidInputChanged = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormState((old) => ({ ...old, descriptionCid: e.target.value }));
+    },
+    [setFormState]
   );
 
   const onVoterFtRewardInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseInt(e.target.value)
-      setVoterFtReward(isNaN(value) ? 0 : value);
+      const value = parseInt(e.target.value);
+      setFormState((old) => ({
+        ...old,
+        voterFtReward: isNaN(value) ? 0 : value,
+      }));
     },
-    [setVoterFtReward]
+    [setFormState]
   );
 
   const onStartInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseInt(e.target.value)
-      setStartBlock(isNaN(value) ? 0 : value);
+      const value = parseInt(e.target.value);
+      setFormState((old) => ({ ...old, startBlock: isNaN(value) ? 0 : value }));
     },
-    [setStartBlock]
+    [setFormState]
   );
 
   const onEndInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = parseInt(e.target.value)
-      setEndBlock(isNaN(value) ? 0 : value);
+      const value = parseInt(e.target.value);
+      setFormState((old) => ({ ...old, endBlock: isNaN(value) ? 0 : value }));
     },
-    [setEndBlock]
+    [setFormState]
   );
 
+  const [alternative, setAlternative] = useState("");
   const onAlternativeInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setAlternative(e.target.value);
@@ -123,14 +152,19 @@ export const CreateProposalModal = ({
   const addAlternative = useCallback(() => {
     if (!alternatives) return;
 
-    setAlternatives((old) => [...old, alternative]);
+    setFormState((old) => ({
+      ...old,
+      alternatives: [...old.alternatives, alternative],
+    }));
 
     setAlternative("");
-  }, [alternative, setAlternatives, setAlternatives]);
+  }, [alternative, setFormState, setAlternative]);
+
+  // TODO support removing an alternative
 
   useEffect(() => {
-    if (isOpen) setName("");
-  }, [isOpen, setName]);
+    if (isOpen) setFormState(initialFormState);
+  }, [isOpen, setFormState]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
@@ -147,6 +181,17 @@ export const CreateProposalModal = ({
               value={name}
               onChange={onNameInputChanged}
               isInvalid={name === ""}
+              size="md"
+              mb={4}
+            />
+          </FormControl>
+          <FormControl>
+            <FormLabel>Description Markdown File CID:</FormLabel>
+            <Input
+              focusBorderColor="primary"
+              variant="outline"
+              value={descriptionCid}
+              onChange={onDescriptionCidInputChanged}
               size="md"
               mb={4}
             />
@@ -201,8 +246,8 @@ export const CreateProposalModal = ({
             />
             <Button onClick={addAlternative}>Add</Button>
           </FormControl>
-          {alternatives.map((v) => (
-            <p>{v}</p>
+          {alternatives.map((v, i) => (
+            <Text key={`alternative-${i}`}>{v}</Text>
           ))}
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
