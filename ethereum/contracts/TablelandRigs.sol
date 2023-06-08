@@ -530,7 +530,7 @@ contract TablelandRigs is
         pilotAddr == address(0)
             ? _pilots.pilotRig(sender, tokenId)
             : _pilots.pilotRig(sender, tokenId, pilotAddr, pilotId);
-        emit Stake(tokenId, tokenOwner, block.number);
+        emit Stake(tokenId, tokenOwner);
         emit MetadataUpdate(tokenId);
     }
 
@@ -580,7 +580,7 @@ contract TablelandRigs is
 
         // Pass `false` to indicate a standard (non-force) park
         _pilots.parkRig(tokenId, false);
-        emit Unstake(tokenId, tokenOwner, block.number);
+        emit Unstake(tokenId, tokenOwner);
         emit MetadataUpdate(tokenId);
     }
 
@@ -617,7 +617,7 @@ contract TablelandRigs is
             if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
             // Pass `true` to indicate a force park
             _pilots.parkRig(tokenIds[i], true);
-            emit Unstake(tokenIds[i], ownerOf(tokenIds[i]), block.number);
+            emit Unstake(tokenIds[i], ownerOf(tokenIds[i]));
             emit MetadataUpdate(tokenIds[i]);
         }
     }

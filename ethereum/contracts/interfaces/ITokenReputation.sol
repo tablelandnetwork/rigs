@@ -9,25 +9,15 @@ interface ITokenReputation {
      * @notice Emitted when token staking is initiated.
      * @param tokenId Identifier for the token being staked.
      * @param owner The token owner who wants to stake the token.
-     * @param block The block number at the time of staking.
      */
-    event Stake(
-        uint256 indexed tokenId,
-        address indexed owner,
-        uint256 indexed block
-    );
+    event Stake(uint256 indexed tokenId, address indexed owner);
 
     /**
      * @notice Emitted when token unstaking is initiated.
      * @param tokenId Identifier for the token being unstaked.
      * @param owner The token owner who wants to unstake the token.
-     * @param block The block number at the time of unstaking.
      */
-    event Unstake(
-        uint256 indexed tokenId,
-        address indexed owner,
-        uint256 indexed block
-    );
+    event Unstake(uint256 indexed tokenId, address indexed owner);
 
     /**
      * @notice Stake the token, disabling marketplace transfers.
