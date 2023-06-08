@@ -426,9 +426,7 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
         </Tbody>
         {votes.length === 0 && (
           <Box p={p} pt="2">
-            <Text variant="emptyState">
-              No votes yet
-            </Text>
+            <Text variant="emptyState">No votes.</Text>
           </Box>
         )}
       </Table>
@@ -485,6 +483,11 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
             })}
         </Tbody>
       </Table>
+      {results.length === 0 && (
+        <Box>
+          <Text variant="emptyState">No result.</Text>
+        </Box>
+      )}
     </VStack>
   );
 };
@@ -549,10 +552,10 @@ export const Proposal = () => {
   const proposalData =
     proposal && votes && results ? { proposal, votes, results } : undefined;
 
-  const status = useMemo(
-    () => proposalStatus(blockNumber, proposal),
-    [blockNumber, proposal]
-  );
+  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
+    blockNumber,
+    proposal,
+  ]);
 
   return (
     <Flex
