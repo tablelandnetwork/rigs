@@ -25,7 +25,7 @@ contract VotingRegistry is AccessControl {
 
     struct TableNames {
         string votesTableName;
-        string alternativesTableName;
+        string optionsTableName;
         string ftSnapshotTableName;
     }
 
@@ -41,9 +41,9 @@ contract VotingRegistry is AccessControl {
     uint256 private _votesTableId;
     string private _votesTableName;
 
-    string private constant _ALTERNATIVES_PREFIX = "alternatives";
-    uint256 private _alternativesTableId;
-    string private _alternativesTableName;
+    string private constant _ALTERNATIVES_PREFIX = "options";
+    uint256 private _optionsTableId;
+    string private _optionsTableName;
 
     string private _pilotSessionsTableName;
     string private _ftRewardsTableName;
@@ -70,16 +70,16 @@ contract VotingRegistry is AccessControl {
         _votesTableId = _createVotesTable();
         _votesTableName = SQLHelpers.toNameFromId(_VOTES_PREFIX, _votesTableId);
 
-        _alternativesTableId = _createAlternativesTable();
-        _alternativesTableName = SQLHelpers.toNameFromId(_ALTERNATIVES_PREFIX, _alternativesTableId);
+        _optionsTableId = _createAlternativesTable();
+        _optionsTableName = SQLHelpers.toNameFromId(_ALTERNATIVES_PREFIX, _optionsTableId);
     }
 
     function tableNames() external view returns (TableNames memory) {
-        return TableNames(_votesTableName, _alternativesTableName, _ftSnapshotTableName);
+        return TableNames(_votesTableName, _optionsTableName, _ftSnapshotTableName);
     }
 
     function createProposal(
-        string[] calldata alternatives,
+        string[] calldata options,
         string calldata name,
         string calldata descriptionCid,
         uint256 voterFtReward,
@@ -91,9 +91,9 @@ contract VotingRegistry is AccessControl {
         string memory proposalIdString = Strings.toString(proposalId);
 
         _insertProposal(proposalIdString, name, descriptionCid, voterFtReward, startBlockNumber, endBlockNumber);
-        _insertAlternatives(proposalIdString, alternatives);
+        _insertAlternatives(proposalIdString, options);
         _snapshotVotingPower(proposalIdString);
-        _insertEligibleVotes(proposalIdString, alternatives);
+        _insertEligibleVotes(proposalIdString, options);
 
         _proposals[proposalId] = Proposal(startBlockNumber, endBlockNumber, voterFtReward, name, false);
 
@@ -129,7 +129,7 @@ contract VotingRegistry is AccessControl {
         return TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
-                "address text NOT NULL, proposal_id integer NOT NULL, alternative_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, alternative_id, proposal_id)",
+                "address text NOT NULL, proposal_id integer NOT NULL, option_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, option_id, proposal_id)",
                 _VOTES_PREFIX
             )
         );
@@ -174,22 +174,22 @@ contract VotingRegistry is AccessControl {
         TablelandDeployments.get().mutate(address(this), _proposalsTableId, insert);
     }
 
-    function _insertAlternatives(string memory proposalId, string[] calldata alternatives) internal {
-        uint256 length = alternatives.length;
+    function _insertAlternatives(string memory proposalId, string[] calldata options) internal {
+        uint256 length = options.length;
 
         string[] memory values = new string[](length);
         uint256 i;
         unchecked {
             for (; i < length;) {
-                values[i] = string.concat(proposalId, ", ", Strings.toString(i + 1), ", '", alternatives[i], "'");
+                values[i] = string.concat(proposalId, ", ", Strings.toString(i + 1), ", '", options[i], "'");
                 i++;
             }
         }
 
         string memory insert =
-            SQLHelpers.toBatchInsert(_ALTERNATIVES_PREFIX, _alternativesTableId, "proposal_id, id, description", values);
+            SQLHelpers.toBatchInsert(_ALTERNATIVES_PREFIX, _optionsTableId, "proposal_id, id, description", values);
 
-        TablelandDeployments.get().mutate(address(this), _alternativesTableId, insert);
+        TablelandDeployments.get().mutate(address(this), _optionsTableId, insert);
     }
 
     function _snapshotVotingPower(string memory proposalId) internal {
@@ -219,8 +219,8 @@ contract VotingRegistry is AccessControl {
         TablelandDeployments.get().mutate(address(this), stmnts);
     }
 
-    function _insertEligibleVotes(string memory proposalId, string[] calldata alternatives) internal {
-        uint256 length = alternatives.length;
+    function _insertEligibleVotes(string memory proposalId, string[] calldata options) internal {
+        uint256 length = options.length;
         ITablelandTables.Statement[] memory stmnts = new ITablelandTables.Statement[](length);
 
         uint256 i;
@@ -229,7 +229,7 @@ contract VotingRegistry is AccessControl {
                 string memory insert = string.concat(
                     "INSERT INTO ",
                     _votesTableName,
-                    " (address, proposal_id, alternative_id, weight) ",
+                    " (address, proposal_id, option_id, weight) ",
                     "SELECT DISTINCT address, ",
                     proposalId,
                     ", ",
@@ -245,21 +245,18 @@ contract VotingRegistry is AccessControl {
         TablelandDeployments.get().mutate(address(this), stmnts);
     }
 
-    function vote(
-        uint256 proposalId,
-        uint256[] calldata alternatives,
-        uint256[] calldata weights,
-        string[] memory comments
-    ) external {
+    function vote(uint256 proposalId, uint256[] calldata options, uint256[] calldata weights, string[] memory comments)
+        external
+    {
         Proposal memory proposal = _proposals[proposalId];
 
         // Check that proposal is active
         require(block.number >= proposal.startBlockNumber, "Vote has not started");
         require(block.number <= proposal.endBlockNumber, "Vote has ended");
 
-        // Check that alternatives & weights & comments match, and weight sum == 100
-        require(alternatives.length == weights.length, "Mismatched alternatives and weights length");
-        require(weights.length == comments.length, "Mismatched alternatives and commentslength");
+        // Check that options & weights & comments match, and weight sum == 100
+        require(options.length == weights.length, "Mismatched options and weights length");
+        require(weights.length == comments.length, "Mismatched options and commentslength");
         uint256 weightSum;
         uint256 i;
         for (; i < weights.length;) {
@@ -274,37 +271,33 @@ contract VotingRegistry is AccessControl {
         //
         // ```
         // UPDATE votes
-        // SET weight = CASE alternative_id
+        // SET weight = CASE option_id
         //                  WHEN X1 THEN Y1
         //                  WHEN X2 THEN Y2
         //                  ELSE 0
         //              END
         // WHERE lower(address) = lower(msg.sender);
         // ```
-        string memory updateStatement = string.concat("UPDATE ", _votesTableName, " SET weight = CASE alternative_id");
+        string memory updateStatement = string.concat("UPDATE ", _votesTableName, " SET weight = CASE option_id");
 
         uint256 votes = weights.length;
         i = 0;
         unchecked {
             for (; i < votes;) {
                 updateStatement = string.concat(
-                    updateStatement, " WHEN ", Strings.toString(alternatives[i]), " THEN ", Strings.toString(weights[i])
+                    updateStatement, " WHEN ", Strings.toString(options[i]), " THEN ", Strings.toString(weights[i])
                 );
                 ++i;
             }
         }
 
-        updateStatement = string.concat(updateStatement, " ELSE 0 END, comment = CASE alternative_id");
+        updateStatement = string.concat(updateStatement, " ELSE 0 END, comment = CASE option_id");
 
         i = 0;
         unchecked {
             for (; i < votes;) {
                 updateStatement = string.concat(
-                    updateStatement,
-                    " WHEN ",
-                    Strings.toString(alternatives[i]),
-                    " THEN ",
-                    SQLHelpers.quote(comments[i])
+                    updateStatement, " WHEN ", Strings.toString(options[i]), " THEN ", SQLHelpers.quote(comments[i])
                 );
                 ++i;
             }

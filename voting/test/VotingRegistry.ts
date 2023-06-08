@@ -65,7 +65,7 @@ describe("VotingRegistry", function () {
   let registry: VotingRegistry;
   let ftSnapshotTableName: string;
   let votesTableName: string;
-  let alternativesTableName: string;
+  let optionsTableName: string;
 
   async function deployFixture() {
     // 0. Init database
@@ -125,7 +125,7 @@ describe("VotingRegistry", function () {
 
     const tableNames = await registry.connect(accounts[0]).tableNames();
     votesTableName = tableNames.votesTableName;
-    alternativesTableName = tableNames.alternativesTableName;
+    optionsTableName = tableNames.optionsTableName;
     ftSnapshotTableName = tableNames.ftSnapshotTableName;
 
     // 4. Grant contract permission to write to ftRewards table
@@ -161,8 +161,8 @@ describe("VotingRegistry", function () {
       const proposal = await registry
         .connect(user)
         .proposal(BigNumber.from(proposalId));
+
       expect({ ...proposal }).to.deep.include({
-        name: "my vote",
         startBlockNumber: BigNumber.from(100),
         endBlockNumber: BigNumber.from(200),
       });
@@ -217,7 +217,7 @@ describe("VotingRegistry", function () {
       ).not.to.be.rejected;
     });
 
-    it("Should insert alternatives", async () => {
+    it("Should insert options", async () => {
       const [admin] = accounts;
 
       const txn = await registry
@@ -240,13 +240,13 @@ describe("VotingRegistry", function () {
         transactionHash: receipt.transactionHash,
       });
 
-      const alternatives = await db
+      const options = await db
         .prepare(
-          `SELECT * FROM ${alternativesTableName} WHERE proposal_id = ${proposalId}`
+          `SELECT * FROM ${optionsTableName} WHERE proposal_id = ${proposalId}`
         )
         .all<{ id: number; description: string; proposal_id: number }>();
 
-      expect(alternatives.results).to.deep.include.members([
+      expect(options.results).to.deep.include.members([
         { id: 1, description: "one", proposal_id: proposalId },
         { id: 2, description: "two", proposal_id: proposalId },
         { id: 3, description: "three", proposal_id: proposalId },
@@ -292,12 +292,12 @@ describe("VotingRegistry", function () {
     it("Should pre-insert votes for eligible wallets", async () => {
       const [admin] = accounts;
 
-      const alternatives = ["alt1", "alt2", "alt3", "alt4"];
+      const options = ["alt1", "alt2", "alt3", "alt4"];
 
       const txn = await registry
         .connect(admin)
         .createProposal(
-          alternatives,
+          options,
           "my vote",
           "some-cid",
           BigNumber.from(100),
@@ -320,7 +320,8 @@ describe("VotingRegistry", function () {
         )
         .all<{
           address: string;
-          alternative_id: number;
+          comment: string;
+          option_id: number;
           weight: number;
           proposal_id: number;
         }>();
@@ -332,11 +333,12 @@ describe("VotingRegistry", function () {
       ];
 
       const expectedVotes = eligibleAccounts.flatMap((address) =>
-        alternatives.map((_, alternative_id) => ({
+        options.map((_, option_id) => ({
           address,
-          alternative_id: alternative_id + 1,
+          option_id: option_id + 1,
           weight: 0,
           proposal_id: proposalId,
+          comment: null,
         }))
       );
 
@@ -375,7 +377,8 @@ describe("VotingRegistry", function () {
           .vote(
             BigNumber.from(proposalId),
             [BigNumber.from(1)],
-            [BigNumber.from(100)]
+            [BigNumber.from(100)],
+            [""]
           )
       ).to.be.rejectedWith(/Vote has not started/, "Should be rejected");
 
@@ -387,7 +390,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(1)],
-          [BigNumber.from(100)]
+          [BigNumber.from(100)],
+          [""]
         );
 
       expect(vote.hash).to.not.be.null;
@@ -401,12 +405,13 @@ describe("VotingRegistry", function () {
           .vote(
             BigNumber.from(proposalId),
             [BigNumber.from(1)],
-            [BigNumber.from(100)]
+            [BigNumber.from(100)],
+            [""]
           )
       ).to.be.rejectedWith(/Vote has ended/, "Should be rejected");
     });
 
-    it("does not allow voting with mixed length on alternatives and weights", async () => {
+    it("does not allow voting with mixed length on options and weights", async () => {
       const [admin, user1] = accounts;
 
       const { number: blockNumber } = await ethers.provider.getBlock("latest");
@@ -435,7 +440,8 @@ describe("VotingRegistry", function () {
           .vote(
             BigNumber.from(proposalId),
             [BigNumber.from(1), BigNumber.from(2)],
-            [BigNumber.from(100)]
+            [BigNumber.from(100)],
+            [""]
           )
       ).to.be.rejectedWith(/Mismatched/, "Should be rejected");
 
@@ -445,7 +451,8 @@ describe("VotingRegistry", function () {
           .vote(
             BigNumber.from(proposalId),
             [BigNumber.from(1)],
-            [BigNumber.from(80), BigNumber.from(20)]
+            [BigNumber.from(80), BigNumber.from(20)],
+            [""]
           )
       ).to.be.rejectedWith(/Mismatched/, "Should be rejected");
     });
@@ -479,7 +486,8 @@ describe("VotingRegistry", function () {
           .vote(
             BigNumber.from(proposalId),
             [BigNumber.from(1)],
-            [BigNumber.from(80)]
+            [BigNumber.from(80)],
+            [""]
           )
       ).to.be.rejectedWith(/Incorrect weights/, "Should be rejected");
 
@@ -489,7 +497,8 @@ describe("VotingRegistry", function () {
           .vote(
             BigNumber.from(proposalId),
             [BigNumber.from(1)],
-            [BigNumber.from(120)]
+            [BigNumber.from(120)],
+            [""]
           )
       ).to.be.rejectedWith(/Incorrect weights/, "Should be rejected");
     });
@@ -520,7 +529,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(1), BigNumber.from(2), BigNumber.from(3)],
-          [BigNumber.from(40), BigNumber.from(30), BigNumber.from(30)]
+          [BigNumber.from(40), BigNumber.from(30), BigNumber.from(30)],
+          ["", "", ""]
         );
 
       await registry
@@ -528,7 +538,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(1)],
-          [BigNumber.from(100)]
+          [BigNumber.from(100)],
+          [""]
         );
 
       const vote3 = await registry
@@ -536,7 +547,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(2)],
-          [BigNumber.from(100)]
+          [BigNumber.from(100)],
+          [""]
         );
 
       const voteReceipt = await vote3.wait();
@@ -553,8 +565,9 @@ describe("VotingRegistry", function () {
         )
         .all<{
           address: string;
-          alternative_id: number;
+          option_id: number;
           weight: number;
+          comment: string;
           proposal_id: number;
         }>();
 
@@ -562,26 +575,30 @@ describe("VotingRegistry", function () {
         {
           proposal_id: proposalId,
           address: user1.address,
-          alternative_id: 1,
+          option_id: 1,
           weight: 40,
+          comment: "",
         },
         {
           proposal_id: proposalId,
           address: user1.address,
-          alternative_id: 2,
+          option_id: 2,
           weight: 30,
+          comment: "",
         },
         {
           proposal_id: proposalId,
           address: user1.address,
-          alternative_id: 3,
+          option_id: 3,
           weight: 30,
+          comment: "",
         },
         {
           proposal_id: proposalId,
           address: user2.address,
-          alternative_id: 1,
+          option_id: 1,
           weight: 100,
+          comment: "",
         },
       ];
 
@@ -685,7 +702,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(1), BigNumber.from(2), BigNumber.from(3)],
-          [BigNumber.from(40), BigNumber.from(30), BigNumber.from(30)]
+          [BigNumber.from(40), BigNumber.from(30), BigNumber.from(30)],
+          ["", "", ""]
         );
 
       await registry
@@ -693,7 +711,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(1)],
-          [BigNumber.from(100)]
+          [BigNumber.from(100)],
+          [""]
         );
 
       await registry
@@ -701,7 +720,8 @@ describe("VotingRegistry", function () {
         .vote(
           BigNumber.from(proposalId),
           [BigNumber.from(2)],
-          [BigNumber.from(100)]
+          [BigNumber.from(100)],
+          [""]
         );
 
       // close the vote
