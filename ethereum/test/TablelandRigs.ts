@@ -2295,11 +2295,11 @@ describe("Rigs", function () {
         // First, mint a Rig to `tokenOwner`
         await rigs.setMintPhase(3);
         const tokenOwner = accounts[4];
-        let tx = await rigs
+        const tx = await rigs
           .connect(tokenOwner)
           ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-        let receipt = await tx.wait();
-        let [event] = receipt.events ?? [];
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Start to stake the Rig
         await expect(
@@ -2313,11 +2313,11 @@ describe("Rigs", function () {
         // First, mint a Rig to `tokenOwner`
         await rigs.setMintPhase(3);
         const tokenOwner = accounts[4];
-        let tx = await rigs
+        const tx = await rigs
           .connect(tokenOwner)
           ["mint(uint256)"](1, { value: getCost(1, 0.05) });
-        let receipt = await tx.wait();
-        let [event] = receipt.events ?? [];
+        const receipt = await tx.wait();
+        const [event] = receipt.events ?? [];
         const tokenId = event.args?.tokenId;
         // Stake the Rig & check `MetadataUpdate` was emitted
         // Start to pilot the Rig
