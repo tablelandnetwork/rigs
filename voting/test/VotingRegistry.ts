@@ -149,6 +149,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -176,6 +177,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -192,6 +194,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -206,6 +209,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -221,6 +225,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -256,6 +261,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -293,6 +299,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           alternatives,
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
@@ -352,6 +359,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20)
@@ -408,6 +416,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20)
@@ -451,6 +460,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b"],
           "my vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20)
@@ -494,6 +504,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
@@ -593,6 +604,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
@@ -619,6 +631,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          "some-cid",
           BigNumber.from(25_000),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
@@ -657,6 +670,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          "some-cid",
           BigNumber.from(25_000),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)

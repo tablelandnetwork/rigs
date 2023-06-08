@@ -81,6 +81,7 @@ contract VotingRegistry is AccessControl {
     function createProposal(
         string[] calldata alternatives,
         string calldata name,
+        string calldata descriptionCid,
         uint256 voterFtReward,
         uint256 startBlockNumber,
         uint256 endBlockNumber
@@ -89,7 +90,7 @@ contract VotingRegistry is AccessControl {
 
         string memory proposalIdString = Strings.toString(proposalId);
 
-        _insertProposal(proposalIdString, name, voterFtReward, startBlockNumber, endBlockNumber);
+        _insertProposal(proposalIdString, name, descriptionCid, voterFtReward, startBlockNumber, endBlockNumber);
         _insertAlternatives(proposalIdString, alternatives);
         _snapshotVotingPower(proposalIdString);
         _insertEligibleVotes(proposalIdString, alternatives);
@@ -109,7 +110,7 @@ contract VotingRegistry is AccessControl {
         return TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
-                "id integer NOT NULL, name text NOT NULL, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL",
+                "id integer NOT NULL, name text NOT NULL, description_cid text, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL",
                 _PROPOSALS_PREFIX
             )
         );
@@ -146,6 +147,7 @@ contract VotingRegistry is AccessControl {
     function _insertProposal(
         string memory proposalIdString,
         string memory name,
+        string memory descriptionCid,
         uint256 voterFtReward,
         uint256 startBlockNumber,
         uint256 endBlockNumber
@@ -153,10 +155,12 @@ contract VotingRegistry is AccessControl {
         string memory insert = string.concat(
             "INSERT INTO ",
             _proposalsTableName,
-            " (id, name, voter_ft_reward, created_at, start_block, end_block) VALUES (",
+            " (id, name, description_cid, voter_ft_reward, created_at, start_block, end_block) VALUES (",
             proposalIdString,
             ", ",
             SQLHelpers.quote(name),
+            ", ",
+            SQLHelpers.quote(descriptionCid),
             ", ",
             Strings.toString(voterFtReward),
             ", ",
