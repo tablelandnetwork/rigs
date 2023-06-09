@@ -5,11 +5,9 @@ import {
   Flex,
   Heading,
   HStack,
-  Show,
   Spinner,
   Text,
   VStack,
-  Badge,
 } from "@chakra-ui/react";
 import { useBlockNumber } from "wagmi";
 import { Link } from "react-router-dom";
@@ -23,13 +21,7 @@ import {
 } from "../../components/ProposalStatusBadge";
 import { deployment } from "../../env";
 
-const {
-  proposalsTable,
-  optionsTable,
-  votesTable,
-  ftSnapshotTable,
-  votingContractAddress,
-} = deployment;
+const { proposalsTable } = deployment;
 
 const GRID_GAP = 4;
 
@@ -72,41 +64,6 @@ const useProposals = () => {
   }, [setProposals]);
 
   return { proposals };
-};
-
-// TODO show if eligible to vote / if has voted?
-const useIsEligibleToVote = (
-  address: string | undefined,
-  proposalId: number | undefined
-) => {
-  const { db } = useTablelandConnection();
-
-  const [isEligible, setIsEligible] = useState<boolean>();
-
-  useEffect(() => {
-    setIsEligible(undefined);
-
-    // 0 is falsy
-    if (!address || proposalId === undefined) return;
-
-    let isCancelled = false;
-
-    db.prepare(
-      `SELECT EXISTS(SELECT * FROM ${votesTable} WHERE lower(address) = lower('${address}') AND proposal_id = ${proposalId}) as "isEligible" FROM ${votesTable} LIMIT 1`
-    )
-      .first<{ isEligible: boolean }>()
-      .then((result) => {
-        if (isCancelled) return;
-
-        setIsEligible(result.isEligible);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [address, proposalId, setIsEligible]);
-
-  return { isEligible };
 };
 
 type ModuleProps = React.ComponentProps<typeof Box> & {
