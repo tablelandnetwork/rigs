@@ -40,6 +40,7 @@ async function main() {
   ) as TablelandRigs;
   const uriTemplate = await getURITemplate(
     rigsDeployment.tablelandHost,
+    rigsDeployment.rigsTable,
     rigsDeployment.attributesTable,
     rigsDeployment.dealsTable,
     rigsDeployment.lookupsTable,
