@@ -160,9 +160,11 @@ var publishCmd = &cobra.Command{
 		} else if ankrKey != "" {
 			opts = append(opts, client.NewClientAnkrAPIKey(ankrKey))
 			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(chains.AnkrURLs[chain.ID], ankrKey))
+			checkErr(err)
 		} else if glif {
 			opts = append(opts, client.NewClientGlifAPIKey(""))
 			ethClient, err = ethclient.DialContext(ctx, fmt.Sprintf(chains.GlifURLs[chain.ID], ""))
+			checkErr(err)
 		} else if chain.ID == chains.ChainIDs.Local {
 			ethClient, err = ethclient.DialContext(ctx, chains.LocalURLs[chain.ID])
 			checkErr(err)
