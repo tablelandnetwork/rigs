@@ -147,6 +147,7 @@ describe("VotingRegistry", function () {
           ["one", "two", "three"],
           "my vote",
           BigNumber.from(100),
+          BigNumber.from(100),
           BigNumber.from(200)
         );
       const receipt = await txn.wait();
@@ -171,6 +172,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
         );
@@ -205,6 +207,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["one", "two", "three"],
           "my vote",
+          BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
         );
@@ -241,6 +244,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           alternatives,
           "my vote",
+          BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200)
         );
@@ -299,6 +303,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b"],
           "my vote",
+          BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20)
         );
@@ -354,6 +359,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b"],
           "my vote",
+          BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20)
         );
@@ -396,6 +402,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b"],
           "my vote",
+          BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20)
         );
@@ -438,6 +445,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          BigNumber.from(100),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
         );
@@ -536,6 +544,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          BigNumber.from(100),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
         );
@@ -547,10 +556,7 @@ describe("VotingRegistry", function () {
       await expect(
         registry
           .connect(admin)
-          .distributeParticipantFtRewards(
-            BigNumber.from(proposalId),
-            BigNumber.from(25_000)
-          )
+          .distributeParticipantFtRewards(BigNumber.from(proposalId))
       ).to.be.rejectedWith(/Vote has not ended/, "Should be rejected");
     });
 
@@ -564,6 +570,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          BigNumber.from(25_000),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
         );
@@ -577,20 +584,14 @@ describe("VotingRegistry", function () {
 
       const distribution = await registry
         .connect(admin)
-        .distributeParticipantFtRewards(
-          BigNumber.from(proposalId),
-          BigNumber.from(25_000)
-        );
+        .distributeParticipantFtRewards(BigNumber.from(proposalId));
 
       expect(distribution.hash).to.not.be.null;
 
       await expect(
         registry
           .connect(admin)
-          .distributeParticipantFtRewards(
-            BigNumber.from(proposalId),
-            BigNumber.from(25_000)
-          )
+          .distributeParticipantFtRewards(BigNumber.from(proposalId))
       ).to.be.rejectedWith(
         /Rewards have been distributed/,
         "Should be rejected"
@@ -607,6 +608,7 @@ describe("VotingRegistry", function () {
         .createProposal(
           ["a", "b", "c"],
           "vote",
+          BigNumber.from(25_000),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100)
         );
@@ -644,10 +646,7 @@ describe("VotingRegistry", function () {
 
       const distribution = await registry
         .connect(admin)
-        .distributeParticipantFtRewards(
-          BigNumber.from(proposalId),
-          BigNumber.from(25_000)
-        );
+        .distributeParticipantFtRewards(BigNumber.from(proposalId));
 
       const distributionReceipt = await distribution.wait();
 

@@ -15,6 +15,7 @@ contract VotingRegistry {
     struct Proposal {
         uint256 startBlockNumber;
         uint256 endBlockNumber;
+        uint256 voterFtReward;
         string name;
         bool rewardsDistributed;
     }
@@ -74,6 +75,7 @@ contract VotingRegistry {
     function createProposal(
         string[] calldata alternatives,
         string calldata name,
+        uint256 voterFtReward,
         uint256 startBlockNumber,
         uint256 endBlockNumber
     ) external onlyOwner returns (uint256 proposalId) {
@@ -81,12 +83,12 @@ contract VotingRegistry {
 
         string memory proposalIdString = StringsUpgradeable.toString(proposalId);
 
-        _insertProposal(proposalIdString, name, startBlockNumber, endBlockNumber);
+        _insertProposal(proposalIdString, name, voterFtReward, startBlockNumber, endBlockNumber);
         _insertAlternatives(proposalIdString, alternatives);
         _snapshotVotingPower(proposalIdString);
         _insertEligibleVotes(proposalIdString, alternatives);
 
-        _proposals[proposalId] = Proposal(startBlockNumber, endBlockNumber, name, false);
+        _proposals[proposalId] = Proposal(startBlockNumber, endBlockNumber, voterFtReward, name, false);
 
         emit ProposalCreated(proposalId);
 
@@ -101,7 +103,7 @@ contract VotingRegistry {
         return TablelandDeployments.get().create(
             address(this),
             SQLHelpers.toCreateFromSchema(
-                "id integer NOT NULL, name text NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL",
+                "id integer NOT NULL, name text NOT NULL, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL",
                 _PROPOSALS_PREFIX
             )
         );
@@ -135,14 +137,22 @@ contract VotingRegistry {
         );
     }
 
-    function _insertProposal(string memory proposalIdString, string memory name, uint256 startBlockNumber, uint256 endBlockNumber) internal {
+    function _insertProposal(
+        string memory proposalIdString,
+        string memory name,
+        uint256 voterFtReward,
+        uint256 startBlockNumber,
+        uint256 endBlockNumber
+    ) internal {
         string memory insert = string.concat(
             "INSERT INTO ",
             _proposalsTableName,
-            " (id, name, created_at, start_block, end_block) VALUES (",
+            " (id, name, voter_ft_reward, created_at, start_block, end_block) VALUES (",
             proposalIdString,
             ", ",
             SQLHelpers.quote(name),
+            ", ",
+            StringsUpgradeable.toString(voterFtReward),
             ", ",
             StringsUpgradeable.toString(block.number),
             ", ",
@@ -289,7 +299,7 @@ contract VotingRegistry {
         TablelandDeployments.get().mutate(address(this), _votesTableId, updateStatement);
     }
 
-    function distributeParticipantFtRewards(uint256 proposalId, uint256 amount) external onlyOwner {
+    function distributeParticipantFtRewards(uint256 proposalId) external onlyOwner {
         Proposal memory proposal = _proposals[proposalId];
 
         require(block.number > proposal.endBlockNumber, "Vote has not ended yet");
@@ -321,7 +331,7 @@ contract VotingRegistry {
             " SELECT DISTINCT ",
             blockNumber,
             ", address, 'Voted on proposal', ",
-            StringsUpgradeable.toString(amount),
+            StringsUpgradeable.toString(proposal.voterFtReward),
             ", proposal_id FROM ",
             _votesTableName,
             " WHERE weight > 0 AND proposal_id = ",
