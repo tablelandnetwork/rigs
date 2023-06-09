@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  Alert,
   Box,
   Button,
   Divider,
@@ -10,25 +11,26 @@ import {
   HStack,
   Input,
   Progress,
-  Show,
   Spinner,
+  Stat,
+  StatLabel,
+  StatHelpText,
   Table,
+  Thead,
   Tbody,
   Td,
-  Text,
   Th,
-  Thead,
+  Text,
   Tr,
   VStack,
-  Badge,
+  useBreakpointValue,
 } from "@chakra-ui/react";
-import { LinkIcon } from "@chakra-ui/icons";
+import { ChatIcon } from "@chakra-ui/icons";
 import {
   useAccount,
   useBlockNumber,
   useContractWrite,
   usePrepareContractWrite,
-  useWaitForTransaction,
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
 import { ethers } from "ethers";
@@ -156,16 +158,16 @@ const useProposal = (id: string | undefined) => {
   return { proposal, votes, results };
 };
 
-const useIsEligibleToVote = (
+const useAddressVotingPower = (
   address: string | undefined,
   proposalId: number | undefined
 ) => {
   const { db } = useTablelandConnection();
 
-  const [isEligible, setIsEligible] = useState<boolean>();
+  const [votingPower, setVotingPower] = useState<number>();
 
   useEffect(() => {
-    setIsEligible(undefined);
+    setVotingPower(undefined);
 
     // 0 is falsy
     if (!address || proposalId === undefined) return;
@@ -173,21 +175,21 @@ const useIsEligibleToVote = (
     let isCancelled = false;
 
     db.prepare(
-      `SELECT EXISTS(SELECT * FROM ${votesTable} WHERE lower(address) = lower('${address}') AND proposal_id = ${proposalId}) as "isEligible" FROM ${votesTable} LIMIT 1`
+      `SELECT COALESCE(SUM(ft), 0) as "votingPower" FROM ${ftSnapshotTable} WHERE lower(address) = lower('${address}') AND proposal_id = ${proposalId}`
     )
-      .first<{ isEligible: boolean }>()
+      .first<{ votingPower: number }>()
       .then((result) => {
         if (isCancelled) return;
 
-        setIsEligible(result.isEligible);
+        setVotingPower(result.votingPower);
       });
 
     return () => {
       isCancelled = true;
     };
-  }, [address, proposalId, setIsEligible]);
+  }, [address, proposalId, setVotingPower]);
 
-  return { isEligible };
+  return { votingPower };
 };
 
 type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
@@ -198,13 +200,14 @@ type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
 
 type VoteState = { [key: number]: { weight: number; comment: string } };
 
-// TODO make different forms/components for different voting systems?
-const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
+const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
   const { address } = useAccount();
-  const { isEligible } = useIsEligibleToVote(address, proposal.id);
+  const { votingPower } = useAddressVotingPower(address, proposal.id);
 
   const { data: blockNumber } = useBlockNumber();
   const [votes, setVotes] = useState<VoteState>({});
+
+  const isEligible = (votingPower ?? 0) > 0;
 
   const status = useMemo(() => proposalStatus(blockNumber, proposal), [
     blockNumber,
@@ -217,7 +220,7 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
       setVotes((old) => {
         const curr = old[i] ?? {};
         const update = Object.fromEntries([
-          [i, { ...curr, weight: newWeight }],
+          [i, { ...curr, weight: isNaN(newWeight) ? 0 : newWeight }],
         ]);
         return { ...old, ...update };
       });
@@ -239,9 +242,8 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
     [setVotes]
   );
 
-  const isValid =
-    Object.values(votes).reduce((p, c) => p + c.weight, 0) === 100;
-
+  const weightSum = Object.values(votes).reduce((p, c) => p + c.weight, 0);
+  const isValid = weightSum === 100;
   const nonZeroWeights = Object.entries(votes).filter(
     ([_, { weight }]) => weight > 0
   );
@@ -260,68 +262,99 @@ const CastVote = ({ proposal, results, p, ...props }: ModuleProps) => {
   });
 
   const contractWrite = useContractWrite(config);
-  const { isLoading, isSuccess, write, reset, data } = contractWrite;
-  const { isLoading: isTxLoading } = useWaitForTransaction({
-    hash: data?.hash,
-  });
+  const { write } = contractWrite;
 
-  // TODO add explanation of current voting systems, and hwo the weights need to be split
-  // TODO add better/nicer state invalid box, some box with rounded corner and info? + maybe fade in
+  const isMobile = useBreakpointValue(
+    { base: true, lg: false },
+    { ssr: false }
+  );
+
   return (
-    <VStack align="stretch" spacing={4} pt={p} {...props}>
-      <Heading px={p}>Cast your vote</Heading>
-      <Text px={p}>
-        This proposal uses <i>weighted voting</i> which means that you can vote
-        on multiple options by assigning weights to the options. The sum of your
-        weights must add up to 100. If you want to vote for just one option,
-        give that option the weight 100. If you want to vote for three options,
-        you can split your weight between them any way you want so that the sum
-        adds up to 100, for example 50/25/25.
-      </Text>
-      {nonZeroWeights.length > 0 && !isValid && (
-        <Text style={{ color: "red" }}>Incorrect weight sum</Text>
-      )}
+    <VStack align="stretch" spacing={4} {...props}>
+      <Heading>Cast your vote</Heading>
+      <Box pb={8}>
+        <Text>
+          This proposal uses <i>weighted voting</i> which means that you can
+          vote on multiple options by assigning a % of your total voting power
+          to an option. The sum must add up to 100.
+        </Text>
+        {votingPower && (
+          <Alert status="info" mt={4}>
+            Your voting power in this proposal is {prettyNumber(votingPower)} FT
+          </Alert>
+        )}
+      </Box>
       {isEligible && (
         <Table>
+          <Thead>
+            <Tr>
+              <Th>Option</Th>
+              <Th>% of votes</Th>
+              {!isMobile && <Th>Comment (optional)</Th>}
+            </Tr>
+          </Thead>
           <Tbody>
             {proposal.options.map(({ id, description }) => {
               const weight = votes[id]?.weight || 0;
               const comment = weight > 0 ? votes[id].comment : "";
+
               return (
                 <React.Fragment key={`option-${id}`}>
-                  <Tr>
-                    <Td pl={p}>{description}</Td>
-                    <Td pr={p}>
+                  <Tr
+                    key={`option-${id}`}
+                    sx={{ "> td": isMobile ? { borderBottom: "none" } : {} }}
+                  >
+                    <Td>{description}</Td>
+                    <Td width="100px">
                       <Input
-                        value={weight}
+                        value={weight === 0 ? "" : weight}
+                        placeholder="0%"
                         onChange={(e) => handleWeightChanged(id, e)}
                         type="number"
                       />
                     </Td>
+                    {!isMobile && (
+                      <Td>
+                        <Input
+                          type="text"
+                          placeholder="Comment"
+                          value={comment}
+                          isDisabled={weight === 0}
+                          onChange={(e) => handleCommentChanged(id, e)}
+                        />
+                      </Td>
+                    )}
                   </Tr>
-                  <Tr>
-                    <Td />
-                    <Td>
-                      <Input
-                        type="text"
-                        placeholder="Comment"
-                        value={comment}
-                        isDisabled={weight === 0}
-                        onChange={(e) => handleCommentChanged(id, e)}
-                      />
-                    </Td>
-                  </Tr>
+                  {isMobile && (
+                    <Tr>
+                      <Td colSpan={2} pt="0">
+                        <Input
+                          type="text"
+                          placeholder="Comment"
+                          value={comment}
+                          isDisabled={weight === 0}
+                          onChange={(e) => handleCommentChanged(id, e)}
+                        />
+                      </Td>
+                    </Tr>
+                  )}
                 </React.Fragment>
               );
             })}
           </Tbody>
         </Table>
       )}
-      <Box p={p} width="100%">
+      <Box width="100%">
         {!isEligible && (
           <Text pb={8}>You are not eligible to vote in this proposal.</Text>
         )}
         <TransactionStateAlert {...contractWrite} />
+        {nonZeroWeights.length > 0 && !isValid && (
+          <Alert status="error" mb={4}>
+            Incorrect vote distribution. The sum must be 100%, you have assigned{" "}
+            {weightSum}%.
+          </Alert>
+        )}
         <Button
           mt={2}
           isDisabled={status !== ProposalStatus.Open || !isValid}
@@ -394,9 +427,13 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
               )
               .join(", ");
 
+            const [showComments, setShowComments] = useState(false);
+
             return (
               <React.Fragment key={`vote-${index}`}>
-                <Tr>
+                <Tr
+                  sx={{ "> td": showComments ? { borderBottom: "none" } : {} }}
+                >
                   <Td pl={p}>
                     <Link to={`/owner/${address}`}>
                       {truncateWalletAddress(address)}
@@ -409,16 +446,48 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
                     textOverflow="ellipsis"
                   >
                     {truncateChoiceString(choiceString)}
+                    {choices.some((v) => v.comment?.length) && (
+                      <ChatIcon
+                        sx={{ _hover: { cursor: "pointer" } }}
+                        marginLeft={2}
+                        onClick={() => setShowComments((old) => !old)}
+                      />
+                    )}
                   </Td>
                   <Td pr={p} isNumeric>
                     {prettyNumber(ft)} FT
                   </Td>
                 </Tr>
-                <Tr>
-                  <Td colSpan={3}>
-                    {choices.map((v) => v.comment).join(", ")}
-                  </Td>
-                </Tr>
+                {showComments && (
+                  <Tr>
+                    <Td colSpan={3} px={p}>
+                      <Box
+                        display="flex"
+                        gap="8px"
+                        flexDirection={{ base: "column", md: "row" }}
+                        flexWrap="wrap"
+                      >
+                        {choices
+                          .filter((choice) => choice.comment)
+                          .map((choice, i) => {
+                            return (
+                              <Stat
+                                key={`commment-${i}`}
+                                borderRadius="3px"
+                                backgroundColor="#0c1818"
+                                p="8px"
+                              >
+                                <StatLabel>
+                                  {optionLookupMap[choice.option_id]}
+                                </StatLabel>
+                                <StatHelpText>{choice.comment}</StatHelpText>
+                              </Stat>
+                            );
+                          })}
+                      </Box>
+                    </Td>
+                  </Tr>
+                )}
               </React.Fragment>
             );
           })}
@@ -435,19 +504,15 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
 
 const Results = ({ proposal, results, ...props }: ModuleProps) => {
   const { data: blockNumber } = useBlockNumber();
-  const status = useMemo(() => {
-    if (!blockNumber || !proposal) return "loading";
-
-    return proposalStatus(blockNumber, proposal);
-  }, [blockNumber, proposal]);
 
   const totalResults = results.reduce((acc, { result }) => acc + result, 0);
 
   const title = useMemo(() => {
-    if (status === "open") return "Current result";
+    if (proposalStatus(blockNumber, proposal) === ProposalStatus.Open)
+      return "Current result";
 
     return "Result";
-  }, [status]);
+  }, [blockNumber, proposal]);
 
   return (
     <VStack align="stretch" spacing={4} {...props}>
@@ -492,13 +557,6 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
 };
 
 const Header = ({ proposal, results, ...props }: ModuleProps) => {
-  const { data: blockNumber } = useBlockNumber();
-
-  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
-    blockNumber,
-    proposal,
-  ]);
-
   const [markdown, setMarkdown] = useState("");
 
   const { node } = useHelia();
@@ -580,7 +638,7 @@ export const Proposal = () => {
               width="100%"
             >
               <Header {...proposalData} {...MODULE_PROPS} />
-              {["Not yet open", "open"].includes(status) && (
+              {status === ProposalStatus.Open && (
                 <CastVote {...proposalData} {...MODULE_PROPS} />
               )}
               <Votes {...proposalData} {...MODULE_PROPS} />
