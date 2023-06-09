@@ -51,3 +51,10 @@ export interface PilotSessionWithRigId extends PilotSession {
   rigId: string;
   thumb: string;
 }
+
+export interface FTReward {
+  blockNum: number;
+  recipient: string;
+  reason: string;
+  amount: number;
+}
