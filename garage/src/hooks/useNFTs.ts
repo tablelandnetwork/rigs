@@ -35,8 +35,14 @@ const settings = {
 
 export const alchemy = new Alchemy(settings);
 
+enum NFTType {
+  ERC721 = "ERC721",
+  ERC1155 = "ERC1155",
+  UNKNOWN = "UNKNOWN",
+}
+
 export interface NFT {
-  type: "ERC721" | "ERC1155" | "UNKNOWN";
+  type: NFTType;
   contract: string;
   tokenId: string;
   name?: string;
@@ -45,6 +51,13 @@ export interface NFT {
   imageData?: string;
 }
 
+const toNFTType = (t: Nft["tokenType"]): NFTType => {
+  if (t === "ERC721") return NFTType.ERC721;
+  if (t === "ERC1155") return NFTType.ERC1155;
+
+  return NFTType.UNKNOWN;
+};
+
 export const toNFT = (data: Nft): NFT => {
   const { contract, tokenId, title, media, rawMetadata } = data;
 
@@ -52,11 +65,13 @@ export const toNFT = (data: Nft): NFT => {
   const highResImageUrl = media[0]?.gateway || media[0]?.raw;
   const imageData = rawMetadata?.image_data || rawMetadata?.svg_image_data;
 
+  const fallbackName = (contract.name + " " + tokenId).trim();
+
   return {
-    type: contract.tokenType,
+    type: toNFTType(contract.tokenType),
     contract: contract.address,
     tokenId,
-    name: title,
+    name: title || fallbackName,
     imageUrl,
     highResImageUrl,
     imageData,
@@ -110,7 +125,7 @@ const fetchNftsForOwner = async (
     pageSize,
     pageKey,
     omitMetadata: false,
-    excludeFilters: [NftFilters.SPAM],
+    excludeFilters: [NftFilters.SPAM, NftFilters.AIRDROPS],
   };
   if (filter?.contracts) {
     options = { ...options, contractAddresses: filter.contracts };
@@ -217,38 +232,15 @@ export const useNFTCollections = (contracts?: string[]) => {
       return { ...oldData, isLoading: true, isError: false };
     });
 
-    const options = {
-      method: "POST",
-      headers: {
-        accept: "application/json",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        contractAddresses: contracts,
-      }),
-    };
+    alchemy.nft.getContractMetadataBatch(contracts).then((data) => {
+      if (isCancelled) return;
 
-    fetch(
-      `https://${settings.network}.g.alchemy.com/nft/v2/${
-        import.meta.env.VITE_ALCHEMY_ID
-      }/getContractMetadataBatch`,
-      options
-    )
-      .then((response) => response.json())
-      .then((response) => {
-        if (isCancelled) return;
-
-        const data = (response as any[]).filter((v) => v?.address);
-
-        setData({
-          isLoading: false,
-          isError: false,
-          collections: data.map(({ address, contractMetadata }) =>
-            toCollection({ address, ...contractMetadata })
-          ),
-        });
-      })
-      .catch((err) => console.error(err));
+      setData({
+        isLoading: false,
+        isError: false,
+        collections: data.map(toCollection),
+      });
+    });
 
     return () => {
       isCancelled = true;

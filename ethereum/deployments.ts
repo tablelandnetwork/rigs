@@ -24,6 +24,7 @@ export interface RigsDeployment {
   dealsTable: string;
   lookupsTable: string;
   pilotSessionsTable: string;
+  ftRewardsTable: string;
   displayAttributes: boolean;
 }
 
@@ -48,6 +49,7 @@ export const deployments: RigsDeployments = {
     dealsTable: "",
     lookupsTable: "lookups_42161_10",
     pilotSessionsTable: "pilot_sessions_1_7",
+    ftRewardsTable: "ft_rewards_314_2",
     displayAttributes: true,
   },
   // testnets
@@ -66,6 +68,7 @@ export const deployments: RigsDeployments = {
     dealsTable: "deals_314159_8",
     lookupsTable: "lookups_314159_10",
     pilotSessionsTable: "pilot_sessions_80001_4078",
+    ftRewardsTable: "ft_rewards_80001_6727",
     displayAttributes: true,
   },
   localhost: {
@@ -83,6 +86,7 @@ export const deployments: RigsDeployments = {
     dealsTable: "",
     lookupsTable: "",
     pilotSessionsTable: "",
+    ftRewardsTable: "",
     displayAttributes: true,
   },
 };

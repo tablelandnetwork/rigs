@@ -5,6 +5,7 @@ import { RigDetails } from "./pages/RigDetails";
 import { PilotDetails } from "./pages/PilotDetails";
 import { OwnerDetails } from "./pages/OwnerDetails";
 import { Gallery } from "./pages/Gallery";
+import { Admin } from "./pages/Admin";
 
 export const routes = () => {
   return [
@@ -38,6 +39,12 @@ export const routes = () => {
       path: "/pilots/:collection/:id",
       requiresWalletConnection: false,
       element: <PilotDetails />,
+    },
+    {
+      key: "ADMIN",
+      path: "/admin",
+      requiresWalletConnection: true,
+      element: <Admin />,
     },
   ];
 };
