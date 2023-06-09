@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -277,7 +276,7 @@ func (p *Publisher) RendersToCarStorage(
 
 	var jobs []wpool.Job
 
-	folders, err := ioutil.ReadDir(rendersPath)
+	folders, err := os.ReadDir(rendersPath)
 	if err != nil {
 		return fmt.Errorf("reading renders dir: %v", err)
 	}

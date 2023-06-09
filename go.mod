@@ -1,6 +1,6 @@
 module github.com/tablelandnetwork/rigs
 
-go 1.18
+go 1.19
 
 require (
 	github.com/alanshaw/go-carbites v0.6.0
