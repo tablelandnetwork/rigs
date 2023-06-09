@@ -173,7 +173,9 @@ describe("VotingRegistry", function () {
       .prepare(`GRANT INSERT ON ${proposalsTableName} TO '${registry.address}'`)
       .run();
     await db
-      .prepare(`GRANT INSERT ON ${ftSnapshotTableName} TO '${registry.address}'`)
+      .prepare(
+        `GRANT INSERT ON ${ftSnapshotTableName} TO '${registry.address}'`
+      )
       .run();
     await db
       .prepare(`GRANT INSERT ON ${votesTableName} TO '${registry.address}'`)
@@ -199,12 +201,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["one", "two", "three"],
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
-          BigNumber.from(200)
+          BigNumber.from(200),
+          ["one", "two", "three"]
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
@@ -227,12 +229,12 @@ describe("VotingRegistry", function () {
         registry
           .connect(user)
           .createProposal(
-            ["one", "two", "three"],
             "my vote",
             "some-cid",
             BigNumber.from(100),
             BigNumber.from(100),
-            BigNumber.from(200)
+            BigNumber.from(200),
+            ["one", "two", "three"]
           )
       ).to.be.rejected;
     });
@@ -244,12 +246,12 @@ describe("VotingRegistry", function () {
         registry
           .connect(votingAdmin)
           .createProposal(
-            ["one", "two", "three"],
             "my vote",
             "some-cid",
             BigNumber.from(100),
             BigNumber.from(100),
-            BigNumber.from(200)
+            BigNumber.from(200),
+            ["one", "two", "three"]
           )
       ).to.be.rejected;
 
@@ -261,12 +263,12 @@ describe("VotingRegistry", function () {
         registry
           .connect(votingAdmin)
           .createProposal(
-            ["one", "two", "three"],
             "my vote",
             "some-cid",
             BigNumber.from(100),
             BigNumber.from(100),
-            BigNumber.from(200)
+            BigNumber.from(200),
+            ["one", "two", "three"]
           )
       ).not.to.be.rejected;
     });
@@ -277,12 +279,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["one", "two", "three"],
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
-          BigNumber.from(200)
+          BigNumber.from(200),
+          ["one", "two", "three"]
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
@@ -313,12 +315,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["one", "two", "three"],
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
-          BigNumber.from(200)
+          BigNumber.from(200),
+          ["one", "two", "three"]
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
@@ -351,12 +353,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          options,
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(100),
-          BigNumber.from(200)
+          BigNumber.from(200),
+          options
         );
       const receipt = await txn.wait();
       const event = receipt.events?.find((v) => v.event === "ProposalCreated");
@@ -413,12 +415,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b"],
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
-          BigNumber.from(blockNumber + 20)
+          BigNumber.from(blockNumber + 20),
+          ["a", "b"]
         );
 
       const receipt = await txn.wait();
@@ -473,12 +475,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b"],
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
-          BigNumber.from(blockNumber + 20)
+          BigNumber.from(blockNumber + 20),
+          ["a", "b"]
         );
 
       const receipt = await txn.wait();
@@ -519,12 +521,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b"],
           "my vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
-          BigNumber.from(blockNumber + 20)
+          BigNumber.from(blockNumber + 20),
+          ["a", "b"]
         );
 
       const receipt = await txn.wait();
@@ -565,12 +567,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b", "c"],
           "vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber),
-          BigNumber.from(blockNumber + 100)
+          BigNumber.from(blockNumber + 100),
+          ["a", "b", "c"]
         );
 
       const receipt = await txn.wait();
@@ -673,12 +675,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b", "c"],
           "vote",
           "some-cid",
           BigNumber.from(100),
           BigNumber.from(blockNumber),
-          BigNumber.from(blockNumber + 100)
+          BigNumber.from(blockNumber + 100),
+          ["a", "b", "c"]
         );
 
       const receipt = await txn.wait();
@@ -700,12 +702,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b", "c"],
           "vote",
           "some-cid",
           BigNumber.from(25_000),
           BigNumber.from(blockNumber),
-          BigNumber.from(blockNumber + 100)
+          BigNumber.from(blockNumber + 100),
+          ["a", "b", "c"]
         );
 
       const receipt = await txn.wait();
@@ -739,12 +741,12 @@ describe("VotingRegistry", function () {
       const txn = await registry
         .connect(admin)
         .createProposal(
-          ["a", "b", "c"],
           "vote",
           "some-cid",
           BigNumber.from(25_000),
           BigNumber.from(blockNumber),
-          BigNumber.from(blockNumber + 100)
+          BigNumber.from(blockNumber + 100),
+          ["a", "b", "c"]
         );
 
       const receipt = await txn.wait();

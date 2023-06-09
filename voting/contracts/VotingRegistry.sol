@@ -62,12 +62,12 @@ contract VotingRegistry is AccessControl {
     }
 
     function createProposal(
-        string[] calldata options,
         string calldata name,
         string calldata descriptionCid,
         uint256 voterFtReward,
         uint256 startBlockNumber,
-        uint256 endBlockNumber
+        uint256 endBlockNumber,
+        string[] calldata options
     ) external onlyRole(VOTING_ADMIN_ROLE) returns (uint256 proposalId) {
         proposalId = _proposalCounter++;
 
