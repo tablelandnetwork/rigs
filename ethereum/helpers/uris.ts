@@ -9,6 +9,7 @@ export async function normalize(sql: string) {
 
 export async function getURITemplate(
   tablelandHost: string,
+  rigsTable: string,
   attributesTable: string,
   dealsTable: string,
   lookupsTable: string,
@@ -23,15 +24,15 @@ export async function getURITemplate(
         await normalize(
           `select 
             json_object(
-              'name',case when exists(select * from ${pilotsTable} where rig_id = ${attributesTable}.rig_id and end_time is null) then 'Rig #'||rig_id||' ✈️' else 'Rig #'||rig_id end,
-              'external_url','https://garage.tableland.xyz/rigs/'||rig_id,
-              'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,
-              'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,
-              'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,
-              'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,
-              'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,
-              'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,
-              'animation_url',animation_base_url||rig_id||'.html',
+              'name','Rig #'||id,
+              'external_url','https://garage.tableland.xyz/rigs/'||id,
+              'image','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_full_name'),
+              'image_alpha','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_full_alpha_name'),
+              'image_medium','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_medium_name'),
+              'image_medium_alpha','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_medium_alpha_name'),
+              'thumb','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_thumb_name'),
+              'thumb_alpha','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_thumb_alpha_name'),
+              'animation_url',(select value from ${lookupsTable} where label = 'animation_base_url')||rig_id||'.html',
               'attributes',json_array(
                 json_object(
                   'trait_type','status',
@@ -40,10 +41,10 @@ export async function getURITemplate(
               )
             )
           from
-            ${attributesTable}
-            join ${lookupsTable}
-          where rig_id=ID
-          group by rig_id;`
+            ${rigsTable}
+            inner join ${attributesTable} on id = rig_id
+          where id=ID
+          group by id;`
         )
       );
     return uri.split("ID");
@@ -55,21 +56,22 @@ export async function getURITemplate(
         await normalize(
           `select
             json_object(
-              'name',case when exists(select * from ${pilotsTable} where rig_id = result.rig_id and end_time is null) then 'Rig #'||rig_id||' ✈️' else 'Rig #'||rig_id end,
-              'external_url','https://garage.tableland.xyz/rigs/'||rig_id,
-              'image','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name,
-              'image_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name,
-              'image_medium','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_name,
-              'image_medium_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_medium_alpha_name,
-              'thumb','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name,
-              'thumb_alpha','ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name,
-              'animation_url',animation_base_url||rig_id||'.html',
+              'name',case when exists(select * from ${pilotsTable} where rig_id = r.id and end_time is null) then 'Rig #'||id||' ✈️' else 'Rig #'||id end,
+              'external_url','https://garage.tableland.xyz/rigs/'||id,
+              'image','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_full_name'),
+              'image_alpha','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_full_alpha_name'),
+              'image_medium','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_medium_name'),
+              'image_medium_alpha','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_medium_alpha_name'),
+              'thumb','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_thumb_name'),
+              'thumb_alpha','ipfs://'||renders_cid||'/'||(select value from ${lookupsTable} where label = 'image_thumb_alpha_name'),
+              'animation_url',(select value from ${lookupsTable} where label = 'animation_base_url')||rig_id||'.html',
               'attributes', json_group_array(
                 json_object('display_type',display_type,'trait_type',trait_type,'value',value)
               )
             )
-          from 
-            (
+          from
+            ${rigsTable} r
+            inner join (
               select *
               from ${attributesTable}
               union
@@ -81,10 +83,16 @@ export async function getURITemplate(
               from
                 ${attributesTable} a
                 left join (select * from ${pilotsTable} where end_time is null) s on a.rig_id = s.rig_id
-            ) as result
-            join ${lookupsTable}
+              union
+              select
+                rig_id,
+                'string' display_type,
+                'Filecoin Deal '||deal_number trait_type,
+                (select value from ${lookupsTable} where label = 'filecoin_base_url')||deal_id value
+              from ${dealsTable}
+            ) on id = rig_id
           where rig_id=ID
-          group by rig_id;`
+          group by id;`
         )
       );
     return uri.split("ID");
