@@ -20,7 +20,15 @@ export const useProposals = () => {
 
     if (!db) return;
     db.prepare(
-      `SELECT id, name, created_at as "createdAt", start_block as "startBlock", end_block as "endBlock" FROM ${proposalsTable}`
+      `SELECT
+         id,
+         name,
+         description_cid as "descriptionCid",
+         created_at as "createdAt",
+         start_block as "startBlock",
+         end_block as "endBlock",
+         voter_ft_reward as "voterFtReward"
+       FROM ${proposalsTable} ORDER BY id DESC LIMIT 100`
     )
       .all<Proposal>()
       .then(({ results }) => {

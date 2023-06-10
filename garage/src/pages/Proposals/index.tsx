@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import {
   Box,
   Button,
@@ -11,7 +11,7 @@ import {
 } from "@chakra-ui/react";
 import { useBlockNumber } from "wagmi";
 import { Link } from "react-router-dom";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
+import { useProposals } from "../../hooks/useProposals";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber } from "../../utils/fmt";
 import { Proposal, ProposalStatus } from "../../types";
@@ -19,9 +19,6 @@ import {
   proposalStatus,
   ProposalStatusBadge,
 } from "../../components/ProposalStatusBadge";
-import { deployment } from "../../env";
-
-const { proposalsTable } = deployment;
 
 const GRID_GAP = 4;
 
@@ -30,40 +27,6 @@ const MODULE_PROPS = {
   p: 8,
   bgColor: "paper",
   overflow: "hidden",
-};
-
-const useProposals = () => {
-  const { db } = useTablelandConnection();
-
-  const [proposals, setProposals] = useState<Proposal[]>();
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    db.prepare(
-      `SELECT
-         id,
-         name,
-         description_cid as "descriptionCid",
-         created_at as "createdAt",
-         start_block as "startBlock",
-         end_block as "endBlock",
-         voter_ft_reward as "voterFtReward"
-       FROM ${proposalsTable} ORDER BY start_block DESC LIMIT 100`
-    )
-      .all<Proposal>()
-      .then(({ results }) => {
-        if (isCancelled) return;
-
-        setProposals(results);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [setProposals]);
-
-  return { proposals };
 };
 
 type ModuleProps = React.ComponentProps<typeof Box> & {
