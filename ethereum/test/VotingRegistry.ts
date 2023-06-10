@@ -191,7 +191,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
   }
 
   describe("createProposal", () => {
-    beforeEach(async function () {
+    before(async function () {
       await loadFixture(deployFixture);
     });
 
@@ -403,7 +403,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
   });
 
   describe("vote", () => {
-    beforeEach(async function () {
+    before(async function () {
       await loadFixture(deployFixture);
     });
 
@@ -663,7 +663,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
   });
 
   describe("distributeParticipantFtRewards", async () => {
-    beforeEach(async function () {
+    before(async function () {
       await loadFixture(deployFixture);
     });
 
