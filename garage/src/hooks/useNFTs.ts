@@ -23,6 +23,8 @@ const wagmiChainToNetwork = (c: Chain): Network => {
       return Network.MATIC_MAINNET;
     case chains.polygonMumbai:
       return Network.MATIC_MUMBAI;
+    case chains.hardhat:
+      return Network.ETH_MAINNET;
     default:
       throw new Error(`wagmiChainToNetwork unsupported mainChain, ${c}`);
   }
