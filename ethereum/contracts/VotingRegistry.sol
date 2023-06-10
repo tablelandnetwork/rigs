@@ -73,19 +73,34 @@ contract VotingRegistry is AccessControl {
 
         string memory proposalIdString = Strings.toString(proposalId);
 
-        _insertProposal(proposalIdString, name, descriptionCid, voterFtReward, startBlockNumber, endBlockNumber);
+        _insertProposal(
+            proposalIdString,
+            name,
+            descriptionCid,
+            voterFtReward,
+            startBlockNumber,
+            endBlockNumber
+        );
         _insertOptions(proposalIdString, options);
         _snapshotVotingPower(proposalIdString);
         _insertEligibleVotes(proposalIdString, options);
 
-        _proposals[proposalId] = Proposal(startBlockNumber, endBlockNumber, voterFtReward, name, false);
+        _proposals[proposalId] = Proposal(
+            startBlockNumber,
+            endBlockNumber,
+            voterFtReward,
+            name,
+            false
+        );
 
         emit ProposalCreated(proposalId);
 
         return proposalId;
     }
 
-    function proposal(uint256 proposalId) external view returns (Proposal memory) {
+    function proposal(
+        uint256 proposalId
+    ) external view returns (Proposal memory) {
         return _proposals[proposalId];
     }
 
@@ -116,17 +131,27 @@ contract VotingRegistry is AccessControl {
             Strings.toString(endBlockNumber),
             ")"
         );
-        TablelandDeployments.get().mutate(address(this), _proposalsTable.id, insert);
+        TablelandDeployments.get().mutate(
+            address(this),
+            _proposalsTable.id,
+            insert
+        );
     }
 
-    function _insertOptions(string memory proposalId, string[] calldata options) internal {
-        string memory insert =
-            string.concat("INSERT INTO ", _optionsTable.name, " (proposal_id, id, description) VALUES");
+    function _insertOptions(
+        string memory proposalId,
+        string[] calldata options
+    ) internal {
+        string memory insert = string.concat(
+            "INSERT INTO ",
+            _optionsTable.name,
+            " (proposal_id, id, description) VALUES"
+        );
 
         uint256 length = options.length;
         string memory prefix;
         uint256 i;
-        for (; i < length;) {
+        for (; i < length; ) {
             if (i == 0) {
                 prefix = "(";
             } else {
@@ -134,7 +159,14 @@ contract VotingRegistry is AccessControl {
             }
 
             insert = string.concat(
-                insert, prefix, proposalId, ",", Strings.toString(i + 1), ",", SQLHelpers.quote(options[i]), ")"
+                insert,
+                prefix,
+                proposalId,
+                ",",
+                Strings.toString(i + 1),
+                ",",
+                SQLHelpers.quote(options[i]),
+                ")"
             );
 
             unchecked {
@@ -142,7 +174,11 @@ contract VotingRegistry is AccessControl {
             }
         }
 
-        TablelandDeployments.get().mutate(address(this), _optionsTable.id, insert);
+        TablelandDeployments.get().mutate(
+            address(this),
+            _optionsTable.id,
+            insert
+        );
     }
 
     function _snapshotVotingPower(string memory proposalId) internal {
@@ -166,19 +202,30 @@ contract VotingRegistry is AccessControl {
             _ftRewardsTable.name
         );
 
-        ITablelandTables.Statement[] memory stmnts = new ITablelandTables.Statement[](2);
-        stmnts[0] = ITablelandTables.Statement(_ftSnapshotTable.id, snapshotPilotSessionFt);
-        stmnts[1] = ITablelandTables.Statement(_ftSnapshotTable.id, snapshotFtRewards);
+        ITablelandTables.Statement[]
+            memory stmnts = new ITablelandTables.Statement[](2);
+        stmnts[0] = ITablelandTables.Statement(
+            _ftSnapshotTable.id,
+            snapshotPilotSessionFt
+        );
+        stmnts[1] = ITablelandTables.Statement(
+            _ftSnapshotTable.id,
+            snapshotFtRewards
+        );
         TablelandDeployments.get().mutate(address(this), stmnts);
     }
 
-    function _insertEligibleVotes(string memory proposalId, string[] calldata options) internal {
+    function _insertEligibleVotes(
+        string memory proposalId,
+        string[] calldata options
+    ) internal {
         uint256 length = options.length;
-        ITablelandTables.Statement[] memory stmnts = new ITablelandTables.Statement[](length);
+        ITablelandTables.Statement[]
+            memory stmnts = new ITablelandTables.Statement[](length);
 
         uint256 i;
         unchecked {
-            for (; i < length;) {
+            for (; i < length; ) {
                 string memory insert = string.concat(
                     "INSERT INTO ",
                     _votesTable.name,
@@ -191,28 +238,43 @@ contract VotingRegistry is AccessControl {
                     _ftSnapshotTable.name
                 );
 
-                stmnts[i++] = ITablelandTables.Statement(_votesTable.id, insert);
+                stmnts[i++] = ITablelandTables.Statement(
+                    _votesTable.id,
+                    insert
+                );
             }
         }
 
         TablelandDeployments.get().mutate(address(this), stmnts);
     }
 
-    function vote(uint256 proposalId, uint256[] calldata options, uint256[] calldata weights, string[] memory comments)
-        external
-    {
+    function vote(
+        uint256 proposalId,
+        uint256[] calldata options,
+        uint256[] calldata weights,
+        string[] memory comments
+    ) external {
         Proposal memory proposal = _proposals[proposalId];
 
         // Check that proposal is active
-        require(block.number >= proposal.startBlockNumber, "Vote has not started");
+        require(
+            block.number >= proposal.startBlockNumber,
+            "Vote has not started"
+        );
         require(block.number <= proposal.endBlockNumber, "Vote has ended");
 
         // Check that options & weights & comments match, and weight sum == 100
-        require(options.length == weights.length, "Mismatched options and weights length");
-        require(weights.length == comments.length, "Mismatched options and commentslength");
+        require(
+            options.length == weights.length,
+            "Mismatched options and weights length"
+        );
+        require(
+            weights.length == comments.length,
+            "Mismatched options and commentslength"
+        );
         uint256 weightSum;
         uint256 i;
-        for (; i < weights.length;) {
+        for (; i < weights.length; ) {
             weightSum += weights[i];
             unchecked {
                 ++i;
@@ -231,26 +293,41 @@ contract VotingRegistry is AccessControl {
         //              END
         // WHERE lower(address) = lower(msg.sender);
         // ```
-        string memory updateStatement = string.concat("UPDATE ", _votesTable.name, " SET weight = CASE option_id");
+        string memory updateStatement = string.concat(
+            "UPDATE ",
+            _votesTable.name,
+            " SET weight = CASE option_id"
+        );
 
         uint256 votes = weights.length;
         i = 0;
         unchecked {
-            for (; i < votes;) {
+            for (; i < votes; ) {
                 updateStatement = string.concat(
-                    updateStatement, " WHEN ", Strings.toString(options[i]), " THEN ", Strings.toString(weights[i])
+                    updateStatement,
+                    " WHEN ",
+                    Strings.toString(options[i]),
+                    " THEN ",
+                    Strings.toString(weights[i])
                 );
                 ++i;
             }
         }
 
-        updateStatement = string.concat(updateStatement, " ELSE 0 END, comment = CASE option_id");
+        updateStatement = string.concat(
+            updateStatement,
+            " ELSE 0 END, comment = CASE option_id"
+        );
 
         i = 0;
         unchecked {
-            for (; i < votes;) {
+            for (; i < votes; ) {
                 updateStatement = string.concat(
-                    updateStatement, " WHEN ", Strings.toString(options[i]), " THEN ", SQLHelpers.quote(comments[i])
+                    updateStatement,
+                    " WHEN ",
+                    Strings.toString(options[i]),
+                    " THEN ",
+                    SQLHelpers.quote(comments[i])
                 );
                 ++i;
             }
@@ -265,13 +342,20 @@ contract VotingRegistry is AccessControl {
         );
 
         // Submit vote
-        TablelandDeployments.get().mutate(address(this), _votesTable.id, updateStatement);
+        TablelandDeployments.get().mutate(
+            address(this),
+            _votesTable.id,
+            updateStatement
+        );
     }
 
     function distributeParticipantFtRewards(uint256 proposalId) external {
         Proposal memory proposal = _proposals[proposalId];
 
-        require(block.number > proposal.endBlockNumber, "Vote has not ended yet");
+        require(
+            block.number > proposal.endBlockNumber,
+            "Vote has not ended yet"
+        );
 
         require(!proposal.rewardsDistributed, "Rewards have been distributed");
 
@@ -303,10 +387,19 @@ contract VotingRegistry is AccessControl {
             Strings.toString(proposalId)
         );
 
-        TablelandDeployments.get().mutate(address(this), _ftRewardsTable.id, insert);
+        TablelandDeployments.get().mutate(
+            address(this),
+            _ftRewardsTable.id,
+            insert
+        );
     }
 
-    function onERC721Received(address, address, uint256, bytes calldata) public pure returns (bytes4) {
+    function onERC721Received(
+        address,
+        address,
+        uint256,
+        bytes calldata
+    ) public pure returns (bytes4) {
         return 0x150b7a02;
     }
 }
