@@ -30,8 +30,10 @@ async function main() {
     throw Error(`no ftRewardsTable available on '${network.name}'`);
   }
 
-  const pilotSessionsId = rigsDeployment.pilotSessionsTable.split("_")[1];
-  const ftRewardsTableId = rigsDeployment.ftRewardsTable.split("_")[1];
+  const pilotSessionsTableId =
+    rigsDeployment.pilotSessionsTable.match(/.*_\d*_(\d*)/)[1];
+  const ftRewardsTableId =
+    rigsDeployment.ftRewardsTable.match(/.*_\d*_(\d*)/)[1];
 
   // Create proposals table
   const { meta: proposalsMeta } = await db
