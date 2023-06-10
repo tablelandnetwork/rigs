@@ -2,11 +2,6 @@ export const abi = [
   {
     inputs: [
       {
-        internalType: "string[]",
-        name: "alternatives",
-        type: "string[]",
-      },
-      {
         internalType: "string",
         name: "name",
         type: "string",
@@ -30,6 +25,11 @@ export const abi = [
         internalType: "uint256",
         name: "endBlock",
         type: "uint256",
+      },
+      {
+        internalType: "string[]",
+        name: "options",
+        type: "string[]",
       },
     ],
     name: "createProposal",

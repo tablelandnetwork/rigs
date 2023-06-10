@@ -63,19 +63,23 @@ export const CreateProposalModal = ({
   ] = useState<FormState>(initialFormState);
 
   const isValid =
-    name !== "" && startBlock > 0 && endBlock > 0 && alternatives.length > 0;
+    name !== "" &&
+    startBlock > 0 &&
+    endBlock > 0 &&
+    voterFtReward > 0 &&
+    alternatives.length > 0;
 
   const { config } = usePrepareContractWrite({
     address: as0xString(votingContractAddress),
     abi,
     functionName: "createProposal",
     args: [
-      alternatives,
       name,
       descriptionCid,
       ethers.BigNumber.from(voterFtReward),
       ethers.BigNumber.from(startBlock),
       ethers.BigNumber.from(endBlock),
+      alternatives,
     ],
     enabled: isOpen && isValid,
   });
