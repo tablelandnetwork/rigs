@@ -34,6 +34,8 @@ import {
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
 import { ethers } from "ethers";
+import { strings } from "@helia/strings";
+import { CID } from "multiformats/cid";
 import { TransactionStateAlert } from "../../components/TransactionStateAlert";
 import {
   ProposalStatusBadge,
@@ -41,8 +43,7 @@ import {
 } from "../../components/ProposalStatusBadge";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useHelia } from "../../hooks/useHelia";
-import { strings } from "@helia/strings";
-import { CID } from "multiformats/cid";
+import { useProposal, Result, Vote } from "../../hooks/useProposal";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
@@ -65,97 +66,6 @@ const MODULE_PROPS = {
   p: 8,
   bgColor: "paper",
   overflow: "hidden",
-};
-
-interface Result {
-  optionId: number;
-  description: string;
-  result: number;
-  list: string;
-}
-
-interface Vote {
-  address: string;
-  ft: number;
-  choices: { option_id: string; weight: number; comment?: string }[];
-}
-
-const useProposal = (id: string | undefined) => {
-  const { db } = useTablelandConnection();
-
-  const [proposal, setProposal] = useState<ProposalWithOptions>();
-  const [votes, setVotes] = useState<Vote[]>();
-  const [results, setResults] = useState<Result[]>();
-
-  useEffect(() => {
-    if (!id) return;
-
-    let isCancelled = false;
-
-    db.prepare(
-      `SELECT
-      proposal.id,
-      proposal.name,
-      description_cid as "descriptionCid",
-      created_at as "createdAt",
-      start_block as "startBlock",
-      end_block as "endBlock",
-      voter_ft_reward as "voterFtReward",
-      json_group_array(json_object('id', options.id, 'description', options.description)) as "options",
-      (SELECT COALESCE(SUM(ft), 0) FROM ${ftSnapshotTable} WHERE proposal_id = ${id}) as "totalFt"
-      FROM ${proposalsTable} proposal
-      JOIN ${optionsTable} options ON proposal.id = options.proposal_id
-      WHERE proposal.id = ${id}
-      GROUP BY proposal.id, proposal.name, proposal.created_at, proposal.start_block, proposal.end_block`
-    )
-      .first<ProposalWithOptions>()
-      .then((result) => {
-        if (isCancelled) return;
-
-        setProposal(result);
-      });
-
-    db.prepare(
-      `SELECT votes.address, vp.ft, json_group_array(json_object('option_id', votes.option_id, 'weight', votes.weight, 'comment', votes.comment)) as "choices"
-        FROM ${votesTable} votes
-        JOIN ${ftSnapshotTable} vp ON vp.address = votes.address AND vp.proposal_id = votes.proposal_id
-        WHERE votes.proposal_id = ${id} AND votes.weight > 0
-        GROUP BY votes.address
-        ORDER BY vp.ft DESC`
-    )
-      .all<Vote>()
-      .then(({ results }) => {
-        if (isCancelled) return;
-
-        setVotes(results);
-      });
-
-    db.prepare(
-      `SELECT
-        options.id as "optionId",
-        options.description as description,
-        json_group_array(json_object('option_id', votes.option_id, 'proposal_id', votes.proposal_id, 'weight', votes.weight)) as "list",
-        SUM(votes.weight * uwp.ft) / 100 as result
-        FROM ${votesTable} votes
-        JOIN ${optionsTable} options ON options.id = votes.option_id AND options.proposal_id = votes.proposal_id
-        JOIN ${ftSnapshotTable} uwp ON uwp.address = votes.address AND uwp.proposal_id = votes.proposal_id
-        WHERE votes.proposal_id = ${id}
-        GROUP BY options.id, options.description
-        ORDER BY result DESC`
-    )
-      .all<Result>()
-      .then(({ results }) => {
-        if (isCancelled) return;
-
-        setResults(results);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [id, setProposal]);
-
-  return { proposal, votes, results };
 };
 
 const useAddressVotingPower = (
@@ -422,8 +332,8 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
           {votes.slice(0, 20).map(({ address, choices, ft }, index) => {
             const choiceString = choices
               .map(
-                ({ option_id, weight }) =>
-                  `${weight}% for ${optionLookupMap[option_id]}`
+                ({ optionId, weight }) =>
+                  `${weight}% for ${optionLookupMap[optionId]}`
               )
               .join(", ");
 
@@ -478,7 +388,7 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
                                 p="8px"
                               >
                                 <StatLabel>
-                                  {optionLookupMap[choice.option_id]}
+                                  {optionLookupMap[choice.optionId]}
                                 </StatLabel>
                                 <StatHelpText>{choice.comment}</StatHelpText>
                               </Stat>
