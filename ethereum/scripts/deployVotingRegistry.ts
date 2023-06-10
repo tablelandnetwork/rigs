@@ -84,12 +84,12 @@ async function main() {
     "VotingRegistry"
   );
   const votingRegistry = (await VotingRegistryFactory.deploy(
-    { id: proposalsTableId, name: proposalsTableName },
-    { id: ftSnapshotTableId, name: ftSnapshotTableName },
-    { id: votesTableId, name: votesTableName },
-    { id: optionsTableId, name: optionsTableName },
-    { id: pilotSessionsId, name: pilotSessionsTableName },
-    { id: ftRewardsTableId, name: ftRewardsTableName },
+    { id: BigNumber.from(proposalsTableId), name: proposalsTableName },
+    { id: BigNumber.from(ftSnapshotTableId), name: ftSnapshotTableName },
+    { id: BigNumber.from(votesTableId), name: votesTableName },
+    { id: BigNumber.from(optionsTableId), name: optionsTableName },
+    { id: BigNumber.from(pilotSessionsTableId), name: pilotSessionsTableName },
+    { id: BigNumber.from(ftRewardsTableId), name: ftRewardsTableName },
     BigNumber.from(0)
   )) as VotingRegistry;
 
