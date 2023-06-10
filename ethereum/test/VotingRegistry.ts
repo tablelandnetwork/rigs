@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-expressions */
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Database, Validator } from "@tableland/sdk";
 import { LocalTableland, getAccounts, getDatabase } from "@tableland/local";
@@ -73,7 +74,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       )
     );
 
-    let { meta: ftRewardsMeta } = await db
+    const { meta: ftRewardsMeta } = await db
       .prepare(
         "CREATE TABLE ft_rewards (block_num integer NOT NULL, recipient text NOT NULL, reason text NOT NULL, amount integer NOT NULL, proposal_id integer)"
       )
@@ -199,7 +200,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     });
 
     it("Regular user should not be able to create a proposal", async () => {
-      const [_, user] = accounts;
+      const [, user] = accounts;
 
       await expect(
         registry
@@ -216,7 +217,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     });
 
     it("Voting admin should be able to create a proposal", async () => {
-      const [owner, _, __, votingAdmin] = accounts;
+      const [owner, , , votingAdmin] = accounts;
 
       await expect(
         registry
@@ -365,9 +366,10 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       ];
 
       const expectedVotes = eligibleAccounts.flatMap((address) =>
-        options.map((_, option_id) => ({
+        options.map((_, optionId) => ({
           address,
-          option_id: option_id + 1,
+          // eslint-disable-next-line camelcase
+          option_id: optionId + 1,
           weight: 0,
           proposal_id: proposalId,
           comment: null,
@@ -536,7 +538,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     });
 
     it("correctly updates the votes table when voting", async () => {
-      const [admin, user1, user2, _, user4] = accounts;
+      const [admin, user1, user2, , user4] = accounts;
 
       const { number: blockNumber } = await ethers.provider.getBlock("latest");
 
@@ -710,7 +712,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     });
 
     it("distributes rewards to all participiating voters", async () => {
-      const [admin, user1, user2, _, user4] = accounts;
+      const [admin, user1, user2, , user4] = accounts;
 
       const { number: blockNumber } = await ethers.provider.getBlock("latest");
 
