@@ -278,6 +278,7 @@ const truncateChoiceString = (s: string, l: number = 80) =>
   s.slice(0, l) + (s.length > l ? "..." : "");
 
 const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
+  const { address: connectedAddress } = useAccount();
   const { options } = proposal;
 
   const optionLookupMap = Object.fromEntries(
@@ -290,6 +291,9 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
       <Table>
         <Tbody>
           {votes.slice(0, 20).map(({ address, choices, ft }, index) => {
+            const isUser =
+              !!connectedAddress &&
+              connectedAddress.toLowerCase() === address?.toLowerCase();
             const choiceString = choices
               .map(
                 ({ optionId, weight }) =>
@@ -306,7 +310,7 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
                 >
                   <Td pl={p}>
                     <Link to={`/owner/${address}`}>
-                      {truncateWalletAddress(address)}
+                      {isUser ? "You" : truncateWalletAddress(address)}
                     </Link>
                   </Td>
                   <Td
