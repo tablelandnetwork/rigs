@@ -3,6 +3,7 @@ import {
   Button,
   FormControl,
   FormLabel,
+  IconButton,
   Input,
   Modal,
   ModalOverlay,
@@ -11,8 +12,14 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Text,
+  Table,
+  Tbody,
+  Td,
+  Thead,
+  Th,
+  Tr,
 } from "@chakra-ui/react";
+import { DeleteIcon } from "@chakra-ui/icons";
 import { ethers } from "ethers";
 import {
   useContractWrite,
@@ -39,7 +46,7 @@ interface FormState {
   voterFtReward: number;
   startBlock: number;
   endBlock: number;
-  alternatives: string[];
+  options: string[];
 }
 
 const initialFormState = {
@@ -48,7 +55,7 @@ const initialFormState = {
   voterFtReward: 0,
   startBlock: 0,
   endBlock: 0,
-  alternatives: [],
+  options: [],
 };
 
 export const CreateProposalModal = ({
@@ -58,7 +65,7 @@ export const CreateProposalModal = ({
   onTransactionCompleted,
 }: ModalProps) => {
   const [
-    { name, descriptionCid, voterFtReward, startBlock, endBlock, alternatives },
+    { name, descriptionCid, voterFtReward, startBlock, endBlock, options },
     setFormState,
   ] = useState<FormState>(initialFormState);
 
@@ -66,8 +73,7 @@ export const CreateProposalModal = ({
     name !== "" &&
     startBlock > 0 &&
     endBlock > 0 &&
-    voterFtReward > 0 &&
-    alternatives.length > 0;
+    options.length > 0;
 
   const { config } = usePrepareContractWrite({
     address: as0xString(votingContractAddress),
@@ -79,7 +85,7 @@ export const CreateProposalModal = ({
       ethers.BigNumber.from(voterFtReward),
       ethers.BigNumber.from(startBlock),
       ethers.BigNumber.from(endBlock),
-      alternatives,
+      options,
     ],
     enabled: isOpen && isValid,
   });
@@ -145,26 +151,39 @@ export const CreateProposalModal = ({
     [setFormState]
   );
 
-  const [alternative, setAlternative] = useState("");
-  const onAlternativeInputChanged = useCallback(
+  const [option, setOption] = useState("");
+  const onOptionInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setAlternative(e.target.value);
+      setOption(e.target.value);
     },
-    [setAlternative]
+    [setOption]
   );
 
-  const addAlternative = useCallback(() => {
-    if (!alternatives) return;
+  const addOption = useCallback(() => {
+    if (!options) return;
 
     setFormState((old) => ({
       ...old,
-      alternatives: [...old.alternatives, alternative],
+      options: [...old.options, option],
     }));
 
-    setAlternative("");
-  }, [alternative, setFormState, setAlternative]);
+    setOption("");
+  }, [option, setFormState, setOption]);
 
-  // TODO support removing an alternative
+  const removeOption = useCallback(
+    (index: number) => {
+      console.log("removeOption", index);
+      setFormState((old) => {
+        const newOptions = [...old.options];
+        newOptions.splice(index, 1);
+        return {
+          ...old,
+          options: newOptions,
+        };
+      });
+    },
+    [setFormState]
+  );
 
   useEffect(() => {
     if (isOpen) setFormState(initialFormState);
@@ -206,7 +225,7 @@ export const CreateProposalModal = ({
               focusBorderColor="primary"
               type="number"
               variant="outline"
-              value={startBlock}
+              value={startBlock === 0 ? "" : startBlock}
               onChange={onStartInputChanged}
               isInvalid={startBlock === 0}
               size="md"
@@ -219,7 +238,7 @@ export const CreateProposalModal = ({
               focusBorderColor="primary"
               type="number"
               variant="outline"
-              value={endBlock}
+              value={endBlock === 0 ? "" : endBlock}
               onChange={onEndInputChanged}
               isInvalid={endBlock === 0}
               size="md"
@@ -232,27 +251,43 @@ export const CreateProposalModal = ({
               focusBorderColor="primary"
               type="number"
               variant="outline"
-              value={voterFtReward}
+              value={voterFtReward === 0 ? "" : voterFtReward}
               onChange={onVoterFtRewardInputChanged}
               size="md"
               mb={4}
             />
           </FormControl>
           <FormControl>
-            <FormLabel>Alternatives:</FormLabel>
+            <FormLabel>Options:</FormLabel>
             <Input
               focusBorderColor="primary"
               variant="outline"
-              value={alternative}
-              onChange={onAlternativeInputChanged}
+              value={option}
+              onChange={onOptionInputChanged}
               size="md"
               mb={4}
             />
-            <Button onClick={addAlternative}>Add</Button>
+            <Button onClick={addOption}>Add</Button>
           </FormControl>
-          {alternatives.map((v, i) => (
-            <Text key={`alternative-${i}`}>{v}</Text>
-          ))}
+          <Table mt={4}>
+            <Thead>
+              <Tr>
+                <Th>Option</Th>
+                <Th isNumeric>Delete</Th>
+              </Tr>
+            </Thead>
+
+            <Tbody>
+              {options.map((v, i) => (
+                <Tr key={`option-${i}`}>
+                  <Td>{v}</Td>
+                  <Td isNumeric>
+                    <IconButton aria-label="Delete option" icon={<DeleteIcon />} onClick={() => removeOption(i)} />
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
