@@ -167,13 +167,7 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
 };
 
 const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
-  const { data: signer } = useSigner();
-
-  const db = useMemo(() => {
-    if (signer) return new Database({ signer });
-  }, [signer]);
-
-  const { proposals, refresh } = useProposals();
+  const { proposals } = useProposals();
 
   const [proposalDialogOpen, setCreateProposalDialogOpen] = useState(false);
 
@@ -182,10 +176,13 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
       <CreateProposalModal
         isOpen={proposalDialogOpen}
         onClose={() => setCreateProposalDialogOpen(false)}
-        onTransactionSubmitted={() => refresh()}
       />
       <Box {...props}>
-        <HStack justify="space-between" align="baseline" sx={{ width: "100%", mb: 4 }}>
+        <HStack
+          justify="space-between"
+          align="baseline"
+          sx={{ width: "100%", mb: 4 }}
+        >
           <Heading>Proposals</Heading>
           <Button onClick={() => setCreateProposalDialogOpen(true)}>
             Create new
