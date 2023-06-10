@@ -41,9 +41,9 @@ import {
   ProposalStatusBadge,
   proposalStatus,
 } from "../../components/ProposalStatusBadge";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useHelia } from "../../hooks/useHelia";
 import { useProposal, Result, Vote } from "../../hooks/useProposal";
+import { useAddressVotingPower } from "../../hooks/useAddressVotingPower";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
@@ -51,13 +51,7 @@ import { ProposalWithOptions, ProposalStatus } from "../../types";
 import { deployment } from "../../env";
 import { abi } from "../../abis/VotingRegistry";
 
-const {
-  proposalsTable,
-  optionsTable,
-  votesTable,
-  ftSnapshotTable,
-  votingContractAddress,
-} = deployment;
+const { votingContractAddress } = deployment;
 
 const GRID_GAP = 4;
 
@@ -66,40 +60,6 @@ const MODULE_PROPS = {
   p: 8,
   bgColor: "paper",
   overflow: "hidden",
-};
-
-const useAddressVotingPower = (
-  address: string | undefined,
-  proposalId: number | undefined
-) => {
-  const { db } = useTablelandConnection();
-
-  const [votingPower, setVotingPower] = useState<number>();
-
-  useEffect(() => {
-    setVotingPower(undefined);
-
-    // 0 is falsy
-    if (!address || proposalId === undefined) return;
-
-    let isCancelled = false;
-
-    db.prepare(
-      `SELECT COALESCE(SUM(ft), 0) as "votingPower" FROM ${ftSnapshotTable} WHERE lower(address) = lower('${address}') AND proposal_id = ${proposalId}`
-    )
-      .first<{ votingPower: number }>()
-      .then((result) => {
-        if (isCancelled) return;
-
-        setVotingPower(result.votingPower);
-      });
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [address, proposalId, setVotingPower]);
-
-  return { votingPower };
 };
 
 type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
