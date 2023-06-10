@@ -64,3 +64,22 @@ export interface FTReward {
   reason: string;
   amount: number;
 }
+
+export interface Proposal {
+  id: number;
+  name: string;
+  createdAt: number;
+  startBlock: number;
+  endBlock: number;
+  voterFtReward: number;
+  totalFt: number;
+}
+
+export interface Alternative {
+  id: number;
+  description: string;
+}
+
+export interface ProposalWithAlternatives extends Proposal {
+  alternatives: Alternative[];
+}
