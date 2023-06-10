@@ -20,32 +20,6 @@ after(async function () {
   await lt.shutdown();
 });
 
-// TODO: remove this, the validator gets really slow/hangs sometimes in tests
-const pollForReceiptByTransactionHash = async (
-  validator: Validator,
-  params: { chainId: number; transactionHash: string }
-) => {
-  try {
-    return await validator.pollForReceiptByTransactionHash(params);
-  } catch (_) {}
-
-  try {
-    return await validator.pollForReceiptByTransactionHash(params);
-  } catch (_) {}
-
-  try {
-    return await validator.pollForReceiptByTransactionHash(params);
-  } catch (_) {}
-
-  try {
-    return await validator.pollForReceiptByTransactionHash(params);
-  } catch (_) {}
-
-  try {
-    return await validator.pollForReceiptByTransactionHash(params);
-  } catch (_) {}
-};
-
 const accounts = getAccounts();
 
 interface PilotSession {
@@ -291,7 +265,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
-      await pollForReceiptByTransactionHash(validator, {
+      await validator.pollForReceiptByTransactionHash({
         chainId: 31337,
         transactionHash: receipt.transactionHash,
       });
@@ -327,7 +301,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
-      await pollForReceiptByTransactionHash(validator, {
+      await validator.pollForReceiptByTransactionHash({
         chainId: 31337,
         transactionHash: receipt.transactionHash,
       });
@@ -365,7 +339,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       const proposalId = event?.args?.proposalId.toNumber();
 
       // Wait until all changes have been materialized
-      await pollForReceiptByTransactionHash(validator, {
+      await validator.pollForReceiptByTransactionHash({
         chainId: 31337,
         transactionHash: receipt.transactionHash,
       });
@@ -610,7 +584,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       const voteReceipt = await vote3.wait();
 
       // Wait until all changes have been materialized
-      await pollForReceiptByTransactionHash(validator, {
+      await validator.pollForReceiptByTransactionHash({
         chainId: 31337,
         transactionHash: voteReceipt.transactionHash,
       });
@@ -790,7 +764,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       const distributionReceipt = await distribution.wait();
 
       // Wait until all changes have been materialized
-      await pollForReceiptByTransactionHash(validator, {
+      await validator.pollForReceiptByTransactionHash({
         chainId: 31337,
         transactionHash: distributionReceipt.transactionHash,
       });
