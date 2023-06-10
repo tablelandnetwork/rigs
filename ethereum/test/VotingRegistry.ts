@@ -178,7 +178,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       )
       .run();
     await db
-      .prepare(`GRANT INSERT ON ${votesTableName} TO '${registry.address}'`)
+      .prepare(`GRANT INSERT, UPDATE ON ${votesTableName} TO '${registry.address}'`)
       .run();
     await db
       .prepare(`GRANT INSERT ON ${optionsTableName} TO '${registry.address}'`)
