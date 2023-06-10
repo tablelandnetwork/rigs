@@ -55,7 +55,7 @@ interface PilotSession {
   endTime?: number;
 }
 
-describe("VotingRegistry", function () {
+describe("VotingRegistry [ @skip-on-coverage ]", function () {
   let db: Database;
   let validator: Validator;
 
