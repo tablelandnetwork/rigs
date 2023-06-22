@@ -1,31 +1,23 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-import "hardhat/console.sol";
-
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-
 import {TablelandDeployments} from "@tableland/evm/contracts/utils/TablelandDeployments.sol";
 import {ITablelandTables} from "@tableland/evm/contracts/interfaces/ITablelandTables.sol";
+import {IVotingRegistry} from "./IVotingRegistry.sol";
 import "@tableland/evm/contracts/utils/SQLHelpers.sol";
 
-contract VotingRegistry is AccessControl {
-    event ProposalCreated(uint256 proposalId);
+/// @title An implementation of IVotingRegistry that records proposals, options, votes and voter rewards in tableland tables.
+contract VotingRegistry is AccessControl, IVotingRegistry {
+    /// @dev keccak256("VOTING_ADMIN_ROLE")
+    bytes32 public constant VOTING_ADMIN_ROLE =
+        0x26e5e0c1d827967646b29471a0f5eef941c85bdbb97c194dc3fa6291a994a148;
 
-    bytes32 public constant VOTING_ADMIN_ROLE = keccak256("VOTING_ADMIN_ROLE");
-
+    /// @dev Struct that holds information about a Tableland table
     struct TableInfo {
         uint256 id;
         string name;
-    }
-
-    struct Proposal {
-        uint256 startBlockNumber;
-        uint256 endBlockNumber;
-        uint256 voterFtReward;
-        string name;
-        bool rewardsDistributed;
     }
 
     TableInfo private _proposalsTable;
@@ -35,9 +27,15 @@ contract VotingRegistry is AccessControl {
     TableInfo private _pilotSessionsTable;
     TableInfo private _ftRewardsTable;
 
+    /// @dev The next proposal ID to be created.
     uint256 private _proposalCounter;
 
+    /// @dev Mapping from proposal ID to proposal details.
     mapping(uint256 => Proposal) private _proposals;
+
+    // =============================
+    //        CONSTRUCTOR
+    // =============================
 
     constructor(
         TableInfo memory proposalsTable,
@@ -61,6 +59,18 @@ contract VotingRegistry is AccessControl {
         _proposalCounter = startingProposalId;
     }
 
+    // =============================
+    //        IVOTINGREGISTRY
+    // =============================
+
+    /// @dev Creates a new proposal.
+    /// Creating a new proposal will:
+    /// 1) Insert a new row in the proposals table
+    /// 2) Insert options in the options table
+    /// 3) Snapshot all voting power
+    /// 4) Insert the 'cross product' of all eligible voter addresses
+    ///    and options.
+    /// @inheritdoc IVotingRegistry
     function createProposal(
         string calldata name,
         string calldata descriptionCid,
@@ -98,156 +108,17 @@ contract VotingRegistry is AccessControl {
         return proposalId;
     }
 
+    /// @inheritdoc IVotingRegistry
     function proposal(
         uint256 proposalId
     ) external view returns (Proposal memory) {
         return _proposals[proposalId];
     }
 
-    function _insertProposal(
-        string memory proposalIdString,
-        string memory name,
-        string memory descriptionCid,
-        uint256 voterFtReward,
-        uint256 startBlockNumber,
-        uint256 endBlockNumber
-    ) internal {
-        string memory insert = string.concat(
-            "INSERT INTO ",
-            _proposalsTable.name,
-            " (id, name, description_cid, voter_ft_reward, created_at, start_block, end_block) VALUES (",
-            proposalIdString,
-            ", ",
-            SQLHelpers.quote(name),
-            ", ",
-            SQLHelpers.quote(descriptionCid),
-            ", ",
-            Strings.toString(voterFtReward),
-            ", ",
-            Strings.toString(block.number),
-            ", ",
-            Strings.toString(startBlockNumber),
-            ", ",
-            Strings.toString(endBlockNumber),
-            ")"
-        );
-        TablelandDeployments.get().mutate(
-            address(this),
-            _proposalsTable.id,
-            insert
-        );
-    }
-
-    function _insertOptions(
-        string memory proposalId,
-        string[] calldata options
-    ) internal {
-        string memory insert = string.concat(
-            "INSERT INTO ",
-            _optionsTable.name,
-            " (proposal_id, id, description) VALUES"
-        );
-
-        uint256 length = options.length;
-        string memory prefix;
-        uint256 i;
-        for (; i < length; ) {
-            if (i == 0) {
-                prefix = "(";
-            } else {
-                prefix = ",(";
-            }
-
-            insert = string.concat(
-                insert,
-                prefix,
-                proposalId,
-                ",",
-                Strings.toString(i + 1),
-                ",",
-                SQLHelpers.quote(options[i]),
-                ")"
-            );
-
-            unchecked {
-                ++i;
-            }
-        }
-
-        TablelandDeployments.get().mutate(
-            address(this),
-            _optionsTable.id,
-            insert
-        );
-    }
-
-    function _snapshotVotingPower(string memory proposalId) internal {
-        string memory snapshotPilotSessionFt = string.concat(
-            "INSERT INTO ",
-            _ftSnapshotTable.name,
-            " (address, ft, proposal_id) ",
-            "SELECT owner, (COALESCE(end_time, BLOCK_NUM()) - start_time), ",
-            proposalId,
-            " FROM ",
-            _pilotSessionsTable.name
-        );
-
-        string memory snapshotFtRewards = string.concat(
-            "INSERT INTO ",
-            _ftSnapshotTable.name,
-            " (address, ft, proposal_id) ",
-            "SELECT recipient, amount, ",
-            proposalId,
-            " FROM ",
-            _ftRewardsTable.name
-        );
-
-        ITablelandTables.Statement[]
-            memory stmnts = new ITablelandTables.Statement[](2);
-        stmnts[0] = ITablelandTables.Statement(
-            _ftSnapshotTable.id,
-            snapshotPilotSessionFt
-        );
-        stmnts[1] = ITablelandTables.Statement(
-            _ftSnapshotTable.id,
-            snapshotFtRewards
-        );
-        TablelandDeployments.get().mutate(address(this), stmnts);
-    }
-
-    function _insertEligibleVotes(
-        string memory proposalId,
-        string[] calldata options
-    ) internal {
-        uint256 length = options.length;
-        ITablelandTables.Statement[]
-            memory stmnts = new ITablelandTables.Statement[](length);
-
-        uint256 i;
-        unchecked {
-            for (; i < length; ) {
-                string memory insert = string.concat(
-                    "INSERT INTO ",
-                    _votesTable.name,
-                    " (address, proposal_id, option_id, weight) ",
-                    "SELECT DISTINCT address, ",
-                    proposalId,
-                    ", ",
-                    Strings.toString(i + 1),
-                    ", 0 FROM ",
-                    _ftSnapshotTable.name
-                );
-
-                stmnts[i++] = ITablelandTables.Statement(
-                    _votesTable.id,
-                    insert
-                );
-            }
-        }
-
-        TablelandDeployments.get().mutate(address(this), stmnts);
-    }
-
+    /// @notice Cast a vote for a proposal. Will revert if the proposal hasn't opened yet or if it has ended.
+    /// The vote will only be recorded if you are eligible to vote.
+    ///
+    /// @inheritdoc IVotingRegistry
     function vote(
         uint256 proposalId,
         uint256[] calldata options,
@@ -349,7 +220,8 @@ contract VotingRegistry is AccessControl {
         );
     }
 
-    function distributeParticipantFtRewards(uint256 proposalId) external {
+    /// @inheritdoc IVotingRegistry
+    function distributeVoterRewards(uint256 proposalId) external {
         Proposal memory proposal = _proposals[proposalId];
 
         require(
@@ -373,14 +245,13 @@ contract VotingRegistry is AccessControl {
         //   proposal_id
         // FROM votes WHERE weight > 0 and proposal_id = ?
         // ```
-
         string memory insert = string.concat(
             "INSERT INTO ",
             _ftRewardsTable.name,
             " (block_num, recipient, reason, amount, proposal_id)",
             " SELECT DISTINCT BLOCK_NUM(), ",
             "address, 'Voted on proposal', ",
-            Strings.toString(proposal.voterFtReward),
+            Strings.toString(proposal.voterReward),
             ", proposal_id FROM ",
             _votesTable.name,
             " WHERE weight > 0 AND proposal_id = ",
@@ -394,12 +265,156 @@ contract VotingRegistry is AccessControl {
         );
     }
 
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes calldata
-    ) public pure returns (bytes4) {
-        return 0x150b7a02;
+    // =============================
+    //        INTERNAL
+    // =============================
+
+    /// @dev Inserts a proposal into the proposals table.
+    function _insertProposal(
+        string memory proposalIdString,
+        string memory name,
+        string memory descriptionCid,
+        uint256 voterFtReward,
+        uint256 startBlockNumber,
+        uint256 endBlockNumber
+    ) internal {
+        string memory insert = string.concat(
+            "INSERT INTO ",
+            _proposalsTable.name,
+            " (id, name, description_cid, voter_ft_reward, created_at, start_block, end_block) VALUES (",
+            proposalIdString,
+            ", ",
+            SQLHelpers.quote(name),
+            ", ",
+            SQLHelpers.quote(descriptionCid),
+            ", ",
+            Strings.toString(voterFtReward),
+            ", ",
+            Strings.toString(block.number),
+            ", ",
+            Strings.toString(startBlockNumber),
+            ", ",
+            Strings.toString(endBlockNumber),
+            ")"
+        );
+        TablelandDeployments.get().mutate(
+            address(this),
+            _proposalsTable.id,
+            insert
+        );
+    }
+
+    /// @dev Inserts `options` into the options table for the given `proposalId`.
+    function _insertOptions(
+        string memory proposalId,
+        string[] calldata options
+    ) internal {
+        string memory insert = string.concat(
+            "INSERT INTO ",
+            _optionsTable.name,
+            " (proposal_id, id, description) VALUES"
+        );
+
+        uint256 length = options.length;
+        string memory prefix;
+        uint256 i;
+        for (; i < length; ) {
+            if (i == 0) {
+                prefix = "(";
+            } else {
+                prefix = ",(";
+            }
+
+            insert = string.concat(
+                insert,
+                prefix,
+                proposalId,
+                ",",
+                Strings.toString(i + 1),
+                ",",
+                SQLHelpers.quote(options[i]),
+                ")"
+            );
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        TablelandDeployments.get().mutate(
+            address(this),
+            _optionsTable.id,
+            insert
+        );
+    }
+
+    /// @dev Stores a snapshot of the all current ft balances in the snapshot table with the given `proposalId`.
+    function _snapshotVotingPower(string memory proposalId) internal {
+        string memory snapshotPilotSessionFt = string.concat(
+            "INSERT INTO ",
+            _ftSnapshotTable.name,
+            " (address, ft, proposal_id) ",
+            "SELECT owner, (COALESCE(end_time, BLOCK_NUM()) - start_time), ",
+            proposalId,
+            " FROM ",
+            _pilotSessionsTable.name
+        );
+
+        string memory snapshotFtRewards = string.concat(
+            "INSERT INTO ",
+            _ftSnapshotTable.name,
+            " (address, ft, proposal_id) ",
+            "SELECT recipient, amount, ",
+            proposalId,
+            " FROM ",
+            _ftRewardsTable.name
+        );
+
+        ITablelandTables.Statement[]
+            memory stmnts = new ITablelandTables.Statement[](2);
+        stmnts[0] = ITablelandTables.Statement(
+            _ftSnapshotTable.id,
+            snapshotPilotSessionFt
+        );
+        stmnts[1] = ITablelandTables.Statement(
+            _ftSnapshotTable.id,
+            snapshotFtRewards
+        );
+        TablelandDeployments.get().mutate(address(this), stmnts);
+    }
+
+    /// @dev Inserts the cross product of `options` and all eligible voting addresses
+    /// from the ft snapshot table for the given `proposalId`.
+    function _insertEligibleVotes(
+        string memory proposalId,
+        string[] calldata options
+    ) internal {
+        uint256 length = options.length;
+        ITablelandTables.Statement[]
+            memory stmnts = new ITablelandTables.Statement[](length);
+
+        uint256 i;
+        unchecked {
+            for (; i < length; ) {
+                string memory insert = string.concat(
+                    "INSERT INTO ",
+                    _votesTable.name,
+                    " (address, proposal_id, option_id, weight) ",
+                    "SELECT DISTINCT address, ",
+                    proposalId,
+                    ", ",
+                    Strings.toString(i + 1),
+                    ", 0 FROM ",
+                    _ftSnapshotTable.name
+                );
+
+                stmnts[i++] = ITablelandTables.Statement(
+                    _votesTable.id,
+                    insert
+                );
+            }
+        }
+
+        TablelandDeployments.get().mutate(address(this), stmnts);
     }
 }

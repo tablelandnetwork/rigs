@@ -640,7 +640,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     });
   });
 
-  describe("distributeParticipantFtRewards", async () => {
+  describe("distributeVoterRewards", async () => {
     before(async function () {
       await loadFixture(deployFixture);
     });
@@ -668,7 +668,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
       await expect(
         registry
           .connect(admin)
-          .distributeParticipantFtRewards(BigNumber.from(proposalId))
+          .distributeVoterRewards(BigNumber.from(proposalId))
       ).to.be.rejectedWith(/Vote has not ended/, "Should be rejected");
     });
 
@@ -697,14 +697,14 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
 
       const distribution = await registry
         .connect(admin)
-        .distributeParticipantFtRewards(BigNumber.from(proposalId));
+        .distributeVoterRewards(BigNumber.from(proposalId));
 
       expect(distribution.hash).to.not.be.null;
 
       await expect(
         registry
           .connect(admin)
-          .distributeParticipantFtRewards(BigNumber.from(proposalId))
+          .distributeVoterRewards(BigNumber.from(proposalId))
       ).to.be.rejectedWith(
         /Rewards have been distributed/,
         "Should be rejected"
@@ -763,7 +763,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
 
       const distribution = await registry
         .connect(admin)
-        .distributeParticipantFtRewards(BigNumber.from(proposalId));
+        .distributeVoterRewards(BigNumber.from(proposalId));
 
       const distributionReceipt = await distribution.wait();
 
