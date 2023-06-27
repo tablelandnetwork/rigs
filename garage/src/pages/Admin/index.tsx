@@ -15,7 +15,7 @@ import {
   useToast,
 } from "@chakra-ui/react";
 import { Database } from "@tableland/sdk";
-import { useSigner } from "wagmi";
+import { useSigner } from "../../hooks/useSigner";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
 import { isValidAddress } from "../../utils/types";
@@ -34,7 +34,7 @@ const MODULE_PROPS = {
 const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
   const toast = useToast();
 
-  const { data: signer } = useSigner();
+  const signer = useSigner();
 
   const db = useMemo(() => {
     if (signer) return new Database({ signer });
