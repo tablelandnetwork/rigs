@@ -80,7 +80,7 @@ export const TrainRigsModal = ({
     address: as0xString(contractAddress),
     abi,
     functionName: "trainRig",
-    args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    args: [rigs.map((rig) => BigInt(rig.id))],
     enabled: isOpen,
   });
 
@@ -155,7 +155,7 @@ export const ParkRigsModal = ({
     address: as0xString(contractAddress),
     abi,
     functionName: "parkRig",
-    args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    args: [rigs.map((rig) => BigInt(rig.id))],
     enabled: isOpen,
   });
 
@@ -227,7 +227,7 @@ interface PilotTransactionProps {
 
 const toContractArgs = (
   pairs: { rig: Rig; pilot: NFT }[]
-): [ethers.BigNumber[], WalletAddress[], ethers.BigNumber[]] => {
+): [bigint[], WalletAddress[], bigint[]] => {
   const validPairs = pairs
     .map(({ pilot, ...rest }) => {
       if (isValidAddress(pilot.contract)) {
@@ -242,9 +242,9 @@ const toContractArgs = (
     .filter(isPresent);
 
   return [
-    validPairs.map(({ rig }) => ethers.BigNumber.from(rig.id)),
+    validPairs.map(({ rig }) => BigInt(rig.id)),
     validPairs.map(({ pilotContract }) => pilotContract),
-    validPairs.map(({ pilotTokenId }) => ethers.BigNumber.from(pilotTokenId)),
+    validPairs.map(({ pilotTokenId }) => BigInt(pilotTokenId)),
   ];
 };
 
@@ -544,11 +544,10 @@ const PickRigPilotStep = ({
 
   const [currentRig, setCurrentRig] = useState(0);
   const rig = useMemo(() => rigs[currentRig], [rigs, currentRig]);
-  const pilot = useMemo(() => pilots[rigs[currentRig].id], [
-    pilots,
-    rigs,
-    currentRig,
-  ]);
+  const pilot = useMemo(
+    () => pilots[rigs[currentRig].id],
+    [pilots, rigs, currentRig]
+  );
 
   const next = useCallback(() => {
     setCurrentRig((old) => {

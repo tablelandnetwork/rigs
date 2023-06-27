@@ -167,19 +167,19 @@ export const RigDetails = () => {
         address: as0xString(contractAddress),
         abi,
         functionName: "ownerOf",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(String(id))],
       },
       {
         address: as0xString(contractAddress),
         abi,
         functionName: "tokenURI",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(String(id))],
       },
       {
         address: as0xString(contractAddress),
         abi,
         functionName: "pilotInfo",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(String(id))],
       },
     ],
   });
@@ -199,7 +199,8 @@ export const RigDetails = () => {
   const userOwnsRig = useMemo(() => {
     return (
       !!actingAsAddress &&
-      actingAsAddress.toLowerCase() === owner?.toLowerCase()
+      actingAsAddress.toLowerCase() ===
+        ((owner as any)?.toLowerCase() as string)
     );
   }, [actingAsAddress, owner]);
 
@@ -244,11 +245,8 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const {
-    trainRigsModal,
-    pilotRigsModal,
-    parkRigsModal,
-  } = useGlobalFlyParkModals();
+  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
+    useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);
@@ -287,10 +285,10 @@ export const RigDetails = () => {
                   <RigHeader
                     {...MODULE_PROPS}
                     rig={rig}
-                    owner={owner}
-                    tokenURI={tokenURI}
+                    owner={(owner as any)?.result}
+                    tokenURI={(tokenURI as any)?.result}
                     userOwnsRig={userOwnsRig}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
                   />
                 </Show>
@@ -315,10 +313,10 @@ export const RigDetails = () => {
                   <RigHeader
                     {...MODULE_PROPS}
                     rig={rig}
-                    owner={owner}
-                    tokenURI={tokenURI}
+                    owner={(owner as any)?.result}
+                    tokenURI={(tokenURI as any)?.result}
                     userOwnsRig={userOwnsRig}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
                   />
                 </Show>
@@ -329,7 +327,7 @@ export const RigDetails = () => {
                   onOpenParkModal={onOpenParkModal}
                   onOpenPilotModal={onOpenPilotModal}
                   onOpenTrainModal={onOpenTrainModal}
-                  chainPilotStatus={pilotInfo?.status}
+                  chainPilotStatus={pilotInfo?.status === "success" ? 1 : 0}
                   {...MODULE_PROPS}
                 />
                 <FlightLog rig={rig} nfts={nfts} {...MODULE_PROPS} />
