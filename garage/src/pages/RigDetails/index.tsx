@@ -167,19 +167,19 @@ export const RigDetails = () => {
         address: as0xString(contractAddress),
         abi,
         functionName: "ownerOf",
-        args: [BigInt(String(id))],
+        args: [BigInt(id ?? "")],
       },
       {
         address: as0xString(contractAddress),
         abi,
         functionName: "tokenURI",
-        args: [BigInt(String(id))],
+        args: [BigInt(id ?? "")],
       },
       {
         address: as0xString(contractAddress),
         abi,
         functionName: "pilotInfo",
-        args: [BigInt(String(id))],
+        args: [BigInt(id ?? "")],
       },
     ],
   });

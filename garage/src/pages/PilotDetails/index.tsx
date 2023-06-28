@@ -205,7 +205,7 @@ export const PilotDetails = () => {
     address: as0xString(collection),
     abi,
     functionName: "ownerOf",
-    args: [BigInt(String(id))],
+    args: [BigInt(id ?? "")],
   });
 
   const { address } = useAccount();
