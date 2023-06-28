@@ -219,8 +219,11 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     }
   }, [pendingTx, refreshRigsAndClearPendingTx, validator, clearPendingTx]);
 
-  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
-    useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const openTrainModal = useCallback(() => {
     if (rigs?.length && selectedRigs.size) {

@@ -244,8 +244,11 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
-    useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);
