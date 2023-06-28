@@ -162,6 +162,7 @@ export const RigDetails = () => {
   const { validator } = useTablelandConnection();
 
   const { data: contractData, refetch } = useContractReads({
+    allowFailure: false,
     contracts: [
       {
         address: as0xString(contractAddress),
@@ -285,8 +286,8 @@ export const RigDetails = () => {
                   <RigHeader
                     {...MODULE_PROPS}
                     rig={rig}
-                    owner={(owner as any)?.result}
-                    tokenURI={(tokenURI as any)?.result}
+                    owner={owner}
+                    tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
                     currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
@@ -313,8 +314,8 @@ export const RigDetails = () => {
                   <RigHeader
                     {...MODULE_PROPS}
                     rig={rig}
-                    owner={(owner as any)?.result}
-                    tokenURI={(tokenURI as any)?.result}
+                    owner={owner}
+                    tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
                     currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
@@ -327,7 +328,7 @@ export const RigDetails = () => {
                   onOpenParkModal={onOpenParkModal}
                   onOpenPilotModal={onOpenPilotModal}
                   onOpenTrainModal={onOpenTrainModal}
-                  chainPilotStatus={pilotInfo?.status === "success" ? 1 : 0}
+                  chainPilotStatus={pilotInfo?.status}
                   {...MODULE_PROPS}
                 />
                 <FlightLog rig={rig} nfts={nfts} {...MODULE_PROPS} />
