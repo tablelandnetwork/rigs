@@ -165,19 +165,19 @@ export const RigDetails = () => {
     allowFailure: false,
     contracts: [
       {
-        address: as0xString(contractAddress),
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "ownerOf",
         args: [BigInt(id ?? "")],
       },
       {
-        address: as0xString(contractAddress),
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "tokenURI",
         args: [BigInt(id ?? "")],
       },
       {
-        address: as0xString(contractAddress),
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "pilotInfo",
         args: [BigInt(id ?? "")],
