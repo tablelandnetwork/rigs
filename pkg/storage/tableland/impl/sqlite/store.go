@@ -65,6 +65,18 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	return nil
 }
 
+// InsertRigs implements InsertRigs.
+func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingRigs(tableland.RigsDefinition.Prefix, rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting rigs: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("inserting rigs: %v", err)
+	}
+	return nil
+}
+
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
 	sql, err := s.factory.SQLForInsertingRigAttributes(tableland.RigAttributesDefinition.Prefix, rigs)
@@ -73,6 +85,18 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("inserting rig attributes: %v", err)
+	}
+	return nil
+}
+
+// InsertDeals implements InsertDeals.
+func (s *Store) InsertDeals(ctx context.Context, rigs []local.Rig) error {
+	sql, err := s.factory.SQLForInsertingDeals(tableland.DealsDefinition.Prefix, rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql for inserting deals: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("inserting deals: %v", err)
 	}
 	return nil
 }
@@ -113,6 +137,18 @@ func (s *Store) ClearLayers(ctx context.Context) error {
 	return nil
 }
 
+// ClearRigs implements ClearRigs.
+func (s *Store) ClearRigs(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData(tableland.RigsDefinition.Prefix)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing rigs: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing rigs: %v", err)
+	}
+	return nil
+}
+
 // ClearRigAttributes implements ClearRigAttributes.
 func (s *Store) ClearRigAttributes(ctx context.Context) error {
 	sql, err := s.factory.SQLForClearingData(tableland.RigAttributesDefinition.Prefix)
@@ -121,6 +157,18 @@ func (s *Store) ClearRigAttributes(ctx context.Context) error {
 	}
 	if _, err := s.db.ExecContext(ctx, sql); err != nil {
 		return fmt.Errorf("clearing rig attributes: %v", err)
+	}
+	return nil
+}
+
+// ClearDeals implements ClearDeals.
+func (s *Store) ClearDeals(ctx context.Context) error {
+	sql, err := s.factory.SQLForClearingData(tableland.DealsDefinition.Prefix)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing deals: %v", err)
+	}
+	if _, err := s.db.ExecContext(ctx, sql); err != nil {
+		return fmt.Errorf("clearing deals: %v", err)
 	}
 	return nil
 }

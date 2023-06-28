@@ -14,7 +14,7 @@ func init() {
 
 var listCidsCmd = &cobra.Command{
 	Use:   "list-cids",
-	Short: "List tracked cids of folers published to nft.storage",
+	Short: "List tracked cids of folers published to car storage",
 	Run: func(cmd *cobra.Command, args []string) {
 		res, err := localStore.Cids(cmd.Context())
 		checkErr(err)

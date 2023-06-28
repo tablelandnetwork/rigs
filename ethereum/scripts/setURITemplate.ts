@@ -18,11 +18,17 @@ async function main() {
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
   // Ensure we can build URI template
+  if (rigsDeployment.rigsTable === "") {
+    throw Error(`missing rigs table entry in deployments`);
+  }
   if (rigsDeployment.attributesTable === "") {
     throw Error(`missing attributes table entry in deployments`);
   }
   if (rigsDeployment.lookupsTable === "") {
     throw Error(`missing lookups table entry in deployments`);
+  }
+  if (rigsDeployment.dealsTable === "") {
+    throw Error(`missing deals table entry in deployments`);
   }
   if (rigsDeployment.pilotSessionsTable === "") {
     throw Error(`missing pilot sessions table entry in deployments`);
@@ -34,7 +40,9 @@ async function main() {
   ) as TablelandRigs;
   const uriTemplate = await getURITemplate(
     rigsDeployment.tablelandHost,
+    rigsDeployment.rigsTable,
     rigsDeployment.attributesTable,
+    rigsDeployment.dealsTable,
     rigsDeployment.lookupsTable,
     rigsDeployment.pilotSessionsTable,
     rigsDeployment.displayAttributes

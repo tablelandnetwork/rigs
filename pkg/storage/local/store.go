@@ -2,7 +2,9 @@ package local
 
 import (
 	"context"
+	"time"
 
+	"github.com/ipfs/go-cid"
 	"github.com/tablelandnetwork/rigs/pkg/nullable"
 )
 
@@ -14,6 +16,18 @@ type Part struct {
 	Type     string          `json:"type"`
 	Name     string          `json:"name"`
 	Color    nullable.String `json:"color"`
+}
+
+// Deal describes a Filecoin storage deal.
+type Deal struct {
+	DealID            uint64     `json:"deal_id" db:"deal_id"`
+	StorageProvider   string     `json:"storage_provider" db:"storage_provider"`
+	Status            string     `json:"status" db:"status"`
+	PieceCid          string     `json:"piece_cid" db:"piece_cid"`
+	DataCid           string     `json:"data_cid" db:"data_cid"`
+	DataModelSelector string     `json:"data_model_selector" db:"data_model_selector"`
+	Activation        *time.Time `json:"activation" db:"activation"`
+	Updated           time.Time  `json:"updated" db:"updated"`
 }
 
 // Layer describes an image layer used for rendering a rig.
@@ -31,12 +45,14 @@ type Layer struct {
 type Rig struct {
 	ID                int     `json:"id"`
 	Original          bool    `json:"original"`
+	RendersCid        *string `json:"renders_cid" db:"renders_cid"`
 	PercentOriginal   float64 `json:"percent_original" db:"percent_original"`
 	PercentOriginal50 float64 `json:"percent_original_50" db:"percent_original_50"`
 	PercentOriginal75 float64 `json:"percent_original_75" db:"percent_original_75"`
 	PercentOriginal90 float64 `json:"percent_original_90" db:"percent_original_90"`
 	VIN               string  `json:"vin"`
 	Parts             []Part  `json:"parts"`
+	Deals             []Deal  `json:"deals"`
 }
 
 // OriginalRig represents an original rig.
@@ -174,6 +190,7 @@ func LayersWithOffset(offset uint) LayersOption {
 type RigsConfig struct {
 	Limit  *uint
 	Offset *uint
+	IDs    []string
 }
 
 // RigsOption controls the behavior of Rigs.
@@ -190,6 +207,13 @@ func RigsWithLimit(limit uint) RigsOption {
 func RigsWithOffset(offset uint) RigsOption {
 	return func(rc *RigsConfig) {
 		rc.Offset = &offset
+	}
+}
+
+// RigsWithIDs filters results to the specified ids.
+func RigsWithIDs(ids []string) RigsOption {
+	return func(rc *RigsConfig) {
+		rc.IDs = ids
 	}
 }
 
@@ -229,6 +253,12 @@ type Store interface {
 
 	// InsertRigs inserts Rigs and their Parts.
 	InsertRigs(ctx context.Context, rigs []Rig) error
+
+	// UpdateRigRendersCid sets the cid for the rig.
+	UpdateRigRendersCid(ctx context.Context, rigID int, cid cid.Cid) error
+
+	// UpdateRigDeals sets the deals for the rig.
+	UpdateRigDeals(ctx context.Context, rigID int, deals []Deal) error
 
 	// TrackCid stores the IPFS cid for a label.
 	TrackCid(ctx context.Context, label, cid string) error

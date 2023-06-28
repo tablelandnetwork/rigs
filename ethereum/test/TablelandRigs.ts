@@ -557,11 +557,15 @@ describe("Rigs", function () {
       const table1 = "table1";
       const table2 = "table2";
       const table3 = "table3";
+      const table4 = "table4";
+      const table5 = "table5";
       const uriTemplate = await getURITemplate(
         tablelandHost,
         table1,
         table2,
         table3,
+        table4,
+        table5,
         false
       );
       const uri = new URL(uriTemplate.join("1"));
@@ -579,11 +583,15 @@ describe("Rigs", function () {
       const table1 = "table1";
       const table2 = "table2";
       const table3 = "table3";
+      const table4 = "table4";
+      const table5 = "table5";
       const uriTemplate = await getURITemplate(
         tablelandHost,
         table1,
         table2,
         table3,
+        table4,
+        table5,
         true
       );
       const uri = new URL(uriTemplate.join("1"));

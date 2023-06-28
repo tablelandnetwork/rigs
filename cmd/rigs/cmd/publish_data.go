@@ -16,7 +16,9 @@ import (
 const (
 	partsPageSize         uint = 500
 	layersPageSize        uint = 130
+	rigsPageSize          uint = 100
 	rigAttributesPageSize uint = 70
+	dealsPageSize              = 20
 )
 
 func init() {
@@ -25,9 +27,10 @@ func init() {
 	dataCmd.Flags().Int("concurrency", 1, "number of concurrent workers used to push data to tableland")
 	dataCmd.Flags().Bool("parts", false, "publish data for the parts table")
 	dataCmd.Flags().Bool("layers", false, "publish data for the layers table")
+	dataCmd.Flags().Bool("rigs", false, "publish data for the rigs table")
 	dataCmd.Flags().Bool("attrs", false, "publish data for the rig attributes table")
+	dataCmd.Flags().Bool("deals", false, "publish data for the deals table")
 	dataCmd.Flags().Bool("lookups", false, "publish data for lookups table")
-	dataCmd.MarkFlagsMutuallyExclusive()
 }
 
 var dataCmd = &cobra.Command{
@@ -38,7 +41,9 @@ var dataCmd = &cobra.Command{
 
 		publishAll := !viper.GetBool("parts") &&
 			!viper.GetBool("layers") &&
+			!viper.GetBool("rigs") &&
 			!viper.GetBool("attrs") &&
+			!viper.GetBool("deals") &&
 			!viper.GetBool("lookups")
 
 		var jobs []wpool.Job
@@ -56,10 +61,22 @@ var dataCmd = &cobra.Command{
 			jobs = append(jobs, layersJobs...)
 		}
 
+		if viper.GetBool("rigs") || publishAll {
+			rigsJobs, err := rigsJobs(ctx, localStore, &jobID)
+			checkErr(err)
+			jobs = append(jobs, rigsJobs...)
+		}
+
 		if viper.GetBool("attrs") || publishAll {
 			attsJobs, err := attrsJobs(ctx, localStore, &jobID)
 			checkErr(err)
 			jobs = append(jobs, attsJobs...)
+		}
+
+		if viper.GetBool("deals") || publishAll {
+			dealsJobs, err := dealsJobs(ctx, localStore, &jobID)
+			checkErr(err)
+			jobs = append(jobs, dealsJobs...)
 		}
 
 		if viper.GetBool("lookups") || publishAll {
@@ -69,22 +86,12 @@ var dataCmd = &cobra.Command{
 		pool := wpool.New(viper.GetInt("concurrency"), rate.Every(time.Millisecond*200))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
-	Loop:
-		for {
-			select {
-			case r, ok := <-pool.Results():
-				if !ok {
-					continue
-				}
-				if r.Err != nil {
-					fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
-					continue
-				}
-				fmt.Printf("processed job %d. %s\n", r.ID, r.Desc)
-			case <-pool.Done:
-				fmt.Println("done")
-				break Loop
+		for r := range pool.Results() {
+			if r.Err != nil {
+				fmt.Printf("error processing job %d: %v\n", r.ID, r.Err)
+				continue
 			}
+			fmt.Printf("processed job %d. %s\n", r.ID, r.Desc)
 		}
 	},
 }
@@ -147,6 +154,40 @@ func layersJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, er
 	return jobs, nil
 }
 
+func rigsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
+	var jobs []wpool.Job
+	var offset uint
+	rigsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
+		return func(ctx context.Context) (interface{}, error) {
+			if err := store.InsertRigs(ctx, rigs); err != nil {
+				return nil, fmt.Errorf("calling insert rigs: %v", err)
+			}
+			return nil, nil
+		}
+	}
+	for {
+		rigs, err := s.Rigs(ctx, local.RigsWithLimit(rigsPageSize), local.RigsWithOffset(offset))
+		if err != nil {
+			return nil, fmt.Errorf("getting rigs: %v", err)
+		}
+		if len(rigs) == 0 {
+			break
+		}
+
+		jobs = append(
+			jobs,
+			wpool.Job{
+				ID:     wpool.JobID(*jobID),
+				ExecFn: rigsExecFn(rigs),
+				Desc:   fmt.Sprintf("rigs offset %d", offset),
+			},
+		)
+		*jobID++
+		offset += rigsPageSize
+	}
+	return jobs, nil
+}
+
 func attrsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
 	var jobs []wpool.Job
 	var offset uint
@@ -181,21 +222,60 @@ func attrsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, err
 	return jobs, nil
 }
 
+func dealsJobs(ctx context.Context, s local.Store, jobID *int) ([]wpool.Job, error) {
+	var jobs []wpool.Job
+	var offset uint
+	dealsExecFn := func(rigs []local.Rig) wpool.ExecutionFn {
+		return func(ctx context.Context) (interface{}, error) {
+			if err := store.InsertDeals(ctx, rigs); err != nil {
+				return nil, fmt.Errorf("calling insert deals: %v", err)
+			}
+			return nil, nil
+		}
+	}
+	for {
+		rigs, err := s.Rigs(ctx, local.RigsWithLimit(dealsPageSize), local.RigsWithOffset(offset))
+		if err != nil {
+			return nil, fmt.Errorf("getting rigs: %v", err)
+		}
+		if len(rigs) == 0 {
+			break
+		}
+
+		jobs = append(
+			jobs,
+			wpool.Job{
+				ID:     wpool.JobID(*jobID),
+				ExecFn: dealsExecFn(rigs),
+				Desc:   fmt.Sprintf("deals offset %d", offset),
+			},
+		)
+		*jobID++
+		offset += dealsPageSize
+	}
+	return jobs, nil
+}
+
 func lookupsJob(s local.Store, jobID *int) wpool.Job {
 	return wpool.Job{
 		ID: wpool.JobID(*jobID),
 		ExecFn: func(ctx context.Context) (interface{}, error) {
 			rendersCid, err := s.Cid(ctx, "renders")
 			if err != nil {
-				return nil, fmt.Errorf("querying images cid: %v", err)
+				return nil, fmt.Errorf("querying renders cid: %v", err)
 			}
 			layersCid, err := s.Cid(ctx, "layers")
 			if err != nil {
 				return nil, fmt.Errorf("querying layers cid: %v", err)
 			}
+			indexCid, err := s.Cid(ctx, "index")
+			if err != nil {
+				return nil, fmt.Errorf("querying index cid: %v", err)
+			}
 			lookups := tableland.Lookups{
 				RendersCid:           rendersCid,
 				LayersCid:            layersCid,
+				IndexCid:             indexCid,
 				ImageFullName:        "image_full.png",
 				ImageFullAlphaName:   "image_full_alpha.png",
 				ImageMediumName:      "image_medium.png",
@@ -203,6 +283,7 @@ func lookupsJob(s local.Store, jobID *int) wpool.Job {
 				ImageThumbName:       "image_thumb.png",
 				ImageThumbAlphaName:  "image_thumb_alpha.png",
 				AnimationBaseURL:     "https://rigs.tableland.xyz/",
+				FilecoinBaseURL:      "https://filfox.info/deal/",
 			}
 			if err := store.InsertLookups(ctx, lookups); err != nil {
 				return nil, fmt.Errorf("calling insert lookups: %v", err)
