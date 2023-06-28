@@ -21,7 +21,6 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink } from "react-router-dom";
-import { ethers } from "ethers";
 import { useAccount, useBlockNumber, useContractRead, useEnsName } from "wagmi";
 import { RoundSvgIcon } from "../../components/RoundSvgIcon";
 import { useTablelandConnection } from "../../hooks/useTablelandConnection";
@@ -206,7 +205,7 @@ export const PilotDetails = () => {
     address: as0xString(collection),
     abi,
     functionName: "ownerOf",
-    args: [ethers.BigNumber.from(id)],
+    args: [BigInt(id ?? "")],
   });
 
   const { address } = useAccount();
@@ -247,7 +246,7 @@ export const PilotDetails = () => {
         width="100%"
         height="100%"
       >
-        {pilot && events && currentBlockNumber && (
+        {pilot && events && Number(currentBlockNumber) && (
           <>
             <GridItem>
               <VStack align="stretch" spacing={GRID_GAP}>
@@ -258,7 +257,7 @@ export const PilotDetails = () => {
                     owner={owner}
                     userOwnsNFT={userOwnsNFT}
                     events={events}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                   />
                 </Show>
                 <Box p={4} bgColor="paper" borderRadius="3px" flexGrow="1">
@@ -275,13 +274,13 @@ export const PilotDetails = () => {
                     owner={owner}
                     userOwnsNFT={userOwnsNFT}
                     events={events}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                   />
                 </Show>
                 <FlightLog
                   pilot={pilot}
                   events={events}
-                  currentBlockNumber={currentBlockNumber}
+                  currentBlockNumber={Number(currentBlockNumber)}
                   {...MODULE_PROPS}
                 />
               </VStack>

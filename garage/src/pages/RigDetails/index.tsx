@@ -14,7 +14,6 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { ethers } from "ethers";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useBlockNumber, useContractReads, useEnsName } from "wagmi";
@@ -162,24 +161,25 @@ export const RigDetails = () => {
   const { validator } = useTablelandConnection();
 
   const { data: contractData, refetch } = useContractReads({
+    allowFailure: false,
     contracts: [
       {
-        address: as0xString(contractAddress),
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "ownerOf",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(id ?? "")],
       },
       {
-        address: as0xString(contractAddress),
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "tokenURI",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(id ?? "")],
       },
       {
-        address: as0xString(contractAddress),
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "pilotInfo",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(id ?? "")],
       },
     ],
   });
@@ -290,7 +290,7 @@ export const RigDetails = () => {
                     owner={owner}
                     tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
                   />
                 </Show>
@@ -318,7 +318,7 @@ export const RigDetails = () => {
                     owner={owner}
                     tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
                   />
                 </Show>

@@ -36,8 +36,8 @@ export const TransactionStateAlert = (props: TransactionStateAlertProps) => {
   const blockExplorerLink = `${blockExplorerBaseUrl}/tx/${data?.hash}`;
   const hasReceipt = !!waitData;
 
-  const isSuccess = hasReceipt ? waitData.status === 1 : false;
-  const isError = hasReceipt ? waitData.status === 0 : false;
+  const isSuccess = hasReceipt ? waitData.status === "success" : false;
+  const isError = hasReceipt ? waitData.status === "reverted" : false;
 
   const status =
     transactionLoading || waitLoading

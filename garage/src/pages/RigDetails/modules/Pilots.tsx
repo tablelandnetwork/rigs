@@ -92,7 +92,7 @@ export const Pilots = ({
   useEffect(() => {
     refetch();
   }, [rig, refetch]);
-  const pilots = getPilots(rig, nfts, blockNumber);
+  const pilots = getPilots(rig, nfts, Number(blockNumber));
 
   const {
     isOpen: isInfoOpen,
@@ -192,7 +192,7 @@ export const Pilots = ({
       {isOwner && (
         <StackItem px={4}>
           <HStack gap={3}>
-            {!rig.currentPilot && (!rig.isTrained && chainPilotStatus !== 2) && (
+            {!rig.currentPilot && !rig.isTrained && chainPilotStatus !== 2 && (
               <ChainAwareButton
                 variant="outlined"
                 onClick={onOpenTrainModal}
