@@ -14,7 +14,6 @@ import {
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { ethers } from "ethers";
 import { ArrowForwardIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useBlockNumber, useContractReads, useEnsName } from "wagmi";
