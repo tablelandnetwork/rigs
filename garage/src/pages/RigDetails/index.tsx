@@ -199,8 +199,7 @@ export const RigDetails = () => {
   const userOwnsRig = useMemo(() => {
     return (
       !!actingAsAddress &&
-      actingAsAddress.toLowerCase() ===
-        ((owner as any)?.toLowerCase() as string)
+      actingAsAddress.toLowerCase() === owner?.toLowerCase()
     );
   }, [actingAsAddress, owner]);
 
