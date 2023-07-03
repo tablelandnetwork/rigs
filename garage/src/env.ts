@@ -1,25 +1,63 @@
 import * as chains from "wagmi/chains";
 import { deployments } from "@tableland/rigs/deployments";
 
-export const environment =
-  process.env.NODE_ENV === "development" ? "development" : "production";
+// We are separating NODE_ENV (development or production) from our deployment environment
+// because NODE_ENV changes npm behavior.
+//
+// NODE_ENV: should the app behave like in development or production
+// APP_ENV: where is the app deployed
+enum DeploymentEnvironment {
+  DEVELOPMENT,
+  STAGING,
+  PRODUCTION,
+}
 
-export const isDevelopment = environment === "development";
+const parseEnv = (env?: string): DeploymentEnvironment => {
+  if (env === "development") return DeploymentEnvironment.DEVELOPMENT;
+  if (env === "staging") return DeploymentEnvironment.STAGING;
+  if (env === "production") return DeploymentEnvironment.PRODUCTION;
 
-export const chain = isDevelopment ? chains.polygonMumbai : chains.mainnet;
+  console.warn("Could not parse environment, defaulting to DEVELOPMENT");
 
-export const blockExplorerBaseUrl = isDevelopment
-  ? "https://mumbai.polygonscan.com"
-  : "https://etherscan.io";
+  return DeploymentEnvironment.DEVELOPMENT;
+};
 
-export const openseaBaseUrl = isDevelopment
-  ? "https://testnets.opensea.io/assets/mumbai"
-  : "https://opensea.io/assets/ethereum";
+const environment = parseEnv(import.meta.env.VITE_APP_ENV);
 
-export const deployment = isDevelopment
-  ? deployments["polygon-mumbai"]
-  : deployments.ethereum;
+const chainEnvMapping = {
+  [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
+  [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
+  [DeploymentEnvironment.PRODUCTION]: chains.mainnet,
+};
 
-export const ipfsGatewayBaseUrl = isDevelopment
-  ? "https://nftstorage.link"
-  : "https://tableland.mypinata.cloud";
+export const chain = chainEnvMapping[environment];
+
+const blockExplorerChainMapping = {
+  [DeploymentEnvironment.DEVELOPMENT]:
+    chainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
+  [DeploymentEnvironment.STAGING]:
+    chainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
+  [DeploymentEnvironment.PRODUCTION]:
+    chainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan
+      .url,
+};
+
+export const blockExplorerBaseUrl = blockExplorerChainMapping[environment];
+
+export const openseaBaseUrl =
+  environment === DeploymentEnvironment.PRODUCTION
+    ? "https://opensea.io/assets/ethereum"
+    : "https://testnets.opensea.io/assets/mumbai";
+
+const deploymentEnvMapping = {
+  [DeploymentEnvironment.DEVELOPMENT]: deployments["polygon-mumbai"],
+  [DeploymentEnvironment.STAGING]: deployments["polygon-mumbai"],
+  [DeploymentEnvironment.PRODUCTION]: deployments.ethereum,
+};
+
+export const deployment = deploymentEnvMapping[environment];
+
+export const ipfsGatewayBaseUrl =
+  environment === DeploymentEnvironment.PRODUCTION
+    ? "https://tableland.mypinata.cloud"
+    : "https://nftstorage.link";
