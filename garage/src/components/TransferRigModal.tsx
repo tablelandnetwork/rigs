@@ -60,7 +60,7 @@ export const TransferRigModal = ({
       : "safeTransferFrom",
     args:
       address && isValidToAddress && isValidAddress(toAddress)
-        ? [address, toAddress, ethers.BigNumber.from(rig.id)]
+        ? [address, toAddress, BigInt(rig.id)]
         : undefined,
     enabled: isOpen && isValidToAddress,
   });

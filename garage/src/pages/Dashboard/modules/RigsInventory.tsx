@@ -291,7 +291,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
                 selected={selected}
                 selectable={!pendingTx && selectable}
                 toggleSelected={() => toggleRigSelected(rig)}
-                currentBlockNumber={currentBlockNumber}
+                currentBlockNumber={Number(currentBlockNumber)}
               />
             );
           })}
