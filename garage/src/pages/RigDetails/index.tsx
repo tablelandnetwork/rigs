@@ -215,7 +215,7 @@ const FilecoinDealsModal = ({
         <ModalCloseButton />
         <ModalBody>
           <Text mb={4}>
-            This rigs image data is stored on filecoin in multiple deals:
+            This rig's image data is stored on filecoin in multiple deals:
           </Text>
           <Table>
             <Thead>
