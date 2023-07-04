@@ -10,7 +10,7 @@ import {
   NftFilters,
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
-import { chain } from "../env";
+import { mainChain } from "../env";
 import { useQuery } from "@tanstack/react-query";
 
 const wagmiChainToNetwork = (c: Chain): Network => {
@@ -24,13 +24,13 @@ const wagmiChainToNetwork = (c: Chain): Network => {
     case chains.polygonMumbai:
       return Network.MATIC_MUMBAI;
     default:
-      throw new Error(`wagmiChainToNetwork unsupported chain, ${c}`);
+      throw new Error(`wagmiChainToNetwork unsupported mainChain, ${c}`);
   }
 };
 
 const settings = {
   apiKey: import.meta.env.VITE_ALCHEMY_ID,
-  network: wagmiChainToNetwork(chain),
+  network: wagmiChainToNetwork(mainChain),
 };
 
 export const alchemy = new Alchemy(settings);

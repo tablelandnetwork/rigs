@@ -23,10 +23,10 @@ import { RigAttributeStatsContextProvider } from "./components/RigAttributeStats
 import { NFTsContextProvider } from "./components/NFTsContext";
 import { ActingAsAddressContextProvider } from "./components/ActingAsAddressContext";
 import { routes } from "./routes";
-import { chain } from "./env";
+import { mainChain, secondaryChain } from "./env";
 
 const { chains, publicClient } = configureChains(
-  [chain],
+  [mainChain, secondaryChain],
   [
     alchemyProvider({ apiKey: import.meta.env.VITE_ALCHEMY_ID }),
     publicProvider(),
