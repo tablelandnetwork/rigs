@@ -25,7 +25,7 @@ import { Rig } from "../types";
 import { isValidAddress, as0xString } from "../utils/types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { deployment } from "../env";
+import { mainChain, deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 
 const { contractAddress } = deployment;
@@ -53,6 +53,7 @@ export const TransferRigModal = ({
   }, [toAddress]);
 
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: rig.currentPilot

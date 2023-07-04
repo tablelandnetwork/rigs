@@ -54,7 +54,7 @@ import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { Rig, WalletAddress } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { deployment } from "../env";
+import { mainChain, deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
 import { pluralize } from "../utils/fmt";
@@ -77,6 +77,7 @@ export const TrainRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "trainRig",
@@ -152,6 +153,7 @@ export const ParkRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "parkRig",
@@ -256,6 +258,7 @@ const PilotTransactionStep = ({
 }: PilotTransactionProps) => {
   // TODO support calling pilotRig(uint256, address, uint256) for a single rig?
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "pilotRig",

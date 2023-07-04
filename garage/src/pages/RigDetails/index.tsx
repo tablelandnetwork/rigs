@@ -164,18 +164,21 @@ export const RigDetails = () => {
     allowFailure: false,
     contracts: [
       {
+        chainId: mainChain.id,
         address: as0xString(contractAddress)!,
         abi,
         functionName: "ownerOf",
         args: [BigInt(id ?? "")],
       },
       {
+        chainId: mainChain.id,
         address: as0xString(contractAddress)!,
         abi,
         functionName: "tokenURI",
         args: [BigInt(id ?? "")],
       },
       {
+        chainId: mainChain.id,
         address: as0xString(contractAddress)!,
         abi,
         functionName: "pilotInfo",
