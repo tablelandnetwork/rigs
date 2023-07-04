@@ -84,28 +84,31 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
 
     setIsQuerying(true);
 
-    const { meta: insert } = await db
-      .prepare(
-        `INSERT INTO ${ftRewardsTable} (block_num, recipient, reason, amount) VALUES (BLOCK_NUM(), ?1, ?2, ?3)`
-      )
-      .bind(form.recipient, form.reason, form.amount)
-      .run();
+    try {
+      const { meta: insert } = await db
+        .prepare(
+          `INSERT INTO ${ftRewardsTable} (block_num, recipient, reason, amount) VALUES (BLOCK_NUM(), ?1, ?2, ?3)`
+        )
+        .bind(form.recipient, form.reason, form.amount)
+        .run();
 
-    insert.txn
-      ?.wait()
-      .then((_) => {
+      insert.txn?.wait().then((_) => {
         setIsQuerying(false);
         toast({ title: "Success", status: "success", duration: 7_500 });
-      })
-      .catch((e) => {
-        setIsQuerying(false);
-        toast({
-          title: "Reward failed",
-          description: e.toString(),
-          status: "error",
-          duration: 7_500,
-        });
       });
+    } catch (e) {
+      if (e instanceof Error) {
+        if (!/user rejected transaction/.test(e.message)) {
+          toast({
+            title: "Reward failed",
+            description: e.message,
+            status: "error",
+            duration: 7_500,
+          });
+        }
+      }
+      setIsQuerying(false);
+    }
   }, [db, form]);
 
   return (
