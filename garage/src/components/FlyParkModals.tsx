@@ -52,6 +52,7 @@ import {
 import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { Rig, WalletAddress } from "../types";
+import { ChainAwareButton } from "./ChainAwareButton";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
 import { mainChain, deployment } from "../env";
@@ -126,13 +127,14 @@ export const TrainRigsModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={mainChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={isLoading || isSuccess}
           >
             Train {pluralize("rig", rigs)}
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             onClick={onClose}
@@ -335,13 +337,14 @@ const PilotTransactionStep = ({
         <TransactionStateAlert {...contractWrite} />
       </ModalBody>
       <ModalFooter>
-        <Button
+        <ChainAwareButton
+          expectedChain={mainChain}
           mr={3}
           onClick={() => (write ? write() : undefined)}
           isDisabled={isLoading || isSuccess || !sessions}
         >
           Pilot {pluralize("rig", pairs)}
-        </Button>
+        </ChainAwareButton>
         <Button
           variant="ghost"
           onClick={onClose}

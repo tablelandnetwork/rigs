@@ -27,6 +27,7 @@ import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
 import { mainChain, deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
+import { ChainAwareButton } from "./ChainAwareButton";
 
 const { contractAddress } = deployment;
 
@@ -136,13 +137,14 @@ export const TransferRigModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={mainChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={!isValidToAddress || isLoading || isSuccess}
           >
             Transfer Rig
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             onClick={onClose}

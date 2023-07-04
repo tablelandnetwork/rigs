@@ -18,8 +18,9 @@ import { Database } from "@tableland/sdk";
 import { useSigner } from "../../hooks/useSigner";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
+import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { isValidAddress } from "../../utils/types";
-import { deployment } from "../../env";
+import { secondaryChain, deployment } from "../../env";
 
 const { ftRewardsTable } = deployment;
 
@@ -139,13 +140,14 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
         </NumberInput>
       </FormControl>
       <Flex justify="flex-end" width="100%" mt={4}>
-        <Button
+        <ChainAwareButton
+          expectedChain={secondaryChain}
           isDisabled={isQuerying || !isFormValid}
           onClick={onSubmit}
           isLoading={isQuerying}
         >
           Submit
-        </Button>
+        </ChainAwareButton>
       </Flex>
     </Box>
   );
