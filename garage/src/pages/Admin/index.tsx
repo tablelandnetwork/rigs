@@ -35,7 +35,7 @@ const MODULE_PROPS = {
 const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
   const toast = useToast();
 
-  const signer = useSigner();
+  const signer = useSigner({ chainId: secondaryChain.id });
 
   const db = useMemo(() => {
     if (signer) return new Database({ signer });
