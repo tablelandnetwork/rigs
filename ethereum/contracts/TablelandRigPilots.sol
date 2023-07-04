@@ -243,8 +243,6 @@ contract TablelandRigPilots is
                 )
             )
         );
-
-        emit Piloted(tokenId, address(0), 1);
     }
 
     /**
@@ -317,8 +315,6 @@ contract TablelandRigPilots is
         // Update the pilot data and index
         _setPilotData(uint16(tokenId), uint160(pilotAddr), uint32(pilotId));
         _pilotIndex[pilotData] = uint16(tokenId);
-
-        emit Piloted(tokenId, pilotAddr, pilotId);
     }
 
     /**
@@ -372,8 +368,6 @@ contract TablelandRigPilots is
                 filters
             )
         );
-
-        emit Parked(tokenId);
     }
 
     /**
