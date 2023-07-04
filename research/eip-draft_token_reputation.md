@@ -1,7 +1,7 @@
 ---
 title: Token-based reputation
 description: A minimal ERC-721 extension for token-based reputation.
-author: Daniel Buchholz (@dtbuchholz) <dan@tableland.xyz>, Sander Pick (@sanderpick) <sander@tableland.xyz>, datadanne (@datadanne_eth)
+author: Daniel Buchholz (@dtbuchholz) <dan@tableland.xyz>, Sander Pick (@sanderpick) <sander@tableland.xyz>, datadanne (@datadanne)
 discussions-to: https://github.com/ethereum/eips/issues/<EIP_NUMBER> # TODO: Update
 status: Draft
 type: Standards Track
