@@ -66,8 +66,3 @@ const deploymentEnvMapping = {
 };
 
 export const deployment = deploymentEnvMapping[environment];
-
-export const ipfsGatewayBaseUrl =
-  environment === DeploymentEnvironment.PRODUCTION
-    ? "https://tableland.mypinata.cloud"
-    : "https://nftstorage.link";
