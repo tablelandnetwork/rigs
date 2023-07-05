@@ -25,14 +25,14 @@ export async function load({ url }) {
   rigId = parts[0];
 
   // get image
-  const stm = `SELECT renders_cid, image_medium_name FROM ${deployment.lookupsTable}`
+  const stm = `SELECT renders_cid, (select value from ${deployment.lookupsTable} where label = 'image_medium_name') image_medium_name FROM ${deployment.rigsTable} WHERE id = ${rigId};`
 
   const {
     renders_cid,
     image_medium_name
   } = await db.prepare(stm).first<{ renders_cid: string, image_medium_name: string }>();
 
-  const image = `ipfs://${renders_cid}/${rigId}/${image_medium_name}`;
+  const image = `ipfs://${renders_cid}/${image_medium_name}`;
   const httpUri = ipfsGatewayUri + image.slice(7);
 
   // get pilot
