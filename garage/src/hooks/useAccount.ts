@@ -1,11 +1,32 @@
 import { useEffect, useMemo, useState } from "react";
 import { DelegateCash } from "delegatecash";
+import { providers } from "ethers";
 import { useAccount as useWagmiAccount } from "wagmi";
-import { deployment } from "../env";
+import { mainChain, deployment } from "../env";
 import { isPresent } from "../utils/types";
 import { useActingAsAddress } from "../components/ActingAsAddressContext";
 
-const dc = new DelegateCash();
+const { id, network } = mainChain;
+
+// NOTE(daniel):
+// this is a hack to work around the fact that we always want to use the
+// mainChain-chain to look up delegated wallets.
+//
+// delegate cash uses the default provider (window.ethereum) if none is provided
+// and the default provider will switch network automatically when the
+// connected wallet switches network. since we sometimes need the wallet
+// to be connected to `mainChain` and sometimes to `secondaryChain`
+// we expect the rest of the app to work regardless of which chain
+// the user is connected to
+//
+// we also need to overwrite the `getSigner` method since the dc sdk
+// always calls getSigner regardless of if it is supported or not
+const provider = new providers.AlchemyProvider(
+  { chainId: id, name: network },
+  import.meta.env.VITE_ALCHEMY_ID
+);
+provider.getSigner = () => null as any;
+const dc = new DelegateCash(provider);
 
 type Flatten<Type> = Type extends Array<infer Item> ? Item : Type;
 
