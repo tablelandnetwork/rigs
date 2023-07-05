@@ -59,6 +59,12 @@ export const routes = () => {
       path: "/proposals/:id",
       requiresWalletConnection: false,
       element: <Proposal />,
+    },
+    {
+      key: "MISSION_BOARD",
+      path: "/mission-board",
+      requiresWalletConnection: false,
+      element: <Gallery />,
     }
   ];
 };

@@ -380,6 +380,16 @@ export const Topbar = () => {
                   route="/gallery"
                   title="Gallery"
                 />
+                <NavButton
+                  active={route?.route.key === "PROPOSALS"}
+                  route="/proposals"
+                  title="Proposals"
+                />
+                <NavButton
+                  active={route?.route.key === "MISSION_BOARD"}
+                  route="/mission-board"
+                  title="Mission Board"
+                />
               </HStack>
               <HStack flexShrink="0" flexGrow="1" justify="end">
                 <RigSearchForm />
