@@ -24,21 +24,31 @@ const parseEnv = (env?: string): DeploymentEnvironment => {
 
 const environment = parseEnv(import.meta.env.VITE_APP_ENV);
 
-const chainEnvMapping = {
+const mainChainEnvMapping = {
   [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
   [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
   [DeploymentEnvironment.PRODUCTION]: chains.mainnet,
 };
 
-export const chain = chainEnvMapping[environment];
+const secondaryChainEnvMapping = {
+  [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
+  [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
+  [DeploymentEnvironment.PRODUCTION]: chains.filecoin,
+};
+
+// Main chain used by the rigs contract
+export const mainChain = mainChainEnvMapping[environment];
+
+// Chain used by secondary tables, like ft rewards and the voting mechanism
+export const secondaryChain = secondaryChainEnvMapping[environment];
 
 const blockExplorerChainMapping = {
   [DeploymentEnvironment.DEVELOPMENT]:
-    chainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
+    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
   [DeploymentEnvironment.STAGING]:
-    chainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
+    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
   [DeploymentEnvironment.PRODUCTION]:
-    chainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan
+    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan
       .url,
 };
 

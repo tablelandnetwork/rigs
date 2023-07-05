@@ -1,4 +1,4 @@
-import { chain, deployment } from "../env";
+import { mainChain as chain, deployment } from "../env";
 
 const { attributesTable, lookupsTable, pilotSessionsTable, ftRewardsTable } = deployment;
 

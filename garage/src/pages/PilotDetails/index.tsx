@@ -28,7 +28,7 @@ import { useNFTs, NFT } from "../../hooks/useNFTs";
 import { useRigImageUrls } from "../../hooks/useRigImageUrls";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
-import { openseaBaseUrl } from "../../env";
+import { mainChain, openseaBaseUrl } from "../../env";
 import { PilotSessionWithRigId } from "../../types";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { selectPilotSessionsForPilot } from "../../utils/queries";
@@ -202,6 +202,7 @@ export const PilotDetails = () => {
   const pilot = nfts?.length ? nfts[0] : null;
 
   const { data: owner } = useContractRead({
+    chainId: mainChain.id,
     address: as0xString(collection),
     abi,
     functionName: "ownerOf",

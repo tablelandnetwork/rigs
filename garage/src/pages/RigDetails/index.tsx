@@ -34,7 +34,7 @@ import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
 import { isValidAddress, as0xString } from "../../utils/types";
-import { chain, openseaBaseUrl, deployment } from "../../env";
+import { mainChain, openseaBaseUrl, deployment } from "../../env";
 import { RigWithPilots } from "../../types";
 import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
@@ -164,18 +164,21 @@ export const RigDetails = () => {
     allowFailure: false,
     contracts: [
       {
+        chainId: mainChain.id,
         address: as0xString(contractAddress)!,
         abi,
         functionName: "ownerOf",
         args: [BigInt(id ?? "")],
       },
       {
+        chainId: mainChain.id,
         address: as0xString(contractAddress)!,
         abi,
         functionName: "tokenURI",
         args: [BigInt(id ?? "")],
       },
       {
+        chainId: mainChain.id,
         address: as0xString(contractAddress)!,
         abi,
         functionName: "pilotInfo",
@@ -223,7 +226,7 @@ export const RigDetails = () => {
       validator
         .pollForReceiptByTransactionHash(
           {
-            chainId: chain.id,
+            chainId: mainChain.id,
             transactionHash: pendingTx,
           },
           { interval: 2000, signal }

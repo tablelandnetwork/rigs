@@ -1,14 +1,19 @@
 import React from "react";
 import { Button } from "@chakra-ui/react";
-import { useNetwork } from "wagmi";
+import { Chain, useNetwork } from "wagmi";
 import { useChainModal } from "@rainbow-me/rainbowkit";
-import { chain as expectedChain } from "../env";
+import { mainChain } from "../env";
 
 export const ChainAwareButton = (
-  props: React.ComponentProps<typeof Button>
+  props: { expectedChain?: Chain } & React.ComponentProps<typeof Button>
 ) => {
   const { chain } = useNetwork();
-  const { children: _children, onClick: _onClick, ...rest } = props;
+  const {
+    expectedChain = mainChain,
+    children: _children,
+    onClick: _onClick,
+    ...rest
+  } = props;
   const { openChainModal } = useChainModal();
 
   let children = _children;
