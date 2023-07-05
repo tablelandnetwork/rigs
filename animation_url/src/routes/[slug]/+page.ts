@@ -7,9 +7,7 @@ import { default as unknown } from "../../assets/unknown.svg";
 const chain = import.meta.env.DEV ? "polygon-mumbai" : "ethereum";
 const deployment = deployments[chain];
 
-const ipfsGatewayUri = import.meta.env.DEV
-  ? "https://nftstorage.link/ipfs/"
-  : "https://tableland.mypinata.cloud/ipfs/";
+const ipfsGatewayUri = "https://nftstorage.link/ipfs/";
 
 const db = new Database();
 const alchemy = new Alchemy({
