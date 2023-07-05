@@ -14,7 +14,7 @@
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@rainbow-me/rainbowkit": "^1.0.3",
-    "@tableland/rigs": "^0.3.0",
+    "@tableland/rigs": "^0.3.1",
     "@tableland/sdk": "^4.3.2",
     "alchemy-sdk": "^2.8.3",
     "chakra-react-select": "^4.4.2",
