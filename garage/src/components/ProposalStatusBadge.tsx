@@ -4,7 +4,7 @@ import { Badge } from "@chakra-ui/react";
 import { Proposal, ProposalStatus } from "../types";
 
 export const proposalStatus = (
-  blockNumber: number | undefined,
+  blockNumber: bigint | undefined,
   proposal: Proposal | undefined
 ) => {
   if (!blockNumber || !proposal) return ProposalStatus.Loading;

@@ -41,9 +41,9 @@ const Information = ({ proposal, ...props }: ModuleProps) => {
     proposal,
   ]);
 
-  const startsIn = proposal.startBlock - (blockNumber ?? 0);
-  const endsIn = proposal.endBlock - (blockNumber ?? 0);
-  const ended = (blockNumber ?? 0) - proposal.endBlock;
+  const startsIn = proposal.startBlock - Number(blockNumber ?? 0);
+  const endsIn = proposal.endBlock - Number(blockNumber ?? 0);
+  const ended = Number(blockNumber ?? 0) - proposal.endBlock;
 
   return (
     <VStack align="stretch" spacing={4} {...props}>

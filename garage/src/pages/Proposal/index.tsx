@@ -123,9 +123,9 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
     abi,
     functionName: "vote",
     args: [
-      ethers.BigNumber.from(proposal.id),
-      nonZeroWeights.map(([id]) => ethers.BigNumber.from(id)),
-      nonZeroWeights.map(([_, { weight }]) => ethers.BigNumber.from(weight)),
+      BigInt(proposal.id),
+      nonZeroWeights.map(([id]) => BigInt(id)),
+      nonZeroWeights.map(([_, { weight }]) => BigInt(weight)),
       nonZeroWeights.map(([_, { comment }]) => comment ?? ""),
     ],
     enabled: isEligible && status === ProposalStatus.Open && isValid,

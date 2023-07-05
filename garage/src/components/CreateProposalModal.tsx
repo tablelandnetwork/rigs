@@ -20,7 +20,6 @@ import {
   Tr,
 } from "@chakra-ui/react";
 import { DeleteIcon } from "@chakra-ui/icons";
-import { ethers } from "ethers";
 import {
   useContractWrite,
   usePrepareContractWrite,
@@ -82,9 +81,9 @@ export const CreateProposalModal = ({
     args: [
       name,
       descriptionCid,
-      ethers.BigNumber.from(voterFtReward),
-      ethers.BigNumber.from(startBlock),
-      ethers.BigNumber.from(endBlock),
+      BigInt(voterFtReward),
+      BigInt(startBlock),
+      BigInt(endBlock),
       options,
     ],
     enabled: isOpen && isValid,
