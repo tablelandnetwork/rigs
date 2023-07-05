@@ -5,6 +5,7 @@ sql.zip
 renders*
 local.db
 tableland.db
+rigs
 
 # Binaries for programs and plugins
 *.exe
