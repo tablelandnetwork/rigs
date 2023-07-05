@@ -19,7 +19,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.2
-	github.com/textileio/go-tableland v1.6.1
+	github.com/textileio/go-tableland v1.6.4-0.20230705172703-438fcf027e8a
 	golang.org/x/image v0.7.0
 )
 
@@ -71,7 +71,7 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
-	github.com/tablelandnetwork/sqlparser v0.0.0-20230518143735-838d223866f6 // indirect
+	github.com/tablelandnetwork/sqlparser v0.0.0-20230605164749-c0e6862c37f6 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
 	github.com/whyrusleeping/cbor v0.0.0-20171005072247-63513f603b11 // indirect
 	github.com/whyrusleeping/chunker v0.0.0-20181014151217-fe64bd25879f // indirect
