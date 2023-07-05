@@ -7,14 +7,26 @@ import {
   Heading,
   HStack,
   Link,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
   Show,
   Spinner,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Thead,
+  Th,
+  Tr,
   useBreakpointValue,
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { ArrowForwardIcon } from "@chakra-ui/icons";
+import { ArrowForwardIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useBlockNumber, useContractReads, useEnsName } from "wagmi";
 import { useAccount } from "../../hooks/useAccount";
@@ -39,6 +51,7 @@ import { RigWithPilots } from "../../types";
 import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
+import { ReactComponent as FilecoinMark } from "../../assets/filecoin-mark.svg";
 
 const { contractAddress } = deployment;
 
@@ -70,7 +83,19 @@ const RigHeader = ({
   ...props
 }: RigHeaderProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const {
+    isOpen: filecoinDealsIsOpen,
+    onOpen: onOpenFilecoinDeals,
+    onClose: onCloseFilecoinDeals,
+  } = useDisclosure();
+
   const { address, actingAsAddress } = useAccount();
+
+  const rigWithFilecoinDeals = useMemo(() => {
+    if (rig && rig.filecoinDeals) return rig as RigWithFilecoinDeals;
+  }, [rig]);
+
   const totalFlightTime = rig.pilotSessions.reduce(
     (acc, { startTime, endTime }) => {
       return (
@@ -100,6 +125,13 @@ const RigHeader = ({
         onClose={onClose}
         onTransactionCompleted={refresh}
       />
+      {rigWithFilecoinDeals && (
+        <FilecoinDealsModal
+          rig={rigWithFilecoinDeals}
+          isOpen={filecoinDealsIsOpen}
+          onClose={onCloseFilecoinDeals}
+        />
+      )}
       <Box {...props}>
         <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
           <Heading size="xl">Rig {`#${rig.id}`}</Heading>
@@ -119,6 +151,14 @@ const RigHeader = ({
               isExternal
             >
               <RoundSvgIcon size={20} Component={TablelandMark} />
+            </Link>
+
+            <Link
+              onClick={onOpenFilecoinDeals}
+              title={`View filecoin deal for Rig #${rig.id}`}
+              isExternal
+            >
+              <RoundSvgIcon size={20} Component={FilecoinMark} />
             </Link>
           </HStack>
         </HStack>
@@ -150,6 +190,62 @@ const RigHeader = ({
         </HStack>
       </Box>
     </>
+  );
+};
+
+type RigWithFilecoinDeals = RigWithPilots &
+  Required<Pick<RigWithPilots, "filecoinDeals">>;
+
+interface FilecoinDealsModalProps {
+  rig: RigWithFilecoinDeals;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const FilecoinDealsModal = ({
+  rig,
+  isOpen,
+  onClose,
+}: FilecoinDealsModalProps) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Filecoin Deal Information</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <Text mb={4}>
+            This rig's image data is stored on filecoin in multiple deals:
+          </Text>
+          <Table>
+            <Thead>
+              <Tr>
+                <Th>Deal ID</Th>
+                <Th>Deal Selector</Th>
+                <Th>Deal link</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {rig.filecoinDeals.map(({ dealId, selector }) => (
+                <Tr key={`deal-${dealId}`}>
+                  <Td>{dealId}</Td>
+                  <Td>{selector}</Td>
+                  <Td isNumeric>
+                    <Link
+                      href={`https://filfox.info/deal/${dealId}`}
+                      isExternal
+                    >
+                      Filfox
+                      <ExternalLinkIcon ml={2} mb={1} />
+                    </Link>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
   );
 };
 
@@ -247,11 +343,8 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const {
-    trainRigsModal,
-    pilotRigsModal,
-    parkRigsModal,
-  } = useGlobalFlyParkModals();
+  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
+    useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);

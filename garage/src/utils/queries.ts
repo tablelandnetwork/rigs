@@ -1,6 +1,12 @@
 import { mainChain as chain, deployment } from "../env";
 
-const { attributesTable, lookupsTable, pilotSessionsTable, ftRewardsTable } = deployment;
+const {
+  attributesTable,
+  dealsTable,
+  ftRewardsTable,
+  lookupsTable,
+  pilotSessionsTable,
+} = deployment;
 
 const IMAGE_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name`;
 const IMAGE_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name`;
@@ -75,6 +81,15 @@ export const selectRigWithPilots = (id: string): string => {
       'traitType', trait_type,
       'value', value
     )) as attributes,
+    (
+      SELECT
+        json_group_array(json_object(
+          'dealId', deal_id,
+          'selector', data_model_selector
+        ))
+      FROM ${dealsTable} AS deal
+      WHERE deal.rig_id = ${id}
+    ) as "filecoinDeals",
     (
       SELECT
         json_group_array(json_object(
