@@ -208,7 +208,7 @@ const FilecoinDealsModal = ({
   onClose,
 }: FilecoinDealsModalProps) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Filecoin Deal Information</ModalHeader>
@@ -220,17 +220,30 @@ const FilecoinDealsModal = ({
           <Table>
             <Thead>
               <Tr>
-                <Th>Deal ID</Th>
+                <Th width="80px">Deal ID</Th>
                 <Th>Deal Selector</Th>
-                <Th>Deal link</Th>
+                <Th width="90px" isNumeric>
+                  Deal link
+                </Th>
               </Tr>
             </Thead>
             <Tbody>
               {rig.filecoinDeals.map(({ dealId, selector }) => (
                 <Tr key={`deal-${dealId}`}>
-                  <Td>{dealId}</Td>
-                  <Td>{selector}</Td>
-                  <Td isNumeric>
+                  <Td width="80px">{dealId}</Td>
+                  <Td
+                    width="auto"
+                    sx={{
+                      maxWidth: { base: "160px", md: "300px" },
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={selector}
+                  >
+                    {selector}
+                  </Td>
+                  <Td width="90px" isNumeric>
                     <Link
                       href={`https://filfox.info/deal/${dealId}`}
                       isExternal
@@ -343,8 +356,11 @@ export const RigDetails = () => {
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
-    useGlobalFlyParkModals();
+  const {
+    trainRigsModal,
+    pilotRigsModal,
+    parkRigsModal,
+  } = useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);
