@@ -55,6 +55,23 @@ func (s *SQLFactory) SQLForInsertingLayers(table string, layers []local.Layer) (
 	return clean(sql), nil
 }
 
+// SQLForInsertingRigs retutns the SQL statement.
+func (s *SQLFactory) SQLForInsertingRigs(table string, rigs []local.Rig) (string, error) {
+	var vals [][]interface{}
+	for _, rig := range rigs {
+		vals = append(
+			vals,
+			goqu.Vals{rig.ID, rig.RendersCid},
+		)
+	}
+	ds := s.d.Insert(table).Cols("id", "renders_cid").Vals(vals...)
+	sql, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert rigs: %v", err)
+	}
+	return clean(sql), nil
+}
+
 // SQLForInsertingRigAttributes returns the SQL statement.
 func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []local.Rig) (string, error) {
 	firstOriginalAndColor := func(parts []local.Part) (string, string, error) {
@@ -110,31 +127,68 @@ func (s *SQLFactory) SQLForInsertingRigAttributes(rigAttrTable string, rigs []lo
 	return clean(sql), nil
 }
 
+// SQLForInsertingDeals returns the SQL statement.
+func (s *SQLFactory) SQLForInsertingDeals(table string, rigs []local.Rig) (string, error) {
+	var vals [][]interface{}
+	for _, rig := range rigs {
+		for i, deal := range rig.Deals {
+			vals = append(
+				vals,
+				goqu.Vals{rig.ID, deal.DealID, deal.StorageProvider, deal.DataModelSelector, i + 1},
+			)
+		}
+	}
+	ds := s.d.Insert(table).
+		Cols("rig_id", "deal_id", "storage_provider", "data_model_selector", "deal_number").
+		Vals(vals...)
+	sql, _, err := ds.ToSQL()
+	if err != nil {
+		return "", fmt.Errorf("creating sql to insert deals: %v", err)
+	}
+	return clean(sql), nil
+}
+
 // SQLForInsertingLookups returns the SQL statement.
 func (s *SQLFactory) SQLForInsertingLookups(lookupsTable string, lookups tableland.Lookups) (string, error) {
-	ds := s.d.Insert(lookupsTable).Cols(
-		"renders_cid",
-		"layers_cid",
-		"image_full_name",
-		"image_full_alpha_name",
-		"image_medium_name",
-		"image_medium_alpha_name",
-		"image_thumb_name",
-		"image_thumb_alpha_name",
-		"animation_base_url",
-	).Vals(
-		[]interface{}{
-			lookups.RendersCid,
-			lookups.LayersCid,
-			lookups.ImageFullName,
-			lookups.ImageFullAlphaName,
-			lookups.ImageMediumName,
-			lookups.ImageMediumAlphaName,
-			lookups.ImageThumbName,
-			lookups.ImageThumbAlphaName,
-			lookups.AnimationBaseURL,
+	vals := [][]interface{}{
+		{
+			"renders_cid", lookups.RendersCid,
 		},
-	)
+		{
+			"layers_cid", lookups.LayersCid,
+		},
+		{
+			"index_cid", lookups.IndexCid,
+		},
+		{
+			"image_full_name", lookups.ImageFullName,
+		},
+		{
+			"image_full_alpha_name", lookups.ImageFullAlphaName,
+		},
+		{
+			"image_medium_name", lookups.ImageMediumName,
+		},
+		{
+			"image_medium_alpha_name", lookups.ImageMediumAlphaName,
+		},
+		{
+			"image_thumb_name", lookups.ImageThumbName,
+		},
+		{
+			"image_thumb_alpha_name", lookups.ImageThumbAlphaName,
+		},
+		{
+			"animation_base_url", lookups.AnimationBaseURL,
+		},
+		{
+			"filecoin_base_url", lookups.FilecoinBaseURL,
+		},
+	}
+	ds := s.d.Insert(lookupsTable).Cols(
+		"label",
+		"value",
+	).Vals(vals...)
 	sql, _, err := ds.ToSQL()
 	if err != nil {
 		return "", fmt.Errorf("creating sql to insert lookups: %v", err)

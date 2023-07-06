@@ -18,8 +18,9 @@ import { Database } from "@tableland/sdk";
 import { useSigner } from "../../hooks/useSigner";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
+import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { isValidAddress } from "../../utils/types";
-import { deployment } from "../../env";
+import { secondaryChain, deployment } from "../../env";
 
 const { ftRewardsTable } = deployment;
 
@@ -34,7 +35,7 @@ const MODULE_PROPS = {
 const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
   const toast = useToast();
 
-  const signer = useSigner();
+  const signer = useSigner({ chainId: secondaryChain.id });
 
   const db = useMemo(() => {
     if (signer) return new Database({ signer });
@@ -83,28 +84,31 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
 
     setIsQuerying(true);
 
-    const { meta: insert } = await db
-      .prepare(
-        `INSERT INTO ${ftRewardsTable} (block_num, recipient, reason, amount) VALUES (BLOCK_NUM(), ?1, ?2, ?3)`
-      )
-      .bind(form.recipient, form.reason, form.amount)
-      .run();
+    try {
+      const { meta: insert } = await db
+        .prepare(
+          `INSERT INTO ${ftRewardsTable} (block_num, recipient, reason, amount) VALUES (BLOCK_NUM(), ?1, ?2, ?3)`
+        )
+        .bind(form.recipient, form.reason, form.amount)
+        .run();
 
-    insert.txn
-      ?.wait()
-      .then((_) => {
+      insert.txn?.wait().then((_) => {
         setIsQuerying(false);
         toast({ title: "Success", status: "success", duration: 7_500 });
-      })
-      .catch((e) => {
-        setIsQuerying(false);
-        toast({
-          title: "Reward failed",
-          description: e.toString(),
-          status: "error",
-          duration: 7_500,
-        });
       });
+    } catch (e) {
+      if (e instanceof Error) {
+        if (!/user rejected transaction/.test(e.message)) {
+          toast({
+            title: "Reward failed",
+            description: e.message,
+            status: "error",
+            duration: 7_500,
+          });
+        }
+      }
+      setIsQuerying(false);
+    }
   }, [db, form]);
 
   return (
@@ -139,13 +143,14 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
         </NumberInput>
       </FormControl>
       <Flex justify="flex-end" width="100%" mt={4}>
-        <Button
+        <ChainAwareButton
+          expectedChain={secondaryChain}
           isDisabled={isQuerying || !isFormValid}
           onClick={onSubmit}
           isLoading={isQuerying}
         >
           Submit
-        </Button>
+        </ChainAwareButton>
       </Flex>
     </Box>
   );

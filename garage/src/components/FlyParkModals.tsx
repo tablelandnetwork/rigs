@@ -52,9 +52,10 @@ import {
 import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { Rig, WalletAddress } from "../types";
+import { ChainAwareButton } from "./ChainAwareButton";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { deployment } from "../env";
+import { mainChain, deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
 import { pluralize } from "../utils/fmt";
@@ -77,6 +78,7 @@ export const TrainRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "trainRig",
@@ -125,13 +127,14 @@ export const TrainRigsModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={mainChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={isLoading || isSuccess}
           >
             Train {pluralize("rig", rigs)}
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             onClick={onClose}
@@ -152,6 +155,7 @@ export const ParkRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "parkRig",
@@ -256,6 +260,7 @@ const PilotTransactionStep = ({
 }: PilotTransactionProps) => {
   // TODO support calling pilotRig(uint256, address, uint256) for a single rig?
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "pilotRig",
@@ -332,13 +337,14 @@ const PilotTransactionStep = ({
         <TransactionStateAlert {...contractWrite} />
       </ModalBody>
       <ModalFooter>
-        <Button
+        <ChainAwareButton
+          expectedChain={mainChain}
           mr={3}
           onClick={() => (write ? write() : undefined)}
           isDisabled={isLoading || isSuccess || !sessions}
         >
           Pilot {pluralize("rig", pairs)}
-        </Button>
+        </ChainAwareButton>
         <Button
           variant="ghost"
           onClick={onClose}
