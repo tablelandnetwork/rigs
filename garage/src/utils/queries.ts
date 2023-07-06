@@ -131,8 +131,7 @@ const selectFilteredRigsActivity = (
     *,
     ${THUMB_IPFS_URI_SELECT} as "thumb",
     ${IMAGE_IPFS_URI_SELECT} as "image"
-  FROM ${rigsTable} a
-  JOIN (
+  FROM (
     SELECT
       rig_id,
       cast(rig_id as text) as "rigId",
@@ -153,8 +152,8 @@ const selectFilteredRigsActivity = (
       end_time as "timestamp"
     FROM ${pilotSessionsTable}
     WHERE end_time IS NOT NULL ${filter ? `AND ${filter}` : ""}
-  ) b ON a.id = b.rig_id
-  GROUP BY id
+  ) AS session
+  JOIN ${rigsTable} AS rigs ON session.rig_id = rigs.id
   ORDER BY timestamp DESC
   LIMIT ${first}
   OFFSET ${offset}`;
