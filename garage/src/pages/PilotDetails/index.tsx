@@ -73,7 +73,7 @@ const NFTHeader = ({
   const truncatedOwner = owner ? truncateWalletAddress(owner) : "";
 
   const totalFt = events.reduce((acc, { startTime, endTime }) => {
-    return acc + (endTime ?? currentBlockNumber - startTime);
+    return acc + ((endTime ?? currentBlockNumber) - startTime);
   }, 0);
 
   return (
@@ -151,7 +151,7 @@ const FlightLog = ({
         <Tbody>
           {events.map(({ rigId, thumb, startTime, endTime }, index) => {
             const { thumb: thumbUrl } = useRigImageUrls({ id: rigId, thumb });
-            const ft = endTime ?? currentBlockNumber - startTime;
+            const ft = (endTime ?? currentBlockNumber) - startTime;
 
             return (
               <Tr key={`flight-log-${index}`}>
