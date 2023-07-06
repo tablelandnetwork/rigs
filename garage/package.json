@@ -11,7 +11,7 @@
   "dependencies": {
     "@chakra-ui/icons": "^2.0.12",
     "@chakra-ui/react": "^2.3.4",
-    "@emotion/react": "^11.10.6",
+    "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.10.6",
     "@rainbow-me/rainbowkit": "^1.0.3",
     "@tableland/rigs": "^0.3.1",
