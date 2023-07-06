@@ -140,7 +140,8 @@ const selectFilteredRigsActivity = (
         'tokenId', pilot_id
       ) as "pilot",
       'piloted' as "action",
-      start_time as "timestamp"
+      start_time as "timestamp",
+      1 as "prio"
     FROM ${pilotSessionsTable}
     WHERE end_time IS NULL ${filter ? `AND ${filter}` : ""}
     UNION
@@ -149,12 +150,13 @@ const selectFilteredRigsActivity = (
       cast(rig_id as text) as "rigId",
       null as "pilot",
       'parked' as "action",
-      end_time as "timestamp"
+      end_time as "timestamp",
+      0 as "prio"
     FROM ${pilotSessionsTable}
     WHERE end_time IS NOT NULL ${filter ? `AND ${filter}` : ""}
   ) AS session
   JOIN ${rigsTable} AS rigs ON session.rig_id = rigs.id
-  ORDER BY timestamp DESC
+  ORDER BY timestamp DESC, rig_id, prio DESC
   LIMIT ${first}
   OFFSET ${offset}`;
 };
