@@ -1,5 +1,6 @@
 import { Rig } from "../types";
-import { ipfsGatewayBaseUrl } from "../env";
+
+const ipfsGatewayBaseUrl = "https://nftstorage.link";
 
 const ipfsUriToGatewayUrl = (ipfsUri: string): string => {
   const cidAndPath = ipfsUri.match(/^ipfs:\/\/(.*)$/)![1];
