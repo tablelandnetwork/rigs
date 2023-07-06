@@ -301,10 +301,9 @@ export const selectPilotSessionsForPilot = (
     cast(pilot_id as text) as "pilotId",
     start_time as "startTime",
     end_time as "endTime"
-  FROM ${rigsTable} a
-  JOIN ${pilotSessionsTable} b on a.id = b.rig_id
-  WHERE pilot_contract = '${contract}' AND pilot_id = ${tokenId}
-  GROUP BY id`;
+  FROM ${pilotSessionsTable} AS attributes
+  JOIN ${rigsTable} AS rigs ON attributes.rig_id = rigs.id
+  WHERE pilot_contract = '${contract}' AND pilot_id = ${tokenId}`;
 };
 
 export const selectActivePilotSessionsForPilots = (
