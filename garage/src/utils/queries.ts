@@ -304,7 +304,8 @@ export const selectPilotSessionsForPilot = (
     end_time as "endTime"
   FROM ${pilotSessionsTable} AS attributes
   JOIN ${rigsTable} AS rigs ON attributes.rig_id = rigs.id
-  WHERE pilot_contract = '${contract}' AND pilot_id = ${tokenId}`;
+  WHERE pilot_contract = '${contract}' AND pilot_id = ${tokenId}
+  ORDER BY start_time DESC`;
 };
 
 export const selectActivePilotSessionsForPilots = (
