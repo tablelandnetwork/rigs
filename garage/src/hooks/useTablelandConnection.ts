@@ -1,7 +1,7 @@
-import { Database, Validator } from "@tableland/sdk";
-import { chain } from "../env";
+import { Database, Validator, helpers } from "@tableland/sdk";
+import { mainChain as chain } from "../env";
 
-const db = Database.readOnly(chain.id);
+const db = new Database({ baseUrl: helpers.getBaseUrl(chain.id) });
 const validator = new Validator(db.config);
 const data = { db, validator };
 

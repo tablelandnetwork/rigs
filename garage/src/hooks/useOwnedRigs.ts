@@ -4,7 +4,7 @@ import { useContractRead } from "wagmi";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { selectRigs } from "../utils/queries";
 import { isValidAddress, as0xString } from "../utils/types";
-import { deployment } from "../env";
+import { mainChain, deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 
 const { contractAddress } = deployment;
@@ -13,6 +13,7 @@ export const useOwnedRigs = (address?: string) => {
   const { db } = useTablelandConnection();
 
   const { data } = useContractRead({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "tokensOfOwner",

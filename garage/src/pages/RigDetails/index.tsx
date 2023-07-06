@@ -7,15 +7,26 @@ import {
   Heading,
   HStack,
   Link,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalCloseButton,
   Show,
   Spinner,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Thead,
+  Th,
+  Tr,
   useBreakpointValue,
   useDisclosure,
   VStack,
 } from "@chakra-ui/react";
-import { ethers } from "ethers";
-import { ArrowForwardIcon } from "@chakra-ui/icons";
+import { ArrowForwardIcon, ExternalLinkIcon } from "@chakra-ui/icons";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useBlockNumber, useContractReads, useEnsName } from "wagmi";
 import { useAccount } from "../../hooks/useAccount";
@@ -35,11 +46,12 @@ import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { sleep } from "../../utils/async";
 import { isValidAddress, as0xString } from "../../utils/types";
-import { chain, openseaBaseUrl, deployment } from "../../env";
+import { mainChain, openseaBaseUrl, deployment } from "../../env";
 import { RigWithPilots } from "../../types";
 import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
+import { ReactComponent as FilecoinMark } from "../../assets/filecoin-mark.svg";
 
 const { contractAddress } = deployment;
 
@@ -71,7 +83,19 @@ const RigHeader = ({
   ...props
 }: RigHeaderProps) => {
   const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const {
+    isOpen: filecoinDealsIsOpen,
+    onOpen: onOpenFilecoinDeals,
+    onClose: onCloseFilecoinDeals,
+  } = useDisclosure();
+
   const { address, actingAsAddress } = useAccount();
+
+  const rigWithFilecoinDeals = useMemo(() => {
+    if (rig && rig.filecoinDeals) return rig as RigWithFilecoinDeals;
+  }, [rig]);
+
   const totalFlightTime = rig.pilotSessions.reduce(
     (acc, { startTime, endTime }) => {
       return (
@@ -101,6 +125,13 @@ const RigHeader = ({
         onClose={onClose}
         onTransactionCompleted={refresh}
       />
+      {rigWithFilecoinDeals && (
+        <FilecoinDealsModal
+          rig={rigWithFilecoinDeals}
+          isOpen={filecoinDealsIsOpen}
+          onClose={onCloseFilecoinDeals}
+        />
+      )}
       <Box {...props}>
         <HStack justify="space-between" align="baseline" sx={{ width: "100%" }}>
           <Heading size="xl">Rig {`#${rig.id}`}</Heading>
@@ -120,6 +151,14 @@ const RigHeader = ({
               isExternal
             >
               <RoundSvgIcon size={20} Component={TablelandMark} />
+            </Link>
+
+            <Link
+              onClick={onOpenFilecoinDeals}
+              title={`View filecoin deal for Rig #${rig.id}`}
+              isExternal
+            >
+              <RoundSvgIcon size={20} Component={FilecoinMark} />
             </Link>
           </HStack>
         </HStack>
@@ -154,6 +193,75 @@ const RigHeader = ({
   );
 };
 
+type RigWithFilecoinDeals = RigWithPilots &
+  Required<Pick<RigWithPilots, "filecoinDeals">>;
+
+interface FilecoinDealsModalProps {
+  rig: RigWithFilecoinDeals;
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const FilecoinDealsModal = ({
+  rig,
+  isOpen,
+  onClose,
+}: FilecoinDealsModalProps) => {
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl">
+      <ModalOverlay />
+      <ModalContent>
+        <ModalHeader>Filecoin Deal Information</ModalHeader>
+        <ModalCloseButton />
+        <ModalBody>
+          <Text mb={4}>
+            This rig's image data is stored on filecoin in multiple deals:
+          </Text>
+          <Table>
+            <Thead>
+              <Tr>
+                <Th width="80px">Deal ID</Th>
+                <Th>Deal Selector</Th>
+                <Th width="90px" isNumeric>
+                  Deal link
+                </Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {rig.filecoinDeals.map(({ dealId, selector }) => (
+                <Tr key={`deal-${dealId}`}>
+                  <Td width="80px">{dealId}</Td>
+                  <Td
+                    width="auto"
+                    sx={{
+                      maxWidth: { base: "160px", md: "300px" },
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      whiteSpace: "nowrap",
+                    }}
+                    title={selector}
+                  >
+                    {selector}
+                  </Td>
+                  <Td width="90px" isNumeric>
+                    <Link
+                      href={`https://filfox.info/deal/${dealId}`}
+                      isExternal
+                    >
+                      Filfox
+                      <ExternalLinkIcon ml={2} mb={1} />
+                    </Link>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </ModalBody>
+      </ModalContent>
+    </Modal>
+  );
+};
+
 export const RigDetails = () => {
   const { id } = useParams();
   const { actingAsAddress } = useAccount();
@@ -162,24 +270,28 @@ export const RigDetails = () => {
   const { validator } = useTablelandConnection();
 
   const { data: contractData, refetch } = useContractReads({
+    allowFailure: false,
     contracts: [
       {
-        address: as0xString(contractAddress),
+        chainId: mainChain.id,
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "ownerOf",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(id ?? "")],
       },
       {
-        address: as0xString(contractAddress),
+        chainId: mainChain.id,
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "tokenURI",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(id ?? "")],
       },
       {
-        address: as0xString(contractAddress),
+        chainId: mainChain.id,
+        address: as0xString(contractAddress)!,
         abi,
         functionName: "pilotInfo",
-        args: [ethers.BigNumber.from(id)],
+        args: [BigInt(id ?? "")],
       },
     ],
   });
@@ -223,7 +335,7 @@ export const RigDetails = () => {
       validator
         .pollForReceiptByTransactionHash(
           {
-            chainId: chain.id,
+            chainId: mainChain.id,
             transactionHash: pendingTx,
           },
           { interval: 2000, signal }
@@ -290,7 +402,7 @@ export const RigDetails = () => {
                     owner={owner}
                     tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
                   />
                 </Show>
@@ -318,7 +430,7 @@ export const RigDetails = () => {
                     owner={owner}
                     tokenURI={tokenURI}
                     userOwnsRig={userOwnsRig}
-                    currentBlockNumber={currentBlockNumber}
+                    currentBlockNumber={Number(currentBlockNumber)}
                     refresh={refresh}
                   />
                 </Show>

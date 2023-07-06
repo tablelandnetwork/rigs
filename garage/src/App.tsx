@@ -12,7 +12,7 @@ import {
   RainbowKitProvider,
   darkTheme,
 } from "@rainbow-me/rainbowkit";
-import { configureChains, createClient, WagmiConfig } from "wagmi";
+import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { publicProvider } from "wagmi/providers/public";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -23,10 +23,10 @@ import { RigAttributeStatsContextProvider } from "./components/RigAttributeStats
 import { NFTsContextProvider } from "./components/NFTsContext";
 import { ActingAsAddressContextProvider } from "./components/ActingAsAddressContext";
 import { routes } from "./routes";
-import { chain } from "./env";
+import { mainChain, secondaryChain } from "./env";
 
-const { chains, provider } = configureChains(
-  [chain],
+const { chains, publicClient } = configureChains(
+  [mainChain, secondaryChain],
   [
     alchemyProvider({ apiKey: import.meta.env.VITE_ALCHEMY_ID }),
     publicProvider(),
@@ -36,12 +36,13 @@ const { chains, provider } = configureChains(
 const { connectors } = getDefaultWallets({
   appName: "Tableland Garage",
   chains,
+  projectId: import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID ?? "",
 });
 
-const wagmiClient = createClient({
+const wagmiClient = createConfig({
   autoConnect: true,
   connectors,
-  provider,
+  publicClient,
 });
 
 const colors = {
@@ -197,7 +198,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ChakraProvider theme={theme}>
-        <WagmiConfig client={wagmiClient}>
+        <WagmiConfig config={wagmiClient}>
           <RainbowKitProvider chains={chains} theme={darkTheme()}>
             <ActingAsAddressContextProvider>
               <RigAttributeStatsContextProvider>
