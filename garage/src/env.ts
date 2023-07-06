@@ -59,6 +59,11 @@ export const openseaBaseUrl =
     ? "https://opensea.io/assets/ethereum"
     : "https://testnets.opensea.io/assets/mumbai";
 
+export const ipfsGatewayBaseUrl =
+  environment === DeploymentEnvironment.DEVELOPMENT
+    ? "https://nftstorage.link"
+    : "https://tableland.mypinata.cloud";
+
 const deploymentEnvMapping = {
   [DeploymentEnvironment.DEVELOPMENT]: deployments["polygon-mumbai"],
   [DeploymentEnvironment.STAGING]: deployments["polygon-mumbai"],
