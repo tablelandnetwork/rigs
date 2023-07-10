@@ -55,9 +55,9 @@ async function main() {
   }
 
   const pilotSessionsTableId =
-    rigsDeployment.pilotSessionsTable.match(/.*_\d*_(\d*)/)[1];
+    rigsDeployment.pilotSessionsTable.match(/.*_\d*_(\d*)/)![1];
   const ftRewardsTableId =
-    rigsDeployment.ftRewardsTable.match(/.*_\d*_(\d*)/)[1];
+    rigsDeployment.ftRewardsTable.match(/.*_\d*_(\d*)/)![1];
 
   // Create proposals table
   const { meta: proposalsMeta } = await db
