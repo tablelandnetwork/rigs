@@ -517,7 +517,7 @@ contract TablelandRigs is
         // Check the Rig `tokenId` exists
         if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
 
-        // Verify `msg.sender` is authorized to pilot the specified Rig
+        // Verify `msg.sender` is authorized to stake the specified Rig
         (
             address tokenOwner,
             address sender
@@ -530,7 +530,9 @@ contract TablelandRigs is
         pilotAddr == address(0)
             ? _pilots.pilotRig(sender, tokenId)
             : _pilots.pilotRig(sender, tokenId, pilotAddr, pilotId);
-        emit Stake(tokenId, tokenOwner);
+
+        // Depending on the caller, emit either the token's owner or operator
+        emit Stake(tokenId, msg.sender);
         emit MetadataUpdate(tokenId);
     }
 
@@ -580,7 +582,9 @@ contract TablelandRigs is
 
         // Pass `false` to indicate a standard (non-force) park
         _pilots.parkRig(tokenId, false);
-        emit Unstake(tokenId, tokenOwner);
+
+        // Depending on the `msg.sender`, emit either the token's owner or operator
+        emit Unstake(tokenId, msg.sender);
         emit MetadataUpdate(tokenId);
     }
 
@@ -593,7 +597,7 @@ contract TablelandRigs is
         if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
             revert ITablelandRigPilots.InvalidBatchPilotAction();
 
-        // For each token, call `parkRig`
+        // For each token, call `unstake`
         for (uint8 i = 0; i < tokenIds.length; i++) {
             unstake(tokenIds[i]);
         }

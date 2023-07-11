@@ -8,16 +8,16 @@ interface ITokenReputation {
     /**
      * @notice Emitted when token staking is initiated.
      * @param tokenId Identifier for the token being staked.
-     * @param owner The token owner who wants to stake the token.
+     * @param operator The token owner/operator who wants to stake the token.
      */
-    event Stake(uint256 indexed tokenId, address indexed owner);
+    event Stake(uint256 indexed tokenId, address indexed operator);
 
     /**
      * @notice Emitted when token unstaking is initiated.
      * @param tokenId Identifier for the token being unstaked.
-     * @param owner The token owner who wants to unstake the token.
+     * @param operator The token owner/operator who wants to unstake the token.
      */
-    event Unstake(uint256 indexed tokenId, address indexed owner);
+    event Unstake(uint256 indexed tokenId, address indexed operator);
 
     /**
      * @notice Stake the token, disabling marketplace transfers.
