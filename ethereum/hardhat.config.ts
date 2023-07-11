@@ -106,6 +106,9 @@ const config: HardhatUserConfig = {
       etherPrice: "0.05",
       mintPhase: "public",
       tables: {
+        localhost: {
+          tablelandPrivateKey: process.env.LOCAL_TABLELAND_PRIVATE_KEY,
+        },
         testnet: {
           tablelandPrivateKey: process.env.POLYGON_MUMBAI_PRIVATE_KEY,
           tablelandAlchemyKey: process.env.POLYGON_MUMBAI_API_KEY,
@@ -130,7 +133,7 @@ const config: HardhatUserConfig = {
 
 interface RigsTablesConfig {
   tablelandPrivateKey: string | undefined;
-  tablelandAlchemyKey: string | undefined;
+  tablelandAlchemyKey?: string;
 }
 
 interface RigsConfig {
@@ -147,7 +150,11 @@ interface RigsConfig {
   mintPhase: "closed" | "allowlist" | "waitlist" | "public";
 
   // rigs tables
-  tables: { testnet: RigsTablesConfig; mainnet: RigsTablesConfig };
+  tables: {
+    localhost: RigsTablesConfig;
+    testnet: RigsTablesConfig;
+    mainnet: RigsTablesConfig;
+  };
 
   // rigs args
   maxSupply: number;

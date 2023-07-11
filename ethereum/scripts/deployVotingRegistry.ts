@@ -1,7 +1,7 @@
-import { ethers, network, rigsDeployment } from "hardhat";
-import { BigNumber } from "ethers";
+import { ethers, network, rigsConfig, rigsDeployment, mainnet } from "hardhat";
+import { Wallet, providers, Signer, BigNumber } from "ethers";
 import type { VotingRegistry } from "../typechain-types";
-import { getDatabase } from "@tableland/local";
+import { Database } from "@tableland/sdk";
 
 async function main() {
   console.log(`\nDeploying to '${network.name}'...`);
@@ -17,7 +17,31 @@ async function main() {
     throw Error(`already deployed to '${network.name}'`);
   }
 
-  const db = getDatabase(account);
+  const tablesConfig = mainnet
+    ? rigsConfig.tables.mainnet
+    : network.name === "hardhat"
+    ? rigsConfig.tables.localhost
+    : rigsConfig.tables.testnet;
+
+  let signer: Signer;
+  if (tablesConfig.tablelandPrivateKey) {
+    signer = new Wallet(tablesConfig.tablelandPrivateKey);
+  } else if (account) {
+    signer = account;
+    console.log("Using default signer for creating tables");
+  } else {
+    throw Error("missing signer/Tableland private key");
+  }
+
+  if (tablesConfig.tablelandAlchemyKey) {
+    const provider = new providers.AlchemyProvider(
+      rigsDeployment.tablelandChain,
+      tablesConfig.tablelandAlchemyKey
+    );
+    signer = signer.connect(provider);
+  }
+
+  const db = new Database({ signer, autoWait: true });
 
   // Check that we have ft rewards & proposals table available
   const pilotSessionsTableName = rigsDeployment.pilotSessionsTable;
@@ -31,9 +55,9 @@ async function main() {
   }
 
   const pilotSessionsTableId =
-    rigsDeployment.pilotSessionsTable.match(/.*_\d*_(\d*)/)[1];
+    rigsDeployment.pilotSessionsTable.match(/.*_\d*_(\d*)/)![1];
   const ftRewardsTableId =
-    rigsDeployment.ftRewardsTable.match(/.*_\d*_(\d*)/)[1];
+    rigsDeployment.ftRewardsTable.match(/.*_\d*_(\d*)/)![1];
 
   // Create proposals table
   const { meta: proposalsMeta } = await db
