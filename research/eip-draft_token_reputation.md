@@ -1,7 +1,8 @@
 ---
 title: Token-based reputation
 description: A minimal ERC-721 extension for token-based reputation.
-author: Daniel Buchholz (@dtbuchholz) <dan@tableland.xyz>, Sander Pick (@sanderpick) <sander@tableland.xyz>, datadanne (@datadanne)
+author: Daniel Buchholz (@dtbuchholz) <dan@tableland.xyz>, Sander Pick (@sanderpick) <sander@tableland.xyz>, 
+Daniel Öhrlund (@datadanne)
 discussions-to: https://github.com/ethereum/eips/issues/<EIP_NUMBER> # TODO: Update
 status: Draft
 type: Standards Track
@@ -21,10 +22,11 @@ NFTs are a conduit for holder-initiated actions that attribute to the token owne
 - The concept of "soft" staking and unstaking wherein a token cannot be sold on marketplaces while staked, and the token ownership remains unchanged wherein the holder's account maintains ownership.
 - Dynamic metadata changes, signaled by `Stake` and `Unstake` events, are materialized in the metadata by the implementer (OPTIONAL) using the Data Availability ("DA") layer.
 
-For example, a token owner may stake or unstake their token to signal their support/disapproval for a project. Currently, there does not exist a lightweight standard for implementing these signals, which leads to disparate implementations and an overall lack of interoperable reputation across different communities. This proposal aims to standardize a set of staking/unstaking events, methods, and OPTIONAL dynamic metadata attributes that correspond to reputation earned by the token owner.
+For example, a token owner (or authorized operator) may stake or unstake their token to signal their support/disapproval for a project. Currently, there does not exist a lightweight standard for implementing these signals, which leads to disparate implementations and an overall lack of interoperable reputation across different communities. This proposal aims to standardize a set of staking/unstaking events, methods, and OPTIONAL dynamic metadata attributes that correspond to reputation earned by the token owner.
 
-Note there are two existing EIPs that have somewhat of a similar approach but come with flaws from the perspective of generalizing an interface for the broadest set of use cases:
+Note there are other existing EIPs that have somewhat of a similar approach but come with flaws from the perspective of generalizing an interface for the broadest set of use cases:
 
+- [EIP-5058](https://eips.ethereum.org/EIPS/eip-5058): Although designed with similar lock/unlock functionality, it has a number of methods that are not needed for a minimal interface, such as requirements for setting time locked expiration and operator approvals. Additionally, this current proposal aims to use stake/unstake nomenclature instead of lock/unlock, as "locking" can be misleading in a soft-staking scenario and is also related to marketplace usage in the current state (explained in more detail below).
 - [EIP-5192](https://eips.ethereum.org/EIPS/eip-5192): Designed for non-transferrable "soulbound" tokens ("SBT"), EIP-5192 has a few features that do not align with the token reputation requirements:
   - Lacks a way to initiate _both_ staking and unstaking actions through standardized method calls—it only provides a `locked` getter method, which is unneeded for many use cases.
   - Lack of indexed event parameters needed for the metadata for the caller (e.g., token owner) address.
@@ -32,6 +34,7 @@ Note there are two existing EIPs that have somewhat of a similar approach but co
 - [EIP-5753](https://eips.ethereum.org/EIPS/eip-5753): Although EIP-5753 is currently a draft and yet to be accepted, it (essentially) changes EIP-5192 with the following:
   - Adds `lock` and `unlock` methods, which behave similar to the token reputation proposal's `stake` and `unstake` methods; however, `unlock` lacks the required method caller information, as do the `Lock` and `Unlock` events.
   - Changes the EIP-5192 `locked` getter to a function named `getLocked` that returns an address instead of boolean; but, getters SHOULD NOT be required for a minimal interface as this assumes contract storage is used to track reputation, which is not always the case (e.g., off-chain metadata/DA based reputation tracking).
+- [EIP-6982](https://eips.ethereum.org/EIPS/eip-6982): This is a minimal interface that includes similar functionality to this proposal. However, it uses "lock" related terminology instead of "stake" nomenclature, and the `defaultLocked` method is unneeded in the most minimalistic approach. More importantly, it does not include an event for the unlocking/unstaking action, which is critical to understanding when a reputation session has ended from an off-chain indexing perspective.
 
 For reputation to dynamically change the metadata, there SHOULD be a block number associated with the event emittance for off-chain indexing as this is needed to materialize any metadata updates that depend on block-related information. The block number is always included in a blockchain transaction and can be parsed from there. This is being noted due to the block number's relationship to staking; reputation is often tracked with a start and end block number that bound the staking/unstaking activities.
 
@@ -51,7 +54,7 @@ The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "S
 
 ### Stake and Unstake
 
-An owner SHALL be able to "soft" stake and unstake their token. Staking and unstaking a token SHOULD NOT require a change to the ownership of the token itself but simply emit events that signal the on-chain action taken. Staking a token with `function stake(...)` signals that the owner is staking their token to accrue reputation, such as earning block-based rewards, while the token cannot be sold during this state; reputation SHOULD be earned for good behavior during this token state. Unstaking a token with `function unstake(...)` signals that the owner no longer wishes to stake the token and is available to be sold; reputation SHOULD NOT be earned while in an unstaked state.
+An owner (or operator) SHALL be able to "soft" stake and unstake their token. Staking and unstaking a token SHOULD NOT require a change to the ownership of the token itself but simply emit events that signal the on-chain action taken. Staking a token with `function stake(...)` signals that the owner is staking their token to accrue reputation, such as earning block-based rewards, while the token cannot be sold during this state; reputation SHOULD be earned for good behavior during this token state. Unstaking a token with `function unstake(...)` signals that the owner no longer wishes to stake the token and is available to be sold; reputation SHOULD NOT be earned while in an unstaked state.
 
 The following defines the function signatures for these methods:
 
@@ -62,8 +65,8 @@ These functions emit `Stake` and `Unstake` events, respectively, to signal a cha
 
 The following defines the signatures for these events:
 
-- `event Stake(uint256 indexed tokenId, address indexed owner);`
-- `event Unstake(uint256 indexed tokenId, address indexed owner);`
+- `event Stake(uint256 indexed tokenId, address indexed operator);`
+- `event Unstake(uint256 indexed tokenId, address indexed operator);`
 
 ### Token Reputation Interface
 
@@ -82,14 +85,14 @@ interface ITokenReputation {
      * @param tokenId Identifier for the token being staked.
      * @param owner The token owner who wants to stake the token.
      */
-    event Stake(uint256 indexed tokenId, address indexed owner);
+    event Stake(uint256 indexed tokenId, address indexed operator);
 
     /**
      * @notice Emitted when token unstaking is initiated.
      * @param tokenId Identifier for the token being unstaked.
      * @param owner The token owner who wants to unstake the token.
      */
-    event Unstake(uint256 indexed tokenId, address indexed owner);
+    event Unstake(uint256 indexed tokenId, address indexed operator);
 
     /**
      * @notice Stake the token, disabling marketplace transfers.
@@ -153,7 +156,7 @@ There are various ways in which reputation could stored and tracked. Since NFT m
 CREATE TABLE token_reputation (
   id INTEGER PRIMARY KEY, /* Session ID */
   token_id INTEGER NOT NULL, /* NFT token ID */
-  owner TEXT NOT NULL, /* Token owner's address */
+  owner TEXT NOT NULL, /* Token owner's address—for simplicity, we're assuming the `operator` is the owner */
   start_time INTEGER NOT NULL, /* Starting block number */
   end_time INTEGER /* Ending block number */
 );
@@ -183,6 +186,8 @@ WHERE
 ```
 
 Within the metadata, the calculated reputation value can then be displayed as an attribute. The query above demonstrates address-bound (non-transferrable) reputation. For token-bound (transferrable) reputation, the overall structure would be quite similar but drops the `owner` column and also changes the `SELECT` query such that is uses `token_id = 1` instead of `owner = '0x1234...'` in the `WHERE` clause. One could even imagine more complex use cases where other structured data is included within implementation-specific events and materialized in the SQL table, such as in-game points, wins/losses, or similar.
+
+If a smart contract implementation supports an `operator` for staking/unstaking on behalf of the token owner, this would also remove the need for the `owner` column. Instead, additional indexing and storage of the token ID and owner's address (via EIP-721's `Transfer` event) would help compose the necessary data. This is noted as the examples noted focus on "owner" nomenclature, which isn't always the case.
 
 ## Rationale
 
