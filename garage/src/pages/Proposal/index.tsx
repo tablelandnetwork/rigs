@@ -33,15 +33,11 @@ import {
   usePrepareContractWrite,
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
-import { ethers } from "ethers";
-import { strings } from "@helia/strings";
-import { CID } from "multiformats/cid";
 import { TransactionStateAlert } from "../../components/TransactionStateAlert";
 import {
   ProposalStatusBadge,
   proposalStatus,
 } from "../../components/ProposalStatusBadge";
-import { useHelia } from "../../hooks/useHelia";
 import { useProposal, Result, Vote } from "../../hooks/useProposal";
 import { useAddressVotingPower } from "../../hooks/useAddressVotingPower";
 import { TOPBAR_HEIGHT } from "../../Topbar";
@@ -50,6 +46,8 @@ import { as0xString } from "../../utils/types";
 import { ProposalWithOptions, ProposalStatus } from "../../types";
 import { deployment } from "../../env";
 import { abi } from "../../abis/VotingRegistry";
+
+const ipfsGatewayBaseUrl = "https://nftstorage.link";
 
 const { votingContractAddress } = deployment;
 
@@ -79,10 +77,10 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
 
   const isEligible = (votingPower ?? 0) > 0;
 
-  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
-    blockNumber,
-    proposal,
-  ]);
+  const status = useMemo(
+    () => proposalStatus(blockNumber, proposal),
+    [blockNumber, proposal]
+  );
 
   const handleWeightChanged = useCallback(
     (i: number, event: React.ChangeEvent<HTMLInputElement>) => {
@@ -433,23 +431,21 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
 const Header = ({ proposal, results, ...props }: ModuleProps) => {
   const [markdown, setMarkdown] = useState("");
 
-  const { node } = useHelia();
-  const s = strings(node);
-
   useEffect(() => {
     let isCancelled = false;
 
-    try {
-      const cid = CID.parse(proposal.descriptionCid);
-
-      // TODO what, how is this incompatible
-      s.get(cid as any).then((v) => {
+    fetch(`${ipfsGatewayBaseUrl}/ipfs/${proposal.descriptionCid}`)
+      .then((v) => v.text())
+      .then((body) => {
         if (isCancelled) return;
 
-        setMarkdown(v);
-      });
-    } catch (_) {}
+        setMarkdown(body);
+      })
+      .catch(() => {
+        if (isCancelled) return;
 
+        setMarkdown("Failed to load description from IPFS.");
+      });
     return () => {
       isCancelled = true;
     };
@@ -486,10 +482,10 @@ export const Proposal = () => {
   const proposalData =
     proposal && votes && results ? { proposal, votes, results } : undefined;
 
-  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
-    blockNumber,
-    proposal,
-  ]);
+  const status = useMemo(
+    () => proposalStatus(blockNumber, proposal),
+    [blockNumber, proposal]
+  );
 
   return (
     <Flex
