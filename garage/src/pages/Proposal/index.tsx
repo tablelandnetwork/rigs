@@ -465,7 +465,11 @@ const Header = ({ proposal, results, ...props }: ModuleProps) => {
       <Divider />
       <Box paddingTop={6} />
       {markdown && (
-        <ReactMarkdown className="markdown" remarkPlugins={[remarkGfm]}>
+        <ReactMarkdown
+          className="markdown"
+          linkTarget="_blank"
+          remarkPlugins={[remarkGfm]}
+        >
           {markdown}
         </ReactMarkdown>
       )}
