@@ -125,14 +125,14 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
         uint256[] calldata weights,
         string[] memory comments
     ) external {
-        Proposal memory proposal = _proposals[proposalId];
+        Proposal memory proposal_ = _proposals[proposalId];
 
         // Check that proposal is active
         require(
-            block.number >= proposal.startBlockNumber,
+            block.number >= proposal_.startBlockNumber,
             "Vote has not started"
         );
-        require(block.number <= proposal.endBlockNumber, "Vote has ended");
+        require(block.number <= proposal_.endBlockNumber, "Vote has ended");
 
         // Check that options & weights & comments match, and weight sum == 100
         require(
@@ -222,14 +222,14 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
 
     /// @inheritdoc IVotingRegistry
     function distributeVoterRewards(uint256 proposalId) external {
-        Proposal memory proposal = _proposals[proposalId];
+        Proposal memory proposal_ = _proposals[proposalId];
 
         require(
-            block.number > proposal.endBlockNumber,
+            block.number > proposal_.endBlockNumber,
             "Vote has not ended yet"
         );
 
-        require(!proposal.rewardsDistributed, "Rewards have been distributed");
+        require(!proposal_.rewardsDistributed, "Rewards have been distributed");
 
         _proposals[proposalId].rewardsDistributed = true;
 
@@ -251,7 +251,7 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
             " (block_num, recipient, reason, amount, proposal_id)",
             " SELECT DISTINCT BLOCK_NUM(), ",
             "address, 'Voted on proposal', ",
-            Strings.toString(proposal.voterReward),
+            Strings.toString(proposal_.voterReward),
             ", proposal_id FROM ",
             _votesTable.name,
             " WHERE weight > 0 AND proposal_id = ",
