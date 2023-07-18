@@ -131,7 +131,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
 
     const { meta: optionsMeta } = await db
       .prepare(
-        "CREATE TABLE ft_snapshot (id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL)"
+        "CREATE TABLE options (id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL)"
       )
       .all();
 
