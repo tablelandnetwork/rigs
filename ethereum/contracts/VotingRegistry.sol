@@ -354,10 +354,11 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
             "INSERT INTO ",
             _ftSnapshotTable.name,
             " (address, ft, proposal_id) ",
-            "SELECT owner, (COALESCE(end_time, BLOCK_NUM()) - start_time), ",
+            "SELECT owner, SUM(COALESCE(end_time, BLOCK_NUM()) - start_time), ",
             proposalId,
             " FROM ",
-            _pilotSessionsTable.name
+            _pilotSessionsTable.name,
+            " GROUP BY owner"
         );
 
         string memory snapshotFtRewards = string.concat(
@@ -367,7 +368,11 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
             "SELECT recipient, amount, ",
             proposalId,
             " FROM ",
-            _ftRewardsTable.name
+            _ftRewardsTable.name,
+            " ON CONFLICT (address, proposal_id) ",
+            "DO UPDATE SET ft = ",
+            _ftSnapshotTable.name,
+            ".ft + excluded.ft"
         );
 
         ITablelandTables.Statement[]

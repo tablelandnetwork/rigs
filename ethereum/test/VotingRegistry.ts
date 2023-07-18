@@ -60,8 +60,10 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     const pilotSessionsTableId = pilotRewardsReceipt.tableId;
 
     const pilotSessions: PilotSession[] = [
-      { rigId: 1, owner: accounts[1].address, startTime: 0, endTime: 111 },
-      { rigId: 2, owner: accounts[2].address, startTime: 0, endTime: 222 },
+      { rigId: 1, owner: accounts[1].address, startTime: 0, endTime: 70 },
+      { rigId: 1, owner: accounts[1].address, startTime: 100, endTime: 111 },
+      { rigId: 2, owner: accounts[2].address, startTime: 0, endTime: 111 },
+      { rigId: 2, owner: accounts[2].address, startTime: 111, endTime: 222 },
       { rigId: 3, owner: accounts[3].address, startTime: 0, endTime: 333 },
     ];
 
@@ -86,6 +88,16 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     ftRewardsTableName = ftRewardsReceipt.name;
     const ftRewardsTableId = ftRewardsReceipt.tableId;
 
+    const ftRewardInsert = await db.exec(
+      db
+        .prepare(
+          `INSERT INTO ${ftRewardsTableName} (block_num, recipient, reason, amount) VALUES (0, ?, '', 30)`
+        )
+        .bind(accounts[1].address)
+        .toString()
+    );
+    await ftRewardInsert.meta.txn!.wait();
+
     // 2. Create voting tables
     const { meta: proposalsMeta } = await db
       .prepare(
@@ -99,7 +111,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
 
     const { meta: ftSnapshotMeta } = await db
       .prepare(
-        "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL)"
+        "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL, UNIQUE(address, proposal_id))"
       )
       .all();
 
