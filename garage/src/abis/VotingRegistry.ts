@@ -12,18 +12,23 @@ export const abi = [
         type: "string",
       },
       {
+        internalType: "enum IVotingRegistry.VotingSystem",
+        name: "votingSystem",
+        type: "uint8",
+      },
+      {
         internalType: "uint256",
-        name: "voterFtReward",
+        name: "voterReward",
         type: "uint256",
       },
       {
         internalType: "uint256",
-        name: "startBlock",
+        name: "startBlockNumber",
         type: "uint256",
       },
       {
         internalType: "uint256",
-        name: "endBlock",
+        name: "endBlockNumber",
         type: "uint256",
       },
       {
@@ -33,7 +38,13 @@ export const abi = [
       },
     ],
     name: "createProposal",
-    outputs: [],
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "proposalId",
+        type: "uint256",
+      },
+    ],
     stateMutability: "nonpayable",
     type: "function",
   },
