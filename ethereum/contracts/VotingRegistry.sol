@@ -74,11 +74,18 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
     function createProposal(
         string calldata name,
         string calldata descriptionCid,
+        VotingSystem votingSystem,
         uint256 voterFtReward,
         uint256 startBlockNumber,
         uint256 endBlockNumber,
         string[] calldata options
     ) external onlyRole(VOTING_ADMIN_ROLE) returns (uint256 proposalId) {
+        // We only support Weighted voting right now
+        require(
+            votingSystem == VotingSystem.Weighted,
+            "Unsupported voting system"
+        );
+
         proposalId = _proposalCounter++;
 
         string memory proposalIdString = Strings.toString(proposalId);
@@ -87,6 +94,7 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
             proposalIdString,
             name,
             descriptionCid,
+            votingSystem,
             voterFtReward,
             startBlockNumber,
             endBlockNumber
@@ -100,6 +108,7 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
             endBlockNumber,
             voterFtReward,
             name,
+            votingSystem,
             false
         );
 
@@ -126,6 +135,12 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
         string[] memory comments
     ) external {
         Proposal memory proposal_ = _proposals[proposalId];
+
+        // We only support Weighted voting right now
+        require(
+            proposal_.votingSystem == VotingSystem.Weighted,
+            "Unsupported voting system"
+        );
 
         // Check that proposal is active
         require(
@@ -274,6 +289,7 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
         string memory proposalIdString,
         string memory name,
         string memory descriptionCid,
+        VotingSystem votingSystem,
         uint256 voterFtReward,
         uint256 startBlockNumber,
         uint256 endBlockNumber
@@ -281,12 +297,14 @@ contract VotingRegistry is AccessControl, IVotingRegistry {
         string memory insert = string.concat(
             "INSERT INTO ",
             _proposalsTable.name,
-            " (id, name, description_cid, voter_ft_reward, created_at, start_block, end_block) VALUES (",
+            " (id, name, description_cid, voting_system, voter_ft_reward, created_at, start_block, end_block) VALUES (",
             proposalIdString,
             ", ",
             SQLHelpers.quote(name),
             ", ",
             SQLHelpers.quote(descriptionCid),
+            ", ",
+            Strings.toString(uint(votingSystem)),
             ", ",
             Strings.toString(voterFtReward),
             ", ",

@@ -101,7 +101,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
     // 2. Create voting tables
     const { meta: proposalsMeta } = await db
       .prepare(
-        "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
+        "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voting_system integer NOT NULL, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
       )
       .all();
 
@@ -192,6 +192,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200),
@@ -220,6 +221,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
           .createProposal(
             "my vote",
             "some-cid",
+            BigNumber.from(0),
             BigNumber.from(100),
             BigNumber.from(100),
             BigNumber.from(200),
@@ -237,6 +239,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
           .createProposal(
             "my vote",
             "some-cid",
+            BigNumber.from(0),
             BigNumber.from(100),
             BigNumber.from(100),
             BigNumber.from(200),
@@ -254,6 +257,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
           .createProposal(
             "my vote",
             "some-cid",
+            BigNumber.from(0),
             BigNumber.from(100),
             BigNumber.from(100),
             BigNumber.from(200),
@@ -270,6 +274,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200),
@@ -306,6 +311,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200),
@@ -344,6 +350,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(100),
           BigNumber.from(200),
@@ -407,6 +414,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20),
@@ -467,6 +475,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20),
@@ -513,6 +522,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "my vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(blockNumber + 10),
           BigNumber.from(blockNumber + 20),
@@ -559,6 +569,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100),
@@ -667,6 +678,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(100),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100),
@@ -694,6 +706,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(25_000),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100),
@@ -733,6 +746,7 @@ describe("VotingRegistry [ @skip-on-coverage ]", function () {
         .createProposal(
           "vote",
           "some-cid",
+          BigNumber.from(0),
           BigNumber.from(25_000),
           BigNumber.from(blockNumber),
           BigNumber.from(blockNumber + 100),

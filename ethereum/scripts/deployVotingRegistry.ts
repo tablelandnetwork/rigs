@@ -62,7 +62,7 @@ async function main() {
   // Create proposals table
   const { meta: proposalsMeta } = await db
     .prepare(
-      "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
+      "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voting_system integer NOT NULL, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
     )
     .all();
 
