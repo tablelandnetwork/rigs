@@ -73,7 +73,7 @@ async function main() {
   // Create ft snapshot table
   const { meta: ftSnapshotMeta } = await db
     .prepare(
-      "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL)"
+      "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL, UNIQUE(address, proposal_id))"
     )
     .all();
 
