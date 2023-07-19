@@ -13,13 +13,23 @@ import {
   NumberIncrementStepper,
   NumberDecrementStepper,
   useToast,
+  Table,
+  Tr,
+  Td,
+  Thead,
+  Th,
+  Tbody,
+  HStack,
 } from "@chakra-ui/react";
+import { Link } from "react-router-dom";
 import { Database } from "@tableland/sdk";
 import { useSigner } from "../../hooks/useSigner";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { isValidAddress } from "../../utils/types";
+import { CreateProposalModal } from "../../components/CreateProposalModal";
+import { useProposals } from "../../hooks/useProposals";
 import { secondaryChain, deployment } from "../../env";
 
 const { ftRewardsTable } = deployment;
@@ -156,6 +166,58 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
   );
 };
 
+const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
+  const { proposals } = useProposals();
+
+  const [proposalDialogOpen, setCreateProposalDialogOpen] = useState(false);
+
+  return (
+    <>
+      <CreateProposalModal
+        isOpen={proposalDialogOpen}
+        onClose={() => setCreateProposalDialogOpen(false)}
+      />
+      <Box {...props}>
+        <HStack
+          justify="space-between"
+          align="baseline"
+          sx={{ width: "100%", mb: 4 }}
+        >
+          <Heading>Proposals</Heading>
+          <Button onClick={() => setCreateProposalDialogOpen(true)}>
+            Create new
+          </Button>
+        </HStack>
+        <Table>
+          <Thead>
+            <Tr>
+              <Th>ID</Th>
+              <Th>Name</Th>
+              <Th>Created At</Th>
+              <Th>Starts At</Th>
+              <Th>Ends At</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {proposals &&
+              proposals.map((proposal, i) => (
+                <Tr key={i}>
+                  <Td>
+                    <Link to={`/proposals/${proposal.id}`}>{proposal.id}</Link>
+                  </Td>
+                  <Td>{proposal.name}</Td>
+                  <Td>{proposal.createdAt}</Td>
+                  <Td>{proposal.startBlock}</Td>
+                  <Td>{proposal.endBlock}</Td>
+                </Tr>
+              ))}
+          </Tbody>
+        </Table>
+      </Box>
+    </>
+  );
+};
+
 export const Admin = () => {
   return (
     <>
@@ -178,6 +240,7 @@ export const Admin = () => {
         >
           <Flex direction="column" gap={GRID_GAP} align="stretch" width="100%">
             <GiveFtRewardForm {...MODULE_PROPS} />
+            <ListProposalsForm {...MODULE_PROPS} />
           </Flex>
         </Flex>
       </Flex>

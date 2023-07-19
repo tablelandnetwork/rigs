@@ -6,6 +6,8 @@ import { PilotDetails } from "./pages/PilotDetails";
 import { OwnerDetails } from "./pages/OwnerDetails";
 import { Gallery } from "./pages/Gallery";
 import { Admin } from "./pages/Admin";
+import { Proposals } from "./pages/Proposals";
+import { Proposal } from "./pages/Proposal";
 
 export const routes = () => {
   return [
@@ -46,5 +48,17 @@ export const routes = () => {
       requiresWalletConnection: true,
       element: <Admin />,
     },
+    {
+      key: "PROPOSALS",
+      path: "/proposals",
+      requiresWalletConnection: false,
+      element: <Proposals />,
+    },
+    {
+      key: "PROPOSAL",
+      path: "/proposals/:id",
+      requiresWalletConnection: false,
+      element: <Proposal />,
+    }
   ];
 };
