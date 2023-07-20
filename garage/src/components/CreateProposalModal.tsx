@@ -81,6 +81,7 @@ export const CreateProposalModal = ({
     args: [
       name,
       descriptionCid,
+      0,
       BigInt(voterFtReward),
       BigInt(startBlock),
       BigInt(endBlock),
