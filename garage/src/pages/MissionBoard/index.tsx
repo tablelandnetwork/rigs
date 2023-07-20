@@ -82,7 +82,7 @@ const ContributeWidth = "90px";
 const MissionListHeading = ({ p }: React.ComponentProps<typeof Box>) => {
   return (
     <Show above="md">
-      <HStack align="center" spacing={8} px={p}>
+      <HStack align="center" spacing={8} px={p} paddingTop={8}>
         <Text flexGrow="1">Name</Text>
         <Text width={TypeWidth}>Type</Text>
         <Text width={RewardWidth}>Reward</Text>
