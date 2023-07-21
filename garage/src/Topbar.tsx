@@ -239,6 +239,24 @@ const MobileDrawer = ({
             </ListItem>
             <Divider bgColor="inactive" />
             <ListItem textAlign="center" py={3}>
+              <NavButton
+                active={route?.route.key === "PROPOSALS"}
+                route="/proposals"
+                title="Proposals"
+                onClick={onClose}
+              />
+            </ListItem>
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
+              <NavButton
+                active={route?.route.key === "MISSION_BOARD"}
+                route="/mission-board"
+                title="Mission Board"
+                onClick={onClose}
+              />
+            </ListItem>
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
               <MobileNavTablelandConnectButton onClick={onClose} />
             </ListItem>
           </List>
