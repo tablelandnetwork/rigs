@@ -57,17 +57,17 @@ const Information = ({ mission, ...props }: ModuleProps) => {
   return (
     <VStack align="stretch" spacing={4} {...props}>
       <Heading>{mission.description}</Heading>
-      <Divider />
-      <Heading>Requirements</Heading>
+      <Divider pt={4} />
+      <Heading pt={4}>Requirements</Heading>
       <OrderedList listStylePos="inside">
         {mission.requirements.map((requirement, i) => (
-          <ListItem key={`requirement-${i}`}>{requirement}</ListItem>
+          <ListItem key={`requirement-${i}`} mb={4}>{requirement}</ListItem>
         ))}
       </OrderedList>
       <Heading>Deliverables</Heading>
       <OrderedList listStylePos="inside">
         {mission.deliverables.map((deliverable, i) => (
-          <ListItem key={`deliverable-${i}`}>
+          <ListItem key={`deliverable-${i}`} mb={4}>
             {deliverable.description}
           </ListItem>
         ))}
