@@ -4,7 +4,6 @@ import {
   Button,
   FormControl,
   FormLabel,
-  IconButton,
   Input,
   Modal,
   ModalOverlay,
@@ -13,14 +12,7 @@ import {
   ModalFooter,
   ModalBody,
   ModalCloseButton,
-  Table,
-  Tbody,
-  Td,
-  Thead,
-  Th,
-  Tr,
 } from "@chakra-ui/react";
-import { DeleteIcon } from "@chakra-ui/icons";
 import {
   useContractWrite,
   usePrepareContractWrite,
@@ -30,7 +22,6 @@ import { as0xString } from "../utils/types";
 import { Mission } from "../types";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { deployment } from "../env";
-import { abi } from "../abis/VotingRegistry";
 
 interface ModalProps {
   isOpen: boolean;
