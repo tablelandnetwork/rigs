@@ -105,7 +105,7 @@ export function getContractURI(
 ): string {
   return (
     tablelandHost +
-    "/query?extract=true&unwrap=true&s=" +
+    "/api/v1/query?format=objects&extract=true&unwrap=true&statement=" +
     encodeURIComponent(
       `select json_object(
         'name',name,
