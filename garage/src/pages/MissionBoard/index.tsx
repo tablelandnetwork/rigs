@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber } from "../../utils/fmt";
 import { useOpenMissions } from "../../hooks/useMissions";
+import { useManifestoContext } from "../../components/ManifestoContext";
 import { Mission } from "../../types";
 
 const GRID_GAP = 4;
@@ -206,7 +207,7 @@ export const SignManifesto = ({ onAgree }: { onAgree: () => void }) => {
 };
 
 export const MissionBoard = () => {
-  const [hasSignedManifesto, setHasSignedManifesto] = useState(false);
+  const { hasSignedManifesto, setHasSignedManifesto } = useManifestoContext();
   const { missions } = useOpenMissions();
 
   return (

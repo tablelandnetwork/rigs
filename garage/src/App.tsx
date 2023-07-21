@@ -21,6 +21,7 @@ import { GlobalFlyParkModals } from "./components/GlobalFlyParkModals";
 import { RequiresWalletConnection } from "./components/RequiresWalletConnection";
 import { RigAttributeStatsContextProvider } from "./components/RigAttributeStatsContext";
 import { NFTsContextProvider } from "./components/NFTsContext";
+import { ManifestoContextProvider } from "./components/ManifestoContext";
 import { ActingAsAddressContextProvider } from "./components/ActingAsAddressContext";
 import { routes } from "./routes";
 import { mainChain, secondaryChain } from "./env";
@@ -258,33 +259,35 @@ function App() {
             <ActingAsAddressContextProvider>
               <RigAttributeStatsContextProvider>
                 <NFTsContextProvider>
-                  <BrowserRouter>
-                    <Topbar />
-                    <GlobalFlyParkModals>
-                      <Routes>
-                        {routes().map(
-                          (
-                            { requiresWalletConnection, element, ...props },
-                            index
-                          ) => (
-                            <Route
-                              {...props}
-                              key={`route-${index}`}
-                              element={
-                                requiresWalletConnection ? (
-                                  <RequiresWalletConnection>
-                                    {element}
-                                  </RequiresWalletConnection>
-                                ) : (
-                                  element
-                                )
-                              }
-                            />
-                          )
-                        )}
-                      </Routes>
-                    </GlobalFlyParkModals>
-                  </BrowserRouter>
+                  <ManifestoContextProvider>
+                    <BrowserRouter>
+                      <Topbar />
+                      <GlobalFlyParkModals>
+                        <Routes>
+                          {routes().map(
+                            (
+                              { requiresWalletConnection, element, ...props },
+                              index
+                            ) => (
+                              <Route
+                                {...props}
+                                key={`route-${index}`}
+                                element={
+                                  requiresWalletConnection ? (
+                                    <RequiresWalletConnection>
+                                      {element}
+                                    </RequiresWalletConnection>
+                                  ) : (
+                                    element
+                                  )
+                                }
+                              />
+                            )
+                          )}
+                        </Routes>
+                      </GlobalFlyParkModals>
+                    </BrowserRouter>
+                  </ManifestoContextProvider>
                 </NFTsContextProvider>
               </RigAttributeStatsContextProvider>
             </ActingAsAddressContextProvider>
