@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
+  Button,
   Divider,
   Flex,
   Heading,
@@ -17,6 +18,7 @@ import {
   Thead,
   Tr,
   VStack,
+  useDisclosure,
 } from "@chakra-ui/react";
 import {
   useAccount,
@@ -32,6 +34,7 @@ import { as0xString } from "../../utils/types";
 import { Mission, WalletAddress } from "../../types";
 import { deployment } from "../../env";
 import { useMission } from "../../hooks/useMissions";
+import { SubmitMissionModal } from "../../components/SubmitMissionModal";
 
 const GRID_GAP = 4;
 
@@ -61,7 +64,9 @@ const Information = ({ mission, ...props }: ModuleProps) => {
       <Heading pt={4}>Requirements</Heading>
       <OrderedList listStylePos="inside">
         {mission.requirements.map((requirement, i) => (
-          <ListItem key={`requirement-${i}`} mb={4}>{requirement}</ListItem>
+          <ListItem key={`requirement-${i}`} mb={4}>
+            {requirement}
+          </ListItem>
         ))}
       </OrderedList>
       <Heading>Deliverables</Heading>
@@ -87,33 +92,40 @@ const Header = ({ mission, ...props }: ModuleProps) => {
 };
 
 const Submissions = ({ mission, submissions, p, ...props }: ModuleProps) => {
-
-  // TODO add Submit-button
+  const { isOpen, onClose, onOpen } = useDisclosure();
 
   return (
-    <VStack align="stretch" spacing={4} pt={p} {...props}>
-      <Heading px={p}>Submissions</Heading>
-      <Table>
-        <Thead>
-          <Tr>
-            <Th pl={p}>Date</Th>
-            <Th>Address</Th>
-            <Th pr={p}>Status</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {submissions.map((submission, idx) => {
-            return (
-              <Tr key={`submission-${idx}`}>
-                <Td pl={p}>{submission.timestamp.toISOString()}</Td>
-                <Td>{truncateWalletAddress(submission.address)}</Td>
-                <Td pr={p}>{submission.status}</Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
-    </VStack>
+    <>
+      <SubmitMissionModal isOpen={isOpen} onClose={onClose} mission={mission} />
+      <VStack align="stretch" spacing={4} pt={p} {...props}>
+        <Heading px={p}>Submissions</Heading>
+        <Table>
+          <Thead>
+            <Tr>
+              <Th pl={p}>Date</Th>
+              <Th>Address</Th>
+              <Th pr={p}>Status</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {submissions.map((submission, idx) => {
+              return (
+                <Tr key={`submission-${idx}`}>
+                  <Td pl={p}>{submission.timestamp.toDateString()}</Td>
+                  <Td>{truncateWalletAddress(submission.address)}</Td>
+                  <Td pr={p}>{submission.status}</Td>
+                </Tr>
+              );
+            })}
+          </Tbody>
+        </Table>
+        <Flex px={p} pb={p} justify="stretch">
+          <Button flexGrow="1" onClick={onOpen}>
+            Submit contribution
+          </Button>
+        </Flex>
+      </VStack>
+    </>
   );
 };
 
