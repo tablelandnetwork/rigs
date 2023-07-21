@@ -240,13 +240,9 @@ async function main() {
     "TablelandRigPilots"
   );
   const pilots = await (
-    (await upgrades.deployProxy(
-      RigPilotsFactory,
-      [rigs.address],
-      {
-        kind: "uups",
-      }
-    )) as TablelandRigPilots
+    (await upgrades.deployProxy(RigPilotsFactory, [rigs.address], {
+      kind: "uups",
+    })) as TablelandRigPilots
   ).deployed();
   console.log("Deployed Pilots:", pilots.address);
   const pilotSessionsTable = await pilots.pilotSessionsTable();
