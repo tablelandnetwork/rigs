@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Badge,
   Box,
@@ -17,6 +17,7 @@ import { Link } from "react-router-dom";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber } from "../../utils/fmt";
 import { useOpenMissions } from "../../hooks/useMissions";
+import { usePersistentState } from "../../hooks/usePersistentState";
 import { Mission } from "../../types";
 
 const GRID_GAP = 4;
@@ -210,7 +211,11 @@ export const SignManifesto = ({ onAgree }: { onAgree: () => void }) => {
 };
 
 export const MissionBoard = () => {
-  const [hasSignedManifesto, setHasSignedManifesto] = useState(false);
+  const [hasSignedManifesto, setHasSignedManifesto] = usePersistentState(
+    "HAS_SIGNED_MB_MANIFESTO",
+    false
+  );
+
   const { missions } = useOpenMissions();
 
   return (
