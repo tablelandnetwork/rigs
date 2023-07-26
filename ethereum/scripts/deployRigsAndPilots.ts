@@ -13,18 +13,14 @@ import {
   countList,
   getListFromCSVs,
 } from "../helpers/allowlist";
-import type { TablelandRigs, PaymentSplitter } from "../typechain-types";
+import type {
+  TablelandRigs,
+  PaymentSplitter,
+  TablelandRigPilots,
+} from "../typechain-types";
 import { Database, Statement } from "@tableland/sdk";
-import fetch, { Headers, Request, Response } from "node-fetch";
 import { getContractURI } from "../helpers/uris";
 import assert from "assert";
-
-if (!(globalThis as any).fetch) {
-  (globalThis as any).fetch = fetch;
-  (globalThis as any).Headers = Headers;
-  (globalThis as any).Request = Request;
-  (globalThis as any).Response = Response;
-}
 
 async function main() {
   console.log(`\nDeploying rigs to '${network.name}'...`);
@@ -48,13 +44,16 @@ async function main() {
   if (rigsDeployment.dealsTable === "") {
     throw Error(`missing deals table entry in deployments`);
   }
-  if (rigsDeployment.pilotSessionsTable === "") {
-    throw Error(`missing pilot sessions table entry in deployments`);
-  }
 
   // Don't allow multiple deployments per network
   if (rigsDeployment.contractAddress !== "") {
     throw Error(`already deployed to '${network.name}'`);
+  }
+  if (rigsDeployment.pilotsAddress !== "") {
+    throw Error(`already deployed to '${network.name}'`);
+  }
+  if (rigsDeployment.pilotSessionsTable !== "") {
+    throw Error(`pilot sessions table already exists on '${network.name}'`);
   }
 
   // Build merkle trees for allowlist
@@ -236,6 +235,19 @@ async function main() {
   await tx.wait();
   console.log("Set contract URI:", contractURI);
 
+  // Deploy Pilots
+  const RigPilotsFactory = await ethers.getContractFactory(
+    "TablelandRigPilots"
+  );
+  const pilots = await (
+    (await upgrades.deployProxy(RigPilotsFactory, [rigs.address], {
+      kind: "uups",
+    })) as TablelandRigPilots
+  ).deployed();
+  console.log("Deployed Pilots:", pilots.address);
+  const pilotSessionsTable = await pilots.pilotSessionsTable();
+  console.log("Pilot sessions table:", pilotSessionsTable);
+
   // Warn that addresses need to be saved in deployments file
   console.warn(
     `\nSave 'deployments.${network.name}.contractAddress: "${rigs.address}"' in deployments.ts!`
@@ -248,6 +260,12 @@ async function main() {
   );
   console.warn(
     `Save 'deployments.${network.name}.allowlistTable: "${allowlistTable}"' in deployments.ts!`
+  );
+  console.warn(
+    `Save 'deployments.${network.name}.pilotsAddress: "${pilots.address}"' in deployments.ts!`
+  );
+  console.warn(
+    `Save 'deployments.${network.name}.pilotSessionsTable: "${pilotSessionsTable}"' in deployments.ts!`
   );
 }
 
