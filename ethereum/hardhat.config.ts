@@ -64,6 +64,15 @@ const config: HardhatUserConfig = {
           ? [process.env.ETHEREUM_PRIVATE_KEY]
           : [],
     },
+    filecoin: {
+      url: `https://rpc.ankr.com/filecoin/${
+        process.env.FILECOIN_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.FILECOIN_PRIVATE_KEY !== undefined
+          ? [process.env.FILECOIN_PRIVATE_KEY]
+          : [],
+    },
     // testnets
     "ethereum-goerli": {
       url: `https://eth-goerli.g.alchemy.com/v2/${
@@ -114,8 +123,10 @@ const config: HardhatUserConfig = {
           tablelandAlchemyKey: process.env.POLYGON_MUMBAI_API_KEY,
         },
         mainnet: {
-          tablelandPrivateKey: process.env.ARBITRUM_PRIVATE_KEY,
-          tablelandAlchemyKey: process.env.ARBITRUM_API_KEY,
+          tablelandPrivateKey: process.env.FILECOIN_PRIVATE_KEY,
+          tablelandProviderUrl: `https://rpc.ankr.com/filecoin/${
+            process.env.FILECOIN_API_KEY ?? ""
+          }`,
         },
       },
       royaltyReceivers: [
@@ -134,6 +145,7 @@ const config: HardhatUserConfig = {
 interface RigsTablesConfig {
   tablelandPrivateKey: string | undefined;
   tablelandAlchemyKey?: string;
+  tablelandProviderUrl?: string;
 }
 
 interface RigsConfig {
@@ -195,8 +207,11 @@ extendEnvironment((hre: HardhatRuntimeEnvironment) => {
   // Get configs for user-selected network
   const config = hre.userConfig.config;
   hre.rigsConfig = config.args;
-  hre.rigsDeployment = (config.deployments as any)[hre.network.name];
-  hre.mainnet = hre.network.name === "ethereum";
+  // Hack to account for the fact that the voting registry is on filecoin
+  const network =
+    hre.network.name === "filecoin" ? "ethereum" : hre.network.name;
+  hre.rigsDeployment = (config.deployments as any)[network];
+  hre.mainnet = network === "ethereum";
 });
 
 export default config;
