@@ -214,7 +214,10 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
       )}
       <Box width="100%">
         {!isEligible && (
-          <Text pb={8}>You are not eligible to vote in this proposal.</Text>
+          <Text pb={8}>
+            You are not eligible to vote in this proposal. You had earned 0 FT
+            at the time of the snapshot.
+          </Text>
         )}
         <TransactionStateAlert {...contractWrite} />
         {nonZeroWeights.length > 0 && !isValid && (
