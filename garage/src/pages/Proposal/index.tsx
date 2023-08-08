@@ -205,7 +205,7 @@ const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
           <Tbody>
             {proposal.options.map(({ id, description }) => {
               const weight = votes[id]?.weight || 0;
-              const comment = weight > 0 ? votes[id].comment : "";
+              const comment = weight > 0 ? votes[id].comment ?? "" : "";
 
               return (
                 <React.Fragment key={`option-${id}`}>
