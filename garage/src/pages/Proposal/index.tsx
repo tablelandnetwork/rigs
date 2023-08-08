@@ -73,9 +73,19 @@ type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
 
 type VoteState = { [key: number]: { weight: number; comment: string } };
 
-const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
+const CastVote = ({
+  proposal,
+  results,
+  votes: castVotes,
+  refresh,
+  ...props
+}: ModuleProps) => {
   const toast = useToast();
   const { address } = useAccount();
+
+  const userHasVoted = !!castVotes.find(
+    (v) => v.address.toLowerCase() === address?.toLowerCase()
+  );
 
   const { validator } = useTablelandConnection();
   const { votingPower } = useAddressVotingPower(address, proposal.id);
@@ -280,7 +290,7 @@ const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
           onClick={write}
           width="100%"
         >
-          Vote
+          {userHasVoted ? "Update Vote" : "Vote"}
         </Button>
       </Box>
     </VStack>
