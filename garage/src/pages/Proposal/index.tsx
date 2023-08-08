@@ -187,7 +187,7 @@ const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
           vote on multiple options by assigning a % of your total voting power
           to an option. The sum must add up to 100.
         </Text>
-        {votingPower && (
+        {!!votingPower && (
           <Alert status="info" mt={4}>
             Your voting power in this proposal is {prettyNumber(votingPower)} FT
           </Alert>
