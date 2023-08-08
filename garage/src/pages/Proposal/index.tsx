@@ -512,7 +512,11 @@ const Header = ({ proposal, results, refresh, ...props }: ModuleProps) => {
     let isCancelled = false;
 
     fetch(`${ipfsGatewayBaseUrl}/ipfs/${proposal.descriptionCid}`)
-      .then((v) => v.text())
+      .then((v) => {
+        if (v.ok) return v.text();
+
+        throw new Error("failed");
+      })
       .then((body) => {
         if (isCancelled) return;
 
