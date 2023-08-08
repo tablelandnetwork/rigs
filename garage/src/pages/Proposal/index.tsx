@@ -31,6 +31,7 @@ import {
   useBlockNumber,
   useContractWrite,
   usePrepareContractWrite,
+  useWaitForTransaction,
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
 import { TransactionStateAlert } from "../../components/TransactionStateAlert";
@@ -39,6 +40,7 @@ import {
   proposalStatus,
 } from "../../components/ProposalStatusBadge";
 import { useProposal, Result, Vote } from "../../hooks/useProposal";
+import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useAddressVotingPower } from "../../hooks/useAddressVotingPower";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
@@ -64,12 +66,15 @@ type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
   proposal: ProposalWithOptions;
   results: Result[];
   votes: Vote[];
+  refresh: () => void;
 };
 
 type VoteState = { [key: number]: { weight: number; comment: string } };
 
-const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
+const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
   const { address } = useAccount();
+
+  const { validator } = useTablelandConnection();
   const { votingPower } = useAddressVotingPower(address, proposal.id);
 
   const { data: blockNumber } = useBlockNumber();
@@ -131,7 +136,35 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
   });
 
   const contractWrite = useContractWrite(config);
-  const { write } = contractWrite;
+  const { isLoading, write, data } = contractWrite;
+
+  const { isLoading: isTxLoading } = useWaitForTransaction({
+    hash: data?.hash,
+  });
+
+  useEffect(() => {
+    if (validator && data?.hash) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
+            chainId: secondaryChain.id,
+            transactionHash: data?.hash,
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          refresh();
+        })
+        .catch((_) => {});
+
+      return () => {
+        controller.abort();
+      };
+    }
+  }, [validator, data, refresh]);
 
   const isMobile = useBreakpointValue(
     { base: true, lg: false },
@@ -229,7 +262,13 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
         )}
         <Button
           mt={2}
-          isDisabled={status !== ProposalStatus.Open || !isValid}
+          isDisabled={
+            status !== ProposalStatus.Open ||
+            !isValid ||
+            isLoading ||
+            isTxLoading
+          }
+          isLoading={isTxLoading}
           onClick={write}
           width="100%"
         >
@@ -240,7 +279,13 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
   );
 };
 
-const Information = ({ proposal, results, p, ...props }: ModuleProps) => {
+const Information = ({
+  proposal,
+  results,
+  refresh,
+  p,
+  ...props
+}: ModuleProps) => {
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
       <Heading px={p}>Information</Heading>
@@ -279,7 +324,14 @@ const Information = ({ proposal, results, p, ...props }: ModuleProps) => {
 const truncateChoiceString = (s: string, l: number = 80) =>
   s.slice(0, l) + (s.length > l ? "..." : "");
 
-const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
+const Votes = ({
+  proposal,
+  results,
+  votes,
+  refresh,
+  p,
+  ...props
+}: ModuleProps) => {
   const { address: connectedAddress } = useAccount();
   const { options } = proposal;
 
@@ -368,17 +420,17 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
             );
           })}
         </Tbody>
-        {votes.length === 0 && (
-          <Box p={p} pt="2">
-            <Text variant="emptyState">No votes.</Text>
-          </Box>
-        )}
       </Table>
+      {votes.length === 0 && (
+        <Box p={p} pt="2">
+          <Text variant="emptyState">No votes.</Text>
+        </Box>
+      )}
     </VStack>
   );
 };
 
-const Results = ({ proposal, results, ...props }: ModuleProps) => {
+const Results = ({ proposal, results, refresh, ...props }: ModuleProps) => {
   const { data: blockNumber } = useBlockNumber();
 
   const totalResults = results.reduce((acc, { result }) => acc + result, 0);
@@ -432,7 +484,7 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
   );
 };
 
-const Header = ({ proposal, results, ...props }: ModuleProps) => {
+const Header = ({ proposal, results, refresh, ...props }: ModuleProps) => {
   const [markdown, setMarkdown] = useState("");
 
   useEffect(() => {
@@ -481,10 +533,15 @@ export const Proposal = () => {
   const { id } = useParams();
 
   const { data: blockNumber } = useBlockNumber();
-  const { proposal, votes, results } = useProposal(id);
+  const {
+    data: { proposal, votes, results },
+    refresh,
+  } = useProposal(id);
 
   const proposalData =
-    proposal && votes && results ? { proposal, votes, results } : undefined;
+    proposal && votes && results
+      ? { proposal, votes, results, refresh }
+      : undefined;
 
   const status = useMemo(
     () => proposalStatus(blockNumber, proposal),
