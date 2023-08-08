@@ -24,6 +24,7 @@ import {
   Tr,
   VStack,
   useBreakpointValue,
+  useToast,
 } from "@chakra-ui/react";
 import { ChatIcon } from "@chakra-ui/icons";
 import {
@@ -72,6 +73,7 @@ type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
 type VoteState = { [key: number]: { weight: number; comment: string } };
 
 const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
+  const toast = useToast();
   const { address } = useAccount();
 
   const { validator } = useTablelandConnection();
@@ -156,6 +158,11 @@ const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
           { interval: 2000, signal }
         )
         .then((_) => {
+          toast({
+            title: "Vote successful",
+            status: "success",
+            duration: 5_000,
+          });
           refresh();
         })
         .catch((_) => {});
@@ -164,7 +171,7 @@ const CastVote = ({ proposal, results, refresh, ...props }: ModuleProps) => {
         controller.abort();
       };
     }
-  }, [validator, data, refresh]);
+  }, [validator, data, refresh, toast]);
 
   const isMobile = useBreakpointValue(
     { base: true, lg: false },
