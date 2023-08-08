@@ -346,6 +346,20 @@ const Votes = ({
     options.map(({ id, description }) => [id, description])
   );
 
+  const [showCommentsState, setShowCommentsState] = useState<{
+    [key: number]: boolean;
+  }>({});
+  const setShowComments = useCallback(
+    (i: number, value: boolean) => {
+      setShowCommentsState((old) => {
+        let result = { ...old };
+        result[i] = value;
+        return result;
+      });
+    },
+    [setShowCommentsState]
+  );
+
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
       <Heading px={p}>Votes ({votes.length})</Heading>
@@ -362,7 +376,7 @@ const Votes = ({
               )
               .join(", ");
 
-            const [showComments, setShowComments] = useState(false);
+            const showComments = showCommentsState[index];
 
             return (
               <React.Fragment key={`vote-${index}`}>
@@ -385,7 +399,7 @@ const Votes = ({
                       <ChatIcon
                         sx={{ _hover: { cursor: "pointer" } }}
                         marginLeft={2}
-                        onClick={() => setShowComments((old) => !old)}
+                        onClick={() => setShowComments(index, !showComments)}
                       />
                     )}
                   </Td>
