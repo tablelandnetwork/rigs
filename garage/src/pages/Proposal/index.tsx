@@ -44,7 +44,7 @@ import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
 import { ProposalWithOptions, ProposalStatus } from "../../types";
-import { deployment } from "../../env";
+import { deployment, secondaryChain } from "../../env";
 import { abi } from "../../abis/VotingRegistry";
 
 const ipfsGatewayBaseUrl = "https://nftstorage.link";
@@ -118,6 +118,7 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
 
   const { config } = usePrepareContractWrite({
     address: as0xString(votingContractAddress),
+    chainId: secondaryChain.id,
     abi,
     functionName: "vote",
     args: [
