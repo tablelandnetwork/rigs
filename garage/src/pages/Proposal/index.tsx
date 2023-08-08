@@ -16,11 +16,12 @@ import {
   StatLabel,
   StatHelpText,
   Table,
-  Thead,
   Tbody,
   Td,
   Th,
+  Thead,
   Text,
+  Tooltip,
   Tr,
   VStack,
   useBreakpointValue,
@@ -311,7 +312,18 @@ const Information = ({
             </Td>
           </Tr>
           <Tr>
-            <Td pl={p}>Voting Reward</Td>
+            <Td pl={p}>
+              <Tooltip label="Voting rewards are distributed to voters after the proposal has ended.">
+                <span
+                  style={{
+                    textDecorationStyle: "dashed",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Voting reward
+                </span>
+              </Tooltip>
+            </Td>
             <Td pr={p} isNumeric>
               {prettyNumber(proposal.voterFtReward)} FT
             </Td>
