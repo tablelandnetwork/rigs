@@ -49,6 +49,9 @@ const config: HardhatUserConfig = {
       mainnet: process.env.ETHERSCAN_API_KEY || "",
       goerli: process.env.ETHERSCAN_API_KEY || "",
 
+      // arbitrum
+      arbitrumOne: process.env.ARBISCAN_API_KEY || "",
+
       // polygon
       polygonMumbai: process.env.POLYSCAN_API_KEY || "",
     },
@@ -62,6 +65,24 @@ const config: HardhatUserConfig = {
       accounts:
         process.env.ETHEREUM_PRIVATE_KEY !== undefined
           ? [process.env.ETHEREUM_PRIVATE_KEY]
+          : [],
+    },
+    arbitrum: {
+      url: `https://arb-mainnet.g.alchemy.com/v2/${
+        process.env.ARBITRUM_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.ARBITRUM_PRIVATE_KEY !== undefined
+          ? [process.env.ARBITRUM_PRIVATE_KEY]
+          : [],
+    },
+    filecoin: {
+      url: `https://rpc.ankr.com/filecoin/${
+        process.env.FILECOIN_API_KEY ?? ""
+      }`,
+      accounts:
+        process.env.FILECOIN_PRIVATE_KEY !== undefined
+          ? [process.env.FILECOIN_PRIVATE_KEY]
           : [],
     },
     // testnets
@@ -111,11 +132,15 @@ const config: HardhatUserConfig = {
         },
         testnet: {
           tablelandPrivateKey: process.env.POLYGON_MUMBAI_PRIVATE_KEY,
-          tablelandAlchemyKey: process.env.POLYGON_MUMBAI_API_KEY,
+          tablelandProviderUrl: `https://polygon-mumbai.g.alchemy.com/v2/${
+            process.env.POLYGON_MUMBAI_API_KEY ?? ""
+          }`,
         },
         mainnet: {
           tablelandPrivateKey: process.env.ARBITRUM_PRIVATE_KEY,
-          tablelandAlchemyKey: process.env.ARBITRUM_API_KEY,
+          tablelandProviderUrl: `https://arb-mainnet.g.alchemy.com/v2/${
+            process.env.ARBITRUM_API_KEY ?? ""
+          }`,
         },
       },
       royaltyReceivers: [
@@ -133,7 +158,7 @@ const config: HardhatUserConfig = {
 
 interface RigsTablesConfig {
   tablelandPrivateKey: string | undefined;
-  tablelandAlchemyKey?: string;
+  tablelandProviderUrl?: string;
 }
 
 interface RigsConfig {
@@ -195,8 +220,11 @@ extendEnvironment((hre: HardhatRuntimeEnvironment) => {
   // Get configs for user-selected network
   const config = hre.userConfig.config;
   hre.rigsConfig = config.args;
-  hre.rigsDeployment = (config.deployments as any)[hre.network.name];
-  hre.mainnet = hre.network.name === "ethereum";
+  // Hack to account for the fact that the voting registry is on arbitrum
+  const network =
+    hre.network.name === "arbitrum" ? "ethereum" : hre.network.name;
+  hre.rigsDeployment = (config.deployments as any)[network];
+  hre.mainnet = network === "ethereum";
 });
 
 export default config;

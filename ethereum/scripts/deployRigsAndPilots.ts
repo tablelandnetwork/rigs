@@ -95,17 +95,14 @@ async function main() {
     if (!privateKey) {
       throw Error("missing Tableland private key");
     }
-    const alchemyKey = mainnet
-      ? rigsConfig.tables.mainnet.tablelandAlchemyKey
-      : rigsConfig.tables.testnet.tablelandAlchemyKey;
-    if (!alchemyKey) {
-      throw Error("missing Tableland Alchemy API key");
+    const providerUrl = mainnet
+      ? rigsConfig.tables.mainnet.tablelandProviderUrl
+      : rigsConfig.tables.testnet.tablelandProviderUrl;
+    if (!providerUrl) {
+      throw Error("missing Tableland Provider URL");
     }
     const wallet = new Wallet(privateKey);
-    const provider = new providers.AlchemyProvider(
-      rigsDeployment.tablelandChain,
-      alchemyKey
-    );
+    const provider = new providers.JsonRpcProvider(providerUrl);
     tbl = new Database({ signer: wallet.connect(provider), autoWait: true });
   }
 

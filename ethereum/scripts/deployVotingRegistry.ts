@@ -3,6 +3,8 @@ import { Wallet, providers, Signer, BigNumber } from "ethers";
 import type { VotingRegistry } from "../typechain-types";
 import { Database } from "@tableland/sdk";
 
+process.on("warning", (e) => console.warn(e.stack));
+
 async function main() {
   console.log(`\nDeploying to '${network.name}'...`);
 
@@ -33,10 +35,9 @@ async function main() {
     throw Error("missing signer/Tableland private key");
   }
 
-  if (tablesConfig.tablelandAlchemyKey) {
-    const provider = new providers.AlchemyProvider(
-      rigsDeployment.tablelandChain,
-      tablesConfig.tablelandAlchemyKey
+  if (tablesConfig.tablelandProviderUrl) {
+    const provider = new providers.JsonRpcProvider(
+      tablesConfig.tablelandProviderUrl
     );
     signer = signer.connect(provider);
   }
@@ -64,44 +65,48 @@ async function main() {
     .prepare(
       "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voting_system integer NOT NULL, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
     )
-    .all();
+    .run();
 
   const proposalsReceipt = await proposalsMeta.txn!.wait();
   const proposalsTableName = proposalsReceipt.name;
   const proposalsTableId = proposalsReceipt.tableId;
+  console.log(`proposals table created as ${proposalsTableName}`);
 
   // Create ft snapshot table
   const { meta: ftSnapshotMeta } = await db
     .prepare(
       "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL, UNIQUE(address, proposal_id))"
     )
-    .all();
+    .run();
 
   const ftSnapshotReceipt = await ftSnapshotMeta.txn!.wait();
   const ftSnapshotTableName = ftSnapshotReceipt.name;
   const ftSnapshotTableId = ftSnapshotReceipt.tableId;
+  console.log(`ft_snapshot table created as ${ftSnapshotTableName}`);
 
   // Create votes table
   const { meta: votesMeta } = await db
     .prepare(
       "CREATE TABLE votes (address text NOT NULL, proposal_id integer NOT NULL, option_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, option_id, proposal_id))"
     )
-    .all();
+    .run();
 
   const votesReceipt = await votesMeta.txn!.wait();
   const votesTableName = votesReceipt.name;
   const votesTableId = votesReceipt.tableId;
+  console.log(`votes table created as ${votesTableName}`);
 
   // Create options table
   const { meta: optionsMeta } = await db
     .prepare(
       "CREATE TABLE options (id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL)"
     )
-    .all();
+    .run();
 
   const optionsReceipt = await optionsMeta.txn!.wait();
   const optionsTableName = optionsReceipt.name;
   const optionsTableId = optionsReceipt.tableId;
+  console.log(`options table created as ${optionsTableName}`);
 
   // Deploy contract
   const VotingRegistryFactory = await ethers.getContractFactory(
@@ -118,6 +123,9 @@ async function main() {
   )) as VotingRegistry;
 
   await votingRegistry.deployed();
+  console.log(
+    `deployed voting registry contract with address ${votingRegistry.address}`
+  );
 
   // Grant contract permission to write to the necessary tables
   await db
@@ -125,21 +133,37 @@ async function main() {
       `GRANT INSERT ON ${proposalsTableName} TO '${votingRegistry.address}'`
     )
     .run();
+  console.log(
+    `granted insert on ${proposalsTableName} to ${votingRegistry.address}`
+  );
+
   await db
     .prepare(
       `GRANT INSERT ON ${ftSnapshotTableName} TO '${votingRegistry.address}'`
     )
     .run();
+  console.log(
+    `granted insert on ${ftSnapshotTableName} to ${votingRegistry.address}`
+  );
+
   await db
     .prepare(
       `GRANT INSERT, UPDATE ON ${votesTableName} TO '${votingRegistry.address}'`
     )
     .run();
+  console.log(
+    `granted insert, update on ${votesTableName} to ${votingRegistry.address}`
+  );
+
   await db
     .prepare(
       `GRANT INSERT ON ${optionsTableName} TO '${votingRegistry.address}'`
     )
     .run();
+  console.log(
+    `granted insert on ${optionsTableName} to ${votingRegistry.address}`
+  );
+
   const { meta: grantMeta } = await db
     .prepare(
       `GRANT INSERT ON ${ftRewardsTableName} TO '${votingRegistry.address}'`
@@ -147,6 +171,9 @@ async function main() {
     .run();
 
   await grantMeta.txn?.wait();
+  console.log(
+    `granted insert on ${ftRewardsTableName} to ${votingRegistry.address}`
+  );
 
   // Warn that addresses and table names need to be saved in deployments file
   console.warn(
