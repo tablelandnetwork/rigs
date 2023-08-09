@@ -1,3 +1,4 @@
+import { BigNumber } from "ethers";
 import {
   run,
   ethers,
@@ -19,6 +20,9 @@ async function main() {
   }
   if (rigsDeployment.pilotsAddress === "") {
     throw Error(`no pilotsAddress entry for '${network.name}'`);
+  }
+  if (rigsDeployment.votingContractAddress === "") {
+    throw Error(`no votingContractAddress entry for '${network.name}'`);
   }
 
   // Verify rigs
@@ -82,9 +86,63 @@ async function main() {
       );
     } else throw err;
   }
+
+  // Verify voting contract
+  try {
+    const pilotSessionsTableId =
+      rigsDeployment.pilotSessionsTable.match(/.*_\d*_(\d*)/)![1];
+    const ftRewardsTableId =
+      rigsDeployment.ftRewardsTable.match(/.*_\d*_(\d*)/)![1];
+    const proposalsTableId =
+      rigsDeployment.proposalsTable.match(/.*_\d*_(\d*)/)![1];
+    const ftSnapshotTableId =
+      rigsDeployment.ftSnapshotTable.match(/.*_\d*_(\d*)/)![1];
+    const votesTableId = rigsDeployment.votesTable.match(/.*_\d*_(\d*)/)![1];
+    const optionsTableId =
+      rigsDeployment.optionsTable.match(/.*_\d*_(\d*)/)![1];
+
+    await run("verify:verify", {
+      address: rigsDeployment.votingContractAddress,
+      constructorArguments: [
+        {
+          id: BigNumber.from(proposalsTableId),
+          name: rigsDeployment.proposalsTable,
+        },
+        {
+          id: BigNumber.from(ftSnapshotTableId),
+          name: rigsDeployment.ftSnapshotTable,
+        },
+        { id: BigNumber.from(votesTableId), name: rigsDeployment.votesTable },
+        {
+          id: BigNumber.from(optionsTableId),
+          name: rigsDeployment.optionsTable,
+        },
+        {
+          id: BigNumber.from(pilotSessionsTableId),
+          name: rigsDeployment.pilotSessionsTable,
+        },
+        {
+          id: BigNumber.from(ftRewardsTableId),
+          name: rigsDeployment.ftRewardsTable,
+        },
+        BigNumber.from(0),
+      ],
+    });
+  } catch (err) {
+    if (
+      err.message === "Contract source code already verified" ||
+      err.message.includes("Reason: Already Verified")
+    ) {
+      console.log(
+        `Voting contract already verified: '${rigsDeployment.votingContractAddress}'`
+      );
+    } else throw err;
+  }
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

@@ -1,5 +1,10 @@
 {
   "trailingSlash": false,
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+  "rewrites": [
+    {
+      "source": "/:path((?!api/).*)",
+      "destination": "/"
+    }
+  ],
   "github": { "silent": true }
 }

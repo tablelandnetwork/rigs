@@ -64,3 +64,30 @@ export interface FTReward {
   reason: string;
   amount: number;
 }
+
+export interface Proposal {
+  id: number;
+  name: string;
+  createdAt: number;
+  startBlock: number;
+  endBlock: number;
+  descriptionCid: string;
+  voterFtReward: number;
+  totalFt: number;
+}
+
+export interface Option {
+  id: number;
+  description: string;
+}
+
+export interface ProposalWithOptions extends Proposal {
+  options: Option[];
+}
+
+export enum ProposalStatus {
+  Loading = "loading",
+  NotOpened = "Not opened",
+  Open = "Open",
+  Ended = "Ended"
+}

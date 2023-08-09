@@ -5,6 +5,7 @@ export interface RigsDeployment {
   contractAddress: string;
   royaltyContractAddress: string;
   pilotsAddress: string;
+  votingContractAddress: string;
 
   // Tables network
   tablelandChain: helpers.ChainName;
@@ -25,6 +26,13 @@ export interface RigsDeployment {
   lookupsTable: string;
   pilotSessionsTable: string;
   ftRewardsTable: string;
+
+  // Voting table names
+  proposalsTable: string;
+  ftSnapshotTable: string;
+  votesTable: string;
+  optionsTable: string;
+
   displayAttributes: boolean;
 }
 
@@ -38,6 +46,7 @@ export const deployments: RigsDeployments = {
     contractAddress: "0x8EAa9AE1Ac89B1c8C8a8104D08C045f78Aadb42D",
     royaltyContractAddress: "0x9BE9627e25c9f348C1edB6E46dBCa2a6669e2D56",
     pilotsAddress: "0xFe688e894AAA2A8F4740d09DA8c434Eb0B1AFb5D",
+    votingContractAddress: "0xE9Fb4f78f23457F69f516c6806E5C9e8756C8c57",
     tablelandChain: "arbitrum",
     tablelandHost: "https://tableland.network",
     contractTable: "rigs_contract_42161_12",
@@ -49,32 +58,42 @@ export const deployments: RigsDeployments = {
     dealsTable: "deals_314_4",
     lookupsTable: "lookups_314_5",
     pilotSessionsTable: "pilot_sessions_1_7",
-    ftRewardsTable: "ft_rewards_314_2",
+    ftRewardsTable: "ft_rewards_42161_18",
+    proposalsTable: "proposals_42161_19",
+    ftSnapshotTable: "ft_snapshot_42161_20",
+    votesTable: "votes_42161_21",
+    optionsTable: "options_42161_22",
     displayAttributes: true,
   },
   // testnets
   "polygon-mumbai": {
-    contractAddress: "0x36Ae6D7e2B460530A22416C8fC8A506cADE353B8",
-    royaltyContractAddress: "0xb61974afD4348DA16e45BC48d53883A281bc4A6e",
-    pilotsAddress: "0x171c03D706f02Ed57f8509539ED590A69d286D61",
+    contractAddress: "0xCA019FF8C4257Fc02F94C8B0E34B3787DA850A78",
+    royaltyContractAddress: "0xd8E1803C479DFFf004B46F1560c575Acc5bf25A0",
+    pilotsAddress: "0x1Ae76F54c561f32c24c74A562353D085C010a2E8",
+    votingContractAddress: "0x3d06EB64C20dD24D613b200325D1E55517E41591",
     tablelandChain: "maticmum",
     tablelandHost: "https://testnets.tableland.network",
-    contractTable: "rigs_contract_80001_3819",
-    allowlistTable: "rigs_allowlist_80001_3820",
+    contractTable: "rigs_contract_80001_7136",
+    allowlistTable: "rigs_allowlist_80001_7135",
     partsTable: "parts_80001_4038",
     layersTable: "layers_80001_4039",
     rigsTable: "rigs_314159_9",
     attributesTable: "rig_attributes_80001_4040",
     dealsTable: "deals_314159_8",
     lookupsTable: "lookups_314159_10",
-    pilotSessionsTable: "pilot_sessions_80001_4078",
-    ftRewardsTable: "ft_rewards_80001_6727",
+    pilotSessionsTable: "pilot_sessions_80001_7137",
+    ftRewardsTable: "ft_rewards_80001_7138",
+    proposalsTable: "proposals_80001_7139",
+    ftSnapshotTable: "ft_snapshot_80001_7140",
+    votesTable: "votes_80001_7141",
+    optionsTable: "options_80001_7142",
     displayAttributes: true,
   },
   localhost: {
     contractAddress: "",
     royaltyContractAddress: "",
     pilotsAddress: "",
+    votingContractAddress: "",
     tablelandChain: "local-tableland",
     tablelandHost: "http://localhost:8080",
     contractTable: "",
@@ -87,6 +106,10 @@ export const deployments: RigsDeployments = {
     lookupsTable: "",
     pilotSessionsTable: "",
     ftRewardsTable: "",
+    proposalsTable: "",
+    ftSnapshotTable: "",
+    votesTable: "",
+    optionsTable: "",
     displayAttributes: true,
   },
 };

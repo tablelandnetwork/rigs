@@ -69,6 +69,61 @@ const theme = extendTheme(
     },
     styles: {
       global: {
+        ".markdown": {
+          h1: {
+            fontSize: "6xl",
+            fontWeight: "bold",
+            marginTop: "0.67em",
+            marginBottom: "0.67em",
+          },
+          h2: {
+            fontSize: "4xl",
+            fontWeight: "bold",
+            marginTop: "0.83em",
+            marginBottom: "0.83em",
+          },
+          h3: {
+            fontSize: "2xl",
+            fontWeight: "bold",
+            marginTop: "1em",
+            marginBottom: "1em",
+          },
+          h4: { fontSize: "xl" },
+          p: {
+            marginTop: "1em",
+            marginBottom: "1em",
+          },
+          blockquote: {
+            borderLeft: "10px solid #444",
+            margin: "1em 10px 1em 0",
+            padding: "0.5em 10px",
+            p: {
+              margin: "0.1em 0",
+            },
+          },
+          ol: { margin: "1em 0 1em 1.8em" },
+          ul: { margin: "1em 0 1em 1.3em" },
+          pre: { margin: "1em 0" },
+          code: {
+            background: "#111",
+            borderRadius: "2px",
+            padding: "0.35em",
+          },
+          table: {
+            display: "block",
+            width: "100%",
+            overflow: "auto",
+            margin: "1em 0",
+            td: {
+              padding: "0.75em 1.25em",
+              border: "1px solid white",
+            },
+            th: {
+              padding: "0.75em 1.25em",
+              border: "1px solid white",
+            },
+          },
+        },
         html: {
           fontSize: "14px",
         },

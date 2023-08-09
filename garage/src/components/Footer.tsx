@@ -23,7 +23,7 @@ export const Footer = () => {
       borderTopWidth="1px"
     >
       <Link
-        href="https://twitter.com/tableland__"
+        href="https://twitter.com/tableland"
         title="Tableland on Twitter"
         isExternal
         sx={{ fill: primaryColor, _hover: { fill: "#7ddbda" } }}
