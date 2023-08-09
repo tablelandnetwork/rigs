@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTablelandConnection } from "./useTablelandConnection";
 import { deployment } from "../env";
 import { ProposalWithOptions } from "../types";
@@ -28,6 +28,11 @@ export const useProposal = (id: string | undefined) => {
   const [proposal, setProposal] = useState<ProposalWithOptions>();
   const [votes, setVotes] = useState<Vote[]>();
   const [results, setResults] = useState<Result[]>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
 
   useEffect(() => {
     if (!id) return;
@@ -94,7 +99,7 @@ export const useProposal = (id: string | undefined) => {
     return () => {
       isCancelled = true;
     };
-  }, [id, setProposal]);
+  }, [id, setProposal, /* effect dep */ shouldRefresh]);
 
-  return { proposal, votes, results };
+  return { data: { proposal, votes, results }, refresh };
 };

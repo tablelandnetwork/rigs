@@ -16,14 +16,16 @@ import {
   StatLabel,
   StatHelpText,
   Table,
-  Thead,
   Tbody,
   Td,
   Th,
+  Thead,
   Text,
+  Tooltip,
   Tr,
   VStack,
   useBreakpointValue,
+  useToast,
 } from "@chakra-ui/react";
 import { ChatIcon } from "@chakra-ui/icons";
 import {
@@ -31,6 +33,7 @@ import {
   useBlockNumber,
   useContractWrite,
   usePrepareContractWrite,
+  useWaitForTransaction,
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
 import { TransactionStateAlert } from "../../components/TransactionStateAlert";
@@ -39,12 +42,13 @@ import {
   proposalStatus,
 } from "../../components/ProposalStatusBadge";
 import { useProposal, Result, Vote } from "../../hooks/useProposal";
+import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useAddressVotingPower } from "../../hooks/useAddressVotingPower";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
 import { ProposalWithOptions, ProposalStatus } from "../../types";
-import { deployment } from "../../env";
+import { deployment, secondaryChain } from "../../env";
 import { abi } from "../../abis/VotingRegistry";
 
 const ipfsGatewayBaseUrl = "https://nftstorage.link";
@@ -64,12 +68,26 @@ type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
   proposal: ProposalWithOptions;
   results: Result[];
   votes: Vote[];
+  refresh: () => void;
 };
 
 type VoteState = { [key: number]: { weight: number; comment: string } };
 
-const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
+const CastVote = ({
+  proposal,
+  results,
+  votes: castVotes,
+  refresh,
+  ...props
+}: ModuleProps) => {
+  const toast = useToast();
   const { address } = useAccount();
+
+  const userHasVoted = !!castVotes.find(
+    (v) => v.address.toLowerCase() === address?.toLowerCase()
+  );
+
+  const { validator } = useTablelandConnection();
   const { votingPower } = useAddressVotingPower(address, proposal.id);
 
   const { data: blockNumber } = useBlockNumber();
@@ -118,6 +136,7 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
 
   const { config } = usePrepareContractWrite({
     address: as0xString(votingContractAddress),
+    chainId: secondaryChain.id,
     abi,
     functionName: "vote",
     args: [
@@ -130,7 +149,40 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
   });
 
   const contractWrite = useContractWrite(config);
-  const { write } = contractWrite;
+  const { isLoading, write, data } = contractWrite;
+
+  const { isLoading: isTxLoading } = useWaitForTransaction({
+    hash: data?.hash,
+  });
+
+  useEffect(() => {
+    if (validator && data?.hash) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
+            chainId: secondaryChain.id,
+            transactionHash: data?.hash,
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          toast({
+            title: "Vote successful",
+            status: "success",
+            duration: 5_000,
+          });
+          refresh();
+        })
+        .catch((_) => {});
+
+      return () => {
+        controller.abort();
+      };
+    }
+  }, [validator, data, refresh, toast]);
 
   const isMobile = useBreakpointValue(
     { base: true, lg: false },
@@ -146,7 +198,7 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
           vote on multiple options by assigning a % of your total voting power
           to an option. The sum must add up to 100.
         </Text>
-        {votingPower && (
+        {!!votingPower && (
           <Alert status="info" mt={4}>
             Your voting power in this proposal is {prettyNumber(votingPower)} FT
           </Alert>
@@ -164,7 +216,7 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
           <Tbody>
             {proposal.options.map(({ id, description }) => {
               const weight = votes[id]?.weight || 0;
-              const comment = weight > 0 ? votes[id].comment : "";
+              const comment = weight > 0 ? votes[id].comment ?? "" : "";
 
               return (
                 <React.Fragment key={`option-${id}`}>
@@ -214,7 +266,10 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
       )}
       <Box width="100%">
         {!isEligible && (
-          <Text pb={8}>You are not eligible to vote in this proposal.</Text>
+          <Text pb={8}>
+            You are not eligible to vote in this proposal. You had earned 0 FT
+            at the time of the snapshot.
+          </Text>
         )}
         <TransactionStateAlert {...contractWrite} />
         {nonZeroWeights.length > 0 && !isValid && (
@@ -225,18 +280,30 @@ const CastVote = ({ proposal, results, ...props }: ModuleProps) => {
         )}
         <Button
           mt={2}
-          isDisabled={status !== ProposalStatus.Open || !isValid}
+          isDisabled={
+            status !== ProposalStatus.Open ||
+            !isValid ||
+            isLoading ||
+            isTxLoading
+          }
+          isLoading={isTxLoading}
           onClick={write}
           width="100%"
         >
-          Vote
+          {userHasVoted ? "Update Vote" : "Vote"}
         </Button>
       </Box>
     </VStack>
   );
 };
 
-const Information = ({ proposal, results, p, ...props }: ModuleProps) => {
+const Information = ({
+  proposal,
+  results,
+  refresh,
+  p,
+  ...props
+}: ModuleProps) => {
   return (
     <VStack align="stretch" spacing={4} pt={p} {...props}>
       <Heading px={p}>Information</Heading>
@@ -255,7 +322,18 @@ const Information = ({ proposal, results, p, ...props }: ModuleProps) => {
             </Td>
           </Tr>
           <Tr>
-            <Td pl={p}>Voting Reward</Td>
+            <Td pl={p}>
+              <Tooltip label="Voting rewards are distributed to voters after the proposal has ended.">
+                <span
+                  style={{
+                    textDecorationStyle: "dashed",
+                    textDecoration: "underline",
+                  }}
+                >
+                  Voting reward
+                </span>
+              </Tooltip>
+            </Td>
             <Td pr={p} isNumeric>
               {prettyNumber(proposal.voterFtReward)} FT
             </Td>
@@ -275,12 +353,33 @@ const Information = ({ proposal, results, p, ...props }: ModuleProps) => {
 const truncateChoiceString = (s: string, l: number = 80) =>
   s.slice(0, l) + (s.length > l ? "..." : "");
 
-const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
+const Votes = ({
+  proposal,
+  results,
+  votes,
+  refresh,
+  p,
+  ...props
+}: ModuleProps) => {
   const { address: connectedAddress } = useAccount();
   const { options } = proposal;
 
   const optionLookupMap = Object.fromEntries(
     options.map(({ id, description }) => [id, description])
+  );
+
+  const [showCommentsState, setShowCommentsState] = useState<{
+    [key: number]: boolean;
+  }>({});
+  const setShowComments = useCallback(
+    (i: number, value: boolean) => {
+      setShowCommentsState((old) => {
+        let result = { ...old };
+        result[i] = value;
+        return result;
+      });
+    },
+    [setShowCommentsState]
   );
 
   return (
@@ -299,7 +398,7 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
               )
               .join(", ");
 
-            const [showComments, setShowComments] = useState(false);
+            const showComments = showCommentsState[index];
 
             return (
               <React.Fragment key={`vote-${index}`}>
@@ -322,7 +421,7 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
                       <ChatIcon
                         sx={{ _hover: { cursor: "pointer" } }}
                         marginLeft={2}
-                        onClick={() => setShowComments((old) => !old)}
+                        onClick={() => setShowComments(index, !showComments)}
                       />
                     )}
                   </Td>
@@ -364,17 +463,17 @@ const Votes = ({ proposal, results, votes, p, ...props }: ModuleProps) => {
             );
           })}
         </Tbody>
-        {votes.length === 0 && (
-          <Box p={p} pt="2">
-            <Text variant="emptyState">No votes.</Text>
-          </Box>
-        )}
       </Table>
+      {votes.length === 0 && (
+        <Box p={p} pt="2">
+          <Text variant="emptyState">No votes.</Text>
+        </Box>
+      )}
     </VStack>
   );
 };
 
-const Results = ({ proposal, results, ...props }: ModuleProps) => {
+const Results = ({ proposal, results, refresh, ...props }: ModuleProps) => {
   const { data: blockNumber } = useBlockNumber();
 
   const totalResults = results.reduce((acc, { result }) => acc + result, 0);
@@ -428,14 +527,18 @@ const Results = ({ proposal, results, ...props }: ModuleProps) => {
   );
 };
 
-const Header = ({ proposal, results, ...props }: ModuleProps) => {
+const Header = ({ proposal, results, refresh, ...props }: ModuleProps) => {
   const [markdown, setMarkdown] = useState("");
 
   useEffect(() => {
     let isCancelled = false;
 
     fetch(`${ipfsGatewayBaseUrl}/ipfs/${proposal.descriptionCid}`)
-      .then((v) => v.text())
+      .then((v) => {
+        if (v.ok) return v.text();
+
+        throw new Error("failed");
+      })
       .then((body) => {
         if (isCancelled) return;
 
@@ -477,10 +580,15 @@ export const Proposal = () => {
   const { id } = useParams();
 
   const { data: blockNumber } = useBlockNumber();
-  const { proposal, votes, results } = useProposal(id);
+  const {
+    data: { proposal, votes, results },
+    refresh,
+  } = useProposal(id);
 
   const proposalData =
-    proposal && votes && results ? { proposal, votes, results } : undefined;
+    proposal && votes && results
+      ? { proposal, votes, results, refresh }
+      : undefined;
 
   const status = useMemo(
     () => proposalStatus(blockNumber, proposal),
