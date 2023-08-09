@@ -1,9 +1,7 @@
 import { ethers, network, rigsConfig, rigsDeployment, mainnet } from "hardhat";
 import { Wallet, providers, Signer, BigNumber } from "ethers";
 import type { VotingRegistry } from "../typechain-types";
-import { Database, helpers } from "@tableland/sdk";
-
-const SDK_TIMEOUT = 6 * 60 * 1000;
+import { Database } from "@tableland/sdk";
 
 process.on("warning", (e) => console.warn(e.stack));
 
@@ -37,13 +35,7 @@ async function main() {
     throw Error("missing signer/Tableland private key");
   }
 
-  if (tablesConfig.tablelandAlchemyKey) {
-    const provider = new providers.AlchemyProvider(
-      rigsDeployment.tablelandChain,
-      tablesConfig.tablelandAlchemyKey
-    );
-    signer = signer.connect(provider);
-  } else if (tablesConfig.tablelandProviderUrl) {
+  if (tablesConfig.tablelandProviderUrl) {
     const provider = new providers.JsonRpcProvider(
       tablesConfig.tablelandProviderUrl
     );
@@ -73,7 +65,7 @@ async function main() {
     .prepare(
       "CREATE TABLE proposals (id integer NOT NULL, name text NOT NULL, description_cid text, voting_system integer NOT NULL, voter_ft_reward integer NOT NULL, created_at integer NOT NULL, start_block integer NOT NULL, end_block integer NOT NULL)"
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
 
   const proposalsReceipt = await proposalsMeta.txn!.wait();
   const proposalsTableName = proposalsReceipt.name;
@@ -85,7 +77,7 @@ async function main() {
     .prepare(
       "CREATE TABLE ft_snapshot (address text NOT NULL, ft integer NOT NULL, proposal_id integer NOT NULL, UNIQUE(address, proposal_id))"
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
 
   const ftSnapshotReceipt = await ftSnapshotMeta.txn!.wait();
   const ftSnapshotTableName = ftSnapshotReceipt.name;
@@ -97,7 +89,7 @@ async function main() {
     .prepare(
       "CREATE TABLE votes (address text NOT NULL, proposal_id integer NOT NULL, option_id integer NOT NULL, weight integer NOT NULL, comment text, UNIQUE(address, option_id, proposal_id))"
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
 
   const votesReceipt = await votesMeta.txn!.wait();
   const votesTableName = votesReceipt.name;
@@ -109,7 +101,7 @@ async function main() {
     .prepare(
       "CREATE TABLE options (id integer NOT NULL, proposal_id integer NOT NULL, description text NOT NULL)"
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
 
   const optionsReceipt = await optionsMeta.txn!.wait();
   const optionsTableName = optionsReceipt.name;
@@ -140,7 +132,7 @@ async function main() {
     .prepare(
       `GRANT INSERT ON ${proposalsTableName} TO '${votingRegistry.address}'`
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
   console.log(
     `granted insert on ${proposalsTableName} to ${votingRegistry.address}`
   );
@@ -149,7 +141,7 @@ async function main() {
     .prepare(
       `GRANT INSERT ON ${ftSnapshotTableName} TO '${votingRegistry.address}'`
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
   console.log(
     `granted insert on ${ftSnapshotTableName} to ${votingRegistry.address}`
   );
@@ -158,7 +150,7 @@ async function main() {
     .prepare(
       `GRANT INSERT, UPDATE ON ${votesTableName} TO '${votingRegistry.address}'`
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
   console.log(
     `granted insert, update on ${votesTableName} to ${votingRegistry.address}`
   );
@@ -167,7 +159,7 @@ async function main() {
     .prepare(
       `GRANT INSERT ON ${optionsTableName} TO '${votingRegistry.address}'`
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
   console.log(
     `granted insert on ${optionsTableName} to ${votingRegistry.address}`
   );
@@ -176,7 +168,7 @@ async function main() {
     .prepare(
       `GRANT INSERT ON ${ftRewardsTableName} TO '${votingRegistry.address}'`
     )
-    .run(helpers.createPollingController(SDK_TIMEOUT));
+    .run();
 
   await grantMeta.txn?.wait();
   console.log(

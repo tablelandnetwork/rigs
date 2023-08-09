@@ -61,7 +61,7 @@
     "@openzeppelin/hardhat-upgrades": "^1.22.1",
     "@tableland/evm": "^4.3.0",
     "@tableland/local": "^1.3.3",
-    "@tableland/sdk": "file:../../js-tableland",
+    "@tableland/sdk": "^4.4.2",
     "@typechain/ethers-v5": "^10.1.0",
     "@typechain/hardhat": "^6.1.2",
     "@types/chai": "^4.3.1",
