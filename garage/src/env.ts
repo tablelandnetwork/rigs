@@ -33,7 +33,7 @@ const mainChainEnvMapping = {
 const secondaryChainEnvMapping = {
   [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
   [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
-  [DeploymentEnvironment.PRODUCTION]: chains.filecoin,
+  [DeploymentEnvironment.PRODUCTION]: chains.arbitrum,
 };
 
 // Main chain used by the rigs contract
