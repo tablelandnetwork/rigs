@@ -91,7 +91,7 @@ export const OwnerDetails = () => {
           width="100%"
           align={{ base: "stretch", lg: "start" }}
         >
-          <VStack align="top" spacing={GRID_GAP}>
+          <VStack align="top" spacing={GRID_GAP} flexGrow="1">
             <RigsGrid
               rigs={rigs}
               nfts={nfts}
@@ -99,9 +99,14 @@ export const OwnerDetails = () => {
               gap={GRID_GAP}
               flexGrow="1"
             />
-            <FTRewards rewards={rewards} {...MODULE_PROPS} flexGrow="1" />
+            <FTRewards rewards={rewards} {...MODULE_PROPS} />
           </VStack>
-          <VStack flexShrink="0" align="top" spacing={GRID_GAP}>
+          <VStack
+            flexShrink="0"
+            align="top"
+            spacing={GRID_GAP}
+            minWidth={{ lg: "300px", xl: "360px" }}
+          >
             <Pilots pilots={pilots} nfts={nfts} {...MODULE_PROPS} />
             <ActivityLog events={events} {...MODULE_PROPS} />
           </VStack>
