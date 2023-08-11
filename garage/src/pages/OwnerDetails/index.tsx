@@ -6,12 +6,14 @@ import { useOwnedRigs } from "../../hooks/useOwnedRigs";
 import { useOwnerPilots } from "../../hooks/useOwnerPilots";
 import { useOwnerActivity } from "../../hooks/useOwnerActivity";
 import { useOwnerFTRewards } from "../../hooks/useOwnerFTRewards";
+import { useOwnerVotes } from "../../hooks/useOwnerVotes";
 import { useNFTsCached } from "../../components/NFTsContext";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { RigsGrid } from "./modules/RigsInventory";
 import { ActivityLog } from "./modules/Activity";
 import { Pilots } from "./modules/Pilots";
 import { FTRewards } from "./modules/FTRewards";
+import { Votes } from "./modules/Votes";
 import { prettyNumber } from "../../utils/fmt";
 import { isValidAddress } from "../../utils/types";
 
@@ -45,6 +47,7 @@ export const OwnerDetails = () => {
   const { events } = useOwnerActivity(owner);
   const { nfts } = useNFTsCached(pilots);
   const { rewards } = useOwnerFTRewards(owner);
+  const { votes } = useOwnerVotes(owner);
 
   const { data: ens } = useEnsName({
     address: isValidAddress(owner) ? owner : undefined,
@@ -99,6 +102,7 @@ export const OwnerDetails = () => {
               gap={GRID_GAP}
               flexGrow="1"
             />
+            <Votes votes={votes} {...MODULE_PROPS} />
             <FTRewards rewards={rewards} {...MODULE_PROPS} />
           </VStack>
           <VStack
