@@ -24,7 +24,7 @@ interface RigsGridProps extends React.ComponentProps<typeof Box> {
 export const RigsGrid = ({ rigs, nfts, gap, p, ...props }: RigsGridProps) => {
   return (
     <Box p={p} {...props}>
-      <Heading pb={p}>Rigs {rigs?.length && ` (${rigs.length})`}</Heading>
+      <Heading pb={p}>Rigs ({rigs?.length ?? 0})</Heading>
       <Grid
         templateColumns={{
           base: "repeat(2, 1fr)",
@@ -60,7 +60,7 @@ export const RigsGrid = ({ rigs, nfts, gap, p, ...props }: RigsGridProps) => {
           })}
       </Grid>
       {rigs?.length === 0 && (
-        <Text variant="emptyState" pt={8}>
+        <Text variant="emptyState" pt={4}>
           This wallet doesn't own any Rigs.
         </Text>
       )}
