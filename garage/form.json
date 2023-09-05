@@ -1,0 +1,31 @@
+{
+  "name": "Demo mission",
+  "description": "This is an open infinite mission, anyone can complete it once and earn a reward!",
+  "tags": [
+    "Social"
+  ],
+  "requirements": [
+    "A tweet about Tableland that gets 10 likes"
+  ],
+  "deliverables": [
+    {
+      "key": "link",
+      "description": "A link to the tweet",
+      "type": "url"
+    },
+    {
+      "key": "screenshot",
+      "description": "A link to a screenshot of the tweet",
+      "type": "url"
+    }
+  ],
+  "rewards": [
+    {
+      "amount": 50000,
+      "currency": "FT"
+    }
+  ],
+  "submissionStartBlock": 0,
+  "submissionEndBlock": 0,
+  "maxNumberOfSubmissions": 0
+}

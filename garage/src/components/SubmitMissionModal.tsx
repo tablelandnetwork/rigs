@@ -20,8 +20,12 @@ import {
 } from "wagmi";
 import { as0xString } from "../utils/types";
 import { Mission } from "../types";
+import { useTablelandConnection } from "../hooks/useTablelandConnection";
 import { TransactionStateAlert } from "./TransactionStateAlert";
-import { deployment } from "../env";
+import { secondaryChain, deployment } from "../env";
+import { abi } from "../abis/MissionsManager";
+
+const { missionContractAddress } = deployment;
 
 interface ModalProps {
   isOpen: boolean;
@@ -29,15 +33,12 @@ interface ModalProps {
   mission: Mission;
   onTransactionSubmitted?: (txHash: string) => void;
   onTransactionCompleted?: (success: boolean) => void;
+  refresh: () => void;
 }
 
 interface FormState {
-  deliverables: string[];
+  deliverables: { key: string; value: string }[];
 }
-
-const initialFormState = {
-  deliverables: [],
-};
 
 export const SubmitMissionModal = ({
   isOpen,
@@ -45,31 +46,29 @@ export const SubmitMissionModal = ({
   mission,
   onTransactionSubmitted,
   onTransactionCompleted,
+  refresh,
 }: ModalProps) => {
-  const [{ deliverables }, setFormState] = useState<FormState>(
-    initialFormState
-  );
+  const { validator } = useTablelandConnection();
+
+  const initialState = {
+    deliverables: mission.deliverables.map(({ key }) => ({ key, value: "" })),
+  };
+  const [formState, setFormState] = useState<FormState>(initialState);
+
+  const { deliverables } = formState;
 
   const isValid =
     deliverables.length === mission.deliverables.length &&
-    !deliverables.some(isEmpty);
+    !deliverables.map(({ value }) => value).some(isEmpty);
 
-  // const { config } = usePrepareContractWrite({
-  //   address: as0xString(votingContractAddress),
-  //   abi,
-  //   functionName: "createProposal",
-  //   args: [
-  //     name,
-  //     descriptionCid,
-  //     BigInt(voterFtReward),
-  //     BigInt(startBlock),
-  //     BigInt(endBlock),
-  //     options,
-  //   ],
-  //   enabled: isOpen && isValid,
-  // });
-
-  const config = {};
+  const { config } = usePrepareContractWrite({
+    chainId: secondaryChain.id,
+    address: as0xString(missionContractAddress),
+    abi,
+    functionName: "submitMissionContribution",
+    args: [BigInt(mission.id), JSON.stringify(deliverables)],
+    enabled: isOpen && isValid,
+  });
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write, reset, data } = contractWrite;
@@ -91,37 +90,69 @@ export const SubmitMissionModal = ({
       onTransactionCompleted(isSuccess);
   }, [onTransactionCompleted, isTxLoading, isSuccess, data]);
 
+  useEffect(() => {
+    if (validator && data?.hash) {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      validator
+        .pollForReceiptByTransactionHash(
+          {
+            chainId: secondaryChain.id,
+            transactionHash: data?.hash,
+          },
+          { interval: 2000, signal }
+        )
+        .then((_) => {
+          refresh();
+        })
+        .catch((_) => {});
+
+      return () => {
+        controller.abort();
+      };
+    }
+  }, [validator, data, refresh]);
+
   const onInputChanged = useCallback(
-    (i: number, e: React.ChangeEvent<HTMLInputElement>) => {
-      // TODO implement
+    (e: React.ChangeEvent<HTMLInputElement>, atIndex: number) => {
+      const newValue = e.target.value;
+      setFormState((old) => {
+        return {
+          ...old,
+          deliverables: old.deliverables.map((old, index) =>
+            index === atIndex ? { ...old, value: newValue } : old
+          ),
+        };
+      });
     },
     [setFormState]
   );
 
   useEffect(() => {
-    if (isOpen) setFormState(initialFormState);
+    if (isOpen) setFormState(initialState);
   }, [isOpen, setFormState]);
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalOverlay />
       <ModalContent>
-        <ModalHeader>Mission submission</ModalHeader>
+        <ModalHeader>Submit mission contribution</ModalHeader>
         <ModalCloseButton />
         <ModalBody>
           <FormControl>
-            {mission.deliverables.map(({ name, description }, i) => {
+            {mission.deliverables.map(({ description, type }, i) => {
               return (
                 <React.Fragment key={`deliverable-${i}`}>
                   <FormLabel>
-                    {description} ({name})
+                    {description} ({type})
                   </FormLabel>
                   <Input
                     focusBorderColor="primary"
                     variant="outline"
-                    value={deliverables[i]}
-                    onChange={(e) => onInputChanged(i, e)}
-                    isInvalid={deliverables[i] === ""}
+                    value={deliverables[i].value}
+                    onChange={(e) => onInputChanged(e, i)}
+                    isInvalid={deliverables[i].value === ""}
                     size="md"
                     mb={4}
                   />
@@ -142,7 +173,7 @@ export const SubmitMissionModal = ({
           <Button
             variant="ghost"
             onClick={onClose}
-            isDisabled={isLoading || (isSuccess && isTxLoading)}
+            isDisabled={(isValid && isLoading) || (isSuccess && isTxLoading)}
           >
             {isSuccess && !isTxLoading ? "Close" : "Cancel"}
           </Button>

@@ -1,4 +1,4 @@
-export type WalletAddress = `0x${string}`
+export type WalletAddress = `0x${string}`;
 
 export interface Attribute {
   displayType: string;
@@ -89,12 +89,13 @@ export enum ProposalStatus {
   Loading = "loading",
   NotOpened = "Not opened",
   Open = "Open",
-  Ended = "Ended"
+  Ended = "Ended",
 }
 
 export interface MissionDeliverable {
-  name: string;
+  key: string;
   description: string;
+  type: string;
 }
 
 export interface MissionReward {
@@ -102,13 +103,28 @@ export interface MissionReward {
   currency: string;
 }
 
+export interface MissionContribution {
+  id: number;
+  missionId: string;
+  createdAt: number;
+  contributor: string;
+  data: { key: string; value: string }[];
+
+  status: "pending_review" | "rejected" | "accepted";
+  acceptanceMotivation?: string;
+}
+
 export interface Mission {
   id: string;
   name: string;
   description: string;
-  requirements: string[];
   tags: string[];
+  requirements: string[];
   deliverables: MissionDeliverable[];
-  reward: MissionReward;
-  expiresAt?: Date;
+  rewards: MissionReward[];
+
+  contributionsStartBlock?: number;
+  contributionsEndBlock?: number;
+  maxNumberOfContributions?: number;
+  contributionsDisabled: boolean;
 }

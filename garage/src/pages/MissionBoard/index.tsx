@@ -82,14 +82,14 @@ const MissionCard = ({ mission, ...props }: ModuleProps) => {
       <>
         <MissionPropertyBox title="Type" width={TypeWidth}>
           {mission.tags.map((tag, i) => (
-            <Badge fontSize="1.0em" key={`mission-${mission.id}-${tag}-${i}`}>
+            <Badge fontSize="1.0em" key={`mission-${mission.id}-${tag}-${i}`} mr={2}>
               {tag}
             </Badge>
           ))}
         </MissionPropertyBox>
         <MissionPropertyBox title="Reward" width={RewardWidth}>
-          <Text whiteSpace="nowrap">{`${prettyNumber(mission.reward.amount)} ${
-            mission.reward.currency
+          <Text whiteSpace="nowrap">{`${prettyNumber(mission.rewards[0].amount)} ${
+            mission.rewards[0].currency
           }`}</Text>
         </MissionPropertyBox>
         <MissionPropertyBox title="Contribute" width={ContributeWidth}>

@@ -13,6 +13,7 @@ enum DeploymentEnvironment {
 }
 
 const parseEnv = (env?: string): DeploymentEnvironment => {
+  console.log("parsing env", env);
   if (env === "development") return DeploymentEnvironment.DEVELOPMENT;
   if (env === "staging") return DeploymentEnvironment.STAGING;
   if (env === "production") return DeploymentEnvironment.PRODUCTION;
@@ -25,13 +26,13 @@ const parseEnv = (env?: string): DeploymentEnvironment => {
 const environment = parseEnv(import.meta.env.VITE_APP_ENV);
 
 const mainChainEnvMapping = {
-  [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
+  [DeploymentEnvironment.DEVELOPMENT]: chains.hardhat,
   [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
   [DeploymentEnvironment.PRODUCTION]: chains.mainnet,
 };
 
 const secondaryChainEnvMapping = {
-  [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
+  [DeploymentEnvironment.DEVELOPMENT]: chains.hardhat,
   [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
   [DeploymentEnvironment.PRODUCTION]: chains.arbitrum,
 };
@@ -44,12 +45,14 @@ export const secondaryChain = secondaryChainEnvMapping[environment];
 
 const blockExplorerChainMapping = {
   [DeploymentEnvironment.DEVELOPMENT]:
-    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
-  [DeploymentEnvironment.STAGING]:
-    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
-  [DeploymentEnvironment.PRODUCTION]:
-    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan
+    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan
       .url,
+  [DeploymentEnvironment.STAGING]:
+    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan
+      .url,
+  [DeploymentEnvironment.PRODUCTION]:
+    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers
+      .etherscan.url,
 };
 
 export const blockExplorerBaseUrl = blockExplorerChainMapping[environment];
@@ -65,4 +68,12 @@ const deploymentEnvMapping = {
   [DeploymentEnvironment.PRODUCTION]: deployments.ethereum,
 };
 
-export const deployment = deploymentEnvMapping[environment];
+// calling account that is not a contract? 0x0165878a594ca255338adfa4d48449f69242eb8f
+export const deployment = {
+  ...deploymentEnvMapping[environment],
+  missionContractAddress: "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+  missionsTable: "missions_31337_2",
+  missionContributionsTable: "mission_contributions_31337_3",
+};
+
+console.log({ mainChain, secondaryChain, environment });

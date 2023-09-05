@@ -6,6 +6,7 @@ import { PilotDetails } from "./pages/PilotDetails";
 import { OwnerDetails } from "./pages/OwnerDetails";
 import { Gallery } from "./pages/Gallery";
 import { Admin } from "./pages/Admin";
+import { MissionAdmin } from "./pages/admin/MissionAdmin";
 import { Proposals } from "./pages/Proposals";
 import { Proposal } from "./pages/Proposal";
 import { MissionBoard } from "./pages/MissionBoard";
@@ -51,6 +52,12 @@ export const routes = () => {
       element: <Admin />,
     },
     {
+      key: "MISSION_ADMIN",
+      path: "/admin/missions/:id",
+      requiresWalletConnection: true,
+      element: <MissionAdmin />,
+    },
+    {
       key: "PROPOSALS",
       path: "/proposals",
       requiresWalletConnection: false,
@@ -73,6 +80,6 @@ export const routes = () => {
       path: "/missions/:id",
       requiresWalletConnection: false,
       element: <MissionDetails />,
-    }
+    },
   ];
 };

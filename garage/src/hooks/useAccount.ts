@@ -22,7 +22,7 @@ const { id, network } = mainChain;
 // we also need to overwrite the `getSigner` method since the dc sdk
 // always calls getSigner regardless of if it is supported or not
 const provider = new providers.AlchemyProvider(
-  { chainId: id, name: network },
+  { chainId: 1, name: "homestead" },
   import.meta.env.VITE_ALCHEMY_ID
 );
 provider.getSigner = () => null as any;

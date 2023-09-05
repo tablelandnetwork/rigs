@@ -98,7 +98,6 @@ const RigSearchForm = ({ onSubmit }: { onSubmit?: () => void }) => {
 
   return (
     <InputGroup
-      maxWidth={{ base: "auto", md: "300px" }}
       minWidth="120px"
       flexGrow="1"
     >
@@ -362,12 +361,12 @@ export const Topbar = () => {
             <Logo width="100%" height="100%" />
           </Box>
         </RouterLink>
-        <Show above="lg">
+        <Show above="xl">
           <Text variant="orbitron" fontSize="20">
             Garage
           </Text>
         </Show>
-        <Show below="md">
+        <Show below="lg">
           <Text variant="orbitron" fontSize="20">
             Garage
           </Text>
@@ -380,13 +379,13 @@ export const Topbar = () => {
         )}
         {!isEnter && (
           <Flex
-            justify={{ base: "end", md: "space-between" }}
+            justify={{ base: "end", lg: "space-between" }}
             align="center"
             width="100%"
             gap={2}
-            ml={{ base: 2, md: 8 }}
+            ml={{ base: 2, md: 4, lg: 8 }}
           >
-            <Show above="md">
+            <Show above="lg">
               <HStack>
                 <NavButton
                   active={route?.route.key === "DASHBOARD"}
@@ -410,8 +409,15 @@ export const Topbar = () => {
                 />
               </HStack>
               <HStack flexShrink="0" flexGrow="1" justify="end">
-                <RigSearchForm />
-                {delegations.length > 0 && (
+                <IconButton
+                  aria-label="Search rig"
+                  onClick={onSearchOpen}
+                  variant="outline"
+                  color="paper"
+                  borderColor="inactive"
+                  icon={<SearchIcon />}
+                />
+                {delegations.length === 0 && (
                   <Button
                     {...inactiveProps}
                     onClick={onActAsOpen}
@@ -423,7 +429,7 @@ export const Topbar = () => {
                 <TablelandConnectButton />
               </HStack>
             </Show>
-            <Show below="md">
+            <Show below="lg">
               <IconButton
                 aria-label="Search rig"
                 onClick={onSearchOpen}

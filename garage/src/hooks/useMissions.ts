@@ -1,84 +1,202 @@
-const missions = Object.fromEntries(
-  [
-    {
-      id: "id-1",
-      name: "Amplify Tableland with a Quote Retweet Earning 10+ Likes",
-      description:
-        "Spread the word about Tableland by quote retweeting one of our tweets and gaining 10+ likes.",
-      requirements: [
-        "The quote retweet must be relevant and add value to the original Tableland tweet. It could provide additional insights, personal experiences, or constructive comments.",
-        "The likes must come from genuine, non-bot Twitter accounts. Any indication of artificial likes will disqualify the entry.",
-      ],
-      tags: ["Media"],
-      deliverables: [
-        {
-          name: "Link",
-          description:
-            "A link to the quote retweet that meets the required criteria.",
-        },
-        {
-          name: "Screenshot",
-          description:
-            "A screenshot showing the quote retweet with 10+ likes. Please ensure the number of likes and the content of the quote retweet are clearly visible in the screenshot.",
-        },
-      ],
-      reward: { amount: 300_000, currency: "FT" },
-    },
-    {
-      id: "id-2",
-      name: "100+ Likes for Original Tweet Promoting Tableland or Rigs",
-      description:
-        "Original tweet that highlights unique aspects of Tableland and/or Rigs. Goal is to create a tweet that resonates with the community and garners 100+ likes.",
-      requirements: [
-        "The tweet must contain original content about Tableland and/or Rigs. It could be about your personal experience, the project's unique features, or its impact on the community.",
-        "The likes must come from genuine, non-bot Twitter accounts. Any indication of artificial likes will disqualify the entry.",
-      ],
-      tags: ["Media"],
-      deliverables: [
-        {
-          name: "Link",
-          description: "A link to the tweet that meets the required criteria.",
-        },
-        {
-          name: "Screenshot",
-          description:
-            "A screenshot showing the tweet with 100+ likes. Please ensure the number of likes and the content of the tweet are clearly visible in the screenshot.",
-        },
-      ],
-      reward: { amount: 3_500_000, currency: "FT" },
-    },
-    {
-      id: "id-3",
-      name: "Tableland Integration Guides for New Protocols",
-      description:
-        "Comprehensive technical guides that detail the process of integrating Tableland with a protocol not yet covered in our existing documentation.",
-      requirements: [
-        "The guide should provide detailed, step-by-step instructions on how to integrate Tableland with another technology stack. This includes initial setup, making and handling requests, security considerations, and error handling.",
-        "All submissions must contain clear explanations, working code snippets, and best practice advice.",
-        "The guide must cover an integration not already outlined in our existing documentation.",
-      ],
-      tags: ["Showcase"],
-      deliverables: [
-        {
-          name: "Link",
-          description:
-            "A comprehensive technical integration document. This should include a clear, step-by-step guide for integrating Tableland into another technology stack.",
-        },
-        {
-          name: "Link",
-          description:
-            "Working code samples. These should illustrate how to perform tasks and should be accompanied by explanations to ensure they are understandable and replicable.",
-        },
-      ],
-      reward: { amount: 2_000_000, currency: "FT" },
-    },
-  ].map((v) => [v.id, v])
-);
+import { useCallback, useEffect, useState } from "react";
+import { Mission, MissionContribution } from "../types";
+import { useTablelandConnection } from "./useTablelandConnection";
+import { deployment, secondaryChain } from "../env";
 
-export const useOpenMissions = () => ({ missions: Object.values(missions) });
+const { missionsTable, missionContributionsTable } = deployment;
 
 export const useMission = (id?: string) => {
-  if (id) return { mission: missions[id] };
+  const { db } = useTablelandConnection();
 
-  return { mission: undefined };
+  const [mission, setMission] = useState<Mission>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
+
+  useEffect(() => {
+    if (!id) return;
+
+    let isCancelled = false;
+
+    db.prepare(
+      `
+      SELECT
+        id,
+        name,
+        description,
+        tags,
+        requirements,
+        rewards,
+        deliverables,
+        contributions_start_block as "contributionsStartBlock",
+        contributions_end_block as "contributionsEndBlock",
+        max_number_of_contributions as "maxNumberOfContributions",
+        contributions_disabled as "contributionsDisabled"
+      FROM ${missionsTable} WHERE id = ${id}
+      `
+    )
+      .first<Mission>()
+      .then((result) => {
+        if (isCancelled) return;
+
+        setMission(result);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [id, setMission, /* effect dep */ shouldRefresh]);
+
+  return { mission, refresh };
+};
+
+type MissionWithAdminInfo = Mission & { pendingContributions: number };
+
+export const useAdminMisisons = () => {
+  const { db } = useTablelandConnection();
+
+  const [missions, setMissions] = useState<MissionWithAdminInfo[]>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!db) return;
+    db.prepare(
+      `SELECT
+         id,
+         name,
+         description,
+         tags,
+         rewards,
+         requirements,
+         deliverables,
+         contributions_start_block as "contributionsStartBlock",
+         contributions_end_block as "contributionsEndBlock",
+         max_number_of_contributions as "maxNumberOfContributions",
+         contributions_disabled as "contributionsDisabled",
+         (SELECT count(*) FROM ${missionContributionsTable} WHERE accepted IS NULL) as "pendingContributions"
+      FROM ${missionsTable} ORDER BY id DESC`
+    )
+      .all<MissionWithAdminInfo>()
+      .then(({ results }) => {
+        if (isCancelled) return;
+
+        setMissions(results);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [db, setMissions, /* effect dep */ shouldRefresh]);
+
+  return { missions, refresh };
+};
+
+export const useOpenMissions = () => {
+  const { db } = useTablelandConnection();
+
+  const [missions, setMissions] = useState<Mission[]>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!db) return;
+    db.prepare(
+      `SELECT
+         id,
+         name,
+         description,
+         tags,
+         rewards,
+         requirements,
+         deliverables,
+         contributions_start_block as "contributionsStartBlock",
+         contributions_end_block as "contributionsEndBlock",
+         max_number_of_contributions as "maxNumberOfContributions",
+         contributions_disabled as "contributionsDisabled"
+       FROM ${missionsTable} AS missions
+       WHERE
+         contributions_disabled = 0 AND
+         (contributions_start_block = 0 OR BLOCK_NUM(${secondaryChain.id}) >= contributions_start_block) AND
+         (contributions_end_block = 0 OR BLOCK_NUM(${secondaryChain.id}) <= contributions_end_block) AND
+         (max_number_of_contributions = 0 OR (SELECT COUNT(*) FROM ${missionContributionsTable} WHERE mission_id = missions.id AND accepted = true) < max_number_of_contributions)
+       ORDER BY id DESC`
+    )
+      .all<Mission>()
+      .then(({ results }) => {
+        if (isCancelled) return;
+
+        setMissions(results);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [db, setMissions, /* effect dep */ shouldRefresh]);
+
+  return { missions, refresh };
+};
+
+export const useContributions = (
+  missionId: string | null | undefined,
+  filter: "all" | "filtered",
+  connectedAccount?: string
+) => {
+  const { db } = useTablelandConnection();
+
+  const [contributions, setContributions] = useState<MissionContribution[]>();
+  const [shouldRefresh, setShouldRefresh] = useState({});
+
+  const refresh = useCallback(() => {
+    setShouldRefresh({});
+  }, [setShouldRefresh]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (!db || !missionId) return;
+
+    let query = `SELECT
+        id,
+        mission_id as "missionId",
+        created_at as "createdAt",
+        contributor,
+        data,
+        (CASE
+          WHEN accepted IS NULL THEN 'pending_review'
+          WHEN accepted = 0 THEN 'rejected'
+          ELSE 'accepted' END) as "status",
+        acceptance_motivation as "acceptanceMotivation"
+       FROM ${missionContributionsTable} WHERE mission_id = ${missionId}`;
+
+    if (filter === "filtered") {
+      query += ` AND (accepted IS NOT NULL OR lower(contributor) = lower('${connectedAccount}'))`;
+    }
+
+    db.prepare(query)
+      .all<MissionContribution>()
+      .then(({ results }) => {
+        if (isCancelled) return;
+
+        setContributions(results);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [db, setContributions, /* effect dep */ shouldRefresh]);
+
+  return { contributions, refresh };
 };
