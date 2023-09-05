@@ -64,9 +64,19 @@ const deploymentEnvMapping = {
   [DeploymentEnvironment.PRODUCTION]: deployments.ethereum,
 };
 
-export const deployment = {
-  ...deploymentEnvMapping[environment],
+const defaultDevMbDeployment = {
   missionContractAddress: "0x0165878A594ca255338adfa4d48449f69242Eb8F",
   missionsTable: "missions_31337_2",
   missionContributionsTable: "mission_contributions_31337_3",
+};
+
+const polygonDevMbDeployment = {
+  missionContractAddress: "0xB169B0bED3e4cA014dC329318935E0Dcf50e14b6",
+  missionsTable: "missions_80001_7223",
+  missionContributionsTable: "mission_contributions_80001_7224",
+};
+
+export const deployment = {
+  ...deploymentEnvMapping[environment],
+  ...polygonDevMbDeployment,
 };
