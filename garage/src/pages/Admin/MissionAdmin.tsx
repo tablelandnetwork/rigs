@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import orderBy from "lodash/orderBy";
 import {
   Button,
   Divider,

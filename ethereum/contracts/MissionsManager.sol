@@ -24,7 +24,10 @@ contract MissionsManager is AccessControl {
     /// @dev Mapping between missionId -> contributions disabled.
     mapping(uint256 => bool) private _contributionsDisabled;
 
-    constructor(TableInfo memory missionsTable, TableInfo memory contributionsTable) {
+    constructor(
+        TableInfo memory missionsTable,
+        TableInfo memory contributionsTable
+    ) {
         _missionsTable = missionsTable;
         _contributionsTable = contributionsTable;
 
@@ -33,7 +36,10 @@ contract MissionsManager is AccessControl {
     }
 
     /// @dev Enables or disables contributions for the given `missionId`.
-    function setContributionsDisabled(uint256 missionId, bool disabled) external onlyRole(MISSIONS_ADMIN_ROLE) {
+    function setContributionsDisabled(
+        uint256 missionId,
+        bool disabled
+    ) external onlyRole(MISSIONS_ADMIN_ROLE) {
         _contributionsDisabled[missionId] = disabled;
 
         string memory disabledString = disabled ? "1" : "0";
@@ -47,11 +53,17 @@ contract MissionsManager is AccessControl {
             " WHERE id=",
             Strings.toString(missionId)
         );
-        TablelandDeployments.get().mutate(address(this), _missionsTable.id, stmnt);
+        TablelandDeployments.get().mutate(
+            address(this),
+            _missionsTable.id,
+            stmnt
+        );
     }
 
     /// @dev Returns true if contributions are disabled for the given `missionId`, otherwise false.
-    function contributionsDisabled(uint256 missionId) external view returns (bool) {
+    function contributionsDisabled(
+        uint256 missionId
+    ) external view returns (bool) {
         return _contributionsDisabled[missionId];
     }
 
@@ -59,8 +71,14 @@ contract MissionsManager is AccessControl {
     ///
     /// @param missionId  The mission id
     /// @param data       JSON-string with the data for the submission
-    function submitMissionContribution(uint256 missionId, string memory data) external {
-        require(!_contributionsDisabled[missionId], "Contributions disabled for mission");
+    function submitMissionContribution(
+        uint256 missionId,
+        string memory data
+    ) external {
+        require(
+            !_contributionsDisabled[missionId],
+            "Contributions disabled for mission"
+        );
 
         string memory insert = string.concat(
             "INSERT INTO ",
@@ -76,6 +94,10 @@ contract MissionsManager is AccessControl {
             ")"
         );
 
-        TablelandDeployments.get().mutate(address(this), _contributionsTable.id, insert);
+        TablelandDeployments.get().mutate(
+            address(this),
+            _contributionsTable.id,
+            insert
+        );
     }
 }

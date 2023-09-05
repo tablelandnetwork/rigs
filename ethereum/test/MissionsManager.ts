@@ -200,7 +200,7 @@ describe("MissionsManager [ @skip-on-coverage ]", function () {
     });
 
     it("does not allow contributing to disabled missions", async () => {
-      const [admin, user1, user2] = accounts;
+      const [admin, user1] = accounts;
 
       const txn = await manager
         .connect(admin)

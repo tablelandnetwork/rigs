@@ -6,7 +6,7 @@ import { PilotDetails } from "./pages/PilotDetails";
 import { OwnerDetails } from "./pages/OwnerDetails";
 import { Gallery } from "./pages/Gallery";
 import { Admin } from "./pages/Admin";
-import { MissionAdmin } from "./pages/admin/MissionAdmin";
+import { MissionAdmin } from "./pages/Admin/MissionAdmin";
 import { Proposals } from "./pages/Proposals";
 import { Proposal } from "./pages/Proposal";
 import { MissionBoard } from "./pages/MissionBoard";
