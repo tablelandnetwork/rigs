@@ -225,7 +225,11 @@ export const MissionDetails = () => {
           </Flex>
         </>
       )}
-      {!mission && <Spinner />}
+      {!mission && (
+        <Flex flexGrow="1" alignItems="center">
+          <Spinner justifyContent="center" />
+        </Flex>
+      )}
     </Flex>
   );
 };
