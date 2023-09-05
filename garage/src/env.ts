@@ -26,13 +26,13 @@ const parseEnv = (env?: string): DeploymentEnvironment => {
 const environment = parseEnv(import.meta.env.VITE_APP_ENV);
 
 const mainChainEnvMapping = {
-  [DeploymentEnvironment.DEVELOPMENT]: chains.hardhat,
+  [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
   [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
   [DeploymentEnvironment.PRODUCTION]: chains.mainnet,
 };
 
 const secondaryChainEnvMapping = {
-  [DeploymentEnvironment.DEVELOPMENT]: chains.hardhat,
+  [DeploymentEnvironment.DEVELOPMENT]: chains.polygonMumbai,
   [DeploymentEnvironment.STAGING]: chains.polygonMumbai,
   [DeploymentEnvironment.PRODUCTION]: chains.arbitrum,
 };
@@ -68,12 +68,19 @@ const deploymentEnvMapping = {
   [DeploymentEnvironment.PRODUCTION]: deployments.ethereum,
 };
 
-// calling account that is not a contract? 0x0165878a594ca255338adfa4d48449f69242eb8f
-export const deployment = {
-  ...deploymentEnvMapping[environment],
+const defaultDevMbDeployment = {
   missionContractAddress: "0x0165878A594ca255338adfa4d48449f69242Eb8F",
   missionsTable: "missions_31337_2",
   missionContributionsTable: "mission_contributions_31337_3",
 };
 
-console.log({ mainChain, secondaryChain, environment });
+const polygonDevMbDeployment = {
+  missionContractAddress: "0xB169B0bED3e4cA014dC329318935E0Dcf50e14b6",
+  missionsTable: "missions_80001_7223",
+  missionContributionsTable: "mission_contributions_80001_7224",
+};
+
+export const deployment = {
+  ...deploymentEnvMapping[environment],
+  ...polygonDevMbDeployment,
+};
