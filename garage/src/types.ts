@@ -91,3 +91,24 @@ export enum ProposalStatus {
   Open = "Open",
   Ended = "Ended"
 }
+
+export interface MissionDeliverable {
+  name: string;
+  description: string;
+}
+
+export interface MissionReward {
+  amount: number;
+  currency: string;
+}
+
+export interface Mission {
+  id: string;
+  name: string;
+  description: string;
+  requirements: string[];
+  tags: string[];
+  deliverables: MissionDeliverable[];
+  reward: MissionReward;
+  expiresAt?: Date;
+}
