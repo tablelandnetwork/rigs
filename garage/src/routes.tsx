@@ -8,6 +8,8 @@ import { Gallery } from "./pages/Gallery";
 import { Admin } from "./pages/Admin";
 import { Proposals } from "./pages/Proposals";
 import { Proposal } from "./pages/Proposal";
+import { MissionBoard } from "./pages/MissionBoard";
+import { MissionDetails } from "./pages/Mission";
 
 export const routes = () => {
   return [
@@ -59,6 +61,18 @@ export const routes = () => {
       path: "/proposals/:id",
       requiresWalletConnection: false,
       element: <Proposal />,
+    },
+    {
+      key: "MISSION_BOARD",
+      path: "/mission-board",
+      requiresWalletConnection: false,
+      element: <MissionBoard />,
+    },
+    {
+      key: "MISSION",
+      path: "/missions/:id",
+      requiresWalletConnection: false,
+      element: <MissionDetails />,
     }
   ];
 };
