@@ -239,6 +239,24 @@ const MobileDrawer = ({
             </ListItem>
             <Divider bgColor="inactive" />
             <ListItem textAlign="center" py={3}>
+              <NavButton
+                active={route?.route.key === "PROPOSALS"}
+                route="/proposals"
+                title="Proposals"
+                onClick={onClose}
+              />
+            </ListItem>
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
+              <NavButton
+                active={route?.route.key === "MISSION_BOARD"}
+                route="/mission-board"
+                title="Mission Board"
+                onClick={onClose}
+              />
+            </ListItem>
+            <Divider bgColor="inactive" />
+            <ListItem textAlign="center" py={3}>
               <MobileNavTablelandConnectButton onClick={onClose} />
             </ListItem>
           </List>
@@ -379,6 +397,16 @@ export const Topbar = () => {
                   active={route?.route.key === "GALLERY"}
                   route="/gallery"
                   title="Gallery"
+                />
+                <NavButton
+                  active={route?.route.key === "PROPOSALS"}
+                  route="/proposals"
+                  title="Proposals"
+                />
+                <NavButton
+                  active={route?.route.key === "MISSION_BOARD"}
+                  route="/mission-board"
+                  title="Mission Board"
                 />
               </HStack>
               <HStack flexShrink="0" flexGrow="1" justify="end">
