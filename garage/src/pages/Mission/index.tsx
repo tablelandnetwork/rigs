@@ -20,20 +20,15 @@ import {
   VStack,
   useDisclosure,
 } from "@chakra-ui/react";
-import {
-  useAccount,
-  useBlockNumber,
-  useContractWrite,
-  usePrepareContractWrite,
-} from "wagmi";
 import { useParams, Link } from "react-router-dom";
 import { TransactionStateAlert } from "../../components/TransactionStateAlert";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
 import { as0xString } from "../../utils/types";
-import { Mission, WalletAddress } from "../../types";
+import { Mission, MissionContribution, WalletAddress } from "../../types";
 import { deployment } from "../../env";
-import { useMission } from "../../hooks/useMissions";
+import { useMission, useContributions } from "../../hooks/useMissions";
+import { useAccount } from "../../hooks/useAccount";
 import { SubmitMissionModal } from "../../components/SubmitMissionModal";
 
 const GRID_GAP = 4;
@@ -45,15 +40,10 @@ const MODULE_PROPS = {
   overflow: "hidden",
 };
 
-interface Submission {
-  timestamp: Date;
-  address: WalletAddress;
-  status: "submitted" | "accepted" | "rejected";
-}
-
 type ModuleProps = Omit<React.ComponentProps<typeof Box>, "results"> & {
   mission: Mission;
-  submissions: Submission[];
+  contributions: MissionContribution[];
+  refresh: () => void;
 };
 
 const Information = ({ mission, ...props }: ModuleProps) => {
@@ -91,36 +81,80 @@ const Header = ({ mission, ...props }: ModuleProps) => {
   );
 };
 
-const Submissions = ({ mission, submissions, p, ...props }: ModuleProps) => {
+const prettySubmissionStatus = (
+  status: MissionContribution["status"]
+): string => {
+  switch (status) {
+    case "pending_review":
+      return "Pending";
+    default:
+      return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+};
+
+const Contributions = ({
+  mission,
+  contributions,
+  refresh,
+  p,
+  ...props
+}: ModuleProps) => {
+  const { address } = useAccount();
   const { isOpen, onClose, onOpen } = useDisclosure();
+
+  const userCanSubmit =
+    !mission.contributionsDisabled &&
+    !contributions.some(({ contributor, status }) => {
+      return (
+        contributor.toLowerCase() === address?.toLowerCase() &&
+        status === "pending_review"
+      );
+    });
 
   return (
     <>
-      <SubmitMissionModal isOpen={isOpen} onClose={onClose} mission={mission} />
+      <SubmitMissionModal
+        isOpen={isOpen}
+        onClose={onClose}
+        mission={mission}
+        refresh={refresh}
+      />
       <VStack align="stretch" spacing={4} pt={p} {...props}>
-        <Heading px={p}>Submissions</Heading>
-        <Table>
-          <Thead>
-            <Tr>
-              <Th pl={p}>Date</Th>
-              <Th>Address</Th>
-              <Th pr={p}>Status</Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {submissions.map((submission, idx) => {
-              return (
-                <Tr key={`submission-${idx}`}>
-                  <Td pl={p}>{submission.timestamp.toDateString()}</Td>
-                  <Td>{truncateWalletAddress(submission.address)}</Td>
-                  <Td pr={p}>{submission.status}</Td>
-                </Tr>
-              );
-            })}
-          </Tbody>
-        </Table>
+        <Heading px={p}>Contributions</Heading>
+        {contributions.length > 0 && (
+          <Table>
+            <Thead>
+              <Tr>
+                <Th pl={p}>Contributor</Th>
+                <Th pr={p}>Status</Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {contributions.map((contribution, idx) => {
+                const contributor =
+                  contribution.contributor.toLowerCase() ===
+                  address?.toLowerCase()
+                    ? "You"
+                    : truncateWalletAddress(contribution.contributor);
+                return (
+                  <Tr key={`contribution-${idx}`}>
+                    <Td pl={p}>{contributor}</Td>
+                    <Td pr={p}>
+                      {prettySubmissionStatus(contribution.status)}
+                    </Td>
+                  </Tr>
+                );
+              })}
+            </Tbody>
+          </Table>
+        )}
+        {contributions.length === 0 && (
+          <Text px={p} py={4} variant="emptyState">
+            This mission has no contributions yet.
+          </Text>
+        )}
         <Flex px={p} pb={p} justify="stretch">
-          <Button flexGrow="1" onClick={onOpen}>
+          <Button flexGrow="1" onClick={onOpen} isDisabled={!userCanSubmit}>
             Submit contribution
           </Button>
         </Flex>
@@ -129,23 +163,18 @@ const Submissions = ({ mission, submissions, p, ...props }: ModuleProps) => {
   );
 };
 
-const useSubmissions = (missionId?: string) => {
-  return {
-    submissions: [
-      {
-        timestamp: new Date(Date.parse("2023-07-19T00:00:05Z")),
-        address: as0xString("0xCe300C9071947Cec318eF8368132EB33a80B6150")!,
-        status: "submitted" as const,
-      },
-    ],
-  };
-};
-
 export const MissionDetails = () => {
   const { id } = useParams();
+  const { address } = useAccount();
 
   const { mission } = useMission(id ?? "");
-  const { submissions } = useSubmissions(id ?? "");
+  const { refresh, contributions } = useContributions(
+    id ?? "",
+    "filtered",
+    address
+  );
+
+  console.log({ mission, contributions });
 
   return (
     <Flex
@@ -154,7 +183,7 @@ export const MissionDetails = () => {
       width="100%"
       minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
     >
-      {mission && (
+      {mission && contributions && (
         <>
           <Box
             p={GRID_GAP}
@@ -164,7 +193,8 @@ export const MissionDetails = () => {
           >
             <Header
               mission={mission}
-              submissions={submissions}
+              contributions={contributions}
+              refresh={refresh}
               {...MODULE_PROPS}
             />
           </Box>
@@ -178,29 +208,28 @@ export const MissionDetails = () => {
             width="100%"
             minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
           >
-            <Flex
-              direction="column"
-              gap={GRID_GAP}
-              align="stretch"
-              width="100%"
-            >
-              <Information
-                mission={mission}
-                submissions={submissions}
-                {...MODULE_PROPS}
-              />
-            </Flex>
-            <Box flexShrink="0">
-              <Submissions
-                mission={mission}
-                submissions={submissions}
-                {...MODULE_PROPS}
-              />
-            </Box>
+            <Information
+              mission={mission}
+              contributions={contributions}
+              refresh={refresh}
+              {...MODULE_PROPS}
+              flexGrow="1"
+            />
+            <Contributions
+              mission={mission}
+              contributions={contributions}
+              refresh={refresh}
+              {...MODULE_PROPS}
+              minWidth={{ lg: "300px", xl: "360px" }}
+            />
           </Flex>
         </>
       )}
-      {!mission && <Spinner />}
+      {!mission && (
+        <Flex flexGrow="1" alignItems="center">
+          <Spinner justifyContent="center" />
+        </Flex>
+      )}
     </Flex>
   );
 };

@@ -48,8 +48,7 @@ const blockExplorerChainMapping = {
   [DeploymentEnvironment.STAGING]:
     mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
   [DeploymentEnvironment.PRODUCTION]:
-    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan
-      .url,
+    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan.url,
 };
 
 export const blockExplorerBaseUrl = blockExplorerChainMapping[environment];
@@ -65,4 +64,9 @@ const deploymentEnvMapping = {
   [DeploymentEnvironment.PRODUCTION]: deployments.ethereum,
 };
 
-export const deployment = deploymentEnvMapping[environment];
+export const deployment = {
+  ...deploymentEnvMapping[environment],
+  missionContractAddress: "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+  missionsTable: "missions_31337_2",
+  missionContributionsTable: "mission_contributions_31337_3",
+};
