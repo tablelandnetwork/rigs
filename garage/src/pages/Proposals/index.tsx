@@ -111,7 +111,7 @@ export const Proposals = () => {
             />
           ))}
         {proposals?.length === 0 && (
-          <Box {...MODULE_PROPS}>No proposals created.</Box>
+          <Box {...MODULE_PROPS}>Coming soon.</Box>
         )}
       </VStack>
     </Flex>
