@@ -146,13 +146,13 @@ export const SignManifesto = ({ onAgree }: { onAgree: () => void }) => {
           <span style={{ fontWeight: "bold" }}>We are Innovators:</span> We
           harness the potential of decentralized technology to accelerate the
           exchange of information across society, leveraging the capabilities of
-          Tableland to craft, manage, and transform the digital realm for the
+          Tableland to craft, manage, and transform the virtual realm for the
           betterment of humankind.
         </ListItem>
         <ListItem>
           <span style={{ fontWeight: "bold" }}>We are Stewards:</span> We
           understand that the power to shape the future lies in our hands. We
-          pledge to use this power responsibly, to construct a digital space
+          pledge to use this power responsibly, to construct a virtual space
           that reflects our shared values and ambitions. We are dedicated to
           cultivating a sustainable, inventive, and inspiring ecosystem within
           Tableland and beyond.
