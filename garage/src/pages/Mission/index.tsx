@@ -25,7 +25,9 @@ import { truncateWalletAddress } from "../../utils/fmt";
 import { Mission, MissionContribution } from "../../types";
 import { useMission, useContributions } from "../../hooks/useMissions";
 import { useAccount } from "../../hooks/useAccount";
+import { usePersistentState } from "../../hooks/usePersistentState";
 import { SubmitMissionModal } from "../../components/SubmitMissionModal";
+import { SignManifestoModal } from "../../components/SignManifestoModal";
 
 const GRID_GAP = 4;
 
@@ -170,7 +172,10 @@ export const MissionDetails = () => {
     address
   );
 
-  console.log({ mission, contributions });
+  const [hasSignedManifesto, setHasSignedManifesto] = usePersistentState(
+    "HAS_SIGNED_MB_MANIFESTO",
+    false
+  );
 
   return (
     <Flex
@@ -179,6 +184,10 @@ export const MissionDetails = () => {
       width="100%"
       minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
     >
+      <SignManifestoModal
+        isOpen={!hasSignedManifesto}
+        onAgree={() => setHasSignedManifesto(true)}
+      />
       {mission && contributions && (
         <>
           <Box
