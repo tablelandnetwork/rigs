@@ -1,24 +1,11 @@
 /* eslint-disable no-unused-expressions */
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Database, Validator } from "@tableland/sdk";
-import { LocalTableland, getAccounts, getDatabase } from "@tableland/local";
+import { getAccounts, getDatabase } from "@tableland/local";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { MissionsManager } from "../typechain-types";
-
-const lt = new LocalTableland({
-  silent: true,
-});
-
-before(async function () {
-  lt.start();
-  await lt.isReady();
-});
-
-after(async function () {
-  await lt.shutdown();
-});
 
 const accounts = getAccounts();
 
