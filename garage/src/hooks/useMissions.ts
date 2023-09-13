@@ -81,8 +81,8 @@ export const useAdminMisisons = () => {
          contributions_end_block as "contributionsEndBlock",
          max_number_of_contributions as "maxNumberOfContributions",
          contributions_disabled as "contributionsDisabled",
-         (SELECT count(*) FROM ${missionContributionsTable} WHERE accepted IS NULL) as "pendingContributions"
-      FROM ${missionsTable} ORDER BY id DESC`
+         (SELECT count(*) FROM ${missionContributionsTable} WHERE mission_id = missions.id AND accepted IS NULL) as "pendingContributions"
+      FROM ${missionsTable} AS missions ORDER BY id DESC`
     )
       .all<MissionWithAdminInfo>()
       .then(({ results }) => {
