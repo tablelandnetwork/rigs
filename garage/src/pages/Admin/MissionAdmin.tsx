@@ -1,5 +1,9 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
+  AlertDescription,
+  AlertIcon,
+  AlertTitle,
   Button,
   Divider,
   Flex,
@@ -7,6 +11,7 @@ import {
   FormLabel,
   Heading,
   HStack,
+  Link,
   Modal,
   ModalOverlay,
   ModalContent,
@@ -30,8 +35,8 @@ import {
   useContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { useParams, Link } from "react-router-dom";
-import { Database } from "@tableland/sdk";
+import { useParams, Link as RouterLink } from "react-router-dom";
+import { Database, helpers } from "@tableland/sdk";
 import { useSigner } from "../../hooks/useSigner";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
@@ -72,6 +77,13 @@ const ReviewContributionModal = ({
   const db = useMemo(() => {
     if (signer) return new Database({ signer });
   }, [signer]);
+
+  const rawContributionDataQueryUrl = useMemo(() => {
+    const baseUrl = helpers.getBaseUrl(secondaryChain.id);
+    const query = `SELECT data FROM ${missionContributionsTable} WHERE id = ${contribution?.id}`;
+
+    return `${baseUrl}/query?statement=${encodeURIComponent(query)}`;
+  }, [contribution]);
 
   const [txnState, setTxnState] = useState<
     "idle" | "querying" | "success" | "fail"
@@ -133,24 +145,36 @@ const ReviewContributionModal = ({
             <ModalBody>
               <Text mb={4}>Contributor: {contribution.contributor}</Text>
               <Heading mb={2}>Data</Heading>
-              <Table>
-                <Thead>
-                  <Tr>
-                    <Th>Key</Th>
-                    <Th>Value</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {contribution.data.map(({ key, value }) => {
-                    return (
-                      <Tr>
-                        <Td>{key}</Td>
-                        <Td>{value}</Td>
-                      </Tr>
-                    );
-                  })}
-                </Tbody>
-              </Table>
+              {Array.isArray(contribution.data) ? (
+                <Table>
+                  <Thead>
+                    <Tr>
+                      <Th>Key</Th>
+                      <Th>Value</Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {contribution.data.map(({ key, value }) => {
+                      return (
+                        <Tr>
+                          <Td>{key}</Td>
+                          <Td>{value}</Td>
+                        </Tr>
+                      );
+                    })}
+                  </Tbody>
+                </Table>
+              ) : (
+                <Alert status="error">
+                  <AlertIcon />
+                  <AlertTitle>Incorrect data format</AlertTitle>
+                  <AlertDescription>
+                    <Link href={rawContributionDataQueryUrl} isExternal>
+                      Review data
+                    </Link>
+                  </AlertDescription>
+                </Alert>
+              )}
               <Heading mt={4} mb={2}>
                 Approve/Reject
               </Heading>
@@ -228,9 +252,9 @@ const ContributionsTable = ({
               <Tr key={`contribution-${i}`}>
                 <Td>{id}</Td>
                 <Td>
-                  <Link to={`/owner/${contributor}`}>
+                  <RouterLink to={`/owner/${contributor}`}>
                     {truncateWalletAddress(contributor)}
-                  </Link>
+                  </RouterLink>
                 </Td>
                 <Td>{status}</Td>
                 <Td isNumeric>
