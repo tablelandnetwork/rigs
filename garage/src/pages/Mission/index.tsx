@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {
   Box,
   Button,
@@ -136,7 +137,11 @@ const Contributions = ({
                     : truncateWalletAddress(contribution.contributor);
                 return (
                   <Tr key={`contribution-${idx}`}>
-                    <Td pl={p}>{contributor}</Td>
+                    <Td pl={p}>
+                      <Link to={`/owner/${contribution.contributor}`}>
+                        {contributor}
+                      </Link>
+                    </Td>
                     <Td pr={p}>
                       {prettySubmissionStatus(contribution.status)}
                     </Td>
