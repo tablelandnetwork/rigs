@@ -169,7 +169,7 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
 };
 
 const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
-  const { proposals } = useProposals();
+  const { proposals, refresh } = useProposals();
 
   const [proposalDialogOpen, setCreateProposalDialogOpen] = useState(false);
 
@@ -177,7 +177,10 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
     <>
       <CreateProposalModal
         isOpen={proposalDialogOpen}
-        onClose={() => setCreateProposalDialogOpen(false)}
+        onClose={() => {
+          refresh();
+          setCreateProposalDialogOpen(false);
+        }}
       />
       <Box {...props}>
         <HStack
@@ -221,7 +224,7 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
 };
 
 const ListMissionsForm = (props: React.ComponentProps<typeof Box>) => {
-  const { missions } = useAdminMisisons();
+  const { missions, refresh } = useAdminMisisons();
 
   const [missionDialogOpen, setMissionDialogOpen] = useState(false);
 
@@ -229,7 +232,10 @@ const ListMissionsForm = (props: React.ComponentProps<typeof Box>) => {
     <>
       <CreateMissionModal
         isOpen={missionDialogOpen}
-        onClose={() => setMissionDialogOpen(false)}
+        onClose={() => {
+          refresh();
+          setMissionDialogOpen(false);
+        }}
       />
       <Box {...props}>
         <HStack
