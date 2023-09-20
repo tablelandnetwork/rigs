@@ -24,6 +24,9 @@ async function main() {
   if (rigsDeployment.votingContractAddress === "") {
     throw Error(`no votingContractAddress entry for '${network.name}'`);
   }
+  if (rigsDeployment.missionContractAddress === "") {
+    throw Error(`no missionContractAddress entry for '${network.name}'`);
+  }
 
   // Verify rigs
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
@@ -135,6 +138,37 @@ async function main() {
     ) {
       console.log(
         `Voting contract already verified: '${rigsDeployment.votingContractAddress}'`
+      );
+    } else throw err;
+  }
+
+  // Verify missions contract
+  try {
+    const missionsTable =
+      rigsDeployment.missionsTable.match(/.*_\d*_(\d*)/)![1];
+    const missionContributionsTable =
+      rigsDeployment.missionContributionsTable.match(/.*_\d*_(\d*)/)![1];
+
+    await run("verify:verify", {
+      address: rigsDeployment.missionContractAddress,
+      constructorArguments: [
+        {
+          id: BigNumber.from(missionsTable),
+          name: rigsDeployment.missionsTable,
+        },
+        {
+          id: BigNumber.from(missionContributionsTable),
+          name: rigsDeployment.missionContributionsTable,
+        },
+      ],
+    });
+  } catch (err) {
+    if (
+      err.message === "Contract source code already verified" ||
+      err.message.includes("Reason: Already Verified")
+    ) {
+      console.log(
+        `Missions contract already verified: '${rigsDeployment.missionContractAddress}'`
       );
     } else throw err;
   }

@@ -4,13 +4,19 @@ export const config = { runtime: "edge" };
 
 const { pilotSessionsTable, ftRewardsTable } = deployments.ethereum;
 
-const getFtQuery = (address: string) => {
+const isInvalidAddress = (address?: string): boolean => {
+  return !/0x[0-9a-z]{40,40}/i.test(address || "");
+};
+
+const getFtQuery = (wallets: string[]) => {
+  const walletsList = wallets.map((v) => `'${v.toLowerCase()}'`).join(", ");
+
   return `
     SELECT SUM(ft) as "ft"
     FROM (
-      SELECT (coalesce(end_time, BLOCK_NUM(1)) - start_time) as "ft" FROM ${pilotSessionsTable} WHERE lower(owner) = lower('${address}')
+      SELECT (coalesce(end_time, BLOCK_NUM(1)) - start_time) as "ft" FROM ${pilotSessionsTable} WHERE lower(owner) IN (${walletsList})
       UNION ALL
-      SELECT amount as "ft" FROM ${ftRewardsTable} WHERE lower(recipient) = lower('${address}')
+      SELECT amount as "ft" FROM ${ftRewardsTable} WHERE lower(recipient) IN (${walletsList})
     )`;
 };
 
@@ -24,9 +30,14 @@ export default async function (request: Request) {
 
   if (isNaN(min)) return new Response(null, { status: 400 });
 
-  const { wallet } = await request.json();
+  let { wallet, wallets } = await request.json();
 
-  const query = getFtQuery(wallet);
+  if (!wallets) wallets = [wallet];
+  if (wallets.length === 0 || wallets.some(isInvalidAddress)) {
+    return new Response(null, { status: 422 });
+  }
+
+  const query = getFtQuery(wallets);
   const apiUrl = new URL("https://tableland.network/api/v1/query");
   apiUrl.searchParams.set("statement", query);
   apiUrl.searchParams.set("unwrap", "true");

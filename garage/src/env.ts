@@ -44,12 +44,14 @@ export const secondaryChain = secondaryChainEnvMapping[environment];
 
 const blockExplorerChainMapping = {
   [DeploymentEnvironment.DEVELOPMENT]:
-    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
-  [DeploymentEnvironment.STAGING]:
-    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan.url,
-  [DeploymentEnvironment.PRODUCTION]:
-    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers.etherscan
+    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan
       .url,
+  [DeploymentEnvironment.STAGING]:
+    mainChainEnvMapping[DeploymentEnvironment.STAGING].blockExplorers.etherscan
+      .url,
+  [DeploymentEnvironment.PRODUCTION]:
+    mainChainEnvMapping[DeploymentEnvironment.PRODUCTION].blockExplorers
+      .etherscan.url,
 };
 
 export const blockExplorerBaseUrl = blockExplorerChainMapping[environment];

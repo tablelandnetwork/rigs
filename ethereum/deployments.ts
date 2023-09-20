@@ -6,6 +6,7 @@ export interface RigsDeployment {
   royaltyContractAddress: string;
   pilotsAddress: string;
   votingContractAddress: string;
+  missionContractAddress: string;
 
   // Tables network
   tablelandChain: helpers.ChainName;
@@ -33,6 +34,10 @@ export interface RigsDeployment {
   votesTable: string;
   optionsTable: string;
 
+  // Mission table names
+  missionsTable: string;
+  missionContributionsTable: string;
+
   displayAttributes: boolean;
 }
 
@@ -47,6 +52,7 @@ export const deployments: RigsDeployments = {
     royaltyContractAddress: "0x9BE9627e25c9f348C1edB6E46dBCa2a6669e2D56",
     pilotsAddress: "0xFe688e894AAA2A8F4740d09DA8c434Eb0B1AFb5D",
     votingContractAddress: "0xE9Fb4f78f23457F69f516c6806E5C9e8756C8c57",
+    missionContractAddress: "0x486dDBd9D085a4a8252A156AB96ec5763b3dF9B4",
     tablelandChain: "arbitrum",
     tablelandHost: "https://tableland.network",
     contractTable: "rigs_contract_42161_12",
@@ -63,6 +69,8 @@ export const deployments: RigsDeployments = {
     ftSnapshotTable: "ft_snapshot_42161_20",
     votesTable: "votes_42161_21",
     optionsTable: "options_42161_22",
+    missionsTable: "missions_42161_23",
+    missionContributionsTable: "mission_contributions_42161_24",
     displayAttributes: true,
   },
   // testnets
@@ -71,6 +79,7 @@ export const deployments: RigsDeployments = {
     royaltyContractAddress: "0xd8E1803C479DFFf004B46F1560c575Acc5bf25A0",
     pilotsAddress: "0x1Ae76F54c561f32c24c74A562353D085C010a2E8",
     votingContractAddress: "0x3d06EB64C20dD24D613b200325D1E55517E41591",
+    missionContractAddress: "0xB169B0bED3e4cA014dC329318935E0Dcf50e14b6",
     tablelandChain: "maticmum",
     tablelandHost: "https://testnets.tableland.network",
     contractTable: "rigs_contract_80001_7136",
@@ -87,6 +96,8 @@ export const deployments: RigsDeployments = {
     ftSnapshotTable: "ft_snapshot_80001_7140",
     votesTable: "votes_80001_7141",
     optionsTable: "options_80001_7142",
+    missionsTable: "missions_80001_7223",
+    missionContributionsTable: "mission_contributions_80001_7224",
     displayAttributes: true,
   },
   localhost: {
@@ -94,6 +105,7 @@ export const deployments: RigsDeployments = {
     royaltyContractAddress: "",
     pilotsAddress: "",
     votingContractAddress: "",
+    missionContractAddress: "",
     tablelandChain: "local-tableland",
     tablelandHost: "http://localhost:8080",
     contractTable: "",
@@ -110,6 +122,8 @@ export const deployments: RigsDeployments = {
     ftSnapshotTable: "",
     votesTable: "",
     optionsTable: "",
+    missionsTable: "",
+    missionContributionsTable: "",
     displayAttributes: true,
   },
 };

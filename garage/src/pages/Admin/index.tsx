@@ -28,8 +28,10 @@ import { TOPBAR_HEIGHT } from "../../Topbar";
 import { Footer } from "../../components/Footer";
 import { ChainAwareButton } from "../../components/ChainAwareButton";
 import { isValidAddress } from "../../utils/types";
+import { CreateMissionModal } from "../../components/CreateMissionModal";
 import { CreateProposalModal } from "../../components/CreateProposalModal";
 import { useProposals } from "../../hooks/useProposals";
+import { useAdminMisisons } from "../../hooks/useMissions";
 import { secondaryChain, deployment } from "../../env";
 
 const { ftRewardsTable } = deployment;
@@ -218,6 +220,60 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
   );
 };
 
+const ListMissionsForm = (props: React.ComponentProps<typeof Box>) => {
+  const { missions } = useAdminMisisons();
+
+  const [missionDialogOpen, setMissionDialogOpen] = useState(false);
+
+  return (
+    <>
+      <CreateMissionModal
+        isOpen={missionDialogOpen}
+        onClose={() => setMissionDialogOpen(false)}
+      />
+      <Box {...props}>
+        <HStack
+          justify="space-between"
+          align="baseline"
+          sx={{ width: "100%", mb: 4 }}
+        >
+          <Heading>Missions</Heading>
+          <Button onClick={() => setMissionDialogOpen(true)}>Create new</Button>
+        </HStack>
+        <Table>
+          <Thead>
+            <Tr>
+              <Th>ID</Th>
+              <Th>Name</Th>
+              <Th>Contributions open</Th>
+              <Th isNumeric>Contributions needing review</Th>
+              <Th />
+            </Tr>
+          </Thead>
+          <Tbody>
+            {missions &&
+              missions.map((mission, i) => (
+                <Tr key={i}>
+                  <Td>
+                    <Link to={`/missions/${mission.id}`}>{mission.id}</Link>
+                  </Td>
+                  <Td>
+                    <Link to={`/missions/${mission.id}`}>{mission.name}</Link>
+                  </Td>
+                  <Td>{(!mission.contributionsDisabled).toString()}</Td>
+                  <Td isNumeric>{mission.pendingContributions}</Td>
+                  <Td isNumeric>
+                    <Link to={`/admin/missions/${mission.id}`}>Manage</Link>
+                  </Td>
+                </Tr>
+              ))}
+          </Tbody>
+        </Table>
+      </Box>
+    </>
+  );
+};
+
 export const Admin = () => {
   return (
     <>
@@ -241,6 +297,7 @@ export const Admin = () => {
           <Flex direction="column" gap={GRID_GAP} align="stretch" width="100%">
             <GiveFtRewardForm {...MODULE_PROPS} />
             <ListProposalsForm {...MODULE_PROPS} />
+            <ListMissionsForm {...MODULE_PROPS} />
           </Flex>
         </Flex>
       </Flex>
