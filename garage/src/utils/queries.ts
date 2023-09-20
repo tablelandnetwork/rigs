@@ -7,6 +7,10 @@ const {
   ftRewardsTable,
   lookupsTable,
   pilotSessionsTable,
+  proposalsTable,
+  optionsTable,
+  ftSnapshotTable,
+  votesTable,
 } = deployment;
 
 const IMAGE_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||(SELECT value from ${lookupsTable} WHERE label = 'image_full_name')`;
@@ -445,4 +449,31 @@ export const selectFilteredRigs = (
 
 export const selectOwnerFTRewards = (owner: string) => {
   return `SELECT block_num as "blockNum", recipient, reason, amount FROM ${ftRewardsTable} WHERE recipient = '${owner}' ORDER BY block_num DESC`;
+};
+
+export const selectOwnerVotes = (owner: string) => {
+  return `
+    SELECT
+      (SELECT json_object(
+        'name', name,
+        'id', id,
+        'options', (
+            SELECT json_group_array(json_object('id', id, 'description', description))
+            FROM ${optionsTable} WHERE proposal_id = proposal_id
+          )
+        ) FROM ${proposalsTable} WHERE id = proposal_id
+      ) as "proposal",
+      (SELECT ft
+       FROM ${ftSnapshotTable}
+       WHERE proposal_id = proposal_id AND lower(address) = lower(votes.address)
+      ) as "ft",
+      json_group_array(json_object(
+        'optionId', option_id, 'weight', weight, 'comment', comment
+      )) as "choices"
+      FROM
+        ${votesTable} as "votes"
+      WHERE
+        lower(votes.address) = lower('${owner}') AND votes.weight > 0
+      GROUP BY
+        proposal_id`;
 };
