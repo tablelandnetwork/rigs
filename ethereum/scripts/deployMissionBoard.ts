@@ -1,4 +1,4 @@
-import { ethers, network, rigsConfig, rigsDeployment, mainnet } from "hardhat";
+import { ethers, network, rigsConfig, mainnet } from "hardhat";
 import { Wallet, providers, Signer, BigNumber } from "ethers";
 import type { MissionsManager } from "../typechain-types";
 import { Database } from "@tableland/sdk";
@@ -28,10 +28,9 @@ async function main() {
     throw Error("missing signer/Tableland private key");
   }
 
-  if (tablesConfig.tablelandAlchemyKey) {
-    const provider = new providers.AlchemyProvider(
-      rigsDeployment.tablelandChain,
-      tablesConfig.tablelandAlchemyKey
+  if (tablesConfig.tablelandProviderUrl) {
+    const provider = new providers.JsonRpcProvider(
+      tablesConfig.tablelandProviderUrl
     );
     signer = signer.connect(provider);
   }

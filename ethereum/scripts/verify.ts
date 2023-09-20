@@ -24,6 +24,9 @@ async function main() {
   if (rigsDeployment.votingContractAddress === "") {
     throw Error(`no votingContractAddress entry for '${network.name}'`);
   }
+  if (rigsDeployment.missionContractAddress === "") {
+    throw Error(`no missionContractAddress entry for '${network.name}'`);
+  }
 
   // Verify rigs
   const rigs = (await ethers.getContractFactory("TablelandRigs")).attach(
