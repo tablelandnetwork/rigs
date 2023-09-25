@@ -42,7 +42,6 @@ import {
   proposalStatus,
 } from "../../components/ProposalStatusBadge";
 import { useProposal, Result, Vote } from "../../hooks/useProposal";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useAddressVotingPower } from "../../hooks/useAddressVotingPower";
 import { TOPBAR_HEIGHT } from "../../Topbar";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
@@ -50,6 +49,7 @@ import { as0xString } from "../../utils/types";
 import { ProposalWithOptions, ProposalStatus } from "../../types";
 import { deployment, secondaryChain } from "../../env";
 import { abi } from "../../abis/VotingRegistry";
+import { useWaitForTablelandTxn } from "../../hooks/useWaitForTablelandTxn";
 
 const ipfsGatewayBaseUrl = "https://nftstorage.link";
 
@@ -87,7 +87,6 @@ const CastVote = ({
     (v) => v.address.toLowerCase() === address?.toLowerCase()
   );
 
-  const { validator } = useTablelandConnection();
   const { votingPower } = useAddressVotingPower(address, proposal.id);
 
   const { data: blockNumber } = useBlockNumber();
@@ -155,34 +154,29 @@ const CastVote = ({
     hash: data?.hash,
   });
 
-  useEffect(() => {
-    if (validator && data?.hash) {
-      const controller = new AbortController();
-      const signal = controller.signal;
+  const onTxnCompleted = useCallback(() => {
+    toast({
+      title: "Vote successful",
+      status: "success",
+      duration: 5_000,
+    });
+    refresh();
+  }, [toast, refresh]);
 
-      validator
-        .pollForReceiptByTransactionHash(
-          {
-            chainId: secondaryChain.id,
-            transactionHash: data?.hash,
-          },
-          { interval: 2000, signal }
-        )
-        .then((_) => {
-          toast({
-            title: "Vote successful",
-            status: "success",
-            duration: 5_000,
-          });
-          refresh();
-        })
-        .catch((_) => {});
+  const onTxnFailed = useCallback(() => {
+    toast({
+      title: "Not able to fetch tableland receipt, please refresh the page.",
+      status: "warning",
+      duration: 5_000,
+    });
+  }, [toast, refresh]);
 
-      return () => {
-        controller.abort();
-      };
-    }
-  }, [validator, data, refresh, toast]);
+  useWaitForTablelandTxn(
+    secondaryChain.id,
+    data?.hash,
+    onTxnCompleted,
+    onTxnFailed
+  );
 
   const isMobile = useBreakpointValue(
     { base: true, lg: false },

@@ -20,10 +20,10 @@ import {
 } from "wagmi";
 import { as0xString } from "../utils/types";
 import { Mission } from "../types";
-import { useTablelandConnection } from "../hooks/useTablelandConnection";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { secondaryChain, deployment } from "../env";
 import { abi } from "../abis/MissionsManager";
+import { useWaitForTablelandTxn } from "../hooks/useWaitForTablelandTxn";
 
 const { missionContractAddress } = deployment;
 
@@ -48,8 +48,6 @@ export const SubmitMissionModal = ({
   onTransactionCompleted,
   refresh,
 }: ModalProps) => {
-  const { validator } = useTablelandConnection();
-
   const initialState = {
     deliverables: mission.deliverables.map(({ key }) => ({ key, value: "" })),
   };
@@ -90,29 +88,7 @@ export const SubmitMissionModal = ({
       onTransactionCompleted(isSuccess);
   }, [onTransactionCompleted, isTxLoading, isSuccess, data]);
 
-  useEffect(() => {
-    if (validator && data?.hash) {
-      const controller = new AbortController();
-      const signal = controller.signal;
-
-      validator
-        .pollForReceiptByTransactionHash(
-          {
-            chainId: secondaryChain.id,
-            transactionHash: data?.hash,
-          },
-          { interval: 2000, signal }
-        )
-        .then((_) => {
-          refresh();
-        })
-        .catch((_) => {});
-
-      return () => {
-        controller.abort();
-      };
-    }
-  }, [validator, data, refresh]);
+  useWaitForTablelandTxn(secondaryChain.id, data?.hash, refresh, refresh);
 
   const onInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>, atIndex: number) => {

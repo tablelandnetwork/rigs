@@ -40,7 +40,6 @@ import { RigDisplay } from "../../components/RigDisplay";
 import { FlightLog } from "./modules/FlightLog";
 import { Pilots } from "./modules/Pilots";
 import { RigAttributes } from "./modules/RigAttributes";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
 import { useRig } from "../../hooks/useRig";
 import { findNFT } from "../../utils/nfts";
 import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
@@ -52,6 +51,7 @@ import { abi } from "../../abis/TablelandRigs";
 import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
 import { ReactComponent as TablelandMark } from "../../assets/tableland.svg";
 import { ReactComponent as FilecoinMark } from "../../assets/filecoin-mark.svg";
+import { useWaitForTablelandTxn } from "../../hooks/useWaitForTablelandTxn";
 
 const { contractAddress } = deployment;
 
@@ -267,7 +267,6 @@ export const RigDetails = () => {
   const { actingAsAddress } = useAccount();
   const { data: currentBlockNumber } = useBlockNumber();
   const { rig, refresh: refreshRig } = useRig(id || "");
-  const { validator } = useTablelandConnection();
 
   const { data: contractData, refetch } = useContractReads({
     allowFailure: false,
@@ -325,42 +324,18 @@ export const RigDetails = () => {
     sleep(500).then((_) => setPendingTx(undefined));
   }, [refresh, setPendingTx]);
 
-  // Effect that waits until a tableland receipt is available for a tx hash
-  // and then refreshes the rig data
-  useEffect(() => {
-    if (validator && pendingTx) {
-      const controller = new AbortController();
-      const signal = controller.signal;
-
-      validator
-        .pollForReceiptByTransactionHash(
-          {
-            chainId: mainChain.id,
-            transactionHash: pendingTx,
-          },
-          { interval: 2000, signal }
-        )
-        .then((_) => {
-          refreshRigAndClearPendingTx();
-        })
-        .catch((_) => {
-          clearPendingTx();
-        });
-
-      return () => {
-        controller.abort();
-      };
-    }
-  }, [pendingTx, refreshRigAndClearPendingTx, validator, clearPendingTx]);
+  useWaitForTablelandTxn(
+    mainChain.id,
+    pendingTx,
+    refreshRigAndClearPendingTx,
+    clearPendingTx
+  );
 
   const currentNFT =
     rig?.currentPilot && nfts && findNFT(rig.currentPilot, nfts);
 
-  const {
-    trainRigsModal,
-    pilotRigsModal,
-    parkRigsModal,
-  } = useGlobalFlyParkModals();
+  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
+    useGlobalFlyParkModals();
 
   const onOpenTrainModal = useCallback(() => {
     if (rig) trainRigsModal.openModal([rig], setPendingTx);
