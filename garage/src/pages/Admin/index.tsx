@@ -25,17 +25,17 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { Database } from "@tableland/sdk";
-import { useSigner } from "../../hooks/useSigner";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { Footer } from "../../components/Footer";
-import { ChainAwareButton } from "../../components/ChainAwareButton";
-import { isValidAddress } from "../../utils/types";
-import { CreateMissionModal } from "../../components/CreateMissionModal";
-import { CreateProposalModal } from "../../components/CreateProposalModal";
-import { useProposals } from "../../hooks/useProposals";
-import { useAdminMisisons } from "../../hooks/useMissions";
-import { secondaryChain, deployment } from "../../env";
-import { useIsAdmin } from "../../hooks/useIsAdmin";
+import { useSigner } from "~/hooks/useSigner";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { Footer } from "~/components/Footer";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { isValidAddress } from "~/utils/types";
+import { CreateMissionModal } from "~/components/CreateMissionModal";
+import { CreateProposalModal } from "~/components/CreateProposalModal";
+import { useProposals } from "~/hooks/useProposals";
+import { useAdminMisisons } from "~/hooks/useMissions";
+import { secondaryChain, deployment } from "~/env";
+import { useIsAdmin } from "~/hooks/useIsAdmin";
 
 const { ftRewardsTable } = deployment;
 

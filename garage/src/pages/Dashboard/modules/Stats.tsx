@@ -22,16 +22,16 @@ import {
   TabPanels,
   Text,
 } from "@chakra-ui/react";
-import { useAccount } from "../../../hooks/useAccount";
+import { useAccount } from "~/hooks/useAccount";
 import {
   useAccountStats,
   useStats,
   useTopActivePilotCollections,
   useTopFtPilotCollections,
   Stat,
-} from "../../../hooks/useRigStats";
-import { useNFTCollections, Collection } from "../../../hooks/useNFTs";
-import { prettyNumber } from "../../../utils/fmt";
+} from "~/hooks/useRigStats";
+import { useNFTCollections, Collection } from "~/hooks/useNFTs";
+import { prettyNumber } from "~/utils/fmt";
 
 const StatItem = ({ name, value }: { name: string; value: number }) => {
   return (

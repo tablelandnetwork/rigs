@@ -16,11 +16,11 @@ import {
   Td,
   VStack,
 } from "@chakra-ui/react";
-import { NFT } from "../../../hooks/useNFTs";
-import { PilotWithFT } from "../../../hooks/useOwnerPilots";
-import { TrainerPilot } from "../../../components/TrainerPilot";
-import { findNFT } from "../../../utils/nfts";
-import { prettyNumber } from "../../../utils/fmt";
+import { NFT } from "~/hooks/useNFTs";
+import { PilotWithFT } from "~/hooks/useOwnerPilots";
+import { TrainerPilot } from "~/components/TrainerPilot";
+import { findNFT } from "~/utils/nfts";
+import { prettyNumber } from "~/utils/fmt";
 
 interface PilotProps extends React.ComponentProps<typeof Box> {
   nfts?: NFT[];

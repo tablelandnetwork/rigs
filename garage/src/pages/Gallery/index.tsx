@@ -17,16 +17,16 @@ import {
   useBreakpointValue,
 } from "@chakra-ui/react";
 import { Link as RouterLink } from "react-router-dom";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { RigDisplay } from "../../components/RigDisplay";
-import { Footer } from "../../components/Footer";
-import { Rig } from "../../types";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
-import { NFT } from "../../hooks/useNFTs";
-import { selectFilteredRigs } from "../../utils/queries";
-import { isPresent } from "../../utils/types";
-import { findNFT } from "../../utils/nfts";
-import { useNFTsCached } from "../../components/NFTsContext";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { RigDisplay } from "~/components/RigDisplay";
+import { Footer } from "~/components/Footer";
+import { Rig } from "~/types";
+import { useTablelandConnection } from "~/hooks/useTablelandConnection";
+import { NFT } from "~/hooks/useNFTs";
+import { selectFilteredRigs } from "~/utils/queries";
+import { isPresent } from "~/utils/types";
+import { findNFT } from "~/utils/nfts";
+import { useNFTsCached } from "~/components/NFTsContext";
 import { ActiveFiltersBar, FilterPanel, toggleValue } from "./modules/Filters";
 
 const GRID_GAP = 4;

@@ -36,20 +36,20 @@ import {
   useWaitForTransaction,
 } from "wagmi";
 import { useParams, Link } from "react-router-dom";
-import { TransactionStateAlert } from "../../components/TransactionStateAlert";
+import { TransactionStateAlert } from "~/components/TransactionStateAlert";
 import {
   ProposalStatusBadge,
   proposalStatus,
-} from "../../components/ProposalStatusBadge";
-import { useProposal, Result, Vote } from "../../hooks/useProposal";
-import { useAddressVotingPower } from "../../hooks/useAddressVotingPower";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
-import { as0xString } from "../../utils/types";
-import { ProposalWithOptions, ProposalStatus } from "../../types";
-import { deployment, secondaryChain } from "../../env";
-import { abi } from "../../abis/VotingRegistry";
-import { useWaitForTablelandTxn } from "../../hooks/useWaitForTablelandTxn";
+} from "~/components/ProposalStatusBadge";
+import { useProposal, Result, Vote } from "~/hooks/useProposal";
+import { useAddressVotingPower } from "~/hooks/useAddressVotingPower";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { prettyNumber, truncateWalletAddress } from "~/utils/fmt";
+import { as0xString } from "~/utils/types";
+import { ProposalWithOptions, ProposalStatus } from "~/types";
+import { deployment, secondaryChain } from "~/env";
+import { abi } from "~/abis/VotingRegistry";
+import { useWaitForTablelandTxn } from "~/hooks/useWaitForTablelandTxn";
 
 const ipfsGatewayBaseUrl = "https://nftstorage.link";
 

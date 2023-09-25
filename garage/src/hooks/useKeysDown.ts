@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useReducer } from "react";
-import { copySet } from "../utils/set";
+import { copySet } from "~/utils/set";
 
 interface KeyEvent {
   action: "up" | "down";

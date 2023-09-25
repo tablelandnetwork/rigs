@@ -1,10 +1,10 @@
 import React from "react";
 import { Box, Flex, Image, Spinner } from "@chakra-ui/react";
+import { useRigImageUrls } from "~/hooks/useRigImageUrls";
+import { Rig } from "~/types";
+import { NFT } from "~/hooks/useNFTs";
+import unknownPilot from "~/assets/unknown-pilot.svg";
 import { TrainerPilot } from "./TrainerPilot";
-import { useRigImageUrls } from "../hooks/useRigImageUrls";
-import { Rig } from "../types";
-import { NFT } from "../hooks/useNFTs";
-import unknownPilot from "../assets/unknown-pilot.svg";
 
 type BorderWidth = React.ComponentProps<typeof Box>["borderWidth"];
 

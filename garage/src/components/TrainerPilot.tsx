@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Flex, Image } from "@chakra-ui/react";
-import pilot from "../assets/trainer-pilot.svg";
+import pilot from "~/assets/trainer-pilot.svg";
 
 export const TrainerPilot = (props: React.ComponentProps<typeof Box>) => {
   return (

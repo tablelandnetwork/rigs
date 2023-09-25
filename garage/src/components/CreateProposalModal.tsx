@@ -25,10 +25,10 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { as0xString } from "../utils/types";
+import { as0xString } from "~/utils/types";
+import { deployment } from "~/env";
+import { abi } from "~/abis/VotingRegistry";
 import { TransactionStateAlert } from "./TransactionStateAlert";
-import { deployment } from "../env";
-import { abi } from "../abis/VotingRegistry";
 
 const { votingContractAddress } = deployment;
 
@@ -69,10 +69,7 @@ export const CreateProposalModal = ({
   ] = useState<FormState>(initialFormState);
 
   const isValid =
-    name !== "" &&
-    startBlock > 0 &&
-    endBlock > 0 &&
-    options.length > 0;
+    name !== "" && startBlock > 0 && endBlock > 0 && options.length > 0;
 
   const { config } = usePrepareContractWrite({
     address: as0xString(votingContractAddress),
@@ -282,7 +279,11 @@ export const CreateProposalModal = ({
                 <Tr key={`option-${i}`}>
                   <Td>{v}</Td>
                   <Td isNumeric>
-                    <IconButton aria-label="Delete option" icon={<DeleteIcon />} onClick={() => removeOption(i)} />
+                    <IconButton
+                      aria-label="Delete option"
+                      icon={<DeleteIcon />}
+                      onClick={() => removeOption(i)}
+                    />
                   </Td>
                 </Tr>
               ))}

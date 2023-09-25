@@ -1,8 +1,8 @@
 import React from "react";
 import { Flex, Link, useToken } from "@chakra-ui/react";
+import { ReactComponent as TwitterMark } from "~/assets/twitter-mark.svg";
+import { ReactComponent as OpenseaMark } from "~/assets/opensea-mark.svg";
 import { RoundSvgIcon } from "./RoundSvgIcon";
-import { ReactComponent as TwitterMark } from "../assets/twitter-mark.svg";
-import { ReactComponent as OpenseaMark } from "../assets/opensea-mark.svg";
 
 export const Footer = () => {
   const [primaryColor] = useToken("colors", ["primary"]);

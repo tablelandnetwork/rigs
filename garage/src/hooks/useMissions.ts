@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Mission, MissionContribution } from "../types";
+import { Mission, MissionContribution } from "~/types";
+import { deployment, secondaryChain } from "~/env";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { deployment, secondaryChain } from "../env";
 
 const { missionsTable, missionContributionsTable } = deployment;
 

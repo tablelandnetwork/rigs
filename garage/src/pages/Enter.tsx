@@ -2,8 +2,8 @@ import React, { useEffect, useCallback } from "react";
 import { useAccount } from "wagmi";
 import { Button, Heading, Flex, Stack, Text } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
-import desert from "../assets/desert-bg.png";
-import { TOPBAR_HEIGHT } from "../Topbar";
+import desert from "~/assets/desert-bg.png";
+import { TOPBAR_HEIGHT } from "~/Topbar";
 
 export const Enter = () => {
   const { isConnected } = useAccount();

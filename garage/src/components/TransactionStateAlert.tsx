@@ -9,7 +9,7 @@ import {
   Spinner,
 } from "@chakra-ui/react";
 import { useContractWrite, useWaitForTransaction } from "wagmi";
-import { blockExplorerBaseUrl } from "../env";
+import { blockExplorerBaseUrl } from "~/env";
 
 type TransactionStateAlertProps = Omit<
   ReturnType<typeof useContractWrite>,

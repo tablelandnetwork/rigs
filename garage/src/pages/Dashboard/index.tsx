@@ -1,10 +1,10 @@
 import React from "react";
 import { Box, Flex } from "@chakra-ui/react";
-import { TOPBAR_HEIGHT } from "../../Topbar";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { Footer } from "~/components/Footer";
 import { RigsInventory } from "./modules/RigsInventory";
 import { Stats } from "./modules/Stats";
 import { Activity } from "./modules/Activity";
-import { Footer } from "../../components/Footer";
 
 const GRID_GAP = 4;
 

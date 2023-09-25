@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
+import { deployment } from "~/env";
+import { ProposalWithOptions } from "~/types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { deployment } from "../env";
-import { ProposalWithOptions } from "../types";
 
-const {
-  proposalsTable,
-  optionsTable,
-  votesTable,
-  ftSnapshotTable,
-} = deployment;
+const { proposalsTable, optionsTable, votesTable, ftSnapshotTable } =
+  deployment;
 
 export interface Result {
   optionId: number;

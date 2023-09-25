@@ -1,8 +1,8 @@
 import { useContractReads } from "wagmi";
-import { as0xString } from "../utils/types";
-import { secondaryChain, deployment } from "../env";
-import { abi as missionsAbi } from "../abis/MissionsManager";
-import { abi as votingAbi } from "../abis/VotingRegistry";
+import { as0xString } from "~/utils/types";
+import { secondaryChain, deployment } from "~/env";
+import { abi as missionsAbi } from "~/abis/MissionsManager";
+import { abi as votingAbi } from "~/abis/VotingRegistry";
 import { useAccount } from "./useAccount";
 
 const { votingContractAddress, missionContractAddress } = deployment;

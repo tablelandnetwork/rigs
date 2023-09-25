@@ -2,9 +2,9 @@ import React, { useContext, useEffect, useMemo, useReducer } from "react";
 import take from "lodash/take";
 import isEqual from "lodash/isEqual";
 import { NftTokenType } from "alchemy-sdk";
-import { NFT, alchemy, toNFT } from "../hooks/useNFTs";
-import { findNFT, NFTIsh } from "../utils/nfts";
-import { isPresent } from "../utils/types";
+import { NFT, alchemy, toNFT } from "~/hooks/useNFTs";
+import { findNFT, NFTIsh } from "~/utils/nfts";
+import { isPresent } from "~/utils/types";
 import { Action, reducer } from "./NFTsContext.reducer";
 
 interface NFTsContextValue {

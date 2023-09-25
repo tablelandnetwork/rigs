@@ -28,12 +28,12 @@ import {
 } from "@chakra-ui/react";
 import isEqual from "lodash/isEqual";
 import { DeleteIcon } from "@chakra-ui/icons";
-import { ChainAwareButton } from "./ChainAwareButton";
 import { Database } from "@tableland/sdk";
-import { useSigner } from "../hooks/useSigner";
-import { isPresent } from "../utils/types";
-import { Mission, MissionReward, MissionDeliverable } from "../types";
-import { secondaryChain, deployment } from "../env";
+import { useSigner } from "~/hooks/useSigner";
+import { isPresent } from "~/utils/types";
+import { Mission, MissionReward, MissionDeliverable } from "~/types";
+import { secondaryChain, deployment } from "~/env";
+import { ChainAwareButton } from "./ChainAwareButton";
 
 const { missionsTable } = deployment;
 

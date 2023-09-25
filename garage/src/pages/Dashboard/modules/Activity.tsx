@@ -13,10 +13,10 @@ import {
   Text,
   Tr,
 } from "@chakra-ui/react";
-import { EventAction } from "../../../types";
-import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
-import { useRigsActivity } from "../../../hooks/useRigsActivity";
-import { useNFTCollections } from "../../../hooks/useNFTs";
+import { EventAction } from "~/types";
+import { useRigImageUrls } from "~/hooks/useRigImageUrls";
+import { useRigsActivity } from "~/hooks/useRigsActivity";
+import { useNFTCollections } from "~/hooks/useNFTs";
 
 const getPilotedTitle = (
   lookups: Record<string, string>,

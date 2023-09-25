@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { selectOwnerActivity } from "../utils/queries";
+import { selectOwnerActivity } from "~/utils/queries";
+import { Event, EventAction } from "~/types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { Event, EventAction } from "../types";
 
 interface DbEvent {
   rigId: string;

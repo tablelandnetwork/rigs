@@ -11,14 +11,14 @@ import {
 } from "@chakra-ui/react";
 import { useBlockNumber } from "wagmi";
 import { Link } from "react-router-dom";
-import { useProposals } from "../../hooks/useProposals";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { prettyNumber } from "../../utils/fmt";
-import { Proposal, ProposalStatus } from "../../types";
+import { useProposals } from "~/hooks/useProposals";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { prettyNumber } from "~/utils/fmt";
+import { Proposal, ProposalStatus } from "~/types";
 import {
   proposalStatus,
   ProposalStatusBadge,
-} from "../../components/ProposalStatusBadge";
+} from "~/components/ProposalStatusBadge";
 
 const GRID_GAP = 4;
 
