@@ -111,11 +111,11 @@ const (
 		drop table if exists rigs;
 		drop table if exists rig_parts;
 		drop table if exists rig_deals;
-		// TODO: Investigate what we want here.
-		// drop table if exists cids;
-		// drop table if exists table_names;
-		// drop table if exists txns;
 	`
+	// TODO: Investigate what we want here.
+	// drop table if exists cids;
+	// drop table if exists table_names;
+	// drop table if exists txns;.
 )
 
 // Store provides local data storage.
