@@ -60,7 +60,7 @@ jobs:
       - name: Setup Node Environment ⬢
         uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
       - name: Install
         run: npm install
       - name: Build
@@ -90,10 +90,12 @@ jobs:
       - name: Setup Node Environment ⬢
         uses: actions/setup-node@v1
         with:
-          node-version: 16
+          node-version: 18
       - name: Install
         run: npm install
       - name: Build
         run: npm run build
       - name: Test
         run: npm test
+      - name: Test Voting
+        run: npm run test-voting
