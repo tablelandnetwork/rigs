@@ -1,4 +1,4 @@
-import { mainChain as chain, deployment } from "../env";
+import { mainChain as chain, deployment } from "~/env";
 
 const {
   rigsTable,

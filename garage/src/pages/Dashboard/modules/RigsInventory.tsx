@@ -19,22 +19,22 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
 import { useBlockNumber } from "wagmi";
-import { useAccount } from "../../../hooks/useAccount";
-import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
-import { NFT } from "../../../hooks/useNFTs";
-import { useNFTsCached } from "../../../components/NFTsContext";
-import { Rig, RigWithPilots, Pilot } from "../../../types";
-import { RigDisplay } from "../../../components/RigDisplay";
-import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
-import { TablelandConnectButton } from "../../../components/TablelandConnectButton";
-import { ChainAwareButton } from "../../../components/ChainAwareButton";
-import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
-import { findNFT } from "../../../utils/nfts";
-import { sleep } from "../../../utils/async";
-import { prettyNumber } from "../../../utils/fmt";
-import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
-import { mainChain } from "../../../env";
-import { useWaitForTablelandTxn } from "../../../hooks/useWaitForTablelandTxn";
+import { useAccount } from "~/hooks/useAccount";
+import { useOwnedRigs } from "~/hooks/useOwnedRigs";
+import { NFT } from "~/hooks/useNFTs";
+import { useNFTsCached } from "~/components/NFTsContext";
+import { Rig, RigWithPilots, Pilot } from "~/types";
+import { RigDisplay } from "~/components/RigDisplay";
+import { useGlobalFlyParkModals } from "~/components/GlobalFlyParkModals";
+import { TablelandConnectButton } from "~/components/TablelandConnectButton";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { AboutPilotsModal } from "~/components/AboutPilotsModal";
+import { findNFT } from "~/utils/nfts";
+import { sleep } from "~/utils/async";
+import { prettyNumber } from "~/utils/fmt";
+import { firstSetValue, copySet, toggleInSet } from "~/utils/set";
+import { mainChain } from "~/env";
+import { useWaitForTablelandTxn } from "~/hooks/useWaitForTablelandTxn";
 
 interface RigListItemProps {
   rig: RigWithPilots;

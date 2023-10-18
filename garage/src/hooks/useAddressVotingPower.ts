@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
+import { deployment } from "~/env";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { deployment } from "../env";
 
 const { ftSnapshotTable } = deployment;
 

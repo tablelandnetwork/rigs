@@ -15,9 +15,9 @@ import {
   Show,
   useBreakpointValue,
 } from "@chakra-ui/react";
-import { prettyNumber } from "../../../utils/fmt";
-import { Vote } from "../../../hooks/useOwnerVotes";
 import { Link } from "react-router-dom";
+import { prettyNumber } from "~/utils/fmt";
+import { Vote } from "~/hooks/useOwnerVotes";
 
 interface VotesProps extends React.ComponentProps<typeof Box> {
   votes?: Vote[];

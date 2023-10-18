@@ -4,7 +4,7 @@ import {
   selectAccountStats,
   selectTopActivePilotCollections,
   selectTopFtPilotCollections,
-} from "../utils/queries";
+} from "~/utils/queries";
 import { useTablelandConnection } from "./useTablelandConnection";
 
 export interface Stat {

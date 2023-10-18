@@ -22,18 +22,18 @@ import {
 } from "@chakra-ui/react";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { useAccount, useBlockNumber, useContractRead, useEnsName } from "wagmi";
-import { RoundSvgIcon } from "../../components/RoundSvgIcon";
-import { useTablelandConnection } from "../../hooks/useTablelandConnection";
-import { useNFTs, NFT } from "../../hooks/useNFTs";
-import { useRigImageUrls } from "../../hooks/useRigImageUrls";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { prettyNumber, truncateWalletAddress } from "../../utils/fmt";
-import { mainChain, openseaBaseUrl } from "../../env";
-import { PilotSessionWithRigId } from "../../types";
-import { ReactComponent as OpenseaMark } from "../../assets/opensea-mark.svg";
-import { selectPilotSessionsForPilot } from "../../utils/queries";
-import { isValidAddress, as0xString } from "../../utils/types";
-import { abi } from "../../abis/ERC721";
+import { RoundSvgIcon } from "~/components/RoundSvgIcon";
+import { useTablelandConnection } from "~/hooks/useTablelandConnection";
+import { useNFTs, NFT } from "~/hooks/useNFTs";
+import { useRigImageUrls } from "~/hooks/useRigImageUrls";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { prettyNumber, truncateWalletAddress } from "~/utils/fmt";
+import { mainChain, openseaBaseUrl } from "~/env";
+import { PilotSessionWithRigId } from "~/types";
+import { ReactComponent as OpenseaMark } from "~/assets/opensea-mark.svg";
+import { selectPilotSessionsForPilot } from "~/utils/queries";
+import { isValidAddress, as0xString } from "~/utils/types";
+import { abi } from "~/abis/ERC721";
 
 const GRID_GAP = 4;
 

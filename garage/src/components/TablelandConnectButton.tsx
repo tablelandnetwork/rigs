@@ -10,7 +10,7 @@ import {
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
-import exit from "../assets/exit.svg";
+import exit from "~/assets/exit.svg";
 
 export const TablelandConnectButton = ({
   size = "small",

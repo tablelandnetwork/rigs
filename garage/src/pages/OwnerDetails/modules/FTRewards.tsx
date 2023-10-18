@@ -13,8 +13,8 @@ import {
   Td,
   VStack,
 } from "@chakra-ui/react";
-import { FTReward } from "../../../types";
-import { prettyNumber } from "../../../utils/fmt";
+import { FTReward } from "~/types";
+import { prettyNumber } from "~/utils/fmt";
 
 interface FTRewardsProps extends React.ComponentProps<typeof Box> {
   rewards?: FTReward[];

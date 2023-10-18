@@ -10,9 +10,9 @@ import {
   Tr,
   VStack,
 } from "@chakra-ui/react";
-import { RigWithPilots, Attribute } from "../../../types";
-import { useRigAttributeStats } from "../../../components/RigAttributeStatsContext";
-import { toPercent } from "../../../utils/fmt";
+import { RigWithPilots, Attribute } from "~/types";
+import { useRigAttributeStats } from "~/components/RigAttributeStatsContext";
+import { toPercent } from "~/utils/fmt";
 
 type RigAttributesProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;

@@ -19,15 +19,15 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { QuestionIcon } from "@chakra-ui/icons";
-import { RigWithPilots, PilotSession } from "../../../types";
-import { TrainerPilot } from "../../../components/TrainerPilot";
-import { ChainAwareButton } from "../../../components/ChainAwareButton";
-import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
 import { useBlockNumber } from "wagmi";
-import { NFT } from "../../../hooks/useNFTs";
-import { findNFT } from "../../../utils/nfts";
-import { prettyNumber, pluralize } from "../../../utils/fmt";
-import { mainChain, deployment } from "../../../env";
+import { RigWithPilots, PilotSession } from "~/types";
+import { TrainerPilot } from "~/components/TrainerPilot";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { AboutPilotsModal } from "~/components/AboutPilotsModal";
+import { NFT } from "~/hooks/useNFTs";
+import { findNFT } from "~/utils/nfts";
+import { prettyNumber, pluralize } from "~/utils/fmt";
+import { mainChain, deployment } from "~/env";
 
 const getPilots = (
   rig: RigWithPilots,

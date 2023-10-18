@@ -1,7 +1,7 @@
 import React from "react";
 import { useBlockNumber } from "wagmi";
 import { Badge } from "@chakra-ui/react";
-import { Proposal, ProposalStatus } from "../types";
+import { Proposal, ProposalStatus } from "~/types";
 
 export const proposalStatus = (
   blockNumber: bigint | undefined,

@@ -10,10 +10,10 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { Rig } from "../../../types";
-import { NFT } from "../../../hooks/useNFTs";
-import { RigDisplay } from "../../../components/RigDisplay";
-import { findNFT } from "../../../utils/nfts";
+import { Rig } from "~/types";
+import { NFT } from "~/hooks/useNFTs";
+import { RigDisplay } from "~/components/RigDisplay";
+import { findNFT } from "~/utils/nfts";
 
 interface RigsGridProps extends React.ComponentProps<typeof Box> {
   rigs?: Rig[];

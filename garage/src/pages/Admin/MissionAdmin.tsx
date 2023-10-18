@@ -38,17 +38,17 @@ import {
 } from "wagmi";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { Database, helpers } from "@tableland/sdk";
-import { useSigner } from "../../hooks/useSigner";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { Footer } from "../../components/Footer";
-import { ChainAwareButton } from "../../components/ChainAwareButton";
-import { MissionContribution } from "../../types";
-import { truncateWalletAddress } from "../../utils/fmt";
-import { as0xString } from "../../utils/types";
-import { useMission, useContributions } from "../../hooks/useMissions";
-import { secondaryChain, deployment } from "../../env";
-import { EditMissionModal } from "../../components/CreateMissionModal";
-import { abi } from "../../abis/MissionsManager";
+import { useSigner } from "~/hooks/useSigner";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { Footer } from "~/components/Footer";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { MissionContribution } from "~/types";
+import { truncateWalletAddress } from "~/utils/fmt";
+import { as0xString } from "~/utils/types";
+import { useMission, useContributions } from "~/hooks/useMissions";
+import { secondaryChain, deployment } from "~/env";
+import { EditMissionModal } from "~/components/CreateMissionModal";
+import { abi } from "~/abis/MissionsManager";
 
 const { missionContributionsTable, missionContractAddress } = deployment;
 

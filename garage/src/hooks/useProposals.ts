@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Proposal } from "../types";
+import { Proposal } from "~/types";
+import { deployment } from "~/env";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { deployment } from "../env";
 
 const { proposalsTable } = deployment;
 

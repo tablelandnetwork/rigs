@@ -10,8 +10,8 @@ import {
   NftFilters,
   GetNftsForOwnerOptions,
 } from "alchemy-sdk";
-import { mainChain } from "../env";
 import { useQuery } from "@tanstack/react-query";
+import { mainChain } from "~/env";
 
 const wagmiChainToNetwork = (c: Chain): Network => {
   switch (c) {

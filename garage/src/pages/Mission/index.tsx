@@ -21,14 +21,14 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import { useParams } from "react-router-dom";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { truncateWalletAddress } from "../../utils/fmt";
-import { Mission, MissionContribution } from "../../types";
-import { useMission, useContributions } from "../../hooks/useMissions";
-import { useAccount } from "../../hooks/useAccount";
-import { usePersistentState } from "../../hooks/usePersistentState";
-import { SubmitMissionModal } from "../../components/SubmitMissionModal";
-import { SignManifestoModal } from "../../components/SignManifestoModal";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { truncateWalletAddress } from "~/utils/fmt";
+import { Mission, MissionContribution } from "~/types";
+import { useMission, useContributions } from "~/hooks/useMissions";
+import { useAccount } from "~/hooks/useAccount";
+import { usePersistentState } from "~/hooks/usePersistentState";
+import { SubmitMissionModal } from "~/components/SubmitMissionModal";
+import { SignManifestoModal } from "~/components/SignManifestoModal";
 
 const GRID_GAP = 4;
 

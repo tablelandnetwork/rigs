@@ -18,12 +18,12 @@ import {
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { as0xString } from "../utils/types";
-import { Mission } from "../types";
+import { as0xString } from "~/utils/types";
+import { Mission } from "~/types";
+import { secondaryChain, deployment } from "~/env";
+import { abi } from "~/abis/MissionsManager";
+import { useWaitForTablelandTxn } from "~/hooks/useWaitForTablelandTxn";
 import { TransactionStateAlert } from "./TransactionStateAlert";
-import { secondaryChain, deployment } from "../env";
-import { abi } from "../abis/MissionsManager";
-import { useWaitForTablelandTxn } from "../hooks/useWaitForTablelandTxn";
 
 const { missionContractAddress } = deployment;
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { RigWithPilots } from "../types";
+import { RigWithPilots } from "~/types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { selectRigWithPilots } from "../utils/queries";
+import { selectRigWithPilots } from "~/utils/queries";
 
 export const useRig = (id: string) => {
   const { db } = useTablelandConnection();

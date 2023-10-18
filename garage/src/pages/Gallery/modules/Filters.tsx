@@ -21,9 +21,9 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { SmallCloseIcon } from "@chakra-ui/icons";
-import { useDebounce } from "../../../hooks/useDebounce";
-import { copySet, toggleInSet, intersection } from "../../../utils/set";
-import traitData from "../../../traits.json";
+import { useDebounce } from "~/hooks/useDebounce";
+import { copySet, toggleInSet, intersection } from "~/utils/set";
+import traitData from "~/traits.json";
 
 // TODO can we fetch this data dynamically or does that make the loading experience annoying?
 const {

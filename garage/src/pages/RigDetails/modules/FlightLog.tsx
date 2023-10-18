@@ -11,10 +11,10 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { RigWithPilots } from "../../../types";
-import { NFT } from "../../../hooks/useNFTs";
-import { findNFT } from "../../../utils/nfts";
-import { truncateWalletAddress } from "../../../utils/fmt";
+import { RigWithPilots } from "~/types";
+import { NFT } from "~/hooks/useNFTs";
+import { findNFT } from "~/utils/nfts";
+import { truncateWalletAddress } from "~/utils/fmt";
 
 type FlightLogProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;
@@ -26,15 +26,20 @@ export const FlightLog = ({ rig, nfts, p, ...props }: FlightLogProps) => {
     .flatMap(({ startTime, endTime, owner, contract, tokenId }) => {
       const { name = "Trainer" } = findNFT({ tokenId, contract }, nfts) || {};
 
-      let events = [{ type: `Piloted ${name}`, startTime, timestamp: startTime, owner }];
+      let events = [
+        { type: `Piloted ${name}`, startTime, timestamp: startTime, owner },
+      ];
 
       if (endTime) {
-        events = [...events, { type: "Parked", startTime, timestamp: endTime, owner }];
+        events = [
+          ...events,
+          { type: "Parked", startTime, timestamp: endTime, owner },
+        ];
       }
 
       return events;
     })
-    .sort((a, b) => (b.timestamp - a.timestamp) || (b.startTime - a.startTime));
+    .sort((a, b) => b.timestamp - a.timestamp || b.startTime - a.startTime);
 
   return (
     <VStack align="stretch" pt={p} {...props}>

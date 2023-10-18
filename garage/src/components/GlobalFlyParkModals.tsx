@@ -1,6 +1,6 @@
 import React, { useCallback, useContext, useMemo, useState } from "react";
+import { Rig } from "~/types";
 import { TrainRigsModal, PilotRigsModal, ParkRigsModal } from "./FlyParkModals";
-import { Rig } from "../types";
 
 type OnTransactionSubmittedCallback = (txHash: string) => void;
 
@@ -23,13 +23,12 @@ const emptyModal: Modal = {
   closeModal: () => {},
 };
 
-const GlobalFlyParkModalContext = React.createContext<
-  GlobalFlyParkModalContextData
->({
-  trainRigsModal: emptyModal,
-  pilotRigsModal: emptyModal,
-  parkRigsModal: emptyModal,
-});
+const GlobalFlyParkModalContext =
+  React.createContext<GlobalFlyParkModalContextData>({
+    trainRigsModal: emptyModal,
+    pilotRigsModal: emptyModal,
+    parkRigsModal: emptyModal,
+  });
 
 interface ModalState {
   open: boolean;
