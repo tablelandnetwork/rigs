@@ -1,4 +1,5 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Link as RouterLink } from "react-router-dom";
 import {
   Box,
   Heading,
@@ -21,17 +22,22 @@ import {
   TabPanel,
   TabPanels,
   Text,
+  useBreakpointValue,
+  Show,
 } from "@chakra-ui/react";
+import { usePublicClient } from "wagmi";
 import { useAccount } from "~/hooks/useAccount";
 import {
   useAccountStats,
   useStats,
   useTopActivePilotCollections,
   useTopFtPilotCollections,
+  useFtLeaderboard,
   Stat,
 } from "~/hooks/useRigStats";
 import { useNFTCollections, Collection } from "~/hooks/useNFTs";
-import { prettyNumber } from "~/utils/fmt";
+import { prettyNumber, truncateWalletAddress } from "~/utils/fmt";
+import { isValidAddress } from "~/utils/types";
 
 const StatItem = ({ name, value }: { name: string; value: number }) => {
   return (
@@ -107,12 +113,88 @@ const CollectionToplist = ({
   );
 };
 
+const FTLeaderboard = ({
+  data,
+}: {
+  data: { address: string; ft: number }[];
+}) => {
+  const publicClient = usePublicClient();
+
+  const [ensNames, setEnsNames] = useState<Record<string, string>>({});
+
+  // Effect that reverse-resolves address->ens for all FT leaderboard entries
+  // in one batch multicall request
+  useEffect(() => {
+    let isCancelled = false;
+    if (data.length > 0) {
+      Promise.all(
+        data
+          .map(({ address }) => address)
+          .filter(isValidAddress)
+          .map(async (address) => {
+            const ens = await publicClient.getEnsName({ address });
+            return [address, ens];
+          })
+      ).then((v) => {
+        if (!isCancelled)
+          setEnsNames(Object.fromEntries(v.filter(([, ens]) => ens)));
+      });
+    }
+    return () => {
+      isCancelled = true;
+    };
+  }, [data]);
+
+  const { actingAsAddress } = useAccount();
+
+  const shouldTruncate = useBreakpointValue({
+    base: true,
+    md: false,
+  });
+
+  return (
+    <Table>
+      <Thead>
+        <Tr>
+          <Th>Address</Th>
+          <Th isNumeric>FT</Th>
+        </Tr>
+      </Thead>
+      <Tbody>
+        {data?.slice(0, 15).map(({ address, ft }, index) => {
+          const isUser =
+            !!actingAsAddress &&
+            actingAsAddress.toLowerCase() === address?.toLowerCase();
+
+          const truncatedAddress = address
+            ? truncateWalletAddress(address)
+            : "";
+          const name = isUser
+            ? "You"
+            : ensNames[address] ??
+              (shouldTruncate ? truncatedAddress : address);
+
+          return (
+            <Tr key={`pilot-${index}`}>
+              <Td>
+                <RouterLink to={`/owner/${address}`}>{name}</RouterLink>
+              </Td>
+              <Td isNumeric>{prettyNumber(ft)}</Td>
+            </Tr>
+          );
+        })}
+      </Tbody>
+    </Table>
+  );
+};
+
 export const Stats = (props: React.ComponentProps<typeof Box>) => {
   const { actingAsAddress } = useAccount();
   const { stats } = useStats();
   const { stats: accountStats } = useAccountStats(actingAsAddress);
   const { stats: pilotStats } = useTopActivePilotCollections();
   const { stats: ftStats } = useTopFtPilotCollections();
+  const { stats: ftLeaderboard } = useFtLeaderboard(15);
 
   const contracts = useMemo(() => {
     if (!pilotStats || !ftStats) return;
@@ -139,6 +221,10 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
           <Tab>Global</Tab>
           {actingAsAddress && <Tab>You</Tab>}
           <Tab>Pilots</Tab>
+          <Tab>
+            <Show above="sm">FT Leaderboard</Show>
+            <Show below="sm">FT</Show>
+          </Tab>
         </TabList>
 
         <TabPanels>
@@ -186,6 +272,12 @@ export const Stats = (props: React.ComponentProps<typeof Box>) => {
                 )}
               </VStack>
             </Flex>
+          </TabPanel>
+          <TabPanel fontSize="0.8em" px={0}>
+            <VStack flexGrow="1" pt={2} align="start">
+              <Heading>Top FT earners</Heading>
+              {ftLeaderboard && <FTLeaderboard data={ftLeaderboard} />}
+            </VStack>
           </TabPanel>
         </TabPanels>
       </Tabs>
