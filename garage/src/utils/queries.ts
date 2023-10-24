@@ -1,11 +1,18 @@
-import { chain, deployment } from "../env";
+import { mainChain as chain, deployment } from "../env";
 
-const { attributesTable, lookupsTable, pilotSessionsTable } = deployment;
+const {
+  rigsTable,
+  attributesTable,
+  dealsTable,
+  ftRewardsTable,
+  lookupsTable,
+  pilotSessionsTable,
+} = deployment;
 
-const IMAGE_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_name`;
-const IMAGE_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_full_alpha_name`;
-const THUMB_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_name`;
-const THUMB_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||rig_id||'/'||image_thumb_alpha_name`;
+const IMAGE_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||(SELECT value from ${lookupsTable} WHERE label = 'image_full_name')`;
+const IMAGE_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||(SELECT value from ${lookupsTable} WHERE label = 'image_full_alpha_name')`;
+const THUMB_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||(SELECT value from ${lookupsTable} WHERE label = 'image_thumb_name')`;
+const THUMB_ALPHA_IPFS_URI_SELECT = `'ipfs://'||renders_cid||'/'||(SELECT value from ${lookupsTable} WHERE label = 'image_thumb_alpha_name')`;
 
 const PILOT_TRAINING_DURATION = 172800;
 
@@ -56,10 +63,10 @@ export const selectRigs = (ids: string[]): string => {
       FROM ${pilotSessionsTable} AS session
       WHERE session.rig_id = attributes.rig_id
     ) AS "pilotSessions"
-  FROM ${attributesTable} AS attributes
-  JOIN ${lookupsTable}
-  WHERE rig_id IN ('${ids.join("', '")}')
-  GROUP BY rig_id`;
+  FROM ${rigsTable} AS rigs
+  JOIN ${attributesTable} AS attributes ON rigs.id = attributes.rig_id
+  WHERE id IN ('${ids.join("', '")}')
+  GROUP BY id`;
 };
 
 export const selectRigWithPilots = (id: string): string => {
@@ -75,6 +82,15 @@ export const selectRigWithPilots = (id: string): string => {
       'traitType', trait_type,
       'value', value
     )) as attributes,
+    (
+      SELECT
+        json_group_array(json_object(
+          'dealId', deal_id,
+          'selector', data_model_selector
+        ))
+      FROM ${dealsTable} AS deal
+      WHERE deal.rig_id = ${id}
+    ) as "filecoinDeals",
     (
       SELECT
         json_group_array(json_object(
@@ -99,9 +115,10 @@ export const selectRigWithPilots = (id: string): string => {
         (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
       )
     ) AS "isTrained"
-  FROM ${attributesTable}
-  JOIN ${lookupsTable}
-  WHERE rig_id = ${id}`;
+  FROM ${rigsTable} AS rigs
+  JOIN ${attributesTable} AS attributes ON rigs.id = attributes.rig_id
+  WHERE id = ${id}
+  GROUP BY id`;
 };
 
 const selectFilteredRigsActivity = (
@@ -123,7 +140,8 @@ const selectFilteredRigsActivity = (
         'tokenId', pilot_id
       ) as "pilot",
       'piloted' as "action",
-      start_time as "timestamp"
+      start_time as "timestamp",
+      1 as "prio"
     FROM ${pilotSessionsTable}
     WHERE end_time IS NULL ${filter ? `AND ${filter}` : ""}
     UNION
@@ -132,12 +150,13 @@ const selectFilteredRigsActivity = (
       cast(rig_id as text) as "rigId",
       null as "pilot",
       'parked' as "action",
-      end_time as "timestamp"
+      end_time as "timestamp",
+      0 as "prio"
     FROM ${pilotSessionsTable}
     WHERE end_time IS NOT NULL ${filter ? `AND ${filter}` : ""}
-  )
-  JOIN ${lookupsTable}
-  ORDER BY timestamp DESC
+  ) AS session
+  JOIN ${rigsTable} AS rigs ON session.rig_id = rigs.id
+  ORDER BY timestamp DESC, rig_id, prio DESC
   LIMIT ${first}
   OFFSET ${offset}`;
 };
@@ -174,7 +193,6 @@ export const selectOwnerPilots = (owner: string): string => {
     })) - start_time) as "flightTime",
     min(coalesce(end_time, 0)) == 0 as "isActive"
   FROM ${pilotSessionsTable} AS sessions
-  JOIN ${lookupsTable}
   WHERE lower(owner) = '${owner.toLowerCase()}'
   GROUP BY pilot_contract, pilot_id
   ORDER BY "flightTime" DESC
@@ -284,10 +302,10 @@ export const selectPilotSessionsForPilot = (
     cast(pilot_id as text) as "pilotId",
     start_time as "startTime",
     end_time as "endTime"
-  FROM ${pilotSessionsTable}
-  JOIN ${lookupsTable}
+  FROM ${pilotSessionsTable} AS attributes
+  JOIN ${rigsTable} AS rigs ON attributes.rig_id = rigs.id
   WHERE pilot_contract = '${contract}' AND pilot_id = ${tokenId}
-  GROUP BY rig_id`;
+  ORDER BY start_time DESC`;
 };
 
 export const selectActivePilotSessionsForPilots = (
@@ -353,8 +371,8 @@ export const selectFilteredRigs = (
         (session.end_time - session.start_time) >= ${PILOT_TRAINING_DURATION}
       )
     ) AS "isTrained"
-  FROM ${attributesTable} AS attributes
-  JOIN ${lookupsTable}
+  FROM ${rigsTable} AS rigs
+  JOIN ${attributesTable} AS attributes ON rigs.id = attributes.rig_id
   WHERE rig_id IN (<subquery>)`;
 
   outerQuery += ` GROUP BY rig_id LIMIT ${limit} OFFSET ${offset}`;
@@ -423,4 +441,8 @@ export const selectFilteredRigs = (
   }
 
   return `${outerQuery.replace("<subquery>", subQuery)}`;
+};
+
+export const selectOwnerFTRewards = (owner: string) => {
+  return `SELECT block_num as "blockNum", recipient, reason, amount FROM ${ftRewardsTable} WHERE recipient = '${owner}' ORDER BY block_num DESC`;
 };

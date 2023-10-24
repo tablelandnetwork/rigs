@@ -37,6 +37,14 @@ var (
 			unique(fleet,rig_attributes_value,position)
 		)`,
 	}
+	// RigsDefinition defines the rigs table.
+	RigsDefinition = TableDefinition{
+		Prefix: "rigs",
+		Schema: `(
+			id integer primary key,
+			renders_cid text not null
+		)`,
+	}
 	// RigAttributesDefinition defines the rig attribes table.
 	RigAttributesDefinition = TableDefinition{
 		Prefix: "rig_attributes",
@@ -48,19 +56,36 @@ var (
 			unique(rig_id, trait_type)
 		)`,
 	}
+	// DealsDefinition defines the deals table.
+	DealsDefinition = TableDefinition{
+		Prefix: "deals",
+		Schema: `(
+			rig_id integer not null,
+			deal_id integer not null,
+			storage_provider text not null,
+			data_model_selector text not null,
+			deal_number integer not null,
+			primary key(rig_id, deal_id)
+		)`,
+	}
 	// LookupsDefinition defines the lookups table.
 	LookupsDefinition = TableDefinition{
 		Prefix: "lookups",
 		Schema: `(
-			renders_cid text,
-			layers_cid text,
-			image_full_name text,
-			image_full_alpha_name text,
-			image_medium_name text,
-			image_medium_alpha_name text,
-			image_thumb_name text,
-			image_thumb_alpha_name text,
-			animation_base_url text
+			label text not null,
+			value text not null
+		)`,
+	}
+	// FtRewardsDefinition defines the ft rewards table.
+	FtRewardsDefinition = TableDefinition{
+		Prefix: "ft_rewards",
+		Schema: `(
+			id integer primary key,
+			block_num integer not null,
+			recipient text not null,
+			reason text not null,
+			amount integer not null,
+			proposal_id integer
 		)`,
 	}
 )
@@ -69,6 +94,7 @@ var (
 type Lookups struct {
 	RendersCid           string
 	LayersCid            string
+	IndexCid             string
 	ImageFullName        string
 	ImageFullAlphaName   string
 	ImageMediumName      string
@@ -76,6 +102,7 @@ type Lookups struct {
 	ImageThumbName       string
 	ImageThumbAlphaName  string
 	AnimationBaseURL     string
+	FilecoinBaseURL      string
 }
 
 // Store defines a data store interface for rigs.
@@ -83,10 +110,14 @@ type Store interface {
 	CreateTable(context.Context, TableDefinition) (string, error)
 	InsertParts(context.Context, []local.Part) error
 	InsertLayers(context.Context, []local.Layer) error
+	InsertRigs(context.Context, []local.Rig) error
 	InsertRigAttributes(context.Context, []local.Rig) error
+	InsertDeals(context.Context, []local.Rig) error
 	InsertLookups(context.Context, Lookups) error
 	ClearParts(context.Context) error
 	ClearLayers(context.Context) error
+	ClearRigs(context.Context) error
 	ClearRigAttributes(context.Context) error
+	ClearDeals(context.Context) error
 	ClearLookups(context.Context) error
 }

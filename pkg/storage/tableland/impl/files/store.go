@@ -52,7 +52,7 @@ func (s *Store) CreateTable(_ context.Context, _ tableland.TableDefinition) (str
 
 // InsertParts implements InsertParts.
 func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
-	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.PartsDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -60,12 +60,12 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 	if err != nil {
 		return fmt.Errorf("getting sql to insert parts: %v", err)
 	}
-	return s.writeSQL("parts", sql)
+	return s.writeSQL(tableland.PartsDefinition.Prefix, sql)
 }
 
 // InsertLayers implements InsertLayers.
 func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.LayersDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -73,12 +73,25 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	if err != nil {
 		return fmt.Errorf("getting sql to insert layers: %v", err)
 	}
-	return s.writeSQL("layers", sql)
+	return s.writeSQL(tableland.LayersDefinition.Prefix, sql)
+}
+
+// InsertRigs implements InsertRigs.
+func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
+	tableName, err := s.localStore.TableName(ctx, tableland.RigsDefinition.Prefix, s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingRigs(tableName, rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql to insert rigs: %v", err)
+	}
+	return s.writeSQL(tableland.RigsDefinition.Prefix, sql)
 }
 
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
-	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.RigAttributesDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -86,12 +99,25 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	if err != nil {
 		return fmt.Errorf("getting sql to insert rig attributes: %v", err)
 	}
-	return s.writeSQL("rig-attributes", sql)
+	return s.writeSQL(tableland.RigAttributesDefinition.Prefix, sql)
+}
+
+// InsertDeals implements InsertDeals.
+func (s *Store) InsertDeals(ctx context.Context, rigs []local.Rig) error {
+	tableName, err := s.localStore.TableName(ctx, tableland.DealsDefinition.Prefix, s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingDeals(tableName, rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql to insert deals: %v", err)
+	}
+	return s.writeSQL(tableland.DealsDefinition.Prefix, sql)
 }
 
 // InsertLookups implements InsertLookups.
 func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) error {
-	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.LookupsDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -99,7 +125,7 @@ func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) er
 	if err != nil {
 		return fmt.Errorf("getting sql to insert lookups: %v", err)
 	}
-	return s.writeSQL("lookups", sql)
+	return s.writeSQL(tableland.LookupsDefinition.Prefix, sql)
 }
 
 // ClearParts implements ClearParts.
@@ -112,9 +138,19 @@ func (s *Store) ClearLayers(_ context.Context) error {
 	return errors.New("ClearLayers not implemented")
 }
 
+// ClearRigs implements ClearRigs.
+func (s *Store) ClearRigs(_ context.Context) error {
+	return errors.New("ClearRigs not implemented")
+}
+
 // ClearRigAttributes implements ClearRigAttributes.
 func (s *Store) ClearRigAttributes(_ context.Context) error {
 	return errors.New("ClearRigAttributes not implemented")
+}
+
+// ClearDeals implements ClearDeals.
+func (s *Store) ClearDeals(_ context.Context) error {
+	return errors.New("ClearDeals not implemented")
 }
 
 // ClearLookups implements ClearLookups.

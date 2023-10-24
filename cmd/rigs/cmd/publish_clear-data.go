@@ -16,7 +16,9 @@ func init() {
 
 	clearDataCmd.Flags().Bool("parts", false, "clear data for the parts table")
 	clearDataCmd.Flags().Bool("layers", false, "clear data for the layers table")
+	clearDataCmd.Flags().Bool("rigs", false, "clear data for the rigs table")
 	clearDataCmd.Flags().Bool("attrs", false, "clear data for the rig attributes table")
+	clearDataCmd.Flags().Bool("deals", false, "clear data for the deals table")
 	clearDataCmd.Flags().Bool("lookups", false, "clear data for the lookups table")
 }
 
@@ -28,7 +30,9 @@ var clearDataCmd = &cobra.Command{
 
 		clearAll := !viper.GetBool("parts") &&
 			!viper.GetBool("layers") &&
+			!viper.GetBool("rigs") &&
 			!viper.GetBool("attrs") &&
+			!viper.GetBool("deals") &&
 			!viper.GetBool("lookups")
 
 		clearDataExecFn := func(clearDataFn func(context.Context) error) wpool.ExecutionFn {
@@ -54,11 +58,25 @@ var clearDataCmd = &cobra.Command{
 				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearLayers), Desc: "layers"},
 			)
 		}
+		if viper.GetBool("rigs") || clearAll {
+			jobID++
+			jobs = append(
+				jobs,
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigs), Desc: "rigs"},
+			)
+		}
 		if viper.GetBool("attrs") || clearAll {
 			jobID++
 			jobs = append(
 				jobs,
 				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearRigAttributes), Desc: "rig attributes"},
+			)
+		}
+		if viper.GetBool("deals") || clearAll {
+			jobID++
+			jobs = append(
+				jobs,
+				wpool.Job{ID: wpool.JobID(jobID), ExecFn: clearDataExecFn(store.ClearDeals), Desc: "deals"},
 			)
 		}
 		if viper.GetBool("lookups") || clearAll {
@@ -72,22 +90,12 @@ var clearDataCmd = &cobra.Command{
 		pool := wpool.New(4, rate.Every(time.Millisecond*100))
 		go pool.GenerateFrom(jobs)
 		go pool.Run(ctx)
-	Loop:
-		for {
-			select {
-			case r, ok := <-pool.Results():
-				if !ok {
-					continue
-				}
-				if r.Err != nil {
-					fmt.Printf("error processing job %d, %s: %v\n", r.ID, r.Desc, r.Err)
-					continue
-				}
-				fmt.Printf("cleared table %s\n", r.Desc)
-			case <-pool.Done:
-				fmt.Println("Ok done")
-				break Loop
+		for r := range pool.Results() {
+			if r.Err != nil {
+				fmt.Printf("error processing job %d, %s: %v\n", r.ID, r.Desc, r.Err)
+				continue
 			}
+			fmt.Printf("cleared table %s\n", r.Desc)
 		}
 	},
 }

@@ -17,6 +17,11 @@ export interface PilotSession extends Pilot {
   endTime?: number;
 }
 
+export interface FilecoinDeal {
+  dealId: string;
+  selector: string;
+}
+
 export interface Rig {
   id: string;
   image: string;
@@ -25,6 +30,7 @@ export interface Rig {
   thumbAlpha: string;
   attributes: Attribute[];
   currentPilot?: Pilot;
+  filecoinDeals?: FilecoinDeal[];
   isTrained: boolean;
 }
 
@@ -50,4 +56,11 @@ export interface Event {
 export interface PilotSessionWithRigId extends PilotSession {
   rigId: string;
   thumb: string;
+}
+
+export interface FTReward {
+  blockNum: number;
+  recipient: string;
+  reason: string;
+  amount: number;
 }

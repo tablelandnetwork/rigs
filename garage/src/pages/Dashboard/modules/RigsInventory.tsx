@@ -34,7 +34,7 @@ import { findNFT } from "../../../utils/nfts";
 import { sleep } from "../../../utils/async";
 import { prettyNumber } from "../../../utils/fmt";
 import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
-import { chain } from "../../../env";
+import { mainChain } from "../../../env";
 
 interface RigListItemProps {
   rig: RigWithPilots;
@@ -201,7 +201,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
       validator
         .pollForReceiptByTransactionHash(
           {
-            chainId: chain.id,
+            chainId: mainChain.id,
             transactionHash: pendingTx,
           },
           { interval: 2000, signal }
@@ -291,7 +291,7 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
                 selected={selected}
                 selectable={!pendingTx && selectable}
                 toggleSelected={() => toggleRigSelected(rig)}
-                currentBlockNumber={currentBlockNumber}
+                currentBlockNumber={Number(currentBlockNumber)}
               />
             );
           })}

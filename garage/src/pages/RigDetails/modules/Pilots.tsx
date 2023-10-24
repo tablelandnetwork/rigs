@@ -27,7 +27,7 @@ import { useBlockNumber } from "wagmi";
 import { NFT } from "../../../hooks/useNFTs";
 import { findNFT } from "../../../utils/nfts";
 import { prettyNumber, pluralize } from "../../../utils/fmt";
-import { deployment } from "../../../env";
+import { mainChain, deployment } from "../../../env";
 
 const getPilots = (
   rig: RigWithPilots,
@@ -92,7 +92,7 @@ export const Pilots = ({
   useEffect(() => {
     refetch();
   }, [rig, refetch]);
-  const pilots = getPilots(rig, nfts, blockNumber);
+  const pilots = getPilots(rig, nfts, Number(blockNumber));
 
   const {
     isOpen: isInfoOpen,
@@ -192,8 +192,9 @@ export const Pilots = ({
       {isOwner && (
         <StackItem px={4}>
           <HStack gap={3}>
-            {!rig.currentPilot && (!rig.isTrained && chainPilotStatus !== 2) && (
+            {!rig.currentPilot && !rig.isTrained && chainPilotStatus !== 2 && (
               <ChainAwareButton
+                expectedChain={mainChain}
                 variant="outlined"
                 onClick={onOpenTrainModal}
                 width="100%"
@@ -203,6 +204,7 @@ export const Pilots = ({
             )}
             {(rig.isTrained || rig.currentPilot || chainPilotStatus === 2) && (
               <ChainAwareButton
+                expectedChain={mainChain}
                 variant="outlined"
                 isDisabled={
                   !!rig.currentPilot?.contract ||
@@ -216,6 +218,7 @@ export const Pilots = ({
             )}
             {rig.currentPilot && (
               <ChainAwareButton
+                expectedChain={mainChain}
                 variant="outlined"
                 onClick={onOpenParkModal}
                 width="100%"

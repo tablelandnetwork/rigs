@@ -67,7 +67,7 @@ func (s *Store) CreateTable(ctx context.Context, definition tableland.TableDefin
 
 // InsertParts implements InsertParts.
 func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
-	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.PartsDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -79,12 +79,12 @@ func (s *Store) InsertParts(ctx context.Context, parts []local.Part) error {
 	if err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	return s.trackTxn(ctx, hash, "parts", sql)
+	return s.trackTxn(ctx, hash, tableland.PartsDefinition.Prefix, sql)
 }
 
 // InsertLayers implements InsertLayers.
 func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
-	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.LayersDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -96,12 +96,29 @@ func (s *Store) InsertLayers(ctx context.Context, layers []local.Layer) error {
 	if err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	return s.trackTxn(ctx, hash, "layers", sql)
+	return s.trackTxn(ctx, hash, tableland.LayersDefinition.Prefix, sql)
+}
+
+// InsertRigs implements InsertRigs.
+func (s *Store) InsertRigs(ctx context.Context, rigs []local.Rig) error {
+	tableName, err := s.localStore.TableName(ctx, tableland.RigsDefinition.Prefix, s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingRigs(tableName, rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql to insert rigs: %v", err)
+	}
+	hash, err := s.writeSQL(ctx, sql)
+	if err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	return s.trackTxn(ctx, hash, tableland.RigsDefinition.Prefix, sql)
 }
 
 // InsertRigAttributes implements InsertRigAttributes.
 func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error {
-	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.RigAttributesDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -113,12 +130,29 @@ func (s *Store) InsertRigAttributes(ctx context.Context, rigs []local.Rig) error
 	if err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	return s.trackTxn(ctx, hash, "attributes", sql)
+	return s.trackTxn(ctx, hash, tableland.RigAttributesDefinition.Prefix, sql)
+}
+
+// InsertDeals implements InsertDeals.
+func (s *Store) InsertDeals(ctx context.Context, rigs []local.Rig) error {
+	tableName, err := s.localStore.TableName(ctx, tableland.DealsDefinition.Prefix, s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForInsertingDeals(tableName, rigs)
+	if err != nil {
+		return fmt.Errorf("getting sql to insert deals: %v", err)
+	}
+	hash, err := s.writeSQL(ctx, sql)
+	if err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	return s.trackTxn(ctx, hash, tableland.DealsDefinition.Prefix, sql)
 }
 
 // InsertLookups implements InsertLookups.
 func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) error {
-	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.LookupsDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -130,12 +164,12 @@ func (s *Store) InsertLookups(ctx context.Context, lookups tableland.Lookups) er
 	if err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	return s.trackTxn(ctx, hash, "lookups", sql)
+	return s.trackTxn(ctx, hash, tableland.LookupsDefinition.Prefix, sql)
 }
 
 // ClearParts implements ClearParts.
 func (s *Store) ClearParts(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "parts", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.PartsDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -146,7 +180,7 @@ func (s *Store) ClearParts(ctx context.Context) error {
 	if _, err := s.writeSQL(ctx, sql); err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	if err := s.localStore.ClearTxns(ctx, "parts", s.chainID, "insert"); err != nil {
+	if err := s.localStore.ClearTxns(ctx, tableland.PartsDefinition.Prefix, s.chainID, "insert"); err != nil {
 		return fmt.Errorf("clearning txns: %v", err)
 	}
 	return nil
@@ -154,7 +188,7 @@ func (s *Store) ClearParts(ctx context.Context) error {
 
 // ClearLayers implements ClearLayers.
 func (s *Store) ClearLayers(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "layers", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.LayersDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -165,7 +199,26 @@ func (s *Store) ClearLayers(ctx context.Context) error {
 	if _, err := s.writeSQL(ctx, sql); err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	if err := s.localStore.ClearTxns(ctx, "layers", s.chainID, "insert"); err != nil {
+	if err := s.localStore.ClearTxns(ctx, tableland.LayersDefinition.Prefix, s.chainID, "insert"); err != nil {
+		return fmt.Errorf("clearning txns: %v", err)
+	}
+	return nil
+}
+
+// ClearRigs implements ClearRigs.
+func (s *Store) ClearRigs(ctx context.Context) error {
+	tableName, err := s.localStore.TableName(ctx, tableland.RigsDefinition.Prefix, s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing rigs: %v", err)
+	}
+	if _, err := s.writeSQL(ctx, sql); err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	if err := s.localStore.ClearTxns(ctx, tableland.RigsDefinition.Prefix, s.chainID, "insert"); err != nil {
 		return fmt.Errorf("clearning txns: %v", err)
 	}
 	return nil
@@ -173,7 +226,7 @@ func (s *Store) ClearLayers(ctx context.Context) error {
 
 // ClearRigAttributes implements ClearRigAttributes.
 func (s *Store) ClearRigAttributes(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "rig_attributes", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.RigAttributesDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -184,7 +237,26 @@ func (s *Store) ClearRigAttributes(ctx context.Context) error {
 	if _, err := s.writeSQL(ctx, sql); err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	if err := s.localStore.ClearTxns(ctx, "attributes", s.chainID, "insert"); err != nil {
+	if err := s.localStore.ClearTxns(ctx, tableland.RigAttributesDefinition.Prefix, s.chainID, "insert"); err != nil {
+		return fmt.Errorf("clearning txns: %v", err)
+	}
+	return nil
+}
+
+// ClearDeals implements ClearDeals.
+func (s *Store) ClearDeals(ctx context.Context) error {
+	tableName, err := s.localStore.TableName(ctx, tableland.DealsDefinition.Prefix, s.chainID)
+	if err != nil {
+		return fmt.Errorf("getting table name: %v", err)
+	}
+	sql, err := s.factory.SQLForClearingData(tableName)
+	if err != nil {
+		return fmt.Errorf("getting sql for clearing deals: %v", err)
+	}
+	if _, err := s.writeSQL(ctx, sql); err != nil {
+		return fmt.Errorf("writing SQL: %v", err)
+	}
+	if err := s.localStore.ClearTxns(ctx, tableland.DealsDefinition.Prefix, s.chainID, "insert"); err != nil {
 		return fmt.Errorf("clearning txns: %v", err)
 	}
 	return nil
@@ -192,7 +264,7 @@ func (s *Store) ClearRigAttributes(ctx context.Context) error {
 
 // ClearLookups implements ClearLookups.
 func (s *Store) ClearLookups(ctx context.Context) error {
-	tableName, err := s.localStore.TableName(ctx, "lookups", s.chainID)
+	tableName, err := s.localStore.TableName(ctx, tableland.LookupsDefinition.Prefix, s.chainID)
 	if err != nil {
 		return fmt.Errorf("getting table name: %v", err)
 	}
@@ -203,7 +275,7 @@ func (s *Store) ClearLookups(ctx context.Context) error {
 	if _, err := s.writeSQL(ctx, sql); err != nil {
 		return fmt.Errorf("writing SQL: %v", err)
 	}
-	if err := s.localStore.ClearTxns(ctx, "lookups", s.chainID, "insert"); err != nil {
+	if err := s.localStore.ClearTxns(ctx, tableland.LookupsDefinition.Prefix, s.chainID, "insert"); err != nil {
 		return fmt.Errorf("clearning txns: %v", err)
 	}
 	return nil

@@ -19,9 +19,12 @@ export interface RigsDeployment {
   allowlistTable: string;
   partsTable: string;
   layersTable: string;
+  rigsTable: string;
   attributesTable: string;
+  dealsTable: string;
   lookupsTable: string;
   pilotSessionsTable: string;
+  ftRewardsTable: string;
   displayAttributes: boolean;
 }
 
@@ -41,9 +44,12 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_42161_14",
     partsTable: "parts_42161_7",
     layersTable: "layers_42161_8",
+    rigsTable: "rigs_314_3",
     attributesTable: "rig_attributes_42161_15",
-    lookupsTable: "lookups_42161_10",
+    dealsTable: "deals_314_4",
+    lookupsTable: "lookups_314_5",
     pilotSessionsTable: "pilot_sessions_1_7",
+    ftRewardsTable: "ft_rewards_314_2",
     displayAttributes: true,
   },
   // testnets
@@ -57,9 +63,12 @@ export const deployments: RigsDeployments = {
     allowlistTable: "rigs_allowlist_80001_3820",
     partsTable: "parts_80001_4038",
     layersTable: "layers_80001_4039",
+    rigsTable: "rigs_314159_9",
     attributesTable: "rig_attributes_80001_4040",
-    lookupsTable: "lookups_80001_4041",
+    dealsTable: "deals_314159_8",
+    lookupsTable: "lookups_314159_10",
     pilotSessionsTable: "pilot_sessions_80001_4078",
+    ftRewardsTable: "ft_rewards_80001_6727",
     displayAttributes: true,
   },
   localhost: {
@@ -72,9 +81,12 @@ export const deployments: RigsDeployments = {
     allowlistTable: "",
     partsTable: "",
     layersTable: "",
+    rigsTable: "",
     attributesTable: "",
+    dealsTable: "",
     lookupsTable: "",
     pilotSessionsTable: "",
+    ftRewardsTable: "",
     displayAttributes: true,
   },
 };

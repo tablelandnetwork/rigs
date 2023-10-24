@@ -52,13 +52,15 @@ import {
 import debounce from "lodash/debounce";
 import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
 import { Rig, WalletAddress } from "../types";
+import { ChainAwareButton } from "./ChainAwareButton";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { deployment } from "../env";
+import { mainChain, deployment } from "../env";
 import { abi } from "../abis/TablelandRigs";
 import { copySet, toggleInSet } from "../utils/set";
 import { pluralize } from "../utils/fmt";
 import { isPresent, isValidAddress, as0xString } from "../utils/types";
+import unknownPilot from "../assets/unknown-pilot.svg";
 
 const { contractAddress } = deployment;
 
@@ -76,10 +78,11 @@ export const TrainRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "trainRig",
-    args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    args: [rigs.map((rig) => BigInt(rig.id))],
     enabled: isOpen,
   });
 
@@ -124,13 +127,14 @@ export const TrainRigsModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={mainChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={isLoading || isSuccess}
           >
             Train {pluralize("rig", rigs)}
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             onClick={onClose}
@@ -151,10 +155,11 @@ export const ParkRigsModal = ({
   onTransactionSubmitted,
 }: ModalProps) => {
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "parkRig",
-    args: [rigs.map((rig) => ethers.BigNumber.from(rig.id))],
+    args: [rigs.map((rig) => BigInt(rig.id))],
     enabled: isOpen,
   });
 
@@ -226,7 +231,7 @@ interface PilotTransactionProps {
 
 const toContractArgs = (
   pairs: { rig: Rig; pilot: NFT }[]
-): [ethers.BigNumber[], WalletAddress[], ethers.BigNumber[]] => {
+): [bigint[], WalletAddress[], bigint[]] => {
   const validPairs = pairs
     .map(({ pilot, ...rest }) => {
       if (isValidAddress(pilot.contract)) {
@@ -241,9 +246,9 @@ const toContractArgs = (
     .filter(isPresent);
 
   return [
-    validPairs.map(({ rig }) => ethers.BigNumber.from(rig.id)),
+    validPairs.map(({ rig }) => BigInt(rig.id)),
     validPairs.map(({ pilotContract }) => pilotContract),
-    validPairs.map(({ pilotTokenId }) => ethers.BigNumber.from(pilotTokenId)),
+    validPairs.map(({ pilotTokenId }) => BigInt(pilotTokenId)),
   ];
 };
 
@@ -255,6 +260,7 @@ const PilotTransactionStep = ({
 }: PilotTransactionProps) => {
   // TODO support calling pilotRig(uint256, address, uint256) for a single rig?
   const { config } = usePrepareContractWrite({
+    chainId: mainChain.id,
     address: as0xString(contractAddress),
     abi,
     functionName: "pilotRig",
@@ -331,13 +337,14 @@ const PilotTransactionStep = ({
         <TransactionStateAlert {...contractWrite} />
       </ModalBody>
       <ModalFooter>
-        <Button
+        <ChainAwareButton
+          expectedChain={mainChain}
           mr={3}
           onClick={() => (write ? write() : undefined)}
           isDisabled={isLoading || isSuccess || !sessions}
         >
           Pilot {pluralize("rig", pairs)}
-        </Button>
+        </ChainAwareButton>
         <Button
           variant="ghost"
           onClick={onClose}
@@ -373,6 +380,7 @@ const NFTDisplay = ({
     >
       <Image
         src={nft.imageUrl || nft.imageData}
+        fallbackSrc={unknownPilot}
         width={size}
         sx={{ aspectRatio: "1/1", objectFit: "contain" }}
       />
@@ -500,6 +508,18 @@ const useFilters = <T,>() => {
   return { filters, toggleFilter, clearFilters };
 };
 
+// The pilot contract packs pilot struct data and requires that the pilot token id
+// is < type(uint32).max
+const MAX_SUPPORTED_PILOT_TOKEN_ID = ethers.BigNumber.from("0xFFFFFFFF");
+
+const tryParseBigNumber = (v: any) => {
+  try {
+    return { valid: true, result: ethers.BigNumber.from(v) };
+  } catch (_) {
+    return { valid: false, result: ethers.BigNumber.from(0) };
+  }
+};
+
 const PickRigPilotStep = ({
   rigs,
   pilots,
@@ -530,11 +550,10 @@ const PickRigPilotStep = ({
 
   const [currentRig, setCurrentRig] = useState(0);
   const rig = useMemo(() => rigs[currentRig], [rigs, currentRig]);
-  const pilot = useMemo(() => pilots[rigs[currentRig].id], [
-    pilots,
-    rigs,
-    currentRig,
-  ]);
+  const pilot = useMemo(
+    () => pilots[rigs[currentRig].id],
+    [pilots, rigs, currentRig]
+  );
 
   const next = useCallback(() => {
     setCurrentRig((old) => {
@@ -632,9 +651,14 @@ const PickRigPilotStep = ({
         <Flex direction="row" wrap="wrap" justify="start" gap={4}>
           {nfts &&
             nfts.map((nft, index) => {
+              const { valid, result: tokenId } = tryParseBigNumber(nft.tokenId);
               const supported =
                 nft.type === "ERC721" &&
-                nft.contract.toLowerCase() !== contractAddress.toLowerCase();
+                nft.contract.toLowerCase() !== contractAddress.toLowerCase() &&
+                !!(nft.imageData || nft.imageUrl || nft.highResImageUrl) &&
+                valid &&
+                MAX_SUPPORTED_PILOT_TOKEN_ID.gte(tokenId);
+
               const alreadySelected = Object.values(pilots).includes(nft);
 
               const selectedForCurrentRig = pilot === nft;
