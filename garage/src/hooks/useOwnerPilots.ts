@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { selectOwnerPilots } from "../utils/queries";
+import { selectOwnerPilots } from "~/utils/queries";
+import { Pilot } from "~/types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { Pilot } from "../types";
 
 export interface PilotWithFT extends Pilot {
   flightTime: number;

@@ -4,7 +4,8 @@ import {
   selectAccountStats,
   selectTopActivePilotCollections,
   selectTopFtPilotCollections,
-} from "../utils/queries";
+  selectTopFtEarners,
+} from "~/utils/queries";
 import { useTablelandConnection } from "./useTablelandConnection";
 
 export interface Stat {
@@ -147,6 +148,35 @@ export const useTopFtPilotCollections = () => {
 
     db.prepare(selectTopFtPilotCollections())
       .all<TopPilotFtCollection>()
+      .then(({ results }) => {
+        if (isCancelled) return;
+
+        setStats(results);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [setStats]);
+
+  return { stats };
+};
+
+interface FtLeaderboardEntry {
+  address: string;
+  ft: number;
+}
+
+export const useFtLeaderboard = (first: number) => {
+  const { db } = useTablelandConnection();
+
+  const [stats, setStats] = useState<FtLeaderboardEntry[]>();
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    db.prepare(selectTopFtEarners(first))
+      .all<FtLeaderboardEntry>()
       .then(({ results }) => {
         if (isCancelled) return;
 

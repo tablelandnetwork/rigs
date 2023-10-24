@@ -1,4 +1,4 @@
-import { WalletAddress } from "../types";
+import { WalletAddress } from "~/types";
 
 export const isPresent = <T,>(t: T | undefined | null): t is T =>
   t !== undefined && t !== null;

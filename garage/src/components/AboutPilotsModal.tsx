@@ -15,7 +15,7 @@ import {
   Text,
   VStack,
 } from "@chakra-ui/react";
-import garage from "../assets/garage.jpg";
+import garage from "~/assets/garage.jpg";
 
 interface ModalProps {
   isOpen: boolean;

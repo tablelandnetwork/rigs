@@ -2,7 +2,7 @@ import React from "react";
 import { Button } from "@chakra-ui/react";
 import { Chain, useNetwork } from "wagmi";
 import { useChainModal } from "@rainbow-me/rainbowkit";
-import { mainChain } from "../env";
+import { mainChain } from "~/env";
 
 export const ChainAwareButton = (
   props: { expectedChain?: Chain } & React.ComponentProps<typeof Button>

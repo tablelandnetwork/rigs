@@ -20,19 +20,22 @@ import {
   Th,
   Tbody,
   HStack,
+  Spinner,
+  Text,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
 import { Database } from "@tableland/sdk";
-import { useSigner } from "../../hooks/useSigner";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { Footer } from "../../components/Footer";
-import { ChainAwareButton } from "../../components/ChainAwareButton";
-import { isValidAddress } from "../../utils/types";
-import { CreateMissionModal } from "../../components/CreateMissionModal";
-import { CreateProposalModal } from "../../components/CreateProposalModal";
-import { useProposals } from "../../hooks/useProposals";
-import { useAdminMisisons } from "../../hooks/useMissions";
-import { secondaryChain, deployment } from "../../env";
+import { useSigner } from "~/hooks/useSigner";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { Footer } from "~/components/Footer";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { isValidAddress } from "~/utils/types";
+import { CreateMissionModal } from "~/components/CreateMissionModal";
+import { CreateProposalModal } from "~/components/CreateProposalModal";
+import { useProposals } from "~/hooks/useProposals";
+import { useAdminMisisons } from "~/hooks/useMissions";
+import { secondaryChain, deployment } from "~/env";
+import { useIsAdmin } from "~/hooks/useIsAdmin";
 
 const { ftRewardsTable } = deployment;
 
@@ -169,7 +172,7 @@ const GiveFtRewardForm = (props: React.ComponentProps<typeof Box>) => {
 };
 
 const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
-  const { proposals } = useProposals();
+  const { proposals, refresh } = useProposals();
 
   const [proposalDialogOpen, setCreateProposalDialogOpen] = useState(false);
 
@@ -177,7 +180,10 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
     <>
       <CreateProposalModal
         isOpen={proposalDialogOpen}
-        onClose={() => setCreateProposalDialogOpen(false)}
+        onClose={() => {
+          refresh();
+          setCreateProposalDialogOpen(false);
+        }}
       />
       <Box {...props}>
         <HStack
@@ -221,7 +227,7 @@ const ListProposalsForm = (props: React.ComponentProps<typeof Box>) => {
 };
 
 const ListMissionsForm = (props: React.ComponentProps<typeof Box>) => {
-  const { missions } = useAdminMisisons();
+  const { missions, refresh } = useAdminMisisons();
 
   const [missionDialogOpen, setMissionDialogOpen] = useState(false);
 
@@ -229,7 +235,10 @@ const ListMissionsForm = (props: React.ComponentProps<typeof Box>) => {
     <>
       <CreateMissionModal
         isOpen={missionDialogOpen}
-        onClose={() => setMissionDialogOpen(false)}
+        onClose={() => {
+          refresh();
+          setMissionDialogOpen(false);
+        }}
       />
       <Box {...props}>
         <HStack
@@ -274,7 +283,24 @@ const ListMissionsForm = (props: React.ComponentProps<typeof Box>) => {
   );
 };
 
+const NoPermissionsForm = ({
+  title,
+  body,
+  ...props
+}: { title: string; body: string } & React.ComponentProps<typeof Box>) => {
+  return (
+    <Box {...props}>
+      <Heading>{title}</Heading>
+      <Text variant="emptyState" mt={4}>
+        {body}
+      </Text>
+    </Box>
+  );
+};
+
 export const Admin = () => {
+  const { isLoading, data } = useIsAdmin();
+
   return (
     <>
       <Flex
@@ -295,9 +321,31 @@ export const Admin = () => {
           minHeight={`calc(100vh - ${TOPBAR_HEIGHT})`}
         >
           <Flex direction="column" gap={GRID_GAP} align="stretch" width="100%">
-            <GiveFtRewardForm {...MODULE_PROPS} />
-            <ListProposalsForm {...MODULE_PROPS} />
-            <ListMissionsForm {...MODULE_PROPS} />
+            {isLoading || !data ? (
+              <Spinner />
+            ) : (
+              <>
+                <GiveFtRewardForm {...MODULE_PROPS} />
+                {data.votingAdmin ? (
+                  <ListProposalsForm {...MODULE_PROPS} />
+                ) : (
+                  <NoPermissionsForm
+                    title="Proposals"
+                    body="You don't have the right permissions to manage proposals."
+                    {...MODULE_PROPS}
+                  />
+                )}
+                {data.missionsAdin ? (
+                  <ListMissionsForm {...MODULE_PROPS} />
+                ) : (
+                  <NoPermissionsForm
+                    title="Missions"
+                    body="You don't have the right permissions to manage missions."
+                    {...MODULE_PROPS}
+                  />
+                )}
+              </>
+            )}
           </Flex>
         </Flex>
       </Flex>

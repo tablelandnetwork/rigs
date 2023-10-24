@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Result } from "@tableland/sdk";
 import {
   Button,
   FormControl,
@@ -25,13 +26,14 @@ import {
   useDisclosure,
   useToast,
 } from "@chakra-ui/react";
+import isEqual from "lodash/isEqual";
 import { DeleteIcon } from "@chakra-ui/icons";
-import { ChainAwareButton } from "./ChainAwareButton";
 import { Database } from "@tableland/sdk";
-import { useSigner } from "../hooks/useSigner";
-import { isPresent } from "../utils/types";
-import { MissionReward, MissionDeliverable } from "../types";
-import { secondaryChain, deployment } from "../env";
+import { useSigner } from "~/hooks/useSigner";
+import { isPresent } from "~/utils/types";
+import { Mission, MissionReward, MissionDeliverable } from "~/types";
+import { secondaryChain, deployment } from "~/env";
+import { ChainAwareButton } from "./ChainAwareButton";
 
 const { missionsTable } = deployment;
 
@@ -176,16 +178,24 @@ const StateImportModal = ({
   );
 };
 
-export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
+type BaseModalProps = ModalProps & {
+  title: string;
+  isFormValid: boolean;
+  formState: FormState;
+  setFormState: React.Dispatch<React.SetStateAction<FormState>>;
+  onMutate?: (formState: FormState) => Promise<Result<never>>;
+};
+
+const BaseMissionModal = ({
+  isOpen,
+  onClose,
+  title,
+  formState,
+  setFormState,
+  isFormValid,
+  onMutate,
+}: BaseModalProps) => {
   const toast = useToast();
-  const signer = useSigner({ chainId: secondaryChain.id });
-
-  const db = useMemo(() => {
-    if (signer) return new Database({ signer });
-  }, [signer]);
-
-  const [formState, setFormState] = useState<FormState>(initialFormState);
-
   const {
     name,
     description,
@@ -198,34 +208,17 @@ export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
     maxNumberOfContributions,
   } = formState;
 
-  const isFormValid = useMemo(() => isValid(formState), [formState]);
   const [txnState, setTxnState] = useState<
     "idle" | "querying" | "success" | "fail"
   >("idle");
 
   const onSubmit = useCallback(async () => {
-    if (!db) return;
+    if (!onMutate) return;
 
     setTxnState("querying");
 
     try {
-      const { meta: insert } = await db
-        .prepare(
-          `INSERT INTO ${missionsTable} (name, description, tags, requirements, deliverables, rewards, contributions_start_block, contributions_end_block, max_number_of_contributions, contributions_disabled) VALUES (?, ?, JSON(?), JSON(?), JSON(?), JSON(?), ?, ?, ?, 0)`
-        )
-        .bind(
-          name,
-          description,
-          JSON.stringify(tags),
-          JSON.stringify(requirements),
-          JSON.stringify(deliverables),
-          JSON.stringify(rewards),
-          contributionsStartBlock,
-          contributionsEndBlock,
-          maxNumberOfContributions
-        )
-        .run();
-
+      const { meta: insert } = await onMutate(formState);
       await insert.txn?.wait();
       setTxnState("success");
       toast({ title: "Success", status: "success", duration: 7_500 });
@@ -244,7 +237,7 @@ export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
         }
       }
     }
-  }, [db, formState, setTxnState, toast]);
+  }, [onMutate, formState, setTxnState, toast]);
 
   const onNameInputChanged = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -448,10 +441,9 @@ export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
 
   useEffect(() => {
     if (isOpen) {
-      setFormState(initialFormState);
       setTxnState("idle");
     }
-  }, [isOpen, setFormState, setTxnState]);
+  }, [isOpen, setTxnState]);
 
   const {
     isOpen: exportIsOpen,
@@ -481,7 +473,7 @@ export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
       <Modal isOpen={isOpen} onClose={onClose} size="xl">
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>Create Mission</ModalHeader>
+          <ModalHeader>{title}</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
             <FormControl>
@@ -756,5 +748,152 @@ export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
         </ModalContent>
       </Modal>
     </>
+  );
+};
+
+export const CreateMissionModal = ({ isOpen, onClose }: ModalProps) => {
+  const signer = useSigner({ chainId: secondaryChain.id });
+
+  const db = useMemo(() => {
+    if (signer) return new Database({ signer });
+  }, [signer]);
+
+  const [formState, setFormState] = useState<FormState>(initialFormState);
+
+  const isFormValid = useMemo(() => isValid(formState), [formState]);
+
+  const mutate = db
+    ? (state: FormState) => {
+        const {
+          name,
+          description,
+          tags,
+          requirements,
+          deliverables,
+          rewards,
+          contributionsStartBlock,
+          contributionsEndBlock,
+          maxNumberOfContributions,
+        } = state;
+
+        return db
+          .prepare(
+            `INSERT INTO ${missionsTable} (name, description, tags, requirements, deliverables, rewards, contributions_start_block, contributions_end_block, max_number_of_contributions, contributions_disabled) VALUES (?, ?, JSON(?), JSON(?), JSON(?), JSON(?), ?, ?, ?, 0)`
+          )
+          .bind(
+            name,
+            description,
+            JSON.stringify(tags),
+            JSON.stringify(requirements),
+            JSON.stringify(deliverables),
+            JSON.stringify(rewards),
+            contributionsStartBlock,
+            contributionsEndBlock,
+            maxNumberOfContributions
+          )
+          .run();
+      }
+    : undefined;
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormState(initialFormState);
+    }
+  }, [isOpen, setFormState]);
+
+  return (
+    <BaseMissionModal
+      title="Create Mission"
+      formState={formState}
+      setFormState={setFormState}
+      isFormValid={isFormValid}
+      isOpen={isOpen}
+      onClose={onClose}
+      onMutate={mutate}
+    />
+  );
+};
+
+type EditModalProps = { mission: Mission } & ModalProps;
+
+export const EditMissionModal = ({
+  isOpen,
+  onClose,
+  mission,
+}: EditModalProps) => {
+  const { id, contributionsDisabled, ...baseMission } = mission;
+  const initialState = useMemo(
+    () => ({
+      contributionsStartBlock: 0,
+      contributionsEndBlock: 0,
+      maxNumberOfContributions: 0,
+      ...baseMission,
+    }),
+    [baseMission]
+  );
+
+  const signer = useSigner({ chainId: secondaryChain.id });
+
+  const db = useMemo(() => {
+    if (signer) return new Database({ signer });
+  }, [signer]);
+
+  const mutate = db
+    ? (state: FormState) => {
+        const {
+          name,
+          description,
+          tags,
+          requirements,
+          deliverables,
+          rewards,
+          contributionsStartBlock,
+          contributionsEndBlock,
+          maxNumberOfContributions,
+        } = state;
+
+        return db
+          .prepare(
+            `UPDATE ${missionsTable} SET name = ?, description = ?, tags = ?, requirements = ?, deliverables = ?, rewards = ?, contributions_start_block = ?, contributions_end_block = ?, max_number_of_contributions = ? WHERE id = ?`
+          )
+          .bind(
+            name,
+            description,
+            JSON.stringify(tags),
+            JSON.stringify(requirements),
+            JSON.stringify(deliverables),
+            JSON.stringify(rewards),
+            contributionsStartBlock,
+            contributionsEndBlock,
+            maxNumberOfContributions,
+            id
+          )
+          .run();
+      }
+    : undefined;
+
+  const [formState, setFormState] = useState<FormState>(initialState);
+
+  const isFormValid = useMemo(
+    () => isValid(formState) && !isEqual(initialState, formState),
+    [formState]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormState(initialState);
+    }
+  }, [isOpen, setFormState]);
+
+  return (
+    <BaseMissionModal
+      title="Edit Mission"
+      formState={formState}
+      setFormState={setFormState}
+      isFormValid={isFormValid}
+      isOpen={isOpen}
+      onClose={onClose}
+      onMutate={mutate}
+    />
   );
 };

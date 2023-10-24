@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { selectOwnerVotes } from "../utils/queries";
+import { selectOwnerVotes } from "~/utils/queries";
+import { ProposalWithOptions } from "~/types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { ProposalWithOptions } from "../types";
 
 export interface Vote {
   proposal: Pick<ProposalWithOptions, "id" | "name" | "options">;

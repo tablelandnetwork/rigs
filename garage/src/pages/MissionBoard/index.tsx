@@ -12,12 +12,12 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { prettyNumber } from "../../utils/fmt";
-import { useOpenMissions } from "../../hooks/useMissions";
-import { usePersistentState } from "../../hooks/usePersistentState";
-import { Mission } from "../../types";
-import { SignManifestoModal } from "../../components/SignManifestoModal";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { prettyNumber } from "~/utils/fmt";
+import { useOpenMissions } from "~/hooks/useMissions";
+import { usePersistentState } from "~/hooks/usePersistentState";
+import { Mission } from "~/types";
+import { SignManifestoModal } from "~/components/SignManifestoModal";
 
 const GRID_GAP = 4;
 

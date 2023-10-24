@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { selectOwnerFTRewards } from "../utils/queries";
+import { selectOwnerFTRewards } from "~/utils/queries";
+import { FTReward } from "~/types";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { FTReward } from "../types";
 
 export const useOwnerFTRewards = (owner?: string) => {
   const { db } = useTablelandConnection();

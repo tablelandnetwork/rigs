@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { RigWithPilots } from "../types";
 import { useContractRead } from "wagmi";
+import { RigWithPilots } from "~/types";
+import { selectRigs } from "~/utils/queries";
+import { isValidAddress, as0xString } from "~/utils/types";
+import { mainChain, deployment } from "~/env";
+import { abi } from "~/abis/TablelandRigs";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { selectRigs } from "../utils/queries";
-import { isValidAddress, as0xString } from "../utils/types";
-import { mainChain, deployment } from "../env";
-import { abi } from "../abis/TablelandRigs";
 
 const { contractAddress } = deployment;
 

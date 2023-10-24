@@ -19,22 +19,22 @@ import {
 } from "@chakra-ui/react";
 import { CheckIcon, QuestionIcon } from "@chakra-ui/icons";
 import { useBlockNumber } from "wagmi";
-import { useAccount } from "../../../hooks/useAccount";
-import { useOwnedRigs } from "../../../hooks/useOwnedRigs";
-import { useTablelandConnection } from "../../../hooks/useTablelandConnection";
-import { NFT } from "../../../hooks/useNFTs";
-import { useNFTsCached } from "../../../components/NFTsContext";
-import { Rig, RigWithPilots, Pilot } from "../../../types";
-import { RigDisplay } from "../../../components/RigDisplay";
-import { useGlobalFlyParkModals } from "../../../components/GlobalFlyParkModals";
-import { TablelandConnectButton } from "../../../components/TablelandConnectButton";
-import { ChainAwareButton } from "../../../components/ChainAwareButton";
-import { AboutPilotsModal } from "../../../components/AboutPilotsModal";
-import { findNFT } from "../../../utils/nfts";
-import { sleep } from "../../../utils/async";
-import { prettyNumber } from "../../../utils/fmt";
-import { firstSetValue, copySet, toggleInSet } from "../../../utils/set";
-import { mainChain } from "../../../env";
+import { useAccount } from "~/hooks/useAccount";
+import { useOwnedRigs } from "~/hooks/useOwnedRigs";
+import { NFT } from "~/hooks/useNFTs";
+import { useNFTsCached } from "~/components/NFTsContext";
+import { Rig, RigWithPilots, Pilot } from "~/types";
+import { RigDisplay } from "~/components/RigDisplay";
+import { useGlobalFlyParkModals } from "~/components/GlobalFlyParkModals";
+import { TablelandConnectButton } from "~/components/TablelandConnectButton";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { AboutPilotsModal } from "~/components/AboutPilotsModal";
+import { findNFT } from "~/utils/nfts";
+import { sleep } from "~/utils/async";
+import { prettyNumber } from "~/utils/fmt";
+import { firstSetValue, copySet, toggleInSet } from "~/utils/set";
+import { mainChain } from "~/env";
+import { useWaitForTablelandTxn } from "~/hooks/useWaitForTablelandTxn";
 
 interface RigListItemProps {
   rig: RigWithPilots;
@@ -141,9 +141,8 @@ const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
 };
 
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
-  const { address, actingAsAddress, delegations } = useAccount();
+  const { actingAsAddress } = useAccount();
   const { rigs, refresh } = useOwnedRigs(actingAsAddress);
-  const { validator } = useTablelandConnection();
   const { data: currentBlockNumber } = useBlockNumber();
   const pilots = useMemo(() => {
     if (!rigs) return;
@@ -191,39 +190,15 @@ export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
     if (!pendingTx) setSelectedRigs(new Set());
   }, [pendingTx]);
 
-  // Effect that waits until a tableland receipt is available for a tx hash
-  // and then refreshes the rig data
-  useEffect(() => {
-    if (validator && pendingTx) {
-      const controller = new AbortController();
-      const signal = controller.signal;
+  useWaitForTablelandTxn(
+    mainChain.id,
+    pendingTx,
+    refreshRigsAndClearPendingTx,
+    clearPendingTx
+  );
 
-      validator
-        .pollForReceiptByTransactionHash(
-          {
-            chainId: mainChain.id,
-            transactionHash: pendingTx,
-          },
-          { interval: 2000, signal }
-        )
-        .then((_) => {
-          refreshRigsAndClearPendingTx();
-        })
-        .catch((_) => {
-          clearPendingTx();
-        });
-
-      return () => {
-        controller.abort();
-      };
-    }
-  }, [pendingTx, refreshRigsAndClearPendingTx, validator, clearPendingTx]);
-
-  const {
-    trainRigsModal,
-    pilotRigsModal,
-    parkRigsModal,
-  } = useGlobalFlyParkModals();
+  const { trainRigsModal, pilotRigsModal, parkRigsModal } =
+    useGlobalFlyParkModals();
 
   const openTrainModal = useCallback(() => {
     if (rigs?.length && selectedRigs.size) {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { PilotSessionWithRigId } from "../types";
+import { PilotSessionWithRigId } from "~/types";
+import { selectActivePilotSessionsForPilots } from "~/utils/queries";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { selectActivePilotSessionsForPilots } from "../utils/queries";
 
 export const useActivePilotSessions = (
   pilots: { contract: string; tokenId: string }[]

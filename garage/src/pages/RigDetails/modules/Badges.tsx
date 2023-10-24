@@ -14,9 +14,9 @@ import {
   Tr,
   VStack,
 } from "@chakra-ui/react";
-import { RigWithPilots } from "../../../types";
-import { NFT } from "../../../hooks/useNFTs";
-import { education, code } from "../../../assets/badges/";
+import { RigWithPilots } from "~/types";
+import { NFT } from "~/hooks/useNFTs";
+import { education, code } from "~/assets/badges/";
 
 type BadgesProps = React.ComponentProps<typeof Box> & {
   rig: RigWithPilots;

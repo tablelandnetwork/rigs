@@ -1,7 +1,7 @@
 import uniqWith from "lodash/uniqWith";
 import isEqual from "lodash/isEqual";
-import { NFT } from "../hooks/useNFTs";
-import { findNFT, NFTIsh } from "../utils/nfts";
+import { NFT } from "~/hooks/useNFTs";
+import { findNFT, NFTIsh } from "~/utils/nfts";
 
 interface LoadNFTs {
   payload: NFTIsh[];

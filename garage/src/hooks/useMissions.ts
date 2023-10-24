@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { Mission, MissionContribution } from "../types";
+import { Mission, MissionContribution } from "~/types";
+import { deployment, secondaryChain } from "~/env";
 import { useTablelandConnection } from "./useTablelandConnection";
-import { deployment, secondaryChain } from "../env";
 
 const { missionsTable, missionContributionsTable } = deployment;
 
@@ -199,4 +199,43 @@ export const useContributions = (
   }, [db, setContributions, /* effect dep */ shouldRefresh]);
 
   return { contributions, refresh };
+};
+
+export const useOwnerContributions = (owner?: string) => {
+  const { db } = useTablelandConnection();
+
+  const [contributions, setContributions] = useState<MissionContribution[]>();
+
+  useEffect(() => {
+    if (!owner) return;
+
+    let isCancelled = false;
+
+    db.prepare(
+      `SELECT
+        id,
+        mission_id as "missionId",
+        created_at as "createdAt",
+        contributor,
+        data,
+        (CASE
+          WHEN accepted IS NULL THEN 'pending_review'
+          WHEN accepted = 0 THEN 'rejected'
+          ELSE 'accepted' END) as "status",
+        acceptance_motivation as "acceptanceMotivation"
+       FROM ${missionContributionsTable} WHERE lower(contributor) = lower('${owner}') AND accepted = 1`
+    )
+      .all<MissionContribution>()
+      .then(({ results }) => {
+        if (isCancelled) return;
+
+        setContributions(results);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [owner, setContributions]);
+
+  return { contributions };
 };

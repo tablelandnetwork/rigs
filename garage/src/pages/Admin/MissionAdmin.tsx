@@ -29,6 +29,7 @@ import {
   Tbody,
   Textarea,
   useToast,
+  useDisclosure,
 } from "@chakra-ui/react";
 import {
   useContractRead,
@@ -37,16 +38,17 @@ import {
 } from "wagmi";
 import { useParams, Link as RouterLink } from "react-router-dom";
 import { Database, helpers } from "@tableland/sdk";
-import { useSigner } from "../../hooks/useSigner";
-import { TOPBAR_HEIGHT } from "../../Topbar";
-import { Footer } from "../../components/Footer";
-import { ChainAwareButton } from "../../components/ChainAwareButton";
-import { MissionContribution } from "../../types";
-import { truncateWalletAddress } from "../../utils/fmt";
-import { as0xString } from "../../utils/types";
-import { useMission, useContributions } from "../../hooks/useMissions";
-import { secondaryChain, deployment } from "../../env";
-import { abi } from "../../abis/MissionsManager";
+import { useSigner } from "~/hooks/useSigner";
+import { TOPBAR_HEIGHT } from "~/Topbar";
+import { Footer } from "~/components/Footer";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
+import { MissionContribution } from "~/types";
+import { truncateWalletAddress } from "~/utils/fmt";
+import { as0xString } from "~/utils/types";
+import { useMission, useContributions } from "~/hooks/useMissions";
+import { secondaryChain, deployment } from "~/env";
+import { EditMissionModal } from "~/components/CreateMissionModal";
+import { abi } from "~/abis/MissionsManager";
 
 const { missionContributionsTable, missionContractAddress } = deployment;
 
@@ -320,6 +322,8 @@ export const MissionAdmin = () => {
     if (isSuccess && !isTxLoading) refreshContributionsStatus();
   }, [isSuccess, isTxLoading, refreshContributionsStatus]);
 
+  const { isOpen, onClose, onOpen } = useDisclosure();
+
   return (
     <>
       <ReviewContributionModal
@@ -328,6 +332,9 @@ export const MissionAdmin = () => {
         contribution={reviewContribution}
         onTransactionCompleted={refreshContributions}
       />
+      {mission && (
+        <EditMissionModal mission={mission} isOpen={isOpen} onClose={onClose} />
+      )}
       <Flex
         direction="column"
         align="center"
@@ -360,7 +367,10 @@ export const MissionAdmin = () => {
                   # {mission.id} – {mission.description}
                 </Heading>
                 <Divider pt={4} />
-                <Heading>Contributions</Heading>
+                <Button maxWidth="230px" onClick={onOpen}>
+                  Edit Mission
+                </Button>
+                <Heading mt={8}>Contributions</Heading>
                 <Heading size="sm">
                   Contributions are:{" "}
                   <b>{contributionsDisabled ? "disabled" : "enabled"}</b>
@@ -384,14 +394,14 @@ export const MissionAdmin = () => {
             )}
             {contributions && (
               <>
-                <Heading>Contributions pending review</Heading>
+                <Heading mt={8}>Contributions pending review</Heading>
                 <ContributionsTable
                   contributions={contributions.filter(
                     ({ status }) => status === "pending_review"
                   )}
                   onReviewContribution={setReviewContribution}
                 />
-                <Heading>Reviewed</Heading>
+                <Heading mt={8}>Reviewed</Heading>
                 <ContributionsTable
                   contributions={contributions.filter(
                     ({ status }) => status !== "pending_review"

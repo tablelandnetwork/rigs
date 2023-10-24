@@ -1,4 +1,4 @@
-import { Rig } from "../types";
+import { Rig } from "~/types";
 
 const ipfsUriToGatewayUrl = (ipfsUri: string): string => {
   const match = ipfsUri.match(/^ipfs:\/\/([a-zA-Z0-9]*)\/(.*)$/);

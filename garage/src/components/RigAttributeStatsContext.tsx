@@ -1,8 +1,8 @@
 import React, { useContext, useState, useEffect } from "react";
 import groupBy from "lodash/groupBy";
 import mapValues from "lodash/mapValues";
-import { useTablelandConnection } from "../hooks/useTablelandConnection";
-import { selectTraitRarities } from "../utils/queries";
+import { useTablelandConnection } from "~/hooks/useTablelandConnection";
+import { selectTraitRarities } from "~/utils/queries";
 
 interface RigAttributeStats {
   [traitType: string]: { [traitValue: string]: number };

@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { DelegateCash } from "delegatecash";
 import { providers } from "ethers";
 import { useAccount as useWagmiAccount } from "wagmi";
-import { mainChain, deployment } from "../env";
-import { isPresent } from "../utils/types";
-import { useActingAsAddress } from "../components/ActingAsAddressContext";
+import { mainChain, deployment } from "~/env";
+import { isPresent } from "~/utils/types";
+import { useActingAsAddress } from "~/components/ActingAsAddressContext";
 
 const { id, network } = mainChain;
 

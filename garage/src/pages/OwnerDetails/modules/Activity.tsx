@@ -13,9 +13,9 @@ import {
   VStack,
 } from "@chakra-ui/react";
 import { Link } from "react-router-dom";
-import { useRigImageUrls } from "../../../hooks/useRigImageUrls";
-import { useNFTCollections } from "../../../hooks/useNFTs";
-import { Event, EventAction } from "../../../types";
+import { useRigImageUrls } from "~/hooks/useRigImageUrls";
+import { useNFTCollections } from "~/hooks/useNFTs";
+import { Event, EventAction } from "~/types";
 
 interface ActivityLogProps extends React.ComponentProps<typeof Box> {
   events?: Event[];

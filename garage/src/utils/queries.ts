@@ -1,4 +1,4 @@
-import { mainChain as chain, deployment } from "../env";
+import { mainChain as chain, deployment } from "~/env";
 
 const {
   rigsTable,
@@ -291,6 +291,31 @@ export const selectTopFtPilotCollections = (): string => {
   WHERE pilot_contract IS NOT NULL
   GROUP BY pilot_contract
   ORDER BY ft DESC`;
+};
+
+export const selectTopFtEarners = (
+  first: number,
+  offset: number = 0
+): string => {
+  return `
+  SELECT
+    address,
+    sum(ft) AS "ft"
+  FROM (
+    SELECT
+      owner AS "address",
+      (coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time) as "ft"
+    FROM ${pilotSessionsTable}
+    UNION ALL
+    SELECT
+      recipient AS "address",
+      amount AS "ft"
+    FROM ${ftRewardsTable}
+  )
+  GROUP BY address
+  ORDER BY ft DESC
+  LIMIT ${first}
+  OFFSET ${offset}`;
 };
 
 export const selectPilotSessionsForPilot = (

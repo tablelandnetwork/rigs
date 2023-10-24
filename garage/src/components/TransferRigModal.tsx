@@ -14,20 +14,19 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { WarningTwoIcon } from "@chakra-ui/icons";
-import { ethers } from "ethers";
 import {
   useAccount,
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { Rig } from "../types";
-import { isValidAddress, as0xString } from "../utils/types";
+import { Rig } from "~/types";
+import { isValidAddress, as0xString } from "~/utils/types";
+import { mainChain, deployment } from "~/env";
+import { abi } from "~/abis/TablelandRigs";
+import { ChainAwareButton } from "./ChainAwareButton";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { mainChain, deployment } from "../env";
-import { abi } from "../abis/TablelandRigs";
-import { ChainAwareButton } from "./ChainAwareButton";
 
 const { contractAddress } = deployment;
 

@@ -36,31 +36,31 @@ import {
   DropdownIndicatorProps,
   chakraComponents,
 } from "chakra-react-select";
+import debounce from "lodash/debounce";
 import {
   useContractWrite,
   usePrepareContractWrite,
   useWaitForTransaction,
 } from "wagmi";
-import { useAccount } from "../hooks/useAccount";
+import { useAccount } from "~/hooks/useAccount";
 import {
   useOwnedNFTs,
   Collection,
   NFT,
   alchemy,
   toCollection,
-} from "../hooks/useNFTs";
-import debounce from "lodash/debounce";
-import { useActivePilotSessions } from "../hooks/useActivePilotSessions";
-import { Rig, WalletAddress } from "../types";
+} from "~/hooks/useNFTs";
+import { useActivePilotSessions } from "~/hooks/useActivePilotSessions";
+import { Rig, WalletAddress } from "~/types";
+import { mainChain, deployment } from "~/env";
+import { abi } from "~/abis/TablelandRigs";
+import { copySet, toggleInSet } from "~/utils/set";
+import { pluralize } from "~/utils/fmt";
+import { isPresent, isValidAddress, as0xString } from "~/utils/types";
+import unknownPilot from "~/assets/unknown-pilot.svg";
 import { ChainAwareButton } from "./ChainAwareButton";
 import { TransactionStateAlert } from "./TransactionStateAlert";
 import { RigDisplay } from "./RigDisplay";
-import { mainChain, deployment } from "../env";
-import { abi } from "../abis/TablelandRigs";
-import { copySet, toggleInSet } from "../utils/set";
-import { pluralize } from "../utils/fmt";
-import { isPresent, isValidAddress, as0xString } from "../utils/types";
-import unknownPilot from "../assets/unknown-pilot.svg";
 
 const { contractAddress } = deployment;
 
