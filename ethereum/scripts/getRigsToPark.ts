@@ -153,6 +153,7 @@ async function main() {
     {
       headers: {
         accept: "application/json",
+        "X-Looks-Api-Key": process.env.LOOKSRARE_API_KEY!,
       },
     }
   );
