@@ -26,9 +26,10 @@ import {
   useWaitForTransaction,
 } from "wagmi";
 import { as0xString } from "~/utils/types";
-import { deployment } from "~/env";
+import { deployment, secondaryChain } from "~/env";
 import { abi } from "~/abis/VotingRegistry";
 import { TransactionStateAlert } from "./TransactionStateAlert";
+import { ChainAwareButton } from "./ChainAwareButton";
 
 const { votingContractAddress } = deployment;
 
@@ -72,6 +73,7 @@ export const CreateProposalModal = ({
     name !== "" && startBlock > 0 && endBlock > 0 && options.length > 0;
 
   const { config } = usePrepareContractWrite({
+    chainId: secondaryChain.id,
     address: as0xString(votingContractAddress),
     abi,
     functionName: "createProposal",
@@ -292,13 +294,14 @@ export const CreateProposalModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={secondaryChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={!isValid || isLoading || isSuccess}
           >
             Create
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             onClick={onClose}
