@@ -18,6 +18,7 @@ import { Pilots } from "./modules/Pilots";
 import { FTRewards } from "./modules/FTRewards";
 import { Votes } from "./modules/Votes";
 import { MBContributions } from "./modules/MBContributions";
+import { mainChain } from "~/env";
 
 const GRID_GAP = 4;
 
@@ -53,6 +54,7 @@ export const OwnerDetails = () => {
   const { contributions } = useOwnerContributions(owner);
 
   const { data: ens } = useEnsName({
+    chainId: mainChain.id,
     address: isValidAddress(owner) ? owner : undefined,
   });
 

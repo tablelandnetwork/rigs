@@ -67,6 +67,7 @@ const NFTHeader = ({
   });
 
   const { data: ens } = useEnsName({
+    chainId: mainChain.id,
     address: isValidAddress(owner) ? owner : undefined,
   });
 
