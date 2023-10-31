@@ -228,7 +228,7 @@ export const PilotDetails = () => {
     return !!address && address.toLowerCase() === owner?.toLowerCase();
   }, [address, owner]);
 
-  const { data: currentBlockNumber } = useBlockNumber();
+  const { data: currentBlockNumber } = useBlockNumber({ chainId: mainChain.id });
 
   return (
     <Flex

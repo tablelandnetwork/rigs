@@ -143,7 +143,7 @@ const isSelectable = (rig: Rig, selectable: Selectable): boolean => {
 export const RigsInventory = (props: React.ComponentProps<typeof Box>) => {
   const { actingAsAddress } = useAccount();
   const { rigs, refresh } = useOwnedRigs(actingAsAddress);
-  const { data: currentBlockNumber } = useBlockNumber();
+  const { data: currentBlockNumber } = useBlockNumber({ chainId: mainChain.id });
   const pilots = useMemo(() => {
     if (!rigs) return;
 

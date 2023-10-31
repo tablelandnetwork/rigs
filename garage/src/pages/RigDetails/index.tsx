@@ -265,7 +265,9 @@ const FilecoinDealsModal = ({
 export const RigDetails = () => {
   const { id } = useParams();
   const { actingAsAddress } = useAccount();
-  const { data: currentBlockNumber } = useBlockNumber();
+  const { data: currentBlockNumber } = useBlockNumber({
+    chainId: mainChain.id,
+  });
   const { rig, refresh: refreshRig } = useRig(id || "");
 
   const { data: contractData, refetch } = useContractReads({

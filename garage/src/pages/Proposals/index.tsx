@@ -19,6 +19,7 @@ import {
   proposalStatus,
   ProposalStatusBadge,
 } from "~/components/ProposalStatusBadge";
+import { secondaryChain } from "~/env";
 
 const GRID_GAP = 4;
 
@@ -34,12 +35,12 @@ type ModuleProps = React.ComponentProps<typeof Box> & {
 };
 
 const Information = ({ proposal, ...props }: ModuleProps) => {
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber } = useBlockNumber({ chainId: secondaryChain.id });
 
-  const status = useMemo(() => proposalStatus(blockNumber, proposal), [
-    blockNumber,
-    proposal,
-  ]);
+  const status = useMemo(
+    () => proposalStatus(blockNumber, proposal),
+    [blockNumber, proposal]
+  );
 
   const startsIn = proposal.startBlock - Number(blockNumber ?? 0);
   const endsIn = proposal.endBlock - Number(blockNumber ?? 0);
@@ -110,9 +111,7 @@ export const Proposals = () => {
               {...MODULE_PROPS}
             />
           ))}
-        {proposals?.length === 0 && (
-          <Box {...MODULE_PROPS}>Coming soon.</Box>
-        )}
+        {proposals?.length === 0 && <Box {...MODULE_PROPS}>Coming soon.</Box>}
       </VStack>
     </Flex>
   );
