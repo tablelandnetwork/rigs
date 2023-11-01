@@ -202,13 +202,14 @@ export const ParkRigsModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={mainChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={isLoading || isSuccess}
           >
             Park {pluralize("rig", rigs)}
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             isDisabled={isLoading || (isSuccess && isTxLoading)}

@@ -50,6 +50,7 @@ import { ProposalWithOptions, ProposalStatus } from "~/types";
 import { deployment, secondaryChain } from "~/env";
 import { abi } from "~/abis/VotingRegistry";
 import { useWaitForTablelandTxn } from "~/hooks/useWaitForTablelandTxn";
+import { ChainAwareButton } from "~/components/ChainAwareButton";
 
 const ipfsGatewayBaseUrl = "https://nftstorage.link";
 
@@ -272,7 +273,8 @@ const CastVote = ({
             {weightSum}%.
           </Alert>
         )}
-        <Button
+        <ChainAwareButton
+          expectedChain={secondaryChain}
           mt={2}
           isDisabled={
             status !== ProposalStatus.Open ||
@@ -285,7 +287,7 @@ const CastVote = ({
           width="100%"
         >
           {userHasVoted ? "Update Vote" : "Vote"}
-        </Button>
+        </ChainAwareButton>
       </Box>
     </VStack>
   );

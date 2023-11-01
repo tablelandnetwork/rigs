@@ -24,6 +24,7 @@ import { secondaryChain, deployment } from "~/env";
 import { abi } from "~/abis/MissionsManager";
 import { useWaitForTablelandTxn } from "~/hooks/useWaitForTablelandTxn";
 import { TransactionStateAlert } from "./TransactionStateAlert";
+import { ChainAwareButton } from "./ChainAwareButton";
 
 const { missionContractAddress } = deployment;
 
@@ -139,13 +140,14 @@ export const SubmitMissionModal = ({
           <TransactionStateAlert {...contractWrite} />
         </ModalBody>
         <ModalFooter>
-          <Button
+          <ChainAwareButton
+            expectedChain={secondaryChain}
             mr={3}
             onClick={() => (write ? write() : undefined)}
             isDisabled={!isValid || isLoading || isSuccess}
           >
             Submit
-          </Button>
+          </ChainAwareButton>
           <Button
             variant="ghost"
             onClick={onClose}
