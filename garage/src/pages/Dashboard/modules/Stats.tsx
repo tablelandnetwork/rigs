@@ -38,6 +38,7 @@ import {
 import { useNFTCollections, Collection } from "~/hooks/useNFTs";
 import { prettyNumber, truncateWalletAddress } from "~/utils/fmt";
 import { isValidAddress } from "~/utils/types";
+import { mainChain } from "~/env";
 
 const StatItem = ({ name, value }: { name: string; value: number }) => {
   return (
@@ -118,7 +119,7 @@ const FTLeaderboard = ({
 }: {
   data: { address: string; ft: number }[];
 }) => {
-  const publicClient = usePublicClient();
+  const publicClient = usePublicClient({ chainId: mainChain.id });
 
   const [ensNames, setEnsNames] = useState<Record<string, string>>({});
 
