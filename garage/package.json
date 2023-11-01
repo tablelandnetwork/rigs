@@ -27,7 +27,7 @@
     "react-markdown": "^8.0.7",
     "react-query": "^3.39.3",
     "react-router-dom": "^6.17.0",
-    "remark-gfm": "^3.0.1",
+    "remark-gfm": "^4.0.0",
     "viem": "~1.16.6",
     "wagmi": "~1.4.5"
   },
