@@ -90,7 +90,7 @@ const CastVote = ({
 
   const { votingPower } = useAddressVotingPower(address, proposal.id);
 
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber } = useBlockNumber({ chainId: secondaryChain.id });
   const [votes, setVotes] = useState<VoteState>({});
 
   const isEligible = (votingPower ?? 0) > 0;
@@ -470,7 +470,7 @@ const Votes = ({
 };
 
 const Results = ({ proposal, results, refresh, ...props }: ModuleProps) => {
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber } = useBlockNumber({ chainId: secondaryChain.id });
 
   const totalResults = results.reduce((acc, { result }) => acc + result, 0);
 
@@ -574,8 +574,7 @@ const Header = ({ proposal, results, refresh, ...props }: ModuleProps) => {
 
 export const Proposal = () => {
   const { id } = useParams();
-
-  const { data: blockNumber } = useBlockNumber();
+  const { data: blockNumber } = useBlockNumber({ chainId: secondaryChain.id });
   const {
     data: { proposal, votes, results },
     refresh,

@@ -88,7 +88,7 @@ export const Pilots = ({
   p,
   ...props
 }: PilotProps) => {
-  const { data: blockNumber, refetch } = useBlockNumber();
+  const { data: blockNumber, refetch } = useBlockNumber({ chainId: mainChain.id });
   useEffect(() => {
     refetch();
   }, [rig, refetch]);
