@@ -20,7 +20,7 @@ require (
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.2
 	github.com/textileio/go-tableland v1.6.4-0.20230705172703-438fcf027e8a
-	golang.org/x/image v0.7.0
+	golang.org/x/image v0.10.0
 )
 
 require (
@@ -159,7 +159,7 @@ require (
 	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
 	golang.org/x/sys v0.6.0 // indirect
-	golang.org/x/text v0.9.0 // indirect
+	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
