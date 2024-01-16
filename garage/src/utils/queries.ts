@@ -303,12 +303,12 @@ export const selectTopFtEarners = (
     sum(ft) AS "ft"
   FROM (
     SELECT
-      owner AS "address",
+      lower(owner) AS "address",
       (coalesce(end_time, BLOCK_NUM(${chain.id})) - start_time) as "ft"
     FROM ${pilotSessionsTable}
     UNION ALL
     SELECT
-      recipient AS "address",
+      lower(recipient) AS "address",
       amount AS "ft"
     FROM ${ftRewardsTable}
   )
