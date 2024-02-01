@@ -16,7 +16,7 @@
     "@rainbow-me/rainbowkit": "^1.1.3",
     "@tableland/rigs": "^0.3.3",
     "@tableland/sdk": "^4.5.3",
-    "alchemy-sdk": "^2.10.1",
+    "alchemy-sdk": "^3.1.2",
     "chakra-react-select": "^4.7.6",
     "delegatecash": "^0.4.6",
     "ethers": "^5.7.2",
