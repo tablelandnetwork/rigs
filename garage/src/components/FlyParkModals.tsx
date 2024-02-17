@@ -271,7 +271,9 @@ const PilotTransactionStep = ({
     enabled: isOpen,
   });
 
-  const { sessions } = useActivePilotSessions(pairs.map((v) => v.pilot));
+  const { sessions } = useActivePilotSessions(
+    pairs.map((v) => v.pilot).filter(isPresent)
+  );
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write, reset } = contractWrite;
