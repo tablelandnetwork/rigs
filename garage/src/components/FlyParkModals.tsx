@@ -724,8 +724,9 @@ export const PilotRigsModal = ({
   const setPilot = useCallback(
     (pilot: NFT, rigId: string) => {
       setPilots((old) => {
-        const update = { ...old };
-        update[rigId] = pilot;
+        let update = { ...old };
+        if (update[rigId] === pilot) delete update[rigId];
+        else update[rigId] = pilot;
         return update;
       });
     },
