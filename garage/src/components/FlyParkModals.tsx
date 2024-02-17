@@ -697,13 +697,7 @@ const PickRigPilotStep = ({
         </Flex>
       </ModalBody>
       <ModalFooter>
-        <Button
-          mr={3}
-          onClick={onNext}
-          isDisabled={
-            rigs.length === 0 || Object.keys(pilots).length !== rigs.length
-          }
-        >
+        <Button mr={3} onClick={onNext} isDisabled={rigs.length === 0}>
           Pilot {pluralize("rig", rigs)}
         </Button>
         <Button variant="ghost" onClick={onClose} isDisabled={false}>
