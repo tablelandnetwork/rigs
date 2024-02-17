@@ -275,6 +275,11 @@ const PilotTransactionStep = ({
     pairs.map((v) => v.pilot).filter(isPresent)
   );
 
+  const trainerToTrainerUpdates = pairs.filter(
+    (v) => v.rig.currentPilot && !v.rig.currentPilot.contract && !v.pilot
+  );
+  const hasTrainerToTrainerUpdates = trainerToTrainerUpdates.length > 0;
+
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write, reset } = contractWrite;
   const { isLoading: isTxLoading } = useWaitForTransaction({
@@ -305,6 +310,36 @@ const PilotTransactionStep = ({
           button below your wallet will request that you sign a transaction that
           will cost gas.
         </Text>
+        {hasTrainerToTrainerUpdates && (
+          <Box my={8}>
+            <Heading as="h2" mb={3} color="red">
+              ERROR!
+            </Heading>
+            <Text mb={2}>
+              The following Rigs have no pilot selected and are already
+              in-flight with the default pilot. Select a new pilot for these
+              rigs or select different rigs to pilot.
+            </Text>
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>Rig</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {trainerToTrainerUpdates
+                  .map((v) => v.rig)
+                  .map(({ id }, index) => {
+                    return (
+                      <Tr key={`error-${index}`}>
+                        <Td>{id}</Td>
+                      </Tr>
+                    );
+                  })}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
         {!sessions && <Spinner />}
         {sessions && sessions.length > 0 && (
           <Box my={8}>
@@ -346,7 +381,9 @@ const PilotTransactionStep = ({
           expectedChain={mainChain}
           mr={3}
           onClick={() => (write ? write() : undefined)}
-          isDisabled={isLoading || isSuccess || !sessions}
+          isDisabled={
+            hasTrainerToTrainerUpdates || isLoading || isSuccess || !sessions
+          }
         >
           Pilot {pluralize("rig", pairs)}
         </ChainAwareButton>
