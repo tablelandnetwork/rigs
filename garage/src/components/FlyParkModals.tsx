@@ -224,25 +224,27 @@ export const ParkRigsModal = ({
 };
 
 interface PilotTransactionProps {
-  pairs: { rig: Rig; pilot: NFT }[];
+  pairs: { rig: Rig; pilot?: NFT }[];
   isOpen: boolean;
   onClose: () => void;
   onTransactionSubmitted?: (txHash: string) => void;
 }
 
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000" as const;
+
 const toContractArgs = (
-  pairs: { rig: Rig; pilot: NFT }[]
+  pairs: { rig: Rig; pilot?: NFT }[]
 ): [bigint[], WalletAddress[], bigint[]] => {
   const validPairs = pairs
     .map(({ pilot, ...rest }) => {
-      if (isValidAddress(pilot.contract)) {
+      if (pilot && isValidAddress(pilot.contract)) {
         return {
           ...rest,
           pilotContract: pilot.contract,
           pilotTokenId: pilot.tokenId,
         };
       }
-      return null;
+      return { ...rest, pilotContract: ZERO_ADDR, pilotTokenId: 0 };
     })
     .filter(isPresent);
 
