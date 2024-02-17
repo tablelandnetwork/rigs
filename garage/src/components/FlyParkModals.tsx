@@ -583,6 +583,11 @@ const PickRigPilotStep = ({
   return (
     <>
       <ModalBody>
+        <Text mb={4}>
+          Trained Rigs can use any ERC721 token that you own as their pilot.
+          Select custom pilots for the Rigs you've selected below, or click the
+          Pilot Rigs button to use the default trainer pilot.
+        </Text>
         <Flex direction="column">
           <Flex justify="center" align="center" width="100%">
             {displayArrows && (
