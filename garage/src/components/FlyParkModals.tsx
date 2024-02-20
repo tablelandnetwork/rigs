@@ -224,25 +224,27 @@ export const ParkRigsModal = ({
 };
 
 interface PilotTransactionProps {
-  pairs: { rig: Rig; pilot: NFT }[];
+  pairs: { rig: Rig; pilot?: NFT }[];
   isOpen: boolean;
   onClose: () => void;
   onTransactionSubmitted?: (txHash: string) => void;
 }
 
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000" as const;
+
 const toContractArgs = (
-  pairs: { rig: Rig; pilot: NFT }[]
+  pairs: { rig: Rig; pilot?: NFT }[]
 ): [bigint[], WalletAddress[], bigint[]] => {
   const validPairs = pairs
     .map(({ pilot, ...rest }) => {
-      if (isValidAddress(pilot.contract)) {
+      if (pilot && isValidAddress(pilot.contract)) {
         return {
           ...rest,
           pilotContract: pilot.contract,
           pilotTokenId: pilot.tokenId,
         };
       }
-      return null;
+      return { ...rest, pilotContract: ZERO_ADDR, pilotTokenId: 0 };
     })
     .filter(isPresent);
 
@@ -269,7 +271,14 @@ const PilotTransactionStep = ({
     enabled: isOpen,
   });
 
-  const { sessions } = useActivePilotSessions(pairs.map((v) => v.pilot));
+  const { sessions } = useActivePilotSessions(
+    pairs.map((v) => v.pilot).filter(isPresent)
+  );
+
+  const trainerToTrainerUpdates = pairs.filter(
+    (v) => v.rig.currentPilot && !v.rig.currentPilot.contract && !v.pilot
+  );
+  const hasTrainerToTrainerUpdates = trainerToTrainerUpdates.length > 0;
 
   const contractWrite = useContractWrite(config);
   const { isLoading, isSuccess, write, reset } = contractWrite;
@@ -301,6 +310,36 @@ const PilotTransactionStep = ({
           button below your wallet will request that you sign a transaction that
           will cost gas.
         </Text>
+        {hasTrainerToTrainerUpdates && (
+          <Box my={8}>
+            <Heading as="h2" mb={3} color="red">
+              ERROR!
+            </Heading>
+            <Text mb={2}>
+              The following Rigs have no pilot selected and are already
+              in-flight with the default pilot. Select a new pilot for these
+              rigs or select different rigs to pilot.
+            </Text>
+            <Table>
+              <Thead>
+                <Tr>
+                  <Th>Rig</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {trainerToTrainerUpdates
+                  .map((v) => v.rig)
+                  .map(({ id }, index) => {
+                    return (
+                      <Tr key={`error-${index}`}>
+                        <Td>{id}</Td>
+                      </Tr>
+                    );
+                  })}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
         {!sessions && <Spinner />}
         {sessions && sessions.length > 0 && (
           <Box my={8}>
@@ -342,7 +381,9 @@ const PilotTransactionStep = ({
           expectedChain={mainChain}
           mr={3}
           onClick={() => (write ? write() : undefined)}
-          isDisabled={isLoading || isSuccess || !sessions}
+          isDisabled={
+            hasTrainerToTrainerUpdates || isLoading || isSuccess || !sessions
+          }
         >
           Pilot {pluralize("rig", pairs)}
         </ChainAwareButton>
@@ -579,6 +620,11 @@ const PickRigPilotStep = ({
   return (
     <>
       <ModalBody>
+        <Text mb={4}>
+          Trained Rigs can use any ERC721 token that you own as their pilot.
+          Select custom pilots for the Rigs you've selected below, or click the
+          Pilot Rigs button to use the default trainer pilot.
+        </Text>
         <Flex direction="column">
           <Flex justify="center" align="center" width="100%">
             {displayArrows && (
@@ -697,13 +743,7 @@ const PickRigPilotStep = ({
         </Flex>
       </ModalBody>
       <ModalFooter>
-        <Button
-          mr={3}
-          onClick={onNext}
-          isDisabled={
-            rigs.length === 0 || Object.keys(pilots).length !== rigs.length
-          }
-        >
+        <Button mr={3} onClick={onNext} isDisabled={rigs.length === 0}>
           Pilot {pluralize("rig", rigs)}
         </Button>
         <Button variant="ghost" onClick={onClose} isDisabled={false}>
@@ -724,8 +764,9 @@ export const PilotRigsModal = ({
   const setPilot = useCallback(
     (pilot: NFT, rigId: string) => {
       setPilots((old) => {
-        const update = { ...old };
-        update[rigId] = pilot;
+        let update = { ...old };
+        if (update[rigId] === pilot) delete update[rigId];
+        else update[rigId] = pilot;
         return update;
       });
     },

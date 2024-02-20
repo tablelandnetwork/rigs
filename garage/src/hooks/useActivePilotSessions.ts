@@ -11,6 +11,11 @@ export const useActivePilotSessions = (
   const [sessions, setSessions] = useState<PilotSessionWithRigId[]>();
 
   useEffect(() => {
+    if (!pilots.length) {
+      setSessions([]);
+      return;
+    }
+
     let isCancelled = false;
 
     db.prepare(selectActivePilotSessionsForPilots(pilots))
