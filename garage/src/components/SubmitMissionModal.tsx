@@ -60,12 +60,15 @@ export const SubmitMissionModal = ({
     deliverables.length === mission.deliverables.length &&
     !deliverables.map(({ value }) => value).some(isEmpty);
 
+  const sanitizeDeliverables = deliverables.map(({ key, value }) => ({
+    [key]: value.replace(/\'/g, "''"),
+  }));
   const { config } = usePrepareContractWrite({
     chainId: secondaryChain.id,
     address: as0xString(missionContractAddress),
     abi,
     functionName: "submitMissionContribution",
-    args: [BigInt(mission.id), JSON.stringify(deliverables)],
+    args: [BigInt(mission.id), JSON.stringify(sanitizeDeliverables)],
     enabled: isOpen && isValid,
   });
 
