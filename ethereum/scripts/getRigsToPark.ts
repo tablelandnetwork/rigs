@@ -3,18 +3,30 @@ import { Database } from "@tableland/sdk";
 
 const db = new Database();
 
-// Blur API response
-type BlurRig = {
-  id: string; // Rig tokenId
-  isSuspicious: boolean;
-  owner: string;
-  contractAddress: string;
-  tokenId: string;
-  imageUrl: string;
-  price: string;
-  priceUnit: string;
-  createdAt: string;
-  updatedAt: string;
+// Type Simplehash Blur rigs
+type SimplehashBlurRig = {
+  id: string;
+  permalink: string;
+  bundle_item_number: string | null;
+  listing_timestamp: string;
+  expiration_timestamp: string | null;
+  seller_address: string;
+  auction_type: string | null;
+  quantity: number;
+  quantity_remaining: number;
+  price: number;
+  marketplace_id: string;
+  order_hash: string | null;
+  collection_id: string;
+  nft_id: string; // Token ID as suffix: `ethereum.0x8eaa9ae1ac89b1c8c8a8104d08c045f78aadb42d.2359`
+  payment_token: {
+    payment_token_id: string;
+    name: string;
+    symbol: string;
+    address: string | null;
+    decimals: number;
+  };
+  is_private: boolean;
 };
 
 // OpenSea API response
@@ -117,21 +129,19 @@ async function main() {
 
   // Get listings on Blur
   const blurReq = await fetch(
-    "https://openblur.p.rapidapi.com/listings?" +
+    `https://api.simplehash.com/api/v0/nfts/listings/ethereum/${rigsDeployment.contractAddress}` +
       new URLSearchParams({
-        contractAddress: rigsDeployment.contractAddress.toLowerCase(),
-        orderBy: "ASC",
-        pageSize: "100",
+        marketplaces: "blur",
+        limit: "50", // Note: max is 50 listings; we can assume this won't be exceeded on a single marketplace
       }),
     {
       headers: {
-        "X-RapidAPI-Key": process.env.OPENBLUR_API_KEY!,
-        "X-RapidAPI-Host": "openblur.p.rapidapi.com",
+        "X-API-KEY": process.env.OPENBLUR_API_KEY!,
       },
     }
   );
   const blurRes = await blurReq.json();
-  const blurListed: BlurRig[] = blurRes.items || [];
+  const blurListed: SimplehashBlurRig[] = blurRes.listings || [];
 
   // Get listings on OpenSea
   const osSlug = "tableland-rigs"; // Must query by OS slug, not contract address
@@ -162,7 +172,9 @@ async function main() {
 
   // Check if Rigs are in-flight on each marketplace
   const blurIds = blurListed.map((l) => {
-    return parseInt(l.tokenId);
+    // Parse tokenId from nft_id (e.g. `2359` from `ethereum.<contract>.2359`)
+    const tokenId = l.nft_id.split(".")[2];
+    return parseInt(tokenId);
   });
   const osIds =
     osListed.map((l) => {
