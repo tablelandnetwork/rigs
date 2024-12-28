@@ -3,8 +3,7 @@ import { Database } from "@tableland/sdk";
 
 const db = new Database();
 
-// Type Simplehash Blur rigs
-type SimplehashBlurRig = {
+type Rig = {
   id: string;
   permalink: string;
   bundle_item_number: string | null;
@@ -29,75 +28,11 @@ type SimplehashBlurRig = {
   is_private: boolean;
 };
 
-// OpenSea API response
-type OsRig = {
-  order_hash: string;
-  chain: string;
-  type: string;
-  price: {
-    current: {
-      currency: string;
-      decimals: number;
-      value: string;
-    };
-  };
-  protocol_data: {
-    parameters: {
-      offerer: string;
-      offer: Array<{
-        itemType: number;
-        token: string;
-        identifierOrCriteria: string; // Rig tokenId
-        startAmount: string;
-        endAmount: string;
-      }>;
-      consideration: Array<{
-        itemType: number;
-        token: string;
-        identifierOrCriteria: string;
-        startAmount: string;
-        endAmount: string;
-        recipient: string;
-      }>;
-      startTime: string;
-      endTime: string;
-      orderType: number;
-      zone: string;
-      zoneHash: string;
-      salt: string;
-      conduitKey: string;
-      totalOrginalConsiderationItems: number;
-      counter: number;
-    };
-    signature: string | null;
-  };
-  protocol_address: string;
-};
-
-// LooksRare API
-type LooksRareRig = {
-  id: string;
-  hash: string;
-  quoteType: number;
-  globalNonce: string;
-  subsetNonce: string;
-  orderNonce: string;
-  collection: string;
-  currency: string;
-  signer: string;
-  strategyId: number;
-  collectionType: number;
-  startTime: number;
-  endTime: number;
-  price: string;
-  additionalParameters: string;
-  signature: string;
-  createdAt: string;
-  merkleRoot: null;
-  merkleProof: null;
-  amounts: Array<string>;
-  itemIds: Array<string>; // Rig tokenId
-  status: string;
+type Res = {
+  next_cursor: string | null;
+  next: string | null;
+  previous: string | null;
+  listings: Rig[];
 };
 
 async function getInFlight(rigIds: number[]): Promise<number[]> {
@@ -116,6 +51,27 @@ async function getInFlight(rigIds: number[]): Promise<number[]> {
   return ids;
 }
 
+async function getListedRigs(nextCursor?: string): Promise<Res> {
+  const params = new URLSearchParams({
+    limit: "50",
+  });
+  if (nextCursor) {
+    params.append("cursor", nextCursor);
+  }
+  const req = await fetch(
+    `https://api.simplehash.com/api/v0/nfts/listings/ethereum/${rigsDeployment.contractAddress}?` +
+      params,
+    {
+      headers: {
+        accept: "application/json",
+        "X-API-KEY": process.env.SIMPLEHASH_API_KEY!,
+      },
+    }
+  );
+  const res: Res = await req.json();
+  return res;
+}
+
 async function main() {
   console.log(
     `\nGetting listed rigs that are in-flight on '${network.name}'...`
@@ -127,71 +83,29 @@ async function main() {
   }
   console.log(`Using address '${rigsDeployment.contractAddress}'`);
 
-  // Get listings on Blur
-  const blurReq = await fetch(
-    `https://api.simplehash.com/api/v0/nfts/listings/ethereum/${rigsDeployment.contractAddress}` +
-      new URLSearchParams({
-        marketplaces: "blur",
-        limit: "50", // Note: max is 50 listings; we can assume this won't be exceeded on a single marketplace
-      }),
-    {
-      headers: {
-        "X-API-KEY": process.env.OPENBLUR_API_KEY!,
-      },
+  let listed: Rig[] = [];
+  let nextCursor: string | null = null;
+  do {
+    let res: Res;
+    if (!nextCursor) {
+      res = await getListedRigs();
+    } else {
+      res = await getListedRigs(nextCursor);
     }
-  );
-  const blurRes = await blurReq.json();
-  const blurListed: SimplehashBlurRig[] = blurRes.listings || [];
+    listed = [...listed, ...(res.listings || [])];
+    nextCursor = res.next_cursor;
+  } while (nextCursor);
 
-  // Get listings on OpenSea
-  const osSlug = "tableland-rigs"; // Must query by OS slug, not contract address
-  const osReq = await fetch(
-    `https://api.opensea.io/v2/listings/collection/${osSlug}/all`,
-    {
-      headers: {
-        accept: "application/json",
-        "X-API-KEY": process.env.OPENSEA_API_KEY!,
-      },
-    }
-  );
-  const osRes = await osReq.json();
-  const osListed: OsRig[] = osRes.listings;
-
-  // Get listings on LooksRare
-  const lrReq = await fetch(
-    `https://api.looksrare.org/api/v2/orders?quoteType=1&collection=${rigsDeployment.contractAddress}&status=VALID`,
-    {
-      headers: {
-        accept: "application/json",
-        "X-Looks-Api-Key": process.env.LOOKSRARE_API_KEY!,
-      },
-    }
-  );
-  const lrRes = await lrReq.json();
-  const lrListed: LooksRareRig[] = lrRes.data;
-
-  // Check if Rigs are in-flight on each marketplace
-  const blurIds = blurListed.map((l) => {
+  // Check if Rigs are in-flight
+  const ids = listed.map((l) => {
     // Parse tokenId from nft_id (e.g. `2359` from `ethereum.<contract>.2359`)
     const tokenId = l.nft_id.split(".")[2];
     return parseInt(tokenId);
   });
-  const osIds =
-    osListed.map((l) => {
-      return parseInt(l.protocol_data.parameters.offer[0].identifierOrCriteria);
-    }) || [];
-  const lrIds =
-    lrListed.map((l) => {
-      return parseInt(l.itemIds[0]);
-    }) || [];
-  const blurToPark = await getInFlight(blurIds);
-  const osToPark = await getInFlight(osIds);
-  const lrToPark = await getInFlight(lrIds);
+  const toPark = await getInFlight(ids);
   console.log(
     `----\nForce park Rigs:\n`,
-    `Blur: ${blurToPark.length > 0 ? blurToPark.join(",") : "none"}\n`,
-    `OpenSea: ${osToPark.length > 0 ? osToPark.join(",") : "none"}\n`,
-    `LooksRare: ${lrToPark.length > 0 ? lrToPark.join(",") : "none"}`
+    `IDs: ${toPark.length > 0 ? toPark.join(",") : "none"}\n`
   );
 }
 
