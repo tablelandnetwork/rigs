@@ -213,6 +213,14 @@ That metadata URL is unique in that it requires the token ID be inserted into th
 
 Both of these challenges were solved by a custom `onlyOwner` contract function we added called `setURITemplate(string[] memory uriTemplate)`. This allows the caller to provide the two parts of the URL string (the "template") to be wrapped around the token ID, the resulting URL string being returned from `tokenURI(uint256 tokenId)`. Since this function can be called repeatedly, we were able to update the URL template from the version that hides metadata attributes to the one that returns them. As mentioned above, there's a script called [setURITemplate.ts](./ethereum/scripts/setURITemplate.ts) that builds the URI template query from Tableland tables specified in the [Hardhat config file](./ethereum/hardhat.config.ts).
 
+## Pilots (retired)
+
+Rigs used to have a "Garage" where owners could train their Rig and fly it with a pilot (any ERC-721 they owned). Pilot state lived in [`TablelandRigPilots.sol`](./ethereum/contracts/TablelandRigPilots.sol), sessions were written to a Tableland table, and a Rig could not be sold on a marketplace while it was in flight.
+
+That feature has been retired. `TablelandRigs` no longer calls the Pilots contract: there is no transfer lock, and the `trainRig`, `pilotRig`, `parkRig`, `parkRigAsOwner`, `parkRigAsAdmin`, `safeTransferWhileFlying`, `pilotInfo`, `pilotSessionsTable`, `initPilots`, `admin` and `setAdmin` methods have been removed. The storage slots they used are kept so the proxy can be upgraded in place. `refreshMetadata()` (owner only) emits an ERC-4906 `BatchMetadataUpdate` for every Rig so marketplaces re-fetch metadata.
+
+Token metadata is now served as static JSON from [tablelandnetwork/rigs-static](https://github.com/tablelandnetwork/rigs-static) via `setURITemplate`, so the Tableland query described above is historical.
+
 ## Development
 
 ### Building the client

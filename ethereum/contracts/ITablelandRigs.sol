@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity >=0.8.10 <0.9.0;
 
-import "./ITablelandRigPilots.sol";
-
 /**
  * @dev Interface of a TablelandRigs compliant contract.
  */
@@ -159,204 +157,14 @@ interface ITablelandRigs {
     function setRoyaltyReceiver(address receiver) external;
 
     /**
-     * @dev Returns the admin.
-     */
-    function admin() external view returns (address);
-
-    /**
-     * @dev Sets the admin address.
-     *
-     * admin - the new admin address
+     * @dev Emits an ERC-4906 `BatchMetadataUpdate` covering every minted Rig
+     * so marketplaces re-fetch all token metadata.
      *
      * Requirements:
      *
      * - `msg.sender` must be contract owner
      */
-    function setAdmin(address admin) external;
-
-    /**
-     * @dev Initializes Rig pilots by creating the pilot sessions table.
-     *
-     * pilotsAddress - `ITablelandRigPilots` contract address
-     *
-     * Requirements:
-     *
-     * - `msg.sender` must be contract owner
-     */
-    function initPilots(address pilotsAddress) external;
-
-    /**
-     * @dev Returns the Tableland table name for the pilot sessions table.
-     */
-    function pilotSessionsTable() external view returns (string memory);
-
-    /**
-     * @dev Retrieves pilot info for a Rig.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     */
-    function pilotInfo(
-        uint256 tokenId
-    ) external view returns (ITablelandRigPilots.PilotInfo memory);
-
-    /**
-     * @dev Retrieves pilot info for multiple Rigs.
-     *
-     * tokenIds - the unique Rig token identifiers
-     *
-     * Requirements:
-     *
-     * - `tokenIds` must exist
-     */
-    function pilotInfo(
-        uint256[] calldata tokenIds
-    ) external view returns (ITablelandRigPilots.PilotInfo[] memory);
-
-    /**
-     * @dev Trains a single Rig for a period of 30 days, putting it in-flight.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - pilot status must be valid (`UNTRAINED`)
-     */
-    function trainRig(uint256 tokenId) external;
-
-    /**
-     * @dev Puts multiple Rigs in training.
-     *
-     * tokenIds - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - Input array of `tokenIds` must be non-empty
-     * - `msg.sender` must own the Rig
-     * - There cannot exist a duplicate value in `tokenIds`
-     * - Values are processed in order
-     * - See `trainRig` for additional constraints on a per-token basis
-     */
-    function trainRig(uint256[] calldata tokenIds) external;
-
-    /**
-     * @dev Puts a single Rig in flight by setting a custom pilot.
-     *
-     * tokenId - the unique Rig token identifier
-     * pilotContract - ERC-721 contract address of a desired Rig's pilot
-     * pilotId - the unique token identifier at the target `pilotContract`
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - `msg.sender` must own the Rig
-     * - Must be trained & flying with trainer, or already trained & parked
-     * - `pilotContract` must be an ERC-721 contract *or* 0x0 to indicate a trainer pilot; cannot be the Rigs contract
-     * - `pilotId` must be owned by `msg.sender` at `pilotContract` (does not apply to trainer pilots)
-     * - Pilot can only be associated with one Rig at a time; parks the other Rig on conflict (does not apply to trainer pilots)
-     */
-    function pilotRig(
-        uint256 tokenId,
-        address pilotContract,
-        uint256 pilotId
-    ) external;
-
-    /**
-     * @dev Puts multiple Rigs in flight by setting a custom set of pilots.
-     *
-     * tokenIds - a list of unique Rig token identifiers
-     * pilotContracts - a list of ERC-721 contract addresses of a desired Rig's pilot
-     * pilotIds - a list of unique token identifiers at the target `pilotContract`
-     *
-     * Requirements:
-     *
-     * - All input parameters must be non-empty
-     * - All input parameters must have an equal length
-     * - There cannot exist a duplicate value in each of the individual parameters,
-     *   except if using a trainer pilot (i.e., trainers aren't unique/owned NFTs).
-     * - Values are processed in order (i.e., use same index for each array)
-     * - See `pilotRig` for additional constraints on a per-token basis
-     */
-    function pilotRig(
-        uint256[] calldata tokenIds,
-        address[] calldata pilotContracts,
-        uint256[] calldata pilotIds
-    ) external;
-
-    /**
-     * @dev Parks a single Rig and ends the current pilot session.
-     *
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist
-     * - pilot status must be `TRAINING` or `PILOTED`
-     * - pilot must have completed 30 days of training
-     */
-    function parkRig(uint256 tokenId) external;
-
-    /**
-     * @dev Parks multiple Rigs and ends the current pilot session.
-     *
-     * tokenIds - the unique Rig token identifiers
-     *
-     * Requirements:
-     *
-     * - Input array of `tokenIds` must be non-empty
-     * - There cannot exist a duplicate value in `tokenIds`
-     * - Values are processed in order
-     * - See `parkRig` for additional constraints on a per-token basis
-     */
-    function parkRig(uint256[] calldata tokenIds) external;
-
-    /**
-     * @dev Allows contract owner to park any Rig that may be intentionally
-     * causing buyers to lose gas on sales that can't complete while the
-     * Rig is in-flight.
-     *
-     * tokenIds - the unique Rig token identifiers
-     *
-     * Requirements:
-     *
-     * - `msg.sender` must be contract owner
-     */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external;
-
-    /**
-     * @dev Allows the admin to park any Rig that may be intentionally
-     * causing buyers to lose gas on sales that can't complete while the
-     * Rig is in-flight.
-     *
-     * tokenIds - the unique Rig token identifiers
-     *
-     * Requirements:
-     *
-     * - `msg.sender` must be the admin
-     */
-    function parkRigAsAdmin(uint256[] calldata tokenIds) external;
-
-    /**
-     * @dev Allows a token owner to transfer between accounts while in-flight
-     * but blocks transfers by an approved address or operator.
-     *
-     * from - owner of `tokenId`
-     * to - the address to transfer the token to
-     * tokenId - the unique Rig token identifier
-     *
-     * Requirements:
-     *
-     * - Caller must own `tokenId` and *cannot* be an approved address or operator
-     */
-    function safeTransferWhileFlying(
-        address from,
-        address to,
-        uint256 tokenId
-    ) external;
+    function refreshMetadata() external;
 
     /**
      * @dev Pauses minting.
