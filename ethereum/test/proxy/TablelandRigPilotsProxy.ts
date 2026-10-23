@@ -1,36 +1,49 @@
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
-import { ethers, upgrades } from "hardhat";
+import { artifacts, ethers, network, upgrades } from "hardhat";
 import { Contract, ContractFactory } from "ethers";
-import type {
-  TablelandTables,
-  TablelandRigPilots,
-} from "../../typechain-types";
+import type { TablelandRigPilots } from "../../typechain-types";
 
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
+const LOCAL_TABLELAND_ADDRESS = "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512";
+
+// The registry address used by `TablelandDeployments` on the Hardhat network.
+// It is also the address of the deployer's second deployment, so install a
+// stand-in registry there and move the deployer past that nonce.
+async function useLocalTablelandMock(deployer: SignerWithAddress) {
+  const { deployedBytecode } = await artifacts.readArtifact(
+    "TablelandTablesMock"
+  );
+  await network.provider.send("hardhat_setCode", [
+    LOCAL_TABLELAND_ADDRESS,
+    deployedBytecode,
+  ]);
+  if ((await deployer.getTransactionCount()) < 2) {
+    await network.provider.send("hardhat_setNonce", [deployer.address, "0x2"]);
+  }
+}
+
 describe("TablelandRigPilotsProxy", function () {
   let accounts: SignerWithAddress[];
   let Factory: ContractFactory;
+  let snapshot: string;
+
+  before(async function () {
+    snapshot = await network.provider.send("evm_snapshot");
+    accounts = await ethers.getSigners();
+    // `TablelandRigPilots.initialize()` creates a table through the registry
+    await useLocalTablelandMock(accounts[0]);
+  });
+
+  after(async function () {
+    await network.provider.send("evm_revert", [snapshot]);
+  });
 
   beforeEach(async function () {
-    accounts = await ethers.getSigners();
     Factory = await ethers.getContractFactory("TablelandRigPilots");
-
-    const TablelandTablesFactory = await ethers.getContractFactory(
-      "TablelandTables"
-    );
-    await (
-      (await upgrades.deployProxy(
-        TablelandTablesFactory,
-        ["https://foo.xyz/"],
-        {
-          kind: "uups",
-        }
-      )) as TablelandTables
-    ).deployed();
   });
 
   it("Should have set implementation owner to deployer address", async function () {

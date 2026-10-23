@@ -14,7 +14,6 @@ import "./utils/URITemplate.sol";
 import "./ITablelandRigs.sol";
 import "./ITablelandRigPilots.sol";
 import "./interfaces/IERC4906.sol";
-import "./interfaces/IDelegationRegistry.sol";
 
 /**
  * @dev Implementation of {ITablelandRigs}.
@@ -52,18 +51,15 @@ contract TablelandRigs is
     // URI for contract info.
     string private _contractInfoURI;
 
-    // Pilots implementation.
+    // Deprecated: pilots implementation. Pilots are retired; the slot is kept
+    // to preserve the proxy storage layout.
     ITablelandRigPilots private _pilots;
 
-    // Allow transfers while flying, only by token owner
+    // Deprecated: transfer-while-flying flag. Kept for storage layout.
     bool private _allowTransferWhileFlying;
 
-    // Admin address
+    // Deprecated: parking admin address. Kept for storage layout.
     address private _admin;
-
-    // Delegate.cash registry address
-    IDelegationRegistry private constant _delegateCash =
-        IDelegationRegistry(0x00000000000076A84feF008CDAbe6409d2FE638B);
 
     function initialize(
         uint256 _maxSupply,
@@ -347,17 +343,10 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {ITablelandRigs-admin}.
+     * @dev See {ITablelandRigs-refreshMetadata}.
      */
-    function admin() public view returns (address) {
-        return _admin;
-    }
-
-    /**
-     * @dev See {ITablelandRigs-setAdmin}.
-     */
-    function setAdmin(address adminAddress) external onlyOwner {
-        _admin = adminAddress;
+    function refreshMetadata() external onlyOwner {
+        emit BatchMetadataUpdate(_startTokenId(), _nextTokenId() - 1);
     }
 
     /**
@@ -372,260 +361,6 @@ contract TablelandRigs is
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    // =============================
-    //      PARKING ADMIN LOGIC
-    // =============================
-
-    /**
-     * @dev Throws if called by any account other than parking admin.
-     */
-    modifier onlyAdmin() {
-        _checkAdmin();
-        _;
-    }
-
-    /**
-     * @dev Throws if the sender is not the admin or if admin has not
-     * been initialized.
-     */
-    function _checkAdmin() private view {
-        address adminAddress = admin();
-        require(
-            adminAddress != address(0) && adminAddress == _msgSender(),
-            "Caller is not the admin"
-        );
-    }
-
-    // =============================
-    //      ITABLELANDRIGPILOTS
-    // =============================
-
-    /**
-     * @dev See {ITablelandRigs-initPilots}.
-     */
-    function initPilots(address pilotsAddress) external onlyOwner {
-        _pilots = ITablelandRigPilots(pilotsAddress);
-    }
-
-    /**
-     * @dev See {ITablelandRigs-pilotSessionsTable}.
-     */
-    function pilotSessionsTable() external view returns (string memory) {
-        return _pilots.pilotSessionsTable();
-    }
-
-    /**
-     * @dev See {ITablelandRigs-pilotInfo}.
-     */
-    function pilotInfo(
-        uint256 tokenId
-    ) public view returns (ITablelandRigPilots.PilotInfo memory) {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-
-        return _pilots.pilotInfo(tokenId);
-    }
-
-    /**
-     * @dev See {ITablelandRigs-pilotInfo}.
-     */
-    function pilotInfo(
-        uint256[] calldata tokenIds
-    ) external view returns (ITablelandRigPilots.PilotInfo[] memory) {
-        // For each token, call `pilotInfo`
-        ITablelandRigPilots.PilotInfo[]
-            memory allPilotInfo = new ITablelandRigPilots.PilotInfo[](
-                tokenIds.length
-            );
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            allPilotInfo[i] = pilotInfo(tokenIds[i]);
-        }
-        return allPilotInfo;
-    }
-
-    /**
-     * @notice Returns the token owner and the sender. Useful for authorization
-     * checks that take delegation into account.
-     *
-     * @dev If `msg.sender` is registered as a delegate for the address that owns
-     * the rig in the delegate.cash registry (= msg.sender is allowed to act
-     * on behalf of the owner), the owning address will be returned as sender.
-     *
-     * tokenId - the unique Rig token identifier
-     */
-    function _getTokenOwnerAndSenderWithDelegationCheck(
-        uint256 tokenId
-    ) private view returns (address tokenOwner, address sender) {
-        sender = _msgSenderERC721A();
-        tokenOwner = ownerOf(tokenId);
-
-        if (
-            _delegateCash.checkDelegateForToken(
-                sender,
-                tokenOwner,
-                address(this),
-                tokenId
-            )
-        ) {
-            sender = tokenOwner;
-        }
-    }
-
-    /**
-     * @dev See {ITablelandRigs-trainRig}.
-     */
-    function trainRig(uint256 tokenId) public whenNotPaused {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-
-        // Verify `msg.sender` is authorized to train the specified Rig
-        (
-            address tokenOwner,
-            address sender
-        ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
-        if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
-
-        _pilots.trainRig(sender, tokenId);
-        emit MetadataUpdate(tokenId);
-    }
-
-    /**
-     * @dev See {ITablelandRigs-trainRig}.
-     */
-    function trainRig(uint256[] calldata tokenIds) external whenNotPaused {
-        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
-        // Clients should restrict this further to avoid gas exceeding limits
-        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
-            revert ITablelandRigPilots.InvalidBatchPilotAction();
-
-        // For each token, call `trainRig`
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            trainRig(tokenIds[i]);
-        }
-    }
-
-    /**
-     * @dev See {ITablelandRigs-pilotRig}.
-     */
-    function pilotRig(
-        uint256 tokenId,
-        address pilotAddr,
-        uint256 pilotId
-    ) public whenNotPaused {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-
-        // Verify `msg.sender` is authorized to pilot the specified Rig
-        (
-            address tokenOwner,
-            address sender
-        ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
-        if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
-
-        // If the supplied pilot address is `0x0`, then assume a trainer pilot
-        // (note: `pilotId` has no impact here). Otherwise, proceed with a
-        // custom pilot. The overloaded methods direct changes accordingly.
-        pilotAddr == address(0)
-            ? _pilots.pilotRig(sender, tokenId)
-            : _pilots.pilotRig(sender, tokenId, pilotAddr, pilotId);
-
-        emit MetadataUpdate(tokenId);
-    }
-
-    /**
-     * @dev See {ITablelandRigs-pilotRig}.
-     */
-    function pilotRig(
-        uint256[] calldata tokenIds,
-        address[] calldata pilotAddrs,
-        uint256[] calldata pilotIds
-    ) external whenNotPaused {
-        // Ensure the arrays are non-empty
-        if (
-            tokenIds.length == 0 ||
-            pilotAddrs.length == 0 ||
-            pilotIds.length == 0
-        ) revert ITablelandRigPilots.InvalidBatchPilotAction();
-
-        // Ensure there is a 1:1 relationship between Rig `tokenIds` and pilots
-        // Only allow a batch to be an arbitrary max length of 255
-        // Clients should restrict this further (e.g., <=5) to avoid gas exceeding limits
-        if (
-            tokenIds.length != pilotAddrs.length ||
-            tokenIds.length != pilotIds.length ||
-            tokenIds.length > type(uint8).max
-        ) revert ITablelandRigPilots.InvalidBatchPilotAction();
-
-        // For each token, call `pilotRig`
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            pilotRig(tokenIds[i], pilotAddrs[i], pilotIds[i]);
-        }
-    }
-
-    /**
-     * @dev See {ITablelandRigs-parkRig}.
-     */
-    function parkRig(uint256 tokenId) public whenNotPaused {
-        // Check the Rig `tokenId` exists
-        if (!_exists(tokenId)) revert OwnerQueryForNonexistentToken();
-
-        // Verify `msg.sender` is authorized to park the specified Rig
-        (
-            address tokenOwner,
-            address sender
-        ) = _getTokenOwnerAndSenderWithDelegationCheck(tokenId);
-        if (tokenOwner != sender) revert ITablelandRigPilots.Unauthorized();
-
-        // Pass `false` to indicate a standard (non-force) park
-        _pilots.parkRig(tokenId, false);
-        emit MetadataUpdate(tokenId);
-    }
-
-    /**
-     * @dev See {ITablelandRigs-parkRig}.
-     */
-    function parkRig(uint256[] calldata tokenIds) external whenNotPaused {
-        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
-        // Clients should restrict this further to avoid gas exceeding limits
-        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
-            revert ITablelandRigPilots.InvalidBatchPilotAction();
-
-        // For each token, call `parkRig`
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            parkRig(tokenIds[i]);
-        }
-    }
-
-    function _forceParkRigs(uint256[] calldata tokenIds) private {
-        // Ensure the array is non-empty & only allow a batch to be an arbitrary max length of 255
-        // Clients should restrict this further to avoid gas exceeding limits
-        if (tokenIds.length == 0 || tokenIds.length > type(uint8).max)
-            revert ITablelandRigPilots.InvalidBatchPilotAction();
-
-        // For each token, call `parkRig`
-        for (uint8 i = 0; i < tokenIds.length; i++) {
-            // Check the Rig `tokenId` exists
-            if (!_exists(tokenIds[i])) revert OwnerQueryForNonexistentToken();
-            // Pass `true` to indicate a force park
-            _pilots.parkRig(tokenIds[i], true);
-            emit MetadataUpdate(tokenIds[i]);
-        }
-    }
-
-    /**
-     * @dev See {ITablelandRigs-parkRigAsOwner}.
-     */
-    function parkRigAsOwner(uint256[] calldata tokenIds) external onlyOwner {
-        _forceParkRigs(tokenIds);
-    }
-
-    /**
-     * @dev See {ITablelandRigs-parkRigAsAdmin}.
-     */
-    function parkRigAsAdmin(uint256[] calldata tokenIds) external onlyAdmin {
-        _forceParkRigs(tokenIds);
     }
 
     // =============================
@@ -655,26 +390,6 @@ contract TablelandRigs is
     }
 
     /**
-     * @dev See {IERC721Metadata-safeTransferWhileFlying}.
-     */
-    function safeTransferWhileFlying(
-        address from,
-        address to,
-        uint256 tokenId
-    ) external {
-        // Verify `msg.sender` is the token owner (prevent transfers by approved address or operator)
-        if (ownerOf(tokenId) != _msgSenderERC721A())
-            revert ITablelandRigPilots.Unauthorized();
-        // Temporaritly set the transfer flag to allow a transfer to occur
-        _allowTransferWhileFlying = true;
-        safeTransferFrom(from, to, tokenId);
-        // Reset the transfer flag to block transfers
-        _allowTransferWhileFlying = false;
-        // Update the value of `owner` in the current pilot's session
-        _pilots.updateSessionOwner(tokenId, to);
-    }
-
-    /**
      * @dev See {ERC721A-_beforeTokenTransfers}.
      */
     function _beforeTokenTransfers(
@@ -684,15 +399,6 @@ contract TablelandRigs is
         uint256 quantity
     ) internal virtual override {
         _requireNotPaused();
-        // Block transfers by approved operators while a Rig is being piloted, but allow transfers *only* by the owner
-        uint256 tokenId = startTokenId;
-        for (uint256 end = tokenId + quantity; tokenId < end; ++tokenId) {
-            // If the pilot's `startTime` is not zero, then the Rig is in-flight
-            if (
-                !(_pilots.pilotStartTime(tokenId) == 0 ||
-                    _allowTransferWhileFlying == true)
-            ) revert ITablelandRigPilots.InvalidPilotStatus();
-        }
         super._beforeTokenTransfers(from, to, startTokenId, quantity);
     }
 
